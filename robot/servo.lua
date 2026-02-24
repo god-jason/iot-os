@@ -19,8 +19,17 @@ end
 
 -- 初始化
 function Servo:init()
-    pwm.setup(self.pwm, self.freq, Servo:angle_to_duty(90)) -- 默认90° 7.5
-    pwm.start(self.pwm)
+    -- pwm.setup(self.pwm, self.freq, Servo:angle_to_duty(90)) -- 默认90° 7.5
+    -- pwm.start(self.pwm)
+    local ret, pwm = iot.pwm(self.id, {
+        freq = self.freq,
+        duty = Servo:angle_to_duty(90)
+    })
+    if ret then
+        self.pwm = pwm
+        pwm:start()
+    end
+    return ret
 end
 
 function Servo:angle_to_duty(angle)
@@ -35,13 +44,15 @@ function Servo:set(angle)
     angle = math.max(self.min_angle, math.min(self.max_angle, angle))
 
     local duty = self:angle_to_duty(angle)
-    pwm.setDuty(self.pwm, duty)
+    -- pwm.setDuty(self.pwm, duty)
+    self.pwm:setDuty(duty)
 
     self.current_angle = angle
 end
 
 function Servo:stop()
-    pwm.stop(self.pwm)
+    -- pwm.stop(self.pwm)
+    self.pwm:stop()
 end
 
 return Servo
