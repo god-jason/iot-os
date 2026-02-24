@@ -14,7 +14,8 @@ function StateMachine:new(opts)
         name = opts.name or "FSM",
         tick = opts.tick or 1000,
         state = nil,
-        states = {}
+        states = {},
+        context = {}
     }, StateMachine)
 end
 
@@ -32,7 +33,8 @@ function StateMachine:clone()
         name = self.name,
         tick = self.tick,
         state = nil,
-        states = self.states
+        states = self.states,
+        context = {}
     }, StateMachine)
 end
 
@@ -41,19 +43,38 @@ function StateMachine:execute()
     self.running = true
 
     while self.running do
-        -- iot.sleep(self.tick)
-        local ret, info = iot.wait("fsm_" .. self.id .. "_break", self.tick)
-        if ret then
-            -- 被中断
-            log.info(tag, self.name, self.state_name, "被中断", info)
-            break
-        end
 
+        -- 执行状态离开和进入
+        if self.next_state then
+            -- 执行离开
+            if self.state and self.state.leave then
+                -- self.state.leave(self)
+                local ret, info = pcall(self.state.leave, self.context)
+                if not ret then
+                    log.error(tag, self.name, self.state_name, "执行leave错误", info)
+                end
+            end
+
+            -- 切换状态
+            self.state_name = self.next_state
+            self.state = self.states[self.next_state]
+            self.next_state = nil
+
+            -- 执行进入
+            if self.state.enter then
+                -- state.enter(self)
+                local ret, info = pcall(self.state.enter, self.context)
+                if not ret then
+                    log.error(tag, self.name, self.state_name, "执行enter错误", info)
+                end
+            end
+        end
+        
         -- 执行状态tick任务
         if self.state then
             if self.state.tick then
                 -- self.state.tick(self)
-                local ret, info = pcall(self.state.tick, self)
+                local ret, info = pcall(self.state.tick, self.context)
                 if not ret then
                     log.error(tag, self.name, self.state_name, "执行tick错误", info)
                 end
@@ -62,36 +83,19 @@ function StateMachine:execute()
             log.error(tag, self.name, "未设置状态")
         end
 
-        -- 执行状态离开和进入
-        if self.next_state then
-            -- 执行离开
-            if self.state and self.state.leave then
-                -- self.state.leave(self)
-                local ret, info = pcall(self.state.leave, self)
-                if not ret then
-                    log.error(tag, self.name, self.state_name, "执行leave错误", info)
-                end
-            end
-
-            -- 切换状态
-            self.state = self.next_state
-            self.next_state = nil
-
-            -- 执行进入
-            if self.state.enter then
-                -- state.enter(self)
-                local ret, info = pcall(self.state.enter, self)
-                if not ret then
-                    log.error(tag, self.name, self.state_name, "执行enter错误", info)
-                end
-            end
-        end
+        -- iot.sleep(self.tick)
+        local ret, info = iot.wait("fsm_" .. self.id .. "_break", self.tick)
+        if ret then
+            -- 被中断
+            log.info(tag, self.name, self.state_name, "被中断", info)
+            --break
+        end        
     end
 
     -- 执行离开
     if self.state and self.state.leave then
         -- self.state.leave(self)
-        local ret, info = pcall(self.state.leave, self)
+        local ret, info = pcall(self.state.leave, self.context)
         if not ret then
             log.error(tag, self.name, self.state_name, "执行leave错误", info)
         end
@@ -128,14 +132,15 @@ function StateMachine:set(name)
         return false, "未知状态" .. name
     end
 
-    self.next_state = state
-    self.state_name = name
+    self.next_state = name
+    iot.emit("fsm_" .. self.id .. "_break")
 
     return true
 end
 
 -- 停止状态机
 function StateMachine:stop()
+    self.running = false
     iot.emit("fsm_" .. self.id .. "_break")
 end
 
