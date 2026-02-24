@@ -1,7 +1,7 @@
 local tag = "fsm"
 
 -- 自增ID
-local inc = increament_id()
+local inc = increment_id()
 
 local StateMachine = {}
 StateMachine.__index = StateMachine
@@ -69,7 +69,7 @@ function StateMachine:execute()
                 end
             end
         end
-        
+
         -- 执行状态tick任务
         if self.state then
             if self.state.tick then

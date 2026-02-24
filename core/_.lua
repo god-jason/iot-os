@@ -1,16 +1,23 @@
 function class(object)
     object.__index = object
+    return object
 end
 
 function extend(child, parent)
-    setmetatable(child, parent)
+    child.__index = child
+    setmetatable(child, {
+        __index = parent
+    })
 end
 
 function new(class, object)
-    return setmetatable(object or {}, class)
+    --return setmetatable(object or {}, class)
+    object = object or {}
+    setmetatable(object, class)
+    return object
 end
 
-function increament_id()
+function increment_id()
     local id = 0
     return function()
         id = id + 1

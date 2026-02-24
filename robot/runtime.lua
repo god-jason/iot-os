@@ -3,7 +3,7 @@ local tag = "runtime"
 local commands = {}
 
 -- 自增ID
-local inc = increament_id()
+local inc = increment_id()
 
 -- 定义实例
 local Runtime = {}
