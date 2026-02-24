@@ -1,3 +1,39 @@
+--[[
+淘晶驰串口屏操作库，淘宝卖的最多，开发简单
+
+本库对串口屏操作进行封装，使用json包方式进行交互，简化程序逻辑。
+由于串口屏不支持json，所以需要自行拼包，如果格式错误，会通讯失败
+
+编程指导：
+0、Program.s中需要指定波特率，否则会通讯失败
+baud=115200
+
+1、页面切换需要发送切换指令，写在后初始化事件脚本中
+prints "{\"type\":\"page\", \"value\":\"home\"}",0
+
+2、按钮事件，在弹起事件脚本中写
+beep 100
+prints "{\"type\":\"stop\",\"data\":{\"value\":1}}",0
+
+3、状态开关，在弹起事件脚本中写
+beep 100
+if('&val&'>0)
+{
+  prints "{\"type\":\"feed_forward\",\"data\":{\"value\":true}}",0
+}else
+{
+  prints "{\"type\":\"feed_forward\",\"data\":{\"value\":false}}",0
+}
+
+4、进度条，在弹起事件中，需要先转换数值为字符串
+
+5、修改界面的接口
+tjc.set_text，修改文本值
+tjc.set_value，修改值（注意，串口屏无浮点数概念，传值需要使用整数，屏程序按配置显示小数点位置）
+tjc.set_bool，修改布尔值
+
+
+]] --
 local tjc = {}
 local tag = "tjc"
 
@@ -12,6 +48,7 @@ local function on_data(id, len)
     local data = uart.read(id, len)
     log.info(tag, "receive", len, data)
 
+    -- TODO 此处没有解决粘包和拆包问题
     if data:startsWith("{") and data:endsWith("}") then
         local pkt, ret, err = json.decode(data)
         if ret ~= 1 then
@@ -24,10 +61,10 @@ local function on_data(id, len)
             log.info(tag, "page", pkt.page)
 
             -- 卸载旧页面
-            if type(page.unmount) == "function" then
-                local ret, err = pcall(page.unmount)
+            if type(page.leave) == "function" then
+                local ret, err = pcall(page.leave)
                 if not ret then
-                    log.info(tag, "handle page unmount error", err)
+                    log.info(tag, "handle page leave error", err)
                 end
             end
 
@@ -35,18 +72,18 @@ local function on_data(id, len)
             page = pages[pkt.page] or {}
 
             -- 挂载新页面
-            if type(page.mount) == "function" then
-                local ret, err = pcall(page.mount)
+            if type(page.enter) == "function" then
+                local ret, err = pcall(page.enter)
                 if not ret then
-                    log.info(tag, "handle page mount error", err)
+                    log.info(tag, "handle page enter error", err)
                 end
             end
 
             -- 刷新新页面
-            if type(page.refresh) == "function" then
-                local ret, err = pcall(page.refresh)
+            if type(page.tick) == "function" then
+                local ret, err = pcall(page.tick)
                 if not ret then
-                    log.info(tag, "handle page refresh error", err)
+                    log.info(tag, "handle page tick error", err)
                 end
             end
             return
@@ -76,10 +113,10 @@ function tjc.init(uartid, baudrate)
             iot.sleep(1000)
 
             -- 刷新新页面
-            if type(page.refresh) == "function" then
-                local ret, err = pcall(page.refresh)
+            if type(page.tick) == "function" then
+                local ret, err = pcall(page.tick)
                 if not ret then
-                    log.info(tag, "handle page refresh error", err)
+                    log.info(tag, "handle page tick error", err)
                 end
             end
         end
@@ -87,12 +124,8 @@ function tjc.init(uartid, baudrate)
 end
 
 -- 注册页面
-function tjc.register(name, refresh, mount, unmount)
-    pages[name] = {
-        refresh = refresh,
-        mount = mount,
-        unmount = unmount
-    }
+function tjc.register(name, page)
+    pages[name] = page
 end
 
 -- 设置文本
@@ -120,6 +153,12 @@ function tjc.set_bool(name, value)
     local str = name .. ".val=" .. math.floor(value)
     uart.write(uart_id, str .. "\xff\xff\xff")
     -- log.info(tag, "set_bool", str)
+end
+
+-- 修改页面
+function tjc.set_page(name)
+    local str = "page=" .. name
+    uart.write(uart_id, str .. "\xff\xff\xff")
 end
 
 return tjc

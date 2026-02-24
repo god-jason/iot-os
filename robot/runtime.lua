@@ -1,4 +1,3 @@
-local runtime = {}
 local tag = "runtime"
 
 local commands = {}
@@ -10,25 +9,53 @@ local function increament_id()
     return increament
 end
 
--- 注册指令
-function runtime.register(cmd, handler)
-    commands[cmd] = handler
-end
-
 -- 定义实例
 local Runtime = {}
 Runtime.__index = Runtime
 
+-- 注册指令
+function Runtime.register(cmd, handler)
+    commands[cmd] = handler
+end
+
+-- 创建实例
+function Runtime:new(opts)
+    opts = opts or {}
+    return setmetatable({
+        id = increament_id(),
+        job = opts.job or "-",
+        tasks = opts.tasks or {},
+        on_finish = opts.on_finish,
+        on_error = opts.on_error,
+        current = 1
+    }, Runtime)
+end
+
+-- 复制实例
+function Runtime:clone()
+    return setmetatable({
+        id = increament_id(),
+        job = self.job,
+        tasks = self.tasks,
+        on_finish = self.on_finish,
+        on_error = self.on_error,
+        current = 1
+    }, Runtime)
+end
+
+-- 暂停
 function Runtime:pause()
     self.paused = true
     iot.emit("runtime_" .. self.id .. "_break")
 end
 
+-- 停止
 function Runtime:stop()
     self.stoped = true
     iot.emit("runtime_" .. self.id .. "_break")
 end
 
+-- 执行
 function Runtime:execute(cursor)
     cursor = cursor or 1 -- 默认从头开始
     log.info(tag, "execute", cursor, json.encode(self.tasks))
@@ -91,25 +118,15 @@ function Runtime:execute(cursor)
     end
 end
 
+-- 恢复
 function Runtime:resume()
     self.paused = false
     iot.start(Runtime.execute, self, self.current)
 end
 
+-- 启动
 function Runtime:start()
     iot.start(Runtime.execute, self)
 end
 
--- 创建实例
-function runtime.create(job, tasks, on_finish, on_error)
-    return setmetatable({
-        id = increament_id(),
-        job = job,
-        tasks = tasks,
-        on_finish = on_finish,
-        on_error = on_error,
-        current = 1,
-    }, Runtime)
-end
-
-return runtime
+return Runtime
