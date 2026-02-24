@@ -3,11 +3,7 @@ local tag = "runtime"
 local commands = {}
 
 -- 自增ID
-local increament = 0
-local function increament_id()
-    increament = increament + 1
-    return increament
-end
+local inc = increament_id()
 
 -- 定义实例
 local Runtime = {}
@@ -22,7 +18,7 @@ end
 function Runtime:new(opts)
     opts = opts or {}
     return setmetatable({
-        id = increament_id(),
+        id = inc(),
         job = opts.job or "-",
         tasks = opts.tasks or {},
         on_finish = opts.on_finish,
@@ -34,7 +30,7 @@ end
 -- 复制实例
 function Runtime:clone()
     return setmetatable({
-        id = increament_id(),
+        id = inc(),
         job = self.job,
         tasks = self.tasks,
         on_finish = self.on_finish,
@@ -51,11 +47,10 @@ end
 
 -- 停止
 function Runtime:stop()
-    self.stoped = true
     iot.emit("runtime_" .. self.id .. "_break")
 end
 
--- 执行
+-- 执行（内部用）
 function Runtime:execute(cursor)
     cursor = cursor or 1 -- 默认从头开始
     log.info(tag, "execute", cursor, json.encode(self.tasks))
@@ -87,24 +82,18 @@ function Runtime:execute(cursor)
         -- 任务等待
         if task.wait_timeout ~= nil and task.wait_timeout > 0 then
             local ret, info = iot.wait("runtime_" .. self.id .. "_break", task.wait_timeout)
-            if not ret then
-                -- 超时，任务正常执行
-            else
+            if ret then
                 -- 被中断
+                log.info(tag, "被中断", info)
+                break
             end
         end
+    end
 
-        -- 任务暂停
-        if self.paused then
-            -- log.info(tag, "pause")
-            return
-        end
-
-        if self.stoped then
-            -- log.info(tag, "stop")
-            self.job = "none"
-            return
-        end
+    -- 任务暂停
+    if self.paused then
+        -- log.info(tag, "pause")
+        return
     end
 
     -- 任务结束
