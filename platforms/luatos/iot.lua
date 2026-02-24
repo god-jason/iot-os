@@ -396,7 +396,7 @@ end
 
 --- 创建GPIO对象
 -- @param id integer GPIO序号
--- @param opts table 参数 {pull, callback, debounce， when}
+-- @param opts table 参数 {pull, callback, debounce，rising, rising}
 -- @return boolean 成功与否
 -- @return GPIO
 function iot.gpio(id, opts)
@@ -408,11 +408,13 @@ function iot.gpio(id, opts)
         gpio.setup(id, 0, pull)
     else
         -- 触发时机
-        local when = gpio.BOTH
-        if opts.when == "RISING" or opts.when == "rising" then
-            when = gpio.RISING
-        elseif opts.when == "FAILING" or opts.when == "failing" then
-            when = gpio.FAILING
+        if opts.rising ~= opts.falling then
+            if opts.rising then
+                when = gpio.RISING
+            end
+            if opts.falling then
+                when = gpio.FALLING
+            end
         end
 
         -- 输入模式
