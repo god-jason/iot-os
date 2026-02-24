@@ -4,7 +4,7 @@ local Stepper = {}
 Stepper.__index = Stepper
 
 --- 创建步进电机
----@param pwm integer PWM号
+---@param id integer PWM号
 ---@param dir integer 方向引脚
 ---@param reverse boolean 电机反转（适用于接线装反的场景）
 ---@param en integer 使能引脚
@@ -13,7 +13,7 @@ Stepper.__index = Stepper
 function Stepper:new(opts)
     opts = opts or {}
     local stepper = setmetatable({
-        pwm = opts.pwm,
+        id = opts.id,
         dir = opts.dir,
         reverse = opts.reverse or false,
         en = opts.en,
@@ -90,14 +90,28 @@ function Stepper:start(rpm, rounds)
         self:stop()
     end
 
-    log.info(tag, self.pwm, "start", freq, "count", count)
+    log.info(tag, self.id, "start", freq, "count", count)
     local time = math.floor(count / freq * 1000)
 
+    -- 先停止再改速
+    -- pwm.stop(self.pwm)
+    if self.pwm then
+        self.pwm:stop()
+    end
+
     -- 匀速运行
-    pwm.stop(self.pwm)
     if freq > 0 and count > 0 then
-        pwm.setup(self.pwm, freq, 50, count)
-        pwm.start(self.pwm)
+        -- pwm.setup(self.pwm, freq, 50, count)
+        -- pwm.start(self.pwm)
+        local ret, pwm = iot.pwm(self.id, {
+            freq = self.freq,
+            duty = 50,
+            count = count
+        })
+        if ret then
+            self.pwm = pwm
+            pwm:start()
+        end
     end
     return time
 end
@@ -113,14 +127,18 @@ end
 -- 动态调整转速（无效）
 function Stepper:speed(rpm)
     local freq = math.floor(self.freq * rpm / 60)
-    pwm.setFreq(self.pwm, freq)
+    -- pwm.setFreq(self.pwm, freq)
+    self.pwm:setFreq(freq)
 end
 
 -- 停止
 function Stepper:stop()
     log.info(tag, "stop")
     if self.running then
-        pwm.stop(self.pwm)
+        -- pwm.stop(self.pwm)
+        if self.pwm then
+            self.pwm:stop()
+        end
         self.last = 0
         self.running = false
         self:unlock()
@@ -180,9 +198,22 @@ function Stepper:accelerate(start, finish, count)
         -- table.insert(speeds, vv)
         i = i + acc_interval -- 10ms加速一次
 
-        pwm.stop(self.pwm) -- PWM必须先停止再启动，否则无效
-        pwm.setup(self.pwm, vv, 50, count)
-        pwm.start(self.pwm)
+        -- pwm.stop(self.pwm) -- PWM必须先停止再启动，否则无效
+        -- pwm.setup(self.pwm, vv, 50, count)
+        -- pwm.start(self.pwm)
+        if self.pwm then
+            self.pwm:stop()
+        end
+        local ret, pwm = iot.pwm(self.id, {
+            freq = vv,
+            duty = 50,
+            count = count
+        })
+        if ret then
+            self.pwm = pwm
+            pwm:start()
+        end
+
 
         iot.sleep(acc_interval)
 
