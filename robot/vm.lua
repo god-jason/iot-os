@@ -1,4 +1,4 @@
-local tag = "runtime"
+local tag = "vm"
 
 local commands = {}
 
@@ -6,16 +6,16 @@ local commands = {}
 local inc = increment_id()
 
 -- 定义实例
-local Runtime = {}
-Runtime.__index = Runtime
+local VM = {}
+VM.__index = VM
 
 -- 注册指令
-function Runtime.register(cmd, handler)
+function VM.register(cmd, handler)
     commands[cmd] = handler
 end
 
 -- 创建实例
-function Runtime:new(opts)
+function VM:new(opts)
     opts = opts or {}
     return setmetatable({
         id = inc(),
@@ -24,11 +24,11 @@ function Runtime:new(opts)
         on_finish = opts.on_finish,
         on_error = opts.on_error,
         current = 1
-    }, Runtime)
+    }, VM)
 end
 
 -- 复制实例
-function Runtime:clone()
+function VM:clone()
     return setmetatable({
         id = inc(),
         job = self.job,
@@ -36,22 +36,22 @@ function Runtime:clone()
         on_finish = self.on_finish,
         on_error = self.on_error,
         current = 1
-    }, Runtime)
+    }, VM)
 end
 
 -- 暂停
-function Runtime:pause()
+function VM:pause()
     self.paused = true
     iot.emit("runtime_" .. self.id .. "_break")
 end
 
 -- 停止
-function Runtime:stop()
+function VM:stop()
     iot.emit("runtime_" .. self.id .. "_break")
 end
 
 -- 执行（内部用）
-function Runtime:execute(cursor)
+function VM:execute(cursor)
     cursor = cursor or 1 -- 默认从头开始
     log.info(tag, "execute", cursor, json.encode(self.tasks))
 
@@ -108,14 +108,14 @@ function Runtime:execute(cursor)
 end
 
 -- 恢复
-function Runtime:resume()
+function VM:resume()
     self.paused = false
-    iot.start(Runtime.execute, self, self.current)
+    iot.start(VM.execute, self, self.current)
 end
 
 -- 启动
-function Runtime:start()
-    iot.start(Runtime.execute, self)
+function VM:start()
+    iot.start(VM.execute, self)
 end
 
-return Runtime
+return VM

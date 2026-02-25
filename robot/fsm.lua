@@ -3,11 +3,11 @@ local tag = "fsm"
 -- 自增ID
 local inc = increment_id()
 
-local StateMachine = {}
-StateMachine.__index = StateMachine
+local FSM = {}
+FSM.__index = FSM
 
 -- 创建状态机
-function StateMachine:new(opts)
+function FSM:new(opts)
     opts = opts or {}
     return setmetatable({
         id = inc(),
@@ -16,18 +16,18 @@ function StateMachine:new(opts)
         state = nil,
         states = {},
         context = {}
-    }, StateMachine)
+    }, FSM)
 end
 
 -- 注册状态
 -- @param string name 名称
 -- @param table state 状态 (需要有三个回调函数 enter, tick, leave)
-function StateMachine:register(name, state)
+function FSM:register(name, state)
     self.states[name] = state
 end
 
 -- 克隆状态机
-function StateMachine:clone()
+function FSM:clone()
     return setmetatable({
         id = inc(),
         name = self.name,
@@ -35,11 +35,11 @@ function StateMachine:clone()
         state = nil,
         states = self.states,
         context = {}
-    }, StateMachine)
+    }, FSM)
 end
 
 -- 执行（内部用）
-function StateMachine:execute()
+function FSM:execute()
     self.running = true
 
     while self.running do
@@ -106,7 +106,7 @@ function StateMachine:execute()
 end
 
 -- 启动状态机
-function StateMachine:start(name)
+function FSM:start(name)
     if self.running then
         log.error(tag, self.name, self.state_name, "已经在执行")
         return false, "已经在执行"
@@ -119,13 +119,13 @@ function StateMachine:start(name)
     end
 
     -- 启动进程
-    iot.start(StateMachine.execute, self)
+    iot.start(FSM.execute, self)
 
     return true
 end
 
 -- 修改状态
-function StateMachine:set(name)
+function FSM:set(name)
     -- 加载新状态
     local state = self.states[name]
     if not state then
@@ -139,9 +139,9 @@ function StateMachine:set(name)
 end
 
 -- 停止状态机
-function StateMachine:stop()
+function FSM:stop()
     self.running = false
     iot.emit("fsm_" .. self.id .. "_break")
 end
 
-return StateMachine
+return FSM

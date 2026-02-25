@@ -1,19 +1,19 @@
 function class(object)
-    object.__index = object
-    return object
+    local clazz = {}
+    clazz.__index = clazz
+    return clazz
 end
 
-function extend(child, parent)
-    child.__index = child
-    setmetatable(child, {
-        __index = parent
-    })
+function extend(parent)
+    local children = setmetatable({}, parent)
+    children.__index = children
+    return children
 end
 
-function new(class, object)
+function new(clazz, object)
     --return setmetatable(object or {}, class)
     object = object or {}
-    setmetatable(object, class)
+    setmetatable(object, clazz)
     return object
 end
 
