@@ -419,7 +419,7 @@ function iot.gpio(id, opts)
 
         -- 输入模式
         gpio.setup(id, opts.callback, pull, when)
-        if opts.debounce then
+        if opts.debounce and opts.debounce > 0 then
             gpio.debounce(id, opts.debounce)
         end
     end

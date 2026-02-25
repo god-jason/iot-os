@@ -1,4 +1,12 @@
-local logging = {}
+
+local logging = {
+    debug = log.debug,
+    trace = log.debug,
+    info = log.info,
+    warn = log.warn,
+    error = log.error,
+    fatal = log.error
+}
 
 function logging.logger(tag)
     return {

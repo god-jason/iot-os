@@ -3,7 +3,7 @@
 local MqttClient = {}
 MqttClient.__index = MqttClient
 
-local tag = "MqttClient"
+local log = require("logging").logger("MqttClient")
 
 --- 自增ID
 local increment = 1
@@ -58,13 +58,13 @@ end
 -- @return boolean 成功与否
 function MqttClient:open()
     if mqtt == nil then
-        log.error(tag, "bsp does not have mqtt lib")
+        log.error("bsp does not have mqtt lib")
         return false
     end
 
     self.client = mqtt.create(nil, self.options.host, self.options.port, self.options.ssl)
     if self.client == nil then
-        log.error(tag, "create client failed")
+        log.error("create client failed")
         return false
     end
 
@@ -81,7 +81,7 @@ function MqttClient:open()
 
     -- 注册回调
     self.client:on(function(client, event, topic, payload)
-        -- log.info(tag, "event", event, client, topic, payload)
+        -- log.info("event", event, client, topic, payload)
         if event == "recv" then
             iot.emit("MQTT_MESSAGE_" .. self.id, topic, payload)
         elseif event == "conack" then
@@ -89,7 +89,7 @@ function MqttClient:open()
             -- 恢复订阅
             for filter, cnt in pairs(self.subs) do
                 if cnt > 0 then
-                    -- log.info(tag, "recovery subscribe", filter)
+                    -- log.info("recovery subscribe", filter)
                     client:subscribe(filter)
                 end
             end
@@ -115,7 +115,7 @@ function MqttClient:open()
                 end
             end
         end
-        log.info(tag, "message handling task exit")
+        log.info("message handling task exit")
     end)
 
     -- 连接
@@ -156,7 +156,7 @@ function MqttClient:publish(topic, payload, qos)
             payload = "payload json encode error:" .. err
         end
     end
-    log.info(tag, "publish", topic, payload, qos)
+    log.info("publish", topic, payload, qos)
     return true, self.client:publish(topic, payload, qos)
 end
 
@@ -164,7 +164,7 @@ end
 -- @param filter string 主题
 -- @param cb function 回调
 function MqttClient:subscribe(filter, cb)
-    log.info(tag, "subscribe", filter)
+    log.info("subscribe", filter)
 
     -- 计数，避免重复订阅
     if not self.subs[filter] or self.subs[filter] <= 0 then
@@ -200,7 +200,7 @@ end
 -- @param filter string 主题
 -- @param cb function|nil 回调
 function MqttClient:unsubscribe(filter, cb)
-    log.info(tag, "unsubscribe", filter)
+    log.info("unsubscribe", filter)
 
     -- 取消订阅
     if self.subs[filter] ~= nil then

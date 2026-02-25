@@ -2,14 +2,14 @@
 -- @module vuart
 local vuart = {}
 
-local tag = "vuart"
+local log = require("logging").logger("vuart")
 
 local commands = require("commands")
 
 local cache = ""
 local function on_data(id, len)
     local data = uart.read(id, len)
-    log.info(tag, "receive", len, data)
+    log.info("receive", len, data)
 
     if #cache > 0 then
         cache = cache .. data
