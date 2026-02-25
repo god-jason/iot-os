@@ -1,18 +1,7 @@
-local inputs = {}
-local log = require("logging").logger("inputs")
+local limits = {}
+local log = require("logging").logger("limits")
 
 local configs = require "configs"
-
---[[
-{{
-    id = 1,
-    name = "",
-    event = "KEY_START",
-    rising = true,
-    falling = true,
-    debounce = 0
-}}
-]]
 
 local pins = {}
 local named_pins = {}
@@ -25,10 +14,10 @@ local function on_input(id, level)
     end
 
     pin.level = level
-    log.info("input", id, level, pin.name)
+    log.info("limit", id, level, pin.name)
 
     -- 发送统一事件
-    iot.emit("INPUT", id, level, pin.name)
+    iot.emit("LIMIT", id, level, pin.name)
 
     -- 发送特定事件
     if pin.event and pin.event ~= "" then
@@ -37,7 +26,7 @@ local function on_input(id, level)
 end
 
 -- 注册GPIO
-function inputs.register(pin)
+function limits.register(pin)
     pin.gpio = iot.gpio(pin.id, {
         rising = pin.rising or false,
         falling = pin.falling or false,
@@ -53,7 +42,7 @@ function inputs.register(pin)
 end
 
 -- 加载GPIO
-function inputs.load(cfg)
+function limits.load(cfg)
     -- 关闭已经打开的GPIO
     for i, pin in pairs(pins) do
         pin.gpio:close()
@@ -64,14 +53,14 @@ function inputs.load(cfg)
     named_pins = {}
 
     -- 加载配置
-    local mapping = configs.load_default(cfg or "inputs", {})
+    local mapping = configs.load_default(cfg or "limits", {})
     for _, pin in ipairs(mapping) do
-        inputs.register(pin)
+        limits.register(pin)
     end
 end
 
 -- 获取GPIO实例
-function inputs.gpio(id)
+function limits.gpio(id)
     local pin
 
     if type(id) == "number" then
@@ -87,12 +76,12 @@ function inputs.gpio(id)
 end
 
 -- 获取GPIO状态
-function inputs.get(id)
-    local gpio = inputs.gpio(id)
+function limits.get(id)
+    local gpio = limits.gpio(id)
     if not gpio then
         return nil
     end
     return gpio:get()
 end
 
-return inputs
+return limits

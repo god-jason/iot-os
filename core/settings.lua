@@ -1,8 +1,8 @@
 --- 对配置文件的封装，增加了版本号，方便同步
 -- @module settings
 local settings = {}
-local tag = "setting"
 
+local log = require("logging").logger("setting")
 local configs = require "configs"
 
 

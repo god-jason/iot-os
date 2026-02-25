@@ -2,7 +2,7 @@
 -- @module cron
 local cron = {}
 
-local tag = "cron"
+local log = require("logging").logger("cron")
 
 local increment = 1 -- 自增ID
 
@@ -10,7 +10,7 @@ local increment = 1 -- 自增ID
 local jobs = {}
 
 local function parse_item(str)
-    -- log.info(tag, "parse_item()", str)
+    -- log.info("parse_item()", str)
     local item = {}
 
     -- 全部
@@ -47,7 +47,7 @@ local function parse_item(str)
 end
 
 local function parse(crontab)
-    log.info(tag, "parse()", crontab)
+    log.info("parse()", crontab)
     local job = {}
 
     crontab = string.trim(crontab)
@@ -71,7 +71,7 @@ local function parse(crontab)
         end
     end
 
-    log.info(tag, "parse()", iot.json_encode(job))
+    log.info("parse()", iot.json_encode(job))
 
     return true, job
 end
@@ -93,7 +93,7 @@ local function calc_wday(time, field)
         end
     else
         while not field[tostring(wday)] do
-            -- log.info(tag, "calc_next dot", f, tm[f])
+            -- log.info("calc_next dot", f, tm[f])
             wday = wday + 1
             time.day = time.day + 1
 
@@ -111,14 +111,14 @@ local function calc_field(time, field, key, upper, min, max)
     local added = false
     -- 跳过年，计算 月 日 时 分 秒
     if field.every then
-        -- log.info(tag, "calc_next every", key)
+        -- log.info("calc_next every", key)
         -- 所有，不用计算了
         return false
     elseif field.mod then
         -- 计算模
-        -- log.info(tag, "calc_next mod", key)
+        -- log.info("calc_next mod", key)
         while time[key] % field.mod ~= 0 do
-            -- log.info(tag, "calc_next mod", key, time[key])
+            -- log.info("calc_next mod", key, time[key])
             time[key] = time[key] + 1
 
             -- 越界
@@ -130,9 +130,9 @@ local function calc_field(time, field, key, upper, min, max)
         end
     else
         -- 计算散列
-        -- log.info(tag, "calc_next dot", f)
+        -- log.info("calc_next dot", f)
         while not field[tostring(time[key])] do
-            -- log.info(tag, "calc_next dot", f, tm[f])
+            -- log.info("calc_next dot", f, tm[f])
             time[key] = time[key] + 1
 
             -- 越界
@@ -164,7 +164,7 @@ local function get_month_days(time)
 end
 
 local function calc_next(job, now)
-    log.info(tag, "calc_next()", job.crontab)
+    log.info("calc_next()", job.crontab)
 
     -- 复制当前时间，并延后1秒再执行
     local next = now + 1
@@ -176,7 +176,7 @@ local function calc_next(job, now)
 
         -- local tm = os.date("!*t", next)
         local tm = os.date("*t", next)
-        -- log.info(tag, "next begin", iot.json_encode(tm))
+        -- log.info("next begin", iot.json_encode(tm))
 
         -- 逐级计算累加时间
         added = calc_field(tm, job.sec, "sec", "min", 0, 59) or calc_field(tm, job.min, "min", "hour", 0, 59) or
@@ -184,24 +184,24 @@ local function calc_next(job, now)
                     calc_field(tm, job.day, "day", "month", 1, get_month_days(tm)) or
                     calc_field(tm, job.month, "month", "year", 1, 12) or calc_wday(tm, job.wday)
 
-        -- log.info(tag, "next end", iot.json_encode(tm))
+        -- log.info("next end", iot.json_encode(tm))
 
         -- 重新计算时间
         if added then
             next = os.time(tm) - 8 * 3600 -- 减去UTC 8小时 东八区
-            -- log.info(tag, "calc_next added")
+            -- log.info("calc_next added")
         end
     end
 
     job.next = next
 
-    log.info(tag, job.crontab, "next is", iot.json_encode(os.date("%Y-%m-%d %H:%M:%S", next)))
+    log.info(job.crontab, "next is", iot.json_encode(os.date("%Y-%m-%d %H:%M:%S", next)))
 end
 
 local next_time
 
 function cron.execute()
-    log.info(tag, "execute()")
+    log.info("execute()")
 
     -- 找到下一个执行时间点，但后
     local now = os.time()
@@ -235,7 +235,7 @@ function cron.execute()
     if next ~= nil and next > now then
         if not next_time or next_time ~= next then
             next_time = next
-            log.info(tag, "wait", (next - now))
+            log.info("wait", (next - now))
             iot.setTimeout(cron.execute, (next - now) * 1000)
         end
     end
@@ -264,7 +264,7 @@ function cron.start(crontab, callback)
 
     ret, job = parse(crontab)
     if not ret then
-        log.error(tag, "parse failed", crontab)
+        log.error("parse failed", crontab)
         return false
     end
     jobs[crontab] = job

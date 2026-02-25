@@ -2,7 +2,7 @@
 -- @module configs
 local configs = {}
 
-local tag = "configs"
+local log = require("logging").logger("configs")
 
 -- local utils = require("utils")
 
@@ -17,7 +17,7 @@ end
 -- @return table|nil
 -- @return string 最终文件名
 function configs.load(name)
-    log.info(tag, "load", name)
+    log.info("load", name)
 
     -- 1、找原始JSON文件hen
     local path = "/" .. name .. ".json"
@@ -29,18 +29,18 @@ function configs.load(name)
 
     if iot.exists(path) then
         -- do nothing 找到了未压缩的文件
-        log.info(tag, "found", path)
+        log.info("found", path)
     elseif iot.exists(path2) then
         path = path2
     else
-        -- log.info(tag, name, "not found")
+        -- log.info(name, "not found")
         return false
     end
 
     -- 限制文件大小（780EPM已经到1MB了，不太需要）
     -- local size = io.fileSize(path)
     -- if size > 20000 then
-    --     log.info(tag, "too large", path, size)
+    --     log.info("too large", path, size)
     --     return false
     -- end
 
@@ -48,11 +48,11 @@ function configs.load(name)
     if not ret then
         return false, "文件打开失败"
     end
-    -- log.info(tag, "from", path, #data)
+    -- log.info("from", path, #data)
 
     local obj, err = iot.json_decode(data)
     if err then
-        log.error(tag, "decode failed", path, err, data)
+        log.error("decode failed", path, err, data)
         return false, err
     else
         return true, obj, path
@@ -64,7 +64,7 @@ end
 -- @param default table 默认内容
 -- @return table
 function configs.load_default(name, default)
-    -- log.info(tag, "load", name)
+    -- log.info("load", name)
     local ret, data = configs.load(name)
     if not ret then
         return default
@@ -78,7 +78,7 @@ end
 -- @return boolean 成功与否
 -- @return string 最终文件名
 function configs.save(name, data)
-    log.info(tag, "save", name, data)
+    log.info("save", name, data)
 
     if type(data) ~= "string" then
         data = iot.json_encode(data)
@@ -91,7 +91,7 @@ function configs.save(name, data)
         for i = 1, #ss - 1, 1 do
             dir = dir .. "/" .. ss[i]
             iot.mkdir(dir)
-            -- log.info(tag, "mkdir", dir, r, e)
+            -- log.info("mkdir", dir, r, e)
         end
     end
 
@@ -111,7 +111,7 @@ end
 ---删除配置文件
 -- @param name string 文件名，不带.json后缀
 function configs.delete(name)
-    log.info(tag, "delete", name)
+    log.info("delete", name)
 
     -- 找文件
     local path = "/" .. name .. ".json"

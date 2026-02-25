@@ -3,7 +3,7 @@
 local ModbusDevice = {}
 ModbusDevice.__index = ModbusDevice
 
-local tag = "modbus"
+local log = require("logging").logger("modbus")
 
 local Agent = require("agent")
 local Device = require("device")
@@ -43,7 +43,7 @@ local function load_mapper(product_id)
         return mapper_cache[product_id]
     end
 
-    log.info(tag, "load mapper", product_id)
+    log.info("load mapper", product_id)
 
     local model = database.get("model", product_id)
     if not model then
@@ -58,7 +58,7 @@ local function load_mapper(product_id)
         pollers = {}
     }
 
-    log.info(tag, "load 2")
+    log.info("load 2")
 
     -- 分类
     for _, prop in ipairs(model.properties or {}) do
@@ -95,7 +95,7 @@ local function load_mapper(product_id)
     table.sort(mapper.holding_registers, sortPoint)
     table.sort(mapper.input_registers, sortPoint)
 
-    --log.info(tag, "before pollers", iot.json_encode(mapper))
+    --log.info("before pollers", iot.json_encode(mapper))
 
     -- 计算轮询
     if #(mapper.coils) > 0 then
@@ -197,7 +197,7 @@ local function load_mapper(product_id)
         end
     end
 
-    log.info(tag, "pollers", iot.json_encode(mapper.pollers))
+    log.info("pollers", iot.json_encode(mapper.pollers))
 
     mapper_cache[product_id] = mapper
     return mapper
@@ -215,7 +215,7 @@ end
 
 ---打开设备
 function ModbusDevice:open()
-    log.info(tag, "device open", self.id, self.product_id)
+    log.info("device open", self.id, self.product_id)
     self.mapper = load_mapper(self.product_id)
 end
 
@@ -255,7 +255,7 @@ end
 -- @return boolean 成功与否
 -- @return any
 function ModbusDevice:get(key)
-    log.info(tag, "get", key, self.id)
+    log.info("get", key, self.id)
     local ret, point = self:find_point(key)
     if not ret then
         return false
@@ -293,7 +293,7 @@ end
 -- @param value any 值
 -- @return boolean 成功与否
 function ModbusDevice:set(key, value)
-    log.info(tag, "set", key, value, self.id)
+    log.info("set", key, value, self.id)
     local ret, point = self:find_point(key)
     if not ret then
         return false
@@ -323,22 +323,22 @@ end
 
 ---读取所有数据
 function ModbusDevice:poll()
-    log.info(tag, "poll", self.id)
-    -- log.info(tag, "poller", iot.json_encode(self.options.pollers))
+    log.info("poll", self.id)
+    -- log.info("poller", iot.json_encode(self.options.pollers))
 
     -- 没有轮询器，直接返回
     if not self.mapper.pollers or #self.mapper.pollers == 0 then
-        log.info(tag, self.id, self.product_id, "pollers empty")
+        log.info(self.id, self.product_id, "pollers empty")
         return false
     end
 
     for _, poller in ipairs(self.mapper.pollers) do
         local res, data = self.master:read(self.slave, poller.register, poller.address, poller.length)
         if res then
-            log.info(tag, "poll read", #data)
+            log.info("poll read", #data)
 
             if poller.register == 1 then
-                -- log.info(tag, "parse 1 ", #data)
+                -- log.info("parse 1 ", #data)
                 for _, point in ipairs(self.mapper.coils) do
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseBit(point, data, poller.address)
@@ -347,9 +347,9 @@ function ModbusDevice:poll()
                         end
                     end
                 end
-                -- log.info(tag, "parse 1 ", iot.json_encode(values))
+                -- log.info("parse 1 ", iot.json_encode(values))
             elseif poller.register == 2 then
-                -- log.info(tag, "parse 2 ", #data)
+                -- log.info("parse 2 ", #data)
                 for _, point in ipairs(self.mapper.discrete_inputs) do
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseBit(point, data, poller.address)
@@ -358,9 +358,9 @@ function ModbusDevice:poll()
                         end
                     end
                 end
-                -- log.info(tag, "parse 2 ", iot.json_encode(values))
+                -- log.info("parse 2 ", iot.json_encode(values))
             elseif poller.register == 3 then
-                -- log.info(tag, "parse 3 ", #data)
+                -- log.info("parse 3 ", #data)
                 for _, point in ipairs(self.mapper.holding_registers) do
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseWord(point, data, poller.address)
@@ -376,9 +376,9 @@ function ModbusDevice:poll()
                         end
                     end
                 end
-                -- log.info(tag, "parse 3 ", iot.json_encode(values))
+                -- log.info("parse 3 ", iot.json_encode(values))
             elseif poller.register == 4 then
-                -- log.info(tag, "parse 4 ", #data)
+                -- log.info("parse 4 ", #data)
                 for _, point in ipairs(self.mapper.input_registers) do
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseWord(point, data, poller.address)
@@ -394,13 +394,13 @@ function ModbusDevice:poll()
                         end
                     end
                 end
-                -- log.info(tag, "parse 4 ", iot.json_encode(values))
+                -- log.info("parse 4 ", iot.json_encode(values))
             else
-                log.error(tag, "unkown code ", poller.code)
+                log.error("unkown code ", poller.code)
                 -- 暂不支持其他类型
             end
         else
-            log.error(tag, "poll read failed")
+            log.error("poll read failed")
         end
     end
 end
@@ -429,7 +429,7 @@ function ModbusMaster:new(link, opts)
 end
 
 function ModbusMaster:readTCP(slave, code, addr, len)
-    log.info(tag, "readTCP", slave, code, addr, len)
+    log.info("readTCP", slave, code, addr, len)
 
     local data = iot.pack("b2>H2", slave, code, addr, len)
     -- 事务ID, 0000, 长度
@@ -445,7 +445,7 @@ function ModbusMaster:readTCP(slave, code, addr, len)
     if #buf > 8 then
         local code2 = string.byte(buf, 8)
         if code2 > 0x80 then
-            log.error(tag, "error code", code2)
+            log.error("error code", code2)
             return false
         end
     end
@@ -456,7 +456,7 @@ function ModbusMaster:readTCP(slave, code, addr, len)
 
     -- 取剩余数据
     if #buf < len then
-        log.info(tag, "wait more", len, #buf)
+        log.info("wait more", len, #buf)
         local r, d = self.agent:ask(nil, len - #buf)
         if not r then
             return false
@@ -479,7 +479,7 @@ function ModbusMaster:read(slave, code, addr, len)
         return self:readTCP(slave, code, addr, len)
     end
 
-    log.info(tag, "read", slave, code, addr, len)
+    log.info("read", slave, code, addr, len)
 
     local data = iot.pack("b2>H2", slave, code, addr, len)
     local crc = iot.pack('<H', crypto.crc16_modbus(data))
@@ -493,7 +493,7 @@ function ModbusMaster:read(slave, code, addr, len)
     if #buf > 3 then
         local code2 = string.byte(buf, 2)
         if code2 > 0x80 then
-            log.error(tag, "error code", code2)
+            log.error("error code", code2)
             return false
         end
     end
@@ -502,7 +502,7 @@ function ModbusMaster:read(slave, code, addr, len)
     local cnt = string.byte(buf, 3)
     local len2 = 5 + cnt
     if #buf < len2 then
-        log.info(tag, "wait more", len2, #buf)
+        log.info("wait more", len2, #buf)
         local r, d = self.agent:ask(nil, len2 - #buf)
         if not r then
             return false
@@ -514,7 +514,7 @@ function ModbusMaster:read(slave, code, addr, len)
 end
 
 function ModbusMaster:writeTCP(slave, code, addr, data)
-    log.info(tag, "writeTCP", slave, code, addr, data)
+    log.info("writeTCP", slave, code, addr, data)
 
     data = iot.pack("b2>H", slave, code, addr) .. data
 
@@ -531,7 +531,7 @@ function ModbusMaster:writeTCP(slave, code, addr, data)
     if #buf > 8 then
         local code2 = string.byte(buf, 8)
         if code2 > 0x80 then
-            log.error(tag, "error code", code2)
+            log.error("error code", code2)
             return false
         end
     end
@@ -542,7 +542,7 @@ function ModbusMaster:writeTCP(slave, code, addr, data)
 
     -- 取剩余数据
     if #buf < len then
-        log.info(tag, "wait more", len, #buf)
+        log.info("wait more", len, #buf)
         local r, d = self.agent:ask(nil, len - #buf)
         if not r then
             return false
@@ -580,7 +580,7 @@ function ModbusMaster:write(slave, code, addr, data)
         return self:writeTCP(slave, code, addr, data)
     end
 
-    log.info(tag, "write", slave, code, addr, data)
+    log.info("write", slave, code, addr, data)
     data = iot.pack("b2>H", slave, code, addr) .. data
     local crc = iot.pack('<H', crypto.crc16_modbus(data))
 
@@ -593,7 +593,7 @@ function ModbusMaster:write(slave, code, addr, data)
     if #buf > 3 then
         local code2 = string.byte(buf, 2)
         if code2 > 0x80 then
-            log.error(tag, "error code", code2)
+            log.error("error code", code2)
             return false
         end
     end
@@ -604,7 +604,7 @@ end
 ---打开主站
 function ModbusMaster:open()
     if self.opened then
-        log.error(tag, "already opened")
+        log.error("already opened")
         return
     end
     self.opened = true
@@ -616,7 +616,7 @@ function ModbusMaster:open()
     -- 启动设备
     self.devices = {}
     for _, d in ipairs(ds) do
-        log.info(tag, "open device", iot.json_encode(d))
+        log.info("open device", iot.json_encode(d))
         local dev = ModbusDevice:new(d, self)
         dev:open() -- 设备也要打开
 
@@ -647,7 +647,7 @@ function ModbusMaster:_polling()
     interval = interval * 1000 -- 毫秒
 
     while self.opened do
-        log.info(tag, "polling start")
+        log.info("polling start")
         local start = mcu.ticks()
 
         -- 轮询连接下面的所有设备
@@ -658,14 +658,14 @@ function ModbusMaster:_polling()
 
                 local ret, values = dev:poll()
                 if ret then
-                    log.info(tag, "polling", dev.id, "succeed")
+                    log.info("polling", dev.id, "succeed")
                 else
-                    log.error(tag, "polling", dev.id, "failed")
+                    log.error("polling", dev.id, "failed")
                 end
 
             end)
             if not ret then
-                log.error(tag, "polling", dev.id, "error", info)
+                log.error("polling", dev.id, "error", info)
             end
 
             -- 避免太快

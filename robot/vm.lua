@@ -1,4 +1,4 @@
-local tag = "vm"
+local log = require("logging").logger("vm")
 
 local commands = {}
 
@@ -53,12 +53,12 @@ end
 -- 执行（内部用）
 function VM:execute(cursor)
     cursor = cursor or 1 -- 默认从头开始
-    log.info(tag, "execute", cursor, json.encode(self.tasks))
+    log.info("execute", cursor, json.encode(self.tasks))
 
     -- 从起始任务执行
     for i = cursor, #self.tasks, 1 do
         local task = self.tasks[i]
-        log.info(tag, "task", i, iot.json_encode(task))
+        log.info("task", i, iot.json_encode(task))
         self.current = i
 
         local fn = commands[task.type]
@@ -66,7 +66,7 @@ function VM:execute(cursor)
             -- fn(task)
             local ret, info = pcall(fn, self, task)
             if not ret then
-                log.error(tag, info)
+                log.error(info)
                 -- 上报错误
                 if not self.on_error then
                     self.on_error(info)
@@ -76,7 +76,7 @@ function VM:execute(cursor)
                 return
             end
         else
-            log.info(tag, "unkown command", task.type)
+            log.info("unkown command", task.type)
         end
 
         -- 任务等待
@@ -84,7 +84,7 @@ function VM:execute(cursor)
             local ret, info = iot.wait("runtime_" .. self.id .. "_break", task.wait_timeout)
             if ret then
                 -- 被中断
-                log.info(tag, "被中断", info)
+                log.info("被中断", info)
                 break
             end
         end
@@ -92,7 +92,7 @@ function VM:execute(cursor)
 
     -- 任务暂停
     if self.paused then
-        -- log.info(tag, "pause")
+        -- log.info("pause")
         return
     end
 
@@ -100,7 +100,7 @@ function VM:execute(cursor)
     self.job = "none"
     self.stoped = true
 
-    log.info(tag, "execute finished")
+    log.info("execute finished")
 
     if self.on_finish ~= nil then
         self.on_finish()

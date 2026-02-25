@@ -2,18 +2,18 @@
 -- @module autoload
 local autoload = {}
 
-local tag = "autoload"
+local log = require("logging").logger("autoload")
 
 --- 加载文件
 -- @param name string  模块名
 function autoload.load(name)
-    log.info(tag, "load", name)
+    log.trace("load", name)
 
     if RELEASE then
         -- 使用pcall 避免异常退出
         local ret, info = pcall(require, name)
         if not ret then
-            log.error(tag, name, info)
+            log.error(name, info)
         end
     else
         require(name)

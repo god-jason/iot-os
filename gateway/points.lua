@@ -1,3 +1,6 @@
+
+local log = require("logging").logger("points")
+
 --- 点位相关
 -- @module points
 local points = {}
@@ -167,11 +170,11 @@ end
 -- @return boolean
 -- @return any
 function points.parseBit(point, data, address)
-    -- log.info(tag, "parseBit", point, #data, address)
+    -- log.info("parseBit", point, #data, address)
     local offset = point.address - address
     local cursor = math.floor(offset / 8) + 1
     if #data <= cursor then
-        log.error(tag, "parseBit over index")
+        log.error("parseBit over index")
         return false
     end
     local byte = string.byte(data, cursor)
@@ -186,16 +189,16 @@ end
 -- @return boolean
 -- @return any
 function points.parseWord(point, data, address)
-    -- log.info(tag, "parseWord", point.name, point.address, #data, address)
+    -- log.info("parseWord", point.name, point.address, #data, address)
     local feagure = feagures[point.type]
     if not feagure then
-        log.error(tag, "parseWord unkown type", point.type)
+        log.error("parseWord unkown type", point.type)
         return false
     end
 
     local cursor = (point.address - address) * 2 + 1 -- lua索引从1开始...
     if #data <= cursor then
-        log.error(tag, "parseWord over index")
+        log.error("parseWord over index")
         return false
     end
 
@@ -233,13 +236,13 @@ end
 function points.parse(point, data, address)
     local feagure = feagures[point.type]
     if not feagure then
-        log.error(tag, "parse unkown type", point.type)
+        log.error("parse unkown type", point.type)
         return false
     end
 
     local cursor = point.address - address + 1 -- lua索引从1开始...
     if #data <= cursor then
-        log.error(tag, "parse over index")
+        log.error("parse over index")
         return false
     end
 
@@ -277,7 +280,7 @@ end
 function points.encode(point, value)
     local feagure = feagures[point.type]
     if not feagure then
-        log.error(tag, "encode unkown type", point.type)
+        log.error("encode unkown type", point.type)
         return false
     end
 

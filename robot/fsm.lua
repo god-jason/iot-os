@@ -1,4 +1,4 @@
-local tag = "fsm"
+local log = require("logging").logger("fsm")
 
 -- 自增ID
 local inc = increment_id()
@@ -51,7 +51,7 @@ function FSM:execute()
                 -- self.state.leave(self)
                 local ret, info = pcall(self.state.leave, self.context)
                 if not ret then
-                    log.error(tag, self.name, self.state_name, "执行leave错误", info)
+                    log.error(self.name, self.state_name, "执行leave错误", info)
                 end
             end
 
@@ -65,7 +65,7 @@ function FSM:execute()
                 -- state.enter(self)
                 local ret, info = pcall(self.state.enter, self.context)
                 if not ret then
-                    log.error(tag, self.name, self.state_name, "执行enter错误", info)
+                    log.error(self.name, self.state_name, "执行enter错误", info)
                 end
             end
         end
@@ -76,18 +76,18 @@ function FSM:execute()
                 -- self.state.tick(self)
                 local ret, info = pcall(self.state.tick, self.context)
                 if not ret then
-                    log.error(tag, self.name, self.state_name, "执行tick错误", info)
+                    log.error(self.name, self.state_name, "执行tick错误", info)
                 end
             end
         else
-            log.error(tag, self.name, "未设置状态")
+            log.error(self.name, "未设置状态")
         end
 
         -- iot.sleep(self.tick)
         local ret, info = iot.wait("fsm_" .. self.id .. "_break", self.tick)
         if ret then
             -- 被中断
-            log.info(tag, self.name, self.state_name, "被中断", info)
+            log.info(self.name, self.state_name, "被中断", info)
             --break
         end        
     end
@@ -97,7 +97,7 @@ function FSM:execute()
         -- self.state.leave(self)
         local ret, info = pcall(self.state.leave, self.context)
         if not ret then
-            log.error(tag, self.name, self.state_name, "执行leave错误", info)
+            log.error(self.name, self.state_name, "执行leave错误", info)
         end
     end
 
@@ -108,7 +108,7 @@ end
 -- 启动状态机
 function FSM:start(name)
     if self.running then
-        log.error(tag, self.name, self.state_name, "已经在执行")
+        log.error(self.name, self.state_name, "已经在执行")
         return false, "已经在执行"
     end
 

@@ -1,20 +1,37 @@
 local outputs = {}
-local tag = "outputs"
-
+local log = require("logging").logger("outputs")
 
 local configs = require "configs"
-local mapping = configs.load_default("outputs", {})
 
 local pins = {}
 local named_pins = {}
 
-function outputs.init()
+
+-- 注册GPIO
+function outputs.register(pin)
+    pin.gpio = iot.gpio(pin.id)
+    pins[pin.id] = pin
+    if pin.name and pin.name ~= "" then
+        named_pins[pin.name] = pin
+    end
+    return pin.gpio
+end
+
+-- 加载GPIO
+function outputs.load(cfg)
+    -- 关闭已经打开的GPIO
+    for i, pin in pairs(pins) do
+        pin.gpio:close()
+    end
+
+    -- 清空
+    pins = {}
+    named_pins = {}
+
+    -- 加载配置
+    local mapping = configs.load_default(cfg or "outputs", {})
     for _, pin in ipairs(mapping) do
-        pin.gpio = io.gpio(pin.id)
-        pins[pin.id] = pin
-        if pin.name and pin.name ~= "" then
-            named_pins[pin.name] = pin
-        end
+        outputs.register(pin)
     end
 end
 

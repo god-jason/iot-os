@@ -3,7 +3,7 @@
 local Cjt188Device = {}
 Cjt188Device.__index = Cjt188Device
 
-local tag = "cjt188"
+local log = require("logging").logger("cjt188")
 
 local Agent = require("agent")
 local Device = require("device")
@@ -21,7 +21,7 @@ local function load_model(product_id)
         return model_cache[product_id]
     end
 
-    log.info(tag, "load model", product_id)
+    log.info("load model", product_id)
 
     local model = database.get("model", product_id)
     if not model then
@@ -202,7 +202,7 @@ end
 
 ---打开设备
 function Cjt188Device:open()
-    log.info(tag, "device open", self.id, self.product_id)
+    log.info("device open", self.id, self.product_id)
     self.model = load_model(self.product_id)
 end
 
@@ -211,7 +211,7 @@ end
 -- @return boolean 成功与否
 -- @return any
 function Cjt188Device:get(key)
-    log.info(tag, "get", key)
+    log.info("get", key)
     -- 读一遍
     self:poll()
     if self._values[key] then
@@ -224,7 +224,7 @@ end
 -- @param value any 值
 -- @return boolean 成功与否
 function Cjt188Device:set(key, value)
-    log.info(tag, "set", key, value)
+    log.info("set", key, value)
 
     self._values[key] = {
         value = value,
@@ -270,20 +270,20 @@ end
 -- @return boolean 成功与否
 -- @return table|nil 值
 function Cjt188Device:poll()
-    log.info(tag, "poll", self.id)
+    log.info("poll", self.id)
     if not self.model then
-        log.error(tag, "poll", self.id, "no model")
+        log.error("poll", self.id, "no model")
         return false, "no model"
     end
     if not self.model.properties then
-        log.error(tag, "poll", self.id, "no properties")
+        log.error("poll", self.id, "no properties")
         return false, "no properties"
     end
 
     for _, pt in pairs(self.model.properties) do
         if not pt.writable then
 
-            log.info(tag, "poll", pt.name, pt.type, pt.code, pt.di)
+            log.info("poll", pt.name, pt.type, pt.code, pt.di)
 
             local addr = pt.company .. self.address
 
@@ -295,16 +295,16 @@ function Cjt188Device:poll()
 
             -- 读数据
             local ret, data = self.master:read(addr, pt.type or "20", pt.code or "01", pt.di)
-            log.info(tag, "poll read", ret, data)
+            log.info("poll read", ret, data)
             if ret then
-                log.info(tag, "poll parse", binary.encodeHex(data))
+                log.info("poll parse", binary.encodeHex(data))
 
                 for _, point in ipairs(pt.points) do
                     local fmt = types[point.type]
                     if fmt then
                         if #data > point.address then
                             local str = data:sub(point.address + 1, point.address + fmt.size)
-                            log.info(tag, "poll decode", point.name, point.label, fmt.type, binary.encodeHex(str), str)
+                            log.info("poll decode", point.name, point.label, fmt.type, binary.encodeHex(str), str)
 
                             local value
                             if fmt.type == "bcd" then
@@ -312,7 +312,7 @@ function Cjt188Device:poll()
                                 value = binary.decodeBCD(fmt.size, str)
                                 if point.hasUnit then
                                     local unit = data:byte(point.address + fmt.size + 1)
-                                    log.info(tag, "data unit", point.name, value, units[unit])
+                                    log.info("data unit", point.name, value, units[unit])
                                     value = unit_convert(unit, value)
                                 end
                                 if fmt.rate then
@@ -374,13 +374,13 @@ function Cjt188Device:poll()
                                 _, value = points.findEnumValue(point, value) -- 枚举
                                 self:put_value(point.name, value)
                             else
-                                log.error(tag, "poll", self.id, "unknown format type", fmt.type)
+                                log.error("poll", self.id, "unknown format type", fmt.type)
                             end
                         else
-                            log.error(tag, "poll", self.id, "data too short", #data, point.address)
+                            log.error("poll", self.id, "data too short", #data, point.address)
                         end
                     else
-                        log.error(tag, "poll", self.id, "unknown format", point.type)
+                        log.error("poll", self.id, "unknown format", point.type)
                     end
                 end
 
@@ -442,7 +442,7 @@ function Cjt188Master:ask(addr, type, code, di, data)
     frame = frame .. iot.pack("b1", crypto.checksum(frame, 1)) -- 和校验
     frame = frame .. iot.pack("b1", 0x16) -- 结束符
 
-    log.info(tag, "frame", binary.encodeHex(frame))
+    log.info("frame", binary.encodeHex(frame))
 
     frame = binary.decodeHex("FEFEFEFE") .. frame -- 前导码
     local ret, buf = self.agent:ask(frame, 14) -- 先读12字节
@@ -450,7 +450,7 @@ function Cjt188Master:ask(addr, type, code, di, data)
         return false, "no response"
     end
 
-    log.info(tag, "response", binary.encodeHex(buf))
+    log.info("response", binary.encodeHex(buf))
 
     -- 解析返回
     -- 去掉前导码
@@ -494,7 +494,7 @@ end
 -- @return boolean 成功与否
 -- @return string 只有数据
 function Cjt188Master:read(addr, type, code, di)
-    log.info(tag, "read", addr, type, code, di)
+    log.info("read", addr, type, code, di)
     self.link:read() -- 清空接收区数据
     return self:ask(addr, type, code, di, nil)
 end
@@ -508,7 +508,7 @@ end
 -- @return boolean 成功与否
 -- @return string 只有数据
 function Cjt188Master:write(addr, type, code, di, data)
-    log.info(tag, "write", addr, type, code, di, data)
+    log.info("write", addr, type, code, di, data)
     self.link:read() -- 清空接收区数据
     return self:ask(addr, type, code, di, data)
 end
@@ -516,7 +516,7 @@ end
 ---打开主站
 function Cjt188Master:open()
     if self.opened then
-        log.error(tag, "already opened")
+        log.error("already opened")
         return
     end
     self.opened = true
@@ -528,7 +528,7 @@ function Cjt188Master:open()
     -- 启动设备
     self.devices = {}
     for _, d in ipairs(ds) do
-        log.info(tag, "open device", iot.json_encode(d))
+        log.info("open device", iot.json_encode(d))
         local dev = Cjt188Device:new(d, self)
         dev:open()
 
@@ -557,10 +557,10 @@ function Cjt188Master:_polling()
     local interval = self.poller_interval or 60
     interval = interval * 1000 -- 毫秒
 
-    log.info(tag, "polling interval", interval)
+    log.info("polling interval", interval)
 
     while self.opened do
-        log.info(tag, "polling start")
+        log.info("polling start")
         local start = mcu.ticks()
 
         -- 轮询连接下面的所有设备
@@ -570,11 +570,11 @@ function Cjt188Master:_polling()
             local ret, info = pcall(function()
                 local ret, info = dev:poll()
                 if not ret then
-                    log.error(tag, "polling", dev.id, info)
+                    log.error("polling", dev.id, info)
                 end
             end)
             if not ret then
-                log.error(tag, "polling", dev.id, "error", info)
+                log.error("polling", dev.id, "error", info)
             end
 
             -- 等待数据完成

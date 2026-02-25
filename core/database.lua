@@ -2,7 +2,7 @@
 -- @module database
 local database = {}
 
-local tag = "database"
+local log = require("logging").logger("database")
 
 -- 统一文件名
 local function dbname(col)
@@ -13,7 +13,7 @@ end
 -- @param col string 表
 -- @return table 数据 {k->v}
 function database.load(col)
-    log.info(tag, "load", col)
+    log.info("load", col)
     local name = dbname(col)
     if not iot.exists(name) then
         name = "/luadb" .. name
@@ -24,7 +24,7 @@ function database.load(col)
     end
     local obj, err = iot.json_decode(data)
     if err then
-        log.error(tag, err)
+        log.error(err)
         return {}
     else
         return obj
@@ -35,10 +35,10 @@ end
 -- @param col string 表
 -- @param objs table 数据{k->v}
 function database.save(col, objs)
-    log.info(tag, "save", col)
+    log.info("save", col)
     local data, err = iot.json_encode(objs)
     if data == nil then
-        log.error(tag, err)
+        log.error(err)
         return false
     end
     return iot.writeFile(dbname(col), data)
@@ -128,7 +128,7 @@ function database.find(col, ...)
     local results = {}
 
     local args = {...}
-    log.info(tag, "find", col, unpack(args))
+    log.info("find", col, unpack(args))
 
     -- 复制所有数据出来
     if #args == 0 then
@@ -172,7 +172,7 @@ function database.count(col, ...)
     local ret = 0
 
     local args = {...}
-    log.info(tag, "find", col, unpack(args))
+    log.info("find", col, unpack(args))
 
     -- 复制所有数据出来
     if #args == 0 then

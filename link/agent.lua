@@ -5,7 +5,7 @@ Agent.__index = Agent
 
 local binary = require("binary")
 
-local tag = "Agent"
+local log = require("logging").logger("agent")
 
 --- 创建询问器
 -- abc
@@ -26,20 +26,20 @@ end
 -- @return boolean 成功与否
 -- @return string 返回数据
 function Agent:ask(request, len)
-    -- log.info(tag, "ask", binary.encodeHex(request), len)
+    -- log.info("ask", binary.encodeHex(request), len)
 
     -- 重入锁，等待其他操作完成
     while self.asking do
-        log.info(tag, "waiting for unlock")
+        log.info("waiting for unlock")
         iot.sleep(200)
     end
     self.asking = true
 
-    -- log.info(tag, "ask", request, len)
+    -- log.info("ask", request, len)
     if request ~= nil and #request > 0 then
         local ret, err = self.link:write(request)
         if not ret then
-            log.error(tag, "write failed", err)
+            log.error("write failed", err)
             self.asking = false
             return false, "write failed "
         end
@@ -64,7 +64,7 @@ function Agent:ask(request, len)
         buf = buf .. d
     until #buf >= len
 
-    -- log.info(tag, "ask got", #buf, binary.encodeHex(buf))
+    -- log.info("ask got", #buf, binary.encodeHex(buf))
 
     self.asking = false
     return true, buf

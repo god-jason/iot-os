@@ -2,7 +2,7 @@
 -- @module master
 local master = {}
 
-local tag = "master"
+local log = require("logging").logger("master")
 
 local actions = require("actions")
 local commands = require("commands")
@@ -26,10 +26,10 @@ local default_options = {
 -- 解析JSON
 local function parse_json(callback)
     return function(topic, payload)
-        log.info(tag, "mqtt message", topic, payload)
+        log.info("mqtt message", topic, payload)
         local data, err = iot.json_decode(payload)
         if err then
-            log.info(tag, "decode", payload, err)
+            log.info("decode", payload, err)
             return
         end
         callback(topic, data)
@@ -91,7 +91,7 @@ end
 -- 处理配置操作
 local function on_config(topic, data)
     local _, _, _, _, _, cfg, op = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "config", cfg, op)
+    log.info("config", cfg, op)
     if op == "delete" then
         configs.delete(cfg)
     elseif op == "save" then
@@ -105,7 +105,7 @@ end
 -- 处理数据库操作
 local function on_database(topic, data)
     local _, _, _, _, _, db, op = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "database", db, op)
+    log.info("database", db, op)
     if op == "clear" then
         database.clear(db)
     elseif op == "delete" then
@@ -124,7 +124,7 @@ end
 -- 处理事件操作
 local function on_action(topic, data)
     local _, _, _, _, _, action = topic:find("(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "action", action)
+    log.info("action", action)
 
     local handler = actions[action]
     if type(handler) == "function" then
@@ -151,7 +151,7 @@ end
 
 local function on_setting_read(topic, data)
     local _, _, _, _, _, setting, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "setting read", setting)
+    log.info("setting read", setting)
     cloud:publish(topic .. "/response", settings[setting])
 end
 
@@ -171,7 +171,7 @@ end
 
 -- 上报设备信息 TODO 改为配置文件
 local function register()
-    log.info(tag, "register")
+    log.info("register")
     local info = {
         id = mobile.imei(),
         product_id = options.product_id,
@@ -204,7 +204,7 @@ end
 
 -- 上报设备状态（周期执行）
 local function report_status()
-    log.info(tag, "report_status")
+    log.info("report_status")
 
     put_status("csq", mobile.csq())
     local total, used, top = rtos.meminfo()
@@ -261,7 +261,7 @@ end
 -- 设备写请求
 local function on_write(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
-    log.info(tag, "on_write", id, data)
+    log.info("on_write", id, data)
     local dev = gateway.get_device_instanse(id)
     if dev then
         for k, v in pairs(data) do
@@ -273,7 +273,7 @@ end
 -- 子设备写请求
 local function on_sub_write(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "on_sub_write", id, sub, data)
+    log.info("on_sub_write", id, sub, data)
     local dev = gateway.get_device_instanse(sub)
     if dev then
         for k, v in pairs(data) do
@@ -285,7 +285,7 @@ end
 -- 设备读请求
 local function on_read(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
-    log.info(tag, "on_read", id, data)
+    log.info("on_read", id, data)
     local dev = gateway.get_device_instanse(id)
     if dev then
         local results = {}
@@ -300,7 +300,7 @@ end
 -- 子设备读请求
 local function on_sub_read(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "on_sub_read", id, sub, data)
+    log.info("on_sub_read", id, sub, data)
     local dev = gateway.get_device_instanse(sub)
     if dev then
         local results = {}
@@ -315,7 +315,7 @@ end
 -- 设备同步请求
 local function on_sync(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
-    log.info(tag, "on_sync", id)
+    log.info("on_sync", id)
     local dev = gateway.get_device_instanse(id)
     if dev then
         dev:poll()
@@ -325,7 +325,7 @@ end
 -- 子设备同步请求
 local function on_sub_sync(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "on_sub_sync", id, sub)
+    log.info("on_sub_sync", id, sub)
     local dev = gateway.get_device_instanse(sub)
     if dev then
         dev:poll(data)
@@ -334,7 +334,7 @@ end
 
 local function on_sub_action(topic, data)
     local _, _, _, id, _, sub, _, action = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)/(.+)/(.+)")
-    log.info(tag, "sub action", sub, action)
+    log.info("sub action", sub, action)
 
     -- TODO 子设备操作
 
@@ -361,11 +361,11 @@ function master.open()
     local ret = cloud:open()
 
     if not ret then
-        log.error(tag, "cloud open failed")
+        log.error("cloud open failed")
         return
     end
 
-    log.info(tag, "master broker connected")
+    log.info("master broker connected")
 
     -- 订阅网关消息
     cloud:subscribe("device/" .. options.id .. "/command", parse_json(on_command))
@@ -398,7 +398,7 @@ function master.task()
     iot.wait("IP_READY")
 
     master.open()
-    log.info(tag, "master broker connected")
+    log.info("master broker connected")
 
     -- 30分钟上传一次全部数据
     iot.setInterval(function()

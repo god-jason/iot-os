@@ -1,4 +1,4 @@
-local tag = "servo"
+local log = require("logging").logger("servo")
 
 local Servo = {}
 Servo.__index = Servo

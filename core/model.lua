@@ -2,7 +2,7 @@
 -- @module model
 local model = {}
 
-local tag = "model"
+local log = require("logging").logger("model")
 
 local database = require("database")
 
@@ -16,7 +16,7 @@ function model.get(product_id)
         return catch[product_id]
     end
 
-    log.info(tag, "load model", product_id)
+    log.info("load model", product_id)
     local mod = database.get("model", "id", product_id)
     if mod then
         catch[product_id] = mod

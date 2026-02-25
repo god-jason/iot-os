@@ -35,7 +35,7 @@ tjc.set_bool，修改布尔值
 
 ]] --
 local tjc = {}
-local tag = "taojingchi"
+local log = require("logging").logger("taojingchi")
 
 local uart_id = 1
 
@@ -46,25 +46,25 @@ local commands = {}
 
 local function on_data(id, len)
     local data = uart.read(id, len)
-    log.info(tag, "receive", len, data)
+    log.info("receive", len, data)
 
     -- TODO 此处没有解决粘包和拆包问题
     if data:startsWith("{") and data:endsWith("}") then
         local pkt, ret, err = json.decode(data)
         if ret ~= 1 then
-            log.info(tag, "json decode error", err)
+            log.info("json decode error", err)
             return
         end
 
         -- 处理页面切换
         if pkt.type == "page" then
-            log.info(tag, "page", pkt.page)
+            log.info("page", pkt.page)
 
             -- 卸载旧页面
             if type(page.leave) == "function" then
                 local ret, err = pcall(page.leave)
                 if not ret then
-                    log.info(tag, "handle page leave error", err)
+                    log.info("handle page leave error", err)
                 end
             end
 
@@ -75,7 +75,7 @@ local function on_data(id, len)
             if type(page.enter) == "function" then
                 local ret, err = pcall(page.enter)
                 if not ret then
-                    log.info(tag, "handle page enter error", err)
+                    log.info("handle page enter error", err)
                 end
             end
 
@@ -83,7 +83,7 @@ local function on_data(id, len)
             if type(page.tick) == "function" then
                 local ret, err = pcall(page.tick)
                 if not ret then
-                    log.info(tag, "handle page tick error", err)
+                    log.info("handle page tick error", err)
                 end
             end
             return
@@ -94,7 +94,7 @@ local function on_data(id, len)
         if handler then
             local ret, err = pcall(handler, pkt)
             if not ret then
-                log.info(tag, "handle command error", err)
+                log.info("handle command error", err)
             end
         end
     end
@@ -116,7 +116,7 @@ function tjc.init(uartid, baudrate)
             if type(page.tick) == "function" then
                 local ret, err = pcall(page.tick)
                 if not ret then
-                    log.info(tag, "handle page tick error", err)
+                    log.info("handle page tick error", err)
                 end
             end
         end
@@ -132,7 +132,7 @@ end
 function tjc.set_text(name, value)
     local str = name .. ".txt=" .. "\"" .. value .. "\""
     uart.write(uart_id, str .. "\xff\xff\xff")
-    -- log.info(tag, "set_text", str)
+    -- log.info("set_text", str)
 end
 
 -- 设置值
@@ -144,7 +144,7 @@ function tjc.set_value(name, value)
     -- uart.write(uart_id, name .. ".val=" .. value .. "\xff\xff\xff")
     local str = name .. ".val=" .. math.floor(value)
     uart.write(uart_id, str .. "\xff\xff\xff")
-    -- log.info(tag, "set_value", str)
+    -- log.info("set_value", str)
 end
 
 -- 设置布尔值
@@ -152,7 +152,7 @@ function tjc.set_bool(name, value)
     value = value and 1 or 0
     local str = name .. ".val=" .. math.floor(value)
     uart.write(uart_id, str .. "\xff\xff\xff")
-    -- log.info(tag, "set_bool", str)
+    -- log.info("set_bool", str)
 end
 
 -- 修改页面

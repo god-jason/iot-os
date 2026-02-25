@@ -4,14 +4,14 @@ local kv = {}
 
 local cache = nil
 
-local tag = "kv"
+local log = require("logging").logger("kv")
 local filename = "/kv.json"
 
 
 --- 读取数据
 -- @return table 数据 {k->v}
 local function load()
-    log.info(tag, "load")
+    log.info("load")
     local ret, data = iot.readFile(filename)
     if not ret then
         cache = {}
@@ -19,14 +19,14 @@ local function load()
     end
     local obj, err = iot.json_decode(data)
     if err then
-        log.error(tag, err)
+        log.error(err)
     end
     cache = obj or {}
 end
 
 --- 保存数据
 local function save()
-    log.info(tag, "save")
+    log.info("save")
     local data = iot.json_encode(cache)
     return iot.writeFile(filename, data)
 end

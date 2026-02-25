@@ -1,3 +1,6 @@
+
+local log = require("logging").logger("gateway")
+
 --- 网关管理
 -- @module gateway
 local gateway = {
@@ -25,14 +28,14 @@ local options = {}
 -- @param id string 设备ID
 -- @param dev Device 子类实例
 function gateway.register_device_instanse(id, dev)
-    log.info(tag, "register device", id, dev)
+    log.info("register device", id, dev)
     gateway.devices[id] = dev
 end
 
 --- 反注册设备实例
 -- @param id string 设备ID
 function gateway.unregister_device_instanse(id)
-    log.info(tag, "unregister device", id)
+    log.info("unregister device", id)
     table.remove(gateway.devices, id)
 end
 
@@ -55,7 +58,7 @@ local links = {}
 -- @param name string 类名
 -- @param class Object 类定义
 function gateway.register_link(name, class)
-    log.info(tag, "register link", name, class)
+    log.info("register link", name, class)
     links[name] = class
 end
 
@@ -86,7 +89,7 @@ local protocols = {}
 -- @param name string 类名
 -- @param class Object 类定义
 function gateway.register_protocol(name, class)
-    log.info(tag, "register protocol", name, class)
+    log.info("register protocol", name, class)
     protocols[name] = class
 end
 
@@ -96,7 +99,7 @@ end
 -- @return boolean 成功与否
 -- @return Link|error 实例
 function gateway.create_link(type, opts)
-    log.info(tag, "create link", type, iot.json_encode(opts))
+    log.info("create link", type, iot.json_encode(opts))
     local link = links[type]
     if not link then
         return false, "找不到连接类"
@@ -105,7 +108,7 @@ function gateway.create_link(type, opts)
     -- return true, link:new(opts)
     local lnk = link:new(opts or {})
     local ret, err = lnk:open()
-    log.info(tag, "open link", lnk.id, ret, err)
+    log.info("open link", lnk.id, ret, err)
     if not ret then
         return false, err
     end
@@ -114,19 +117,19 @@ function gateway.create_link(type, opts)
 
     -- 没有协议，直接返回，可能是透传
     if not opts.protocol then
-        log.info(tag, "no protocol", lnk.id)
+        log.info("no protocol", lnk.id)
         return true, lnk
     end
 
     local protocol = protocols[opts.protocol]
     if not protocol then
-        log.warn(tag, "no found protocol", opts.protocol)
+        log.warn("no found protocol", opts.protocol)
         return true, lnk
     end
 
     local instanse = protocol:new(lnk, opts.protocol_options or {})
     ret, err = instanse:open()
-    log.info(tag, "open protocol", ret, err)
+    log.info("open protocol", ret, err)
 
     if ret then
         -- 协议实例保存下来
@@ -148,7 +151,7 @@ end
 
 --- 加载所有连接
 function gateway.load_links()
-    log.info(tag, "load links")
+    log.info("load links")
 
     local lns = database.find("link")
     if #lns == 0 then
@@ -156,9 +159,9 @@ function gateway.load_links()
     end
 
     for _, link in ipairs(lns) do
-        log.info(tag, "load link", link.id, link.type, link.protocol)
+        log.info("load link", link.id, link.type, link.protocol)
         local ret, lnk = gateway.create_link(link.type, link)
-        log.info(tag, "create link", link.id, link.type, ret, lnk)
+        log.info("create link", link.id, link.type, ret, lnk)
     end
 end
 
@@ -166,7 +169,7 @@ end
 local function load_gpio()
     for i, obj in ipairs(options.gpio) do
         local ret, p = iot.gpio(obj.id, obj)
-        log.info(tag, "open gpio", ret, p)
+        log.info("open gpio", ret, p)
         if ret then
             gateway.gpios[obj.id] = p
         end
@@ -177,7 +180,7 @@ end
 local function load_i2c()
     for i, obj in ipairs(options.i2c) do
         local ret, p = iot.i2c(obj.id, obj)
-        log.info(tag, "open i2c", ret, p)
+        log.info("open i2c", ret, p)
         if ret then
             gateway.i2cs[obj.id] = p
         end
@@ -188,7 +191,7 @@ end
 local function load_spi()
     for i, obj in ipairs(options.spi) do
         local ret, p = iot.spi(obj.id, obj)
-        log.info(tag, "open spi", ret, p)
+        log.info("open spi", ret, p)
         if ret then
             gateway.spis[obj.id] = p
         end
@@ -199,7 +202,7 @@ end
 local function load_adc()
     for i, obj in ipairs(options.adc) do
         local ret, p = iot.adc(obj.id, obj)
-        log.info(tag, "open adc", ret, p)
+        log.info("open adc", ret, p)
         if ret then
             gateway.adcs[obj.id] = p
         end
@@ -210,7 +213,7 @@ end
 local function load_pwm()
     for i, obj in ipairs(options.pwm) do
         local ret, p = iot.pwm(obj.id, obj)
-        log.info(tag, "open pwm", ret, p)
+        log.info("open pwm", ret, p)
         if ret then
             gateway.pwms[obj.id] = p
         end
@@ -221,7 +224,7 @@ end
 local function load_uart()
     for i, obj in ipairs(options.uart) do
         local ret, p = iot.uart(obj.id, obj)
-        log.info(tag, "open uart", ret, p)
+        log.info("open uart", ret, p)
         if ret then
             gateway.uarts[obj.id] = p
         end
