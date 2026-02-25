@@ -34,7 +34,7 @@ function Led:blink(on, off)
     self.blinkOn = on or 500
     self.blinkOff = off or self.blinkOn -- 默认亮灭同样时间
 
-    log.info(tag, "blink start", self.blinkOn, self.blinkOff)
+    log.info("blink start", self.blinkOn, self.blinkOff)
 
     -- 已经在闪烁就不用再创建协程了
     if self.blinking then
@@ -59,7 +59,7 @@ function Led:blink(on, off)
             iot.sleep(self.blinkOff)
         end
 
-        log.info(tag, "blink finish", self.pin)
+        log.info("blink finish", self.pin)
     end)
 end
 

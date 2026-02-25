@@ -1,6 +1,6 @@
 local actions = {}
 
-local tag = "actions"
+local log = require("logging").logger("actions")
 
 local database = require "database"
 
@@ -10,7 +10,7 @@ actions.watching = false
 local watcher = 0
 
 function actions.watch(data)
-    log.info(tag, "查看")
+    log.info("查看")
     watcher = watcher + 1
 
     actions.watching = true
@@ -19,7 +19,7 @@ function actions.watch(data)
 
     local tm = data.value or 60000
     iot.setTimeout(function()
-        -- log.info(tag, "watch timeout", w, watcher)
+        -- log.info("watch timeout", w, watcher)
         -- 只在最后一个定时结束时，结束监听
         if w == watcher then
             actions.watching = false
@@ -32,7 +32,7 @@ end
 
 -- 清除数据
 function actions.reset()
-    log.info(tag, "清除数据")
+    log.info("清除数据")
     database.clear("device")
     database.clear("model")
 
