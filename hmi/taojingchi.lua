@@ -35,7 +35,7 @@ tjc.set_bool，修改布尔值
 
 ]] --
 local tjc = {}
-local tag = "tjc"
+local tag = "taojingchi"
 
 local uart_id = 1
 
