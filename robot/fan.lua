@@ -1,0 +1,112 @@
+-- fan.lua
+local log = require("logging").logger("fan")
+
+local Fan = {}
+Fan.__index = Fan
+
+function Fan:new(opts)
+    opts = opts or {}
+    local fan = setmetatable({
+        id = opts.id,
+        levels = opts.levels or 10,
+        freq = opts.freq or 10000,
+        duty_min = opts.duty_min or 0,
+        duty_max = opts.duty_max or 100,
+        smooth = opts.smooth or false,
+        smooth_step = opts.smooth_step or 2, -- 加速步长，百分比
+        smooth_interval = opts.smooth_interval or 10, -- 加速间隔ms
+        pin = opts.pin,
+        last_duty = 0, -- 上次速度
+        target_duty = 0,
+    }, Fan)
+    fan:init()
+    return fan
+end
+
+function Fan:init()
+    if self.pin and self.pin > 0 then
+        self.gpio = iot.gpio(self.pin)
+    end
+    return
+end
+
+function Fan:calc_duty(level)
+    local duty = math.floor(self.duty_min + (self.duty_max - self.duty_min) * (level / self.levels))
+    duty = math.max(self.duty_min, math.min(duty, self.duty_max))
+    return duty
+end
+
+function Fan:open(level)
+    local ret, pwm = iot.pwm(self.id, {
+        freq = self.freq,
+        duty = self.duty_min
+    })
+    if ret then
+        self.pwm = pwm
+        pwm:start()
+    end
+
+    -- 如果PWM坏了，则全速运行
+    self.gpio:set(1)
+
+    if level and level > 0 then
+        self:speed(level)
+    end
+
+    return ret
+end
+
+function Fan:accelerate(start)
+    self.accelerating = true
+
+    -- 此处没有考虑降档，实测风机自然降档效果也可以
+    while start < self.target_duty do
+        start = start + self.smooth_step
+        self.pwm:setDuty(start)
+        iot.sleep(self.smooth_interval)
+    end
+    self.pwm:setDuty(self.target_duty)
+
+    self.accelerating = false
+end
+
+function Fan:speed(level, immediate)
+    if not self.pwm then
+        self:open()
+    end
+    if not self.pwm then
+        return false, "PWM未打开"
+    end
+
+    local duty = self:calc_duty(level)
+
+    -- 不平滑，直接处理
+    if not self.smooth or immediate then
+        self.pwm:setDuty(duty)
+        return true
+    end
+
+    -- 设定目标速度，由线程执行
+    self.target_duty = duty
+
+    -- 启动线程逐级加速
+    if not self.accelerating  then
+        iot.start(Fan.accelerate, self, self.last_duty)    
+    end
+        
+    self.last_duty = duty
+
+    return true
+end
+
+function Fan:close()
+    self.last_duty = 0
+
+    self.gpio:set(0)
+    if self.pwm then
+        self.pwm:stop()
+        self.pwm = nil
+    end
+end
+
+return Fan

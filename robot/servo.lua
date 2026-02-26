@@ -7,6 +7,7 @@ Servo.__index = Servo
 function Servo:new(opts)
     opts = opts or {}
     local servo = setmetatable({
+        id = opts.id,
         freq = 50, -- 固定50Hz
         min_angle = opts.min_angle or 0,
         max_angle = opts.max_angle or 180,
