@@ -1,4 +1,4 @@
--- fan.lua
+local Speeder = require("speeder")
 local log = iot.logger("fan")
 
 local Fan = {}
@@ -16,18 +16,16 @@ function Fan:new(opts)
         smooth_step = opts.smooth_step or 2, -- 加速步长，百分比
         smooth_interval = opts.smooth_interval or 10, -- 加速间隔ms
         pin = opts.pin,
+        gpio = iot.gpio(opts.pin),
         last_duty = 0, -- 上次速度
-        target_duty = 0,
+        target_duty = 0
     }, Fan)
-    fan:init()
+    fan.speeder = Speeder:new({
+        levels = fan.levels,
+        min = fan.duty_min,
+        max = fan.duty_max
+    })
     return fan
-end
-
-function Fan:init()
-    if self.pin and self.pin > 0 then
-        self.gpio = iot.gpio(self.pin)
-    end
-    return
 end
 
 function Fan:calc_duty(level)
@@ -78,7 +76,8 @@ function Fan:speed(level, immediate)
         return false, "PWM未打开"
     end
 
-    local duty = self:calc_duty(level)
+    -- local duty = self:calc_duty(level)
+    local duty = math.floor(self.speeder:calc(level))
 
     -- 不平滑，直接处理
     if not self.smooth or immediate then
@@ -90,10 +89,10 @@ function Fan:speed(level, immediate)
     self.target_duty = duty
 
     -- 启动线程逐级加速
-    if not self.accelerating  then
-        iot.start(Fan.accelerate, self, self.last_duty)    
+    if not self.accelerating then
+        iot.start(Fan.accelerate, self, self.last_duty)
     end
-        
+
     self.last_duty = duty
 
     return true
