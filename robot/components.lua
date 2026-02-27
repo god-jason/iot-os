@@ -8,8 +8,9 @@ local configs = require("configs")
 
 local Fan = require("fan")
 local Led = require("led")
-local Relay = require("Relay")
+local Relay = require("relay")
 local Servo = require("servo")
+local Speeder = require("speeder")
 local Stepper = require("stepper")
 
 -- 创建组件
@@ -24,6 +25,8 @@ local function create_component(cmp)
         components[cmp.name] = Relay:new(cmp)
     elseif cmp.type == "servo" then
         components[cmp.name] = Servo:new(cmp)
+    elseif cmp.type == "speeder" then
+        components[cmp.name] = Speeder:new(cmp)
     elseif cmp.type == "stepper" then
         components[cmp.name] = Stepper:new(cmp)
     else

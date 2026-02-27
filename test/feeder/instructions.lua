@@ -7,6 +7,16 @@ vm.register("wait", function(context, task)
     -- VM中监测wait_timeout并等待
 end)
 
+vm.register("fan", function(context, task)
+    components.fan.speed(task.level)
+end)
+
+vm.register("move", function(context, task)
+    local rpm = components.move_speeder:calc(task.level)
+    components.move.start(rpm, task.rounds)
+end)
+
+
 vm.register("brake", function(context, task)
     components.turn_stepper.brake()
 end)

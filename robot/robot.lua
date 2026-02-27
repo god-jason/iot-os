@@ -3,14 +3,15 @@ local log = iot.logger("robot")
 
 local configs = require("configs")
 
-local VM = require("vm")
-local FSM = require("fsm")
+local vm = require("vm")
+local fsm = require("fsm")
 local cron = require("cron")
 local planner = require("planner")
 
 local components = require("components")
+local program = require("program")
 
-robot.fsm = FSM:new()
+robot.fsm = fsm:new()
 
 function robot.plan(name, data)
     local ret, plan = planner.plan(name, data)
@@ -19,7 +20,7 @@ function robot.plan(name, data)
     end
 
     -- 创建一个虚拟机并执行
-    robot.vm = VM:new(plan)
+    robot.vm = vm:new(plan)
     robot.vm:start()
 
     return true
@@ -30,6 +31,13 @@ function robot.init()
 
     -- 创建设备组件
     local ret, info = components.load()
+    if not ret then
+        log.error(info)
+        --应该启动失败
+    end
+
+    -- 加载自定义编程
+    ret, info = program.load()
     if not ret then
         log.error(info)
     end
