@@ -1,5 +1,5 @@
 
-local log = require("logging").logger("points")
+local log = logging.logger("points")
 
 --- 点位相关
 -- @module points

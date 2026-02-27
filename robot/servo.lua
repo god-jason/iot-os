@@ -1,4 +1,4 @@
-local log = require("logging").logger("servo")
+local log = logging.logger("servo")
 
 local Servo = {}
 Servo.__index = Servo

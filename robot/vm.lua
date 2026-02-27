@@ -1,6 +1,6 @@
-local log = require("logging").logger("vm")
+local log = logging.logger("vm")
 
-local commands = {}
+local instructions = {}
 
 -- 自增ID
 local inc = increment_id()
@@ -10,8 +10,8 @@ local VM = {}
 VM.__index = VM
 
 -- 注册指令
-function VM.register(cmd, handler)
-    commands[cmd] = handler
+function VM.register(name, handler)
+    instructions[name] = handler
 end
 
 -- 创建实例
@@ -61,7 +61,7 @@ function VM:execute(cursor)
         log.info("task", i, iot.json_encode(task))
         self.current = i
 
-        local fn = commands[task.type]
+        local fn = instructions[task.type]
         if type(fn) == "function" then
             -- fn(task)
             local ret, info = pcall(fn, self, task)

@@ -2,7 +2,7 @@
 -- @module cron
 local cron = {}
 
-local log = require("logging").logger("cron")
+local log = logging.logger("cron")
 
 local increment = 1 -- 自增ID
 

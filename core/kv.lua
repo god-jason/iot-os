@@ -4,7 +4,7 @@ local kv = {}
 
 local cache = nil
 
-local log = require("logging").logger("kv")
+local log = logging.logger("kv")
 local filename = "/kv.json"
 
 

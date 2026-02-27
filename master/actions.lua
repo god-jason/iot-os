@@ -1,6 +1,6 @@
 local actions = {}
 
-local log = require("logging").logger("actions")
+local log = logging.logger("actions")
 
 local database = require "database"
 

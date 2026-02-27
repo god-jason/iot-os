@@ -1,5 +1,5 @@
 
-local log = require("logging").logger("gateway")
+local log = logging.logger("gateway")
 
 --- 网关管理
 -- @module gateway

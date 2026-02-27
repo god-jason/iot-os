@@ -2,7 +2,7 @@
 -- @module database
 local database = {}
 
-local log = require("logging").logger("database")
+local log = logging.logger("database")
 
 -- 统一文件名
 local function dbname(col)

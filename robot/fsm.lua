@@ -1,4 +1,4 @@
-local log = require("logging").logger("fsm")
+local log = logging.logger("fsm")
 
 -- 自增ID
 local inc = increment_id()

@@ -2,11 +2,13 @@
 PROJECT = "iot-noob"
 VERSION = "1.0.0"
 
-local log = require("logging").logger("main")
+-- 引入日志
+require("logging")
 
 -- 引入系统适配层
 require("iot")
 
+local log = logging.logger("main")
 log.info("last power reson", pm.lastReson())
 
 -- 看门狗守护
@@ -23,7 +25,7 @@ mobile.simid(2, true)
 
 -- 主进程
 sys.taskInit(function()
-    log.info("main task")
+    log.info("task")
 
     sys.wait(1000) -- 等待USB初始化完成，否则日志丢失
 
@@ -35,7 +37,7 @@ sys.taskInit(function()
     -- 启动网关
     require("gateway").boot()
 
-    log.info("main task exit")
+    log.info("exit")
 end)
 
 sys.run()

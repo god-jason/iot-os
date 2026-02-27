@@ -1,5 +1,5 @@
 local limits = {}
-local log = require("logging").logger("limits")
+local log = logging.logger("limits")
 
 local configs = require "configs"
 

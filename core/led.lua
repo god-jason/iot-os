@@ -1,4 +1,4 @@
-local log = require("logging").logger("led")
+local log = logging.logger("led")
 
 local Led = {}
 Led.__index = Led

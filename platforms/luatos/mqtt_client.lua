@@ -3,7 +3,7 @@
 local MqttClient = {}
 MqttClient.__index = MqttClient
 
-local log = require("logging").logger("MqttClient")
+local log = logging.logger("MqttClient")
 
 --- 自增ID
 local increment = 1

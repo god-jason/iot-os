@@ -1,4 +1,4 @@
-local log = require("logging").logger("stepper")
+local log = logging.logger("stepper")
 
 local Stepper = {}
 Stepper.__index = Stepper

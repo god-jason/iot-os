@@ -1,5 +1,5 @@
 local inputs = {}
-local log = require("logging").logger("inputs")
+local log = logging.logger("inputs")
 
 local configs = require "configs"
 

@@ -2,7 +2,7 @@
 -- @module master
 local master = {}
 
-local log = require("logging").logger("master")
+local log = logging.logger("master")
 
 local actions = require("actions")
 local commands = require("commands")

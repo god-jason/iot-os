@@ -1,5 +1,5 @@
 
-local log = require("logging").logger("serial")
+local log = logging.logger("serial")
 
 --- 串口连接，继承Link
 -- @module serial

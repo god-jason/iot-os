@@ -3,7 +3,7 @@
 local ModbusDevice = {}
 ModbusDevice.__index = ModbusDevice
 
-local log = require("logging").logger("modbus")
+local log = logging.logger("modbus")
 
 local Agent = require("agent")
 local Device = require("device")

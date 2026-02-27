@@ -1,5 +1,5 @@
 -- fan.lua
-local log = require("logging").logger("fan")
+local log = logging.logger("fan")
 
 local Fan = {}
 Fan.__index = Fan

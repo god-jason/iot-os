@@ -2,7 +2,7 @@
 -- @module model
 local model = {}
 
-local log = require("logging").logger("model")
+local log = logging.logger("model")
 
 local database = require("database")
 

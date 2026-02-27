@@ -8,6 +8,8 @@ local logging = {
     fatal = log.error
 }
 
+_G.logging = logging -- 注册到全局
+
 function logging.logger(tag)
     return {
         debug = function(...)

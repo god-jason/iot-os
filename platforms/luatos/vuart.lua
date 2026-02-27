@@ -2,7 +2,7 @@
 -- @module vuart
 local vuart = {}
 
-local log = require("logging").logger("vuart")
+local log = logging.logger("vuart")
 
 local commands = require("commands")
 

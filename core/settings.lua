@@ -2,7 +2,7 @@
 -- @module settings
 local settings = {}
 
-local log = require("logging").logger("setting")
+local log = logging.logger("setting")
 local configs = require "configs"
 
 

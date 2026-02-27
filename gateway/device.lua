@@ -1,5 +1,5 @@
 
-local log = require("logging").logger("device")
+local log = logging.logger("device")
 
 --- 设备类定义
 -- 所有协议实现的子设备必须继承Device，并实现标准接口

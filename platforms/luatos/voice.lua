@@ -1,6 +1,6 @@
 local voice = {}
 
-local log = require("logging").logger("voice")
+local log = logging.logger("voice")
 
 local pa_pin, power_pin
 local i2c_id, i2s_id

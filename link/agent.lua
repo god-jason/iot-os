@@ -5,7 +5,7 @@ Agent.__index = Agent
 
 local binary = require("binary")
 
-local log = require("logging").logger("agent")
+local log = logging.logger("agent")
 
 --- 创建询问器
 -- abc
