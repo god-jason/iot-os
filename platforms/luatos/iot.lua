@@ -483,6 +483,7 @@ end
 -- @return boolean 成功与否
 -- @return string 数据
 function UART:read()
+    self.data_len = 0
     local data = uart.read(self.id)
     return data ~= nil and #data > 0, data
 end
@@ -491,6 +492,9 @@ end
 -- @return boolean 成功与否
 -- @return interger 数据长度
 function UART:wait(timeout)
+    if self.data_len > 0 then
+        return true, self.data_len
+    end
     return sys.waitUntil("uart_receive_" .. self.id, timeout)
 end
 
@@ -526,14 +530,18 @@ function iot.uart(id, opts)
         return false, "打开失败"
     end
 
+    local obj = setmetatable({
+        id = id,
+        data_len = 0
+    }, UART)
+
     uart.on(id, "receive", function(id2, len)
+        obj.data_len = obj.data_len + len
         sys.publish("uart_receive_" .. id2, len)
     end)
 
     -- 返回对象实例
-    return true, setmetatable({
-        id = id
-    }, UART)
+    return true, obj
 end
 
 --- I2C
