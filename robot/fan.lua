@@ -7,7 +7,7 @@ Fan.__index = Fan
 function Fan:new(opts)
     opts = opts or {}
     local fan = setmetatable({
-        id = opts.id,
+        pwm_id = opts.pwm_id,
         levels = opts.levels or 10,
         freq = opts.freq or 10000,
         duty_min = opts.duty_min or 0,
@@ -37,7 +37,7 @@ function Fan:calc_duty(level)
 end
 
 function Fan:open(level)
-    local ret, pwm = iot.pwm(self.id, {
+    local ret, pwm = iot.pwm(self.pwm_id, {
         freq = self.freq,
         duty = self.duty_min
     })
@@ -101,6 +101,7 @@ end
 
 function Fan:close()
     self.last_duty = 0
+    self.target_duty = 0
 
     self.gpio:set(0)
     if self.pwm then

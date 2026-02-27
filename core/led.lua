@@ -3,9 +3,10 @@ local log = iot.logger("led")
 local Led = {}
 Led.__index = Led
 
-function Led:new(pin)
+function Led:new(opts)
+    opts = opts or {}
     local led = setmetatable({
-        pin = pin,
+        pin = opts.pin,
         gpio = iot.gpio(pin),
         blinking = false,
     }, Led)

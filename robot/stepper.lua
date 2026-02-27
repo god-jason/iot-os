@@ -13,10 +13,10 @@ Stepper.__index = Stepper
 function Stepper:new(opts)
     opts = opts or {}
     local stepper = setmetatable({
-        id = opts.id,
+        pwm_id = opts.idpwm_id,
         dir = opts.dir,
-        reverse = opts.reverse or false,
         en = opts.en,
+        reverse = opts.reverse or false,
         freq = opts.freq or 16000,
         smooth = opts.smooth or false
     }, Stepper)
@@ -90,7 +90,7 @@ function Stepper:start(rpm, rounds)
         self:stop()
     end
 
-    log.info(self.id, "start", freq, "count", count)
+    log.info(self.pwm_id, "start", freq, "count", count)
     local time = math.floor(count / freq * 1000)
 
     -- 先停止再改速
@@ -103,7 +103,7 @@ function Stepper:start(rpm, rounds)
     if freq > 0 and count > 0 then
         -- pwm.setup(self.pwm, freq, 50, count)
         -- pwm.start(self.pwm)
-        local ret, pwm = iot.pwm(self.id, {
+        local ret, pwm = iot.pwm(self.pwm_id, {
             freq = self.freq,
             duty = 50,
             count = count
@@ -204,7 +204,7 @@ function Stepper:accelerate(start, finish, count)
         if self.pwm then
             self.pwm:stop()
         end
-        local ret, pwm = iot.pwm(self.id, {
+        local ret, pwm = iot.pwm(self.pwm_id, {
             freq = vv,
             duty = 50,
             count = count

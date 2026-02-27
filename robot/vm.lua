@@ -23,7 +23,8 @@ function VM:new(opts)
         tasks = opts.tasks or {},
         on_finish = opts.on_finish,
         on_error = opts.on_error,
-        current = 1
+        current = 1,
+        context = {}
     }, VM)
 end
 
@@ -35,7 +36,8 @@ function VM:clone()
         tasks = self.tasks,
         on_finish = self.on_finish,
         on_error = self.on_error,
-        current = 1
+        current = 1,
+        context = {}
     }, VM)
 end
 
@@ -64,7 +66,7 @@ function VM:execute(cursor)
         local fn = instructions[task.type]
         if type(fn) == "function" then
             -- fn(task)
-            local ret, info = pcall(fn, self, task)
+            local ret, info = pcall(fn, self.context, task)
             if not ret then
                 log.error(info)
                 -- 上报错误

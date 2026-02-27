@@ -420,6 +420,10 @@ end
 function GPIO:get()
     return gpio.get(self.id)
 end
+--- 反转电平
+function GPIO:toggle()
+    gpio.toggle(self.id)
+end
 
 --- 创建GPIO对象
 -- @param id integer GPIO序号

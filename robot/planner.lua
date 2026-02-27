@@ -14,27 +14,31 @@ end
 ]] --
 
 -- 注册计划器
-function planner.register(name, fn)
-    fns[name] = fn
+function planner.register(job, fn)
+    fns[job] = fn
 end
 
 --- 生成计划
----@param name string 计算名称
----@param ... any 参数列表
+---@param job string 计算名称
+---@param data any 参数
 ---@return boolean 成功与否
----@return string|table 任务列表
-function planner.plan(name, ...)
-    local fn = fns[name]
+---@return string|table 任务 VM格式
+function planner.plan(job, data)
+    local fn = fns[job]
     if not fn then
         return false, "找不到计划器"
     end
 
-    local ret, res, tasks = pcall(fn, ...)
+    local ret, res, tasks = pcall(fn, data or {})
     if not ret then
         return ret, res
     end
 
-    return res, tasks
+    return res, {
+        job = job,
+        tasks = tasks,
+        created = os.time()
+    }
 end
 
 return planner

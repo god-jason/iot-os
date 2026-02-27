@@ -7,7 +7,7 @@ Servo.__index = Servo
 function Servo:new(opts)
     opts = opts or {}
     local servo = setmetatable({
-        id = opts.id,
+        pwm_id = opts.pwm_id,
         freq = 50, -- 固定50Hz
         min_angle = opts.min_angle or 0,
         max_angle = opts.max_angle or 180,
@@ -22,7 +22,7 @@ end
 function Servo:init()
     -- pwm.setup(self.pwm, self.freq, Servo:angle_to_duty(90)) -- 默认90° 7.5
     -- pwm.start(self.pwm)
-    local ret, pwm = iot.pwm(self.id, {
+    local ret, pwm = iot.pwm(self.pwm_id, {
         freq = self.freq,
         duty = Servo:angle_to_duty(90)
     })
