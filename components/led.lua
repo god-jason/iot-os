@@ -3,6 +3,8 @@ local log = iot.logger("led")
 local Led = {}
 Led.__index = Led
 
+require("components").register("led", Led)
+
 function Led:new(opts)
     opts = opts or {}
     local led = setmetatable({

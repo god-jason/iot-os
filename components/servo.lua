@@ -3,6 +3,8 @@ local log = iot.logger("servo")
 local Servo = {}
 Servo.__index = Servo
 
+require("components").register("servo", Servo)
+
 -- 创建舵机
 function Servo:new(opts)
     opts = opts or {}

@@ -3,15 +3,18 @@ local log = iot.logger("switch")
 local Switch = {}
 Switch.__index = Switch
 
+require("components").register("switch", Switch)
+
 function Switch:new(opts)
     opts = opts or {}
     local switch = setmetatable({
         pin = opts.pin,
+        name = opts.name,
         reverse = opts.reverse or false,
         rising = opts.rising or false,
         falling = opts.falling or false,
         debounce = opts.debounce or 50,
-        level = 0,
+        state = false,
         callback = opts.callback
     }, Switch)
     return switch
@@ -30,7 +33,7 @@ function Switch:init()
                 level = level > 0 and 0 or 1
             end
 
-            self.level = level
+            self.state = (level == 1)
 
             log.info("switch", id, level, this.name)
 
@@ -60,7 +63,7 @@ function Switch:init()
 end
 
 function Switch:status()
-    return self.level
+    return self.state
 end
 
 function Switch:enable()

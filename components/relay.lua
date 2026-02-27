@@ -3,6 +3,8 @@ local log = iot.logger("relay")
 local Relay = {}
 Relay.__index = Relay
 
+require("components").register("relay", Relay)
+
 function Relay:new(opts)
     opts = opts or {}
     local relay = setmetatable({

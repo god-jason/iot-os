@@ -1,6 +1,8 @@
 local Speeder = {}
 Speeder.__index = Speeder
 
+require("components").register("speeder", Speeder)
+
 -- 创建变速器
 function Speeder:new(opts)
     opts = opts or {}

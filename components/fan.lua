@@ -4,6 +4,8 @@ local log = iot.logger("fan")
 local Fan = {}
 Fan.__index = Fan
 
+require("components").register("fan", Fan)
+
 function Fan:new(opts)
     opts = opts or {}
     local fan = setmetatable({

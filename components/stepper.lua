@@ -3,6 +3,8 @@ local log = iot.logger("stepper")
 local Stepper = {}
 Stepper.__index = Stepper
 
+require("components").register("stepper", Stepper)
+
 --- 创建步进电机
 ---@param id integer PWM号
 ---@param dir integer 方向引脚
