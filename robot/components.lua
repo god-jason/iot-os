@@ -12,6 +12,7 @@ local Relay = require("relay")
 local Servo = require("servo")
 local Speeder = require("speeder")
 local Stepper = require("stepper")
+local Switch = require("switch")
 
 -- 创建组件
 local function create_component(cmp)
@@ -29,6 +30,8 @@ local function create_component(cmp)
         components[cmp.name] = Speeder:new(cmp)
     elseif cmp.type == "stepper" then
         components[cmp.name] = Stepper:new(cmp)
+    elseif cmp.type == "switch" then
+        components[cmp.name] = Switch:new(cmp)
     else
         log.error("unkown type", cmp.type)
         return false, "unkown type" .. cmp.type

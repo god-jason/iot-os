@@ -438,6 +438,8 @@ function iot.gpio(id, opts)
         -- 输出模式
         gpio.setup(id, 0, pull)
     else
+        local when = gpio.BOTH
+
         -- 触发时机
         if opts.rising ~= opts.falling then
             if opts.rising then
