@@ -1,4 +1,4 @@
-local log = logging.logger("servo")
+local log = iot.logger("servo")
 
 local Servo = {}
 Servo.__index = Servo

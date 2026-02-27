@@ -2,13 +2,10 @@
 PROJECT = "iot-noob"
 VERSION = "1.0.0"
 
--- 引入日志
-require("logging")
-
 -- 引入系统适配层
 require("iot")
 
-local log = logging.logger("main")
+local log = iot.logger("main")
 log.info("last power reson", pm.lastReson())
 
 -- 看门狗守护

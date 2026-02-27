@@ -1,5 +1,5 @@
 
-local log = logging.logger("serial")
+local log = iot.logger("serial")
 
 --- 串口连接，继承Link
 -- @module serial

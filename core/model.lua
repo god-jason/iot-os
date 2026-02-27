@@ -2,7 +2,7 @@
 -- @module model
 local model = {}
 
-local log = logging.logger("model")
+local log = iot.logger("model")
 
 local database = require("database")
 

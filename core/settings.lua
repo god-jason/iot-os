@@ -2,7 +2,7 @@
 -- @module settings
 local settings = {}
 
-local log = logging.logger("setting")
+local log = iot.logger("setting")
 local configs = require "configs"
 
 

@@ -2,7 +2,7 @@
 -- @module master
 local master = {}
 
-local log = logging.logger("master")
+local log = iot.logger("master")
 
 local actions = require("actions")
 local commands = require("commands")

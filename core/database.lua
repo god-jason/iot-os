@@ -2,7 +2,7 @@
 -- @module database
 local database = {}
 
-local log = logging.logger("database")
+local log = iot.logger("database")
 
 -- 统一文件名
 local function dbname(col)

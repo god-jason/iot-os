@@ -1,5 +1,5 @@
 
-local log = logging.logger("gateway")
+local log = iot.logger("gateway")
 
 --- 网关管理
 -- @module gateway

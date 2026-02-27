@@ -1,5 +1,5 @@
 -- fan.lua
-local log = logging.logger("fan")
+local log = iot.logger("fan")
 
 local Fan = {}
 Fan.__index = Fan

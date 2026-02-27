@@ -2,7 +2,7 @@
 -- @module cron
 local cron = {}
 
-local log = logging.logger("cron")
+local log = iot.logger("cron")
 
 local increment = 1 -- 自增ID
 

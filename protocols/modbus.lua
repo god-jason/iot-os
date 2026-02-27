@@ -3,7 +3,7 @@
 local ModbusDevice = {}
 ModbusDevice.__index = ModbusDevice
 
-local log = logging.logger("modbus")
+local log = iot.logger("modbus")
 
 local Agent = require("agent")
 local Device = require("device")

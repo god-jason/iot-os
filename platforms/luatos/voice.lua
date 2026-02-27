@@ -1,6 +1,6 @@
 local voice = {}
 
-local log = logging.logger("voice")
+local log = iot.logger("voice")
 
 local pa_pin, power_pin
 local i2c_id, i2s_id

@@ -1,4 +1,4 @@
-local log = logging.logger("fsm")
+local log = iot.logger("fsm")
 
 -- 自增ID
 local inc = increment_id()

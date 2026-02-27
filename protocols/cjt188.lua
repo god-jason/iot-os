@@ -3,7 +3,7 @@
 local Cjt188Device = {}
 Cjt188Device.__index = Cjt188Device
 
-local log = logging.logger("cjt188")
+local log = iot.logger("cjt188")
 
 local Agent = require("agent")
 local Device = require("device")

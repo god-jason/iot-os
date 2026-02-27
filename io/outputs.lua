@@ -1,5 +1,5 @@
 local outputs = {}
-local log = logging.logger("outputs")
+local log = iot.logger("outputs")
 
 local configs = require "configs"
 

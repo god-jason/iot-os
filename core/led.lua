@@ -1,4 +1,4 @@
-local log = logging.logger("led")
+local log = iot.logger("led")
 
 local Led = {}
 Led.__index = Led

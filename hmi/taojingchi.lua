@@ -35,7 +35,7 @@ tjc.set_bool，修改布尔值
 
 ]] --
 local tjc = {}
-local log = logging.logger("taojingchi")
+local log = iot.logger("taojingchi")
 
 local uart_id = 1
 

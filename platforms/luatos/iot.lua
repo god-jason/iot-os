@@ -5,6 +5,33 @@ local iot = {}
 _G.sys = require("sys") -- 其实已经内置了
 _G.iot = iot -- 注册到全局
 
+--- 创建日志
+-- @param tag string 标签
+-- @return table 日志器
+function iot.logger(tag)
+    return {
+        debug = function(...)
+            log.debug(tag, ...)
+        end,
+        trace = function(...)
+            log.debug(tag, ...)
+        end,
+        info = function(...)
+            log.info(tag, ...)
+        end,
+        warn = function(...)
+            log.warn(tag, ...)
+        end,
+        error = function(...)
+            log.error(tag, ...)
+        end,
+        fatal = function(...)
+            log.error(tag, ...)
+            rtos.reboot()
+        end
+    }
+end
+
 --- 定时任务
 -- @param func function 回调
 -- @param timeout integer 超时

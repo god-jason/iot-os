@@ -2,7 +2,7 @@
 -- @module autoload
 local autoload = {}
 
-local log = logging.logger("autoload")
+local log = iot.logger("autoload")
 
 --- 加载文件
 -- @param name string  模块名

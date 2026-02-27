@@ -1,4 +1,4 @@
-local log = logging.logger("vm")
+local log = iot.logger("vm")
 
 local instructions = {}
 

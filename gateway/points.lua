@@ -1,5 +1,5 @@
 
-local log = logging.logger("points")
+local log = iot.logger("points")
 
 --- 点位相关
 -- @module points

@@ -4,7 +4,7 @@ local kv = {}
 
 local cache = nil
 
-local log = logging.logger("kv")
+local log = iot.logger("kv")
 local filename = "/kv.json"
 
 

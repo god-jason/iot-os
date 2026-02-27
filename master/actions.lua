@@ -1,6 +1,6 @@
 local actions = {}
 
-local log = logging.logger("actions")
+local log = iot.logger("actions")
 
 local database = require "database"
 

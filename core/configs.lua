@@ -2,7 +2,7 @@
 -- @module configs
 local configs = {}
 
-local log = logging.logger("configs")
+local log = iot.logger("configs")
 
 -- local utils = require("utils")
 
