@@ -280,6 +280,8 @@ function Cjt188Device:poll()
         return false, "no properties"
     end
 
+    local values = {}
+
     for _, pt in pairs(self.model.properties) do
         if not pt.writable then
 
@@ -318,7 +320,8 @@ function Cjt188Device:poll()
                                 if fmt.rate then
                                     value = value * fmt.rate
                                 end
-                                self:put_value(point.name, value)
+                                --self:put_value(point.name, value)
+                                values[point.name] = value
                             elseif fmt.type == "hex" then
                                 value = 0
                                 for i = 1, fmt.size do
@@ -333,20 +336,24 @@ function Cjt188Device:poll()
                                         if b["not"] then
                                             value = not value
                                         end
-                                        self:put_value(b.name, vv)
+                                        --self:put_value(point.name, vv)
+                                        values[point.name] = vv
                                     end
                                 else
                                     _, value = points.findEnumValue(point, value) -- 枚举
-                                    self:put_value(point.name, value)
+                                    --self:put_value(point.name, value)
+                                    values[point.name] = value
                                 end
                             elseif fmt.type == "datetime" then
                                 str = binary.reverse(str)
                                 value = binary.encodeHex(str) -- 字符串 YYYYMMDDhhmmss
-                                self:put_value(point.name, value)
+                                --self:put_value(point.name, value)
+                                values[point.name] = value
                             elseif fmt.type == "date" then
                                 str = binary.reverse(str)
                                 value = binary.encodeHex(str) -- 字符串 YYYYMMDD
-                                self:put_value(point.name, value)
+                                --self:put_value(point.name, value)
+                                values[point.name] = value
                             elseif fmt.type == "datetime6" then
                                 str = binary.reverse(str)
                                 value = "20" .. binary.encodeHex(str) -- 字符串
@@ -362,7 +369,8 @@ function Cjt188Device:poll()
                                     value = value * point.rate
                                 end
                                 _, value = points.findEnumValue(point, value) -- 枚举
-                                self:put_value(point.name, value)
+                                --self:put_value(point.name, value)
+                                values[point.name] = value
                             elseif fmt.type == "u16" then
                                 _, value = iot.unpack(str, "<H")
                                 if fmt.rate then
@@ -372,7 +380,8 @@ function Cjt188Device:poll()
                                     value = value * point.rate
                                 end
                                 _, value = points.findEnumValue(point, value) -- 枚举
-                                self:put_value(point.name, value)
+                                --self:put_value(point.name, value)
+                                values[point.name] = value
                             else
                                 log.error("poll", self.id, "unknown format type", fmt.type)
                             end
@@ -389,6 +398,9 @@ function Cjt188Device:poll()
             end
         end
     end
+
+    -- 存入设备
+    self:put_values(values)
 
     return true
 end

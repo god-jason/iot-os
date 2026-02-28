@@ -1,4 +1,3 @@
-
 local log = iot.logger("device")
 
 --- 设备类定义
@@ -25,20 +24,20 @@ end
 ---  打开
 -- @return boolean, error
 function Device:open()
-    return false, error_unmount
+    return false, "Device open() must be implemented"
 end
 
 ---  关闭
 -- @return boolean, error
 function Device:close()
-    return false, error_unmount
+    return false, "Device close() must be implemented"
 end
 ---  读值
 -- @param key string
 -- @return boolean, any|error
 function Device:get(key)
     self.__index = key -- 避免self未使用错误提醒
-    return false, error_unmount
+    return false, "Device get(key) must be implemented"
 end
 
 ---  写值
@@ -46,13 +45,13 @@ end
 -- @param value any
 -- @return boolean, error
 function Device:set(key, value)
-    return false, error_unmount
+    return false, "Device set(key, value) must be implemented"
 end
 
 ---  轮询
 -- @return boolean, error
 function Device:poll()
-    return false, error_unmount
+    return false, "Device poll() must be implemented"
 end
 
 ---  变量
@@ -72,7 +71,18 @@ function Device:modified_values(clear)
     return ret
 end
 
----  修改值（用于读取）
+--- 读取值
+-- @param key string
+-- @return any
+function Device:get_value(key)
+    local v = self._values[key]
+    if not v then
+        return nil
+    end
+    return v.value
+end
+
+---  修改值（用于采集）
 -- @param key string
 -- @param value any
 function Device:put_value(key, value)
@@ -92,6 +102,30 @@ function Device:put_value(key, value)
     end
 
     self._values[key] = val
+
+    if self.watcher then
+        pcall(self.watcher, key, value)
+    end
+end
+
+---  修改多值（用于采集）
+-- @param key string
+-- @param value any
+function Device:put_values(values)
+    local has = false
+    for key, value in pairs(values) do
+        self:put_value(key, value)
+        has = true
+    end
+
+    if has and self.watcher then
+        pcall(self.watcher)
+    end
+end
+
+--- 监听值变化
+function Device:watch(cb)
+    self.watcher = cb
 end
 
 return Device

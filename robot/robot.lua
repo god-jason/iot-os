@@ -1,4 +1,6 @@
 local robot = {}
+_G.robot = robot --注册到全局
+
 local log = iot.logger("robot")
 
 local configs = require("configs")
@@ -12,7 +14,6 @@ local components = require("components")
 local program = require("program")
 local boot = require("boot")
 
-robot.name = "robot"
 robot.deps = {"components"}
 
 robot.fsm = fsm:new()

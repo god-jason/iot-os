@@ -16,22 +16,21 @@ local function create_instruction(name, script)
     -- 封装为闭包
     script = "return function(context, task)\n" .. script .. "\nend"
 
-    -- local fn = load(script, "ins_" .. name, "bt", _G)
-    local ret, fn = pcall(load, script, "instruction_" .. name, "bt", _G)
+    local ret, info = load(script, "instruction_" .. name, "bt", _G)
     if not ret then
         --log.info("compile instruction error", fn)
-        return ret, fn
+        return false, info
     end
 
     -- 返回闭包
-    ret, fn = pcall(fn)
+    ret, info = pcall(ret)
     if not ret then
         --log.info("closure instruction error", fn)
-        return ret, fn
+        return false, info
     end
 
     -- 注册到虚拟机上
-    VM.register(name, fn)
+    VM.register(name, info)
     return true
 end
 
@@ -47,22 +46,21 @@ local function create_planner(name, script)
     -- 封装为闭包
     script = "return function(data)\n" .. script .. "\nend"
 
-    -- local fn = load(script, "planner_" .. name, "bt", _G)
-    local ret, fn = pcall(load, script, "planner_" .. name, "bt", _G)
+    local ret, info = load(script, "planner_" .. name, "bt", _G)
     if not ret then
         --log.info("compile planner error", fn)
-        return ret, fn
+        return false, info
     end
 
     -- 返回闭包
-    ret, fn = pcall(fn)
+    ret, info = pcall(ret)
     if not ret then
         --log.info("closure planner error", fn)
-        return ret, fn
+        return ret, info
     end
 
     -- 注册到计划器上
-    planner.register(name, fn)
+    planner.register(name, info)
     return true
 end
 

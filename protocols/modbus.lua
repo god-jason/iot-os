@@ -332,6 +332,8 @@ function ModbusDevice:poll()
         return false
     end
 
+    local values = {}
+
     for _, poller in ipairs(self.mapper.pollers) do
         local res, data = self.master:read(self.slave, poller.register, poller.address, poller.length)
         if res then
@@ -343,7 +345,8 @@ function ModbusDevice:poll()
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseBit(point, data, poller.address)
                         if r then
-                            self:put_value(point.name, v)
+                            --self:put_value(point.name, v)
+                            values[point.name] = v
                         end
                     end
                 end
@@ -354,7 +357,8 @@ function ModbusDevice:poll()
                     if poller.address <= point.address and point.address < poller.address + poller.length then
                         local r, v = points.parseBit(point, data, poller.address)
                         if r then
-                            self:put_value(point.name, v)
+                            --self:put_value(point.name, v)
+                            values[point.name] = v
                         end
                     end
                 end
@@ -368,10 +372,12 @@ function ModbusDevice:poll()
                             if point.bits ~= nil and #point.bits > 0 then
                                 for _, b in ipairs(point.bits) do
                                     local vv = (0x01 << b.bit) & v > 0
-                                    self:put_value(b.name, vv)
+                                    --self:put_value(point.name, vv)
+                                    values[point.name] = vv
                                 end
                             else
-                                self:put_value(point.name, v)
+                                --self:put_value(point.name, v)
+                                values[point.name] = v
                             end
                         end
                     end
@@ -386,10 +392,12 @@ function ModbusDevice:poll()
                             if point.bits ~= nil and #point.bits > 0 then
                                 for _, b in ipairs(point.bits) do
                                     local vv = (0x01 << b.bit) & v > 0
-                                    self:put_value(b.name, vv)
+                                    --self:put_value(point.name, vv)
+                                    values[point.name] = vv
                                 end
                             else
-                                self:put_value(point.name, v)
+                                --self:put_value(point.name, v)
+                                values[point.name] = v
                             end
                         end
                     end
@@ -403,6 +411,9 @@ function ModbusDevice:poll()
             log.error("poll read failed")
         end
     end
+
+    -- 存入数据
+    self:put_values(values)
 end
 
 ---Modbus主站

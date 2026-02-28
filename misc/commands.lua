@@ -44,7 +44,7 @@ function commands.commands()
 end
 
 function commands.eval(msg)
-    local fn = load(msg.data, "eval", "t", _G)
+    local fn, err = load(msg.data, "eval", "t", _G)
     if fn ~= nil then
         local ret, info = pcall(fn)
         if ret then
@@ -53,7 +53,7 @@ function commands.eval(msg)
             return reply_error(info)
         end
     else
-        return reply_error("compile script failed")
+        return reply_error("compile script error: "..err)
     end
 end
 
