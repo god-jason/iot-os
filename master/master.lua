@@ -7,10 +7,10 @@ local log = iot.logger("master")
 local boot = require("boot")
 
 local actions = require("actions")
-local commands = require("commands")
 local settings = require("settings")
 local configs = require("configs")
-local gateway = require("gateway")
+local links = require("links")
+local devices = require("devices")
 local MqttClient = require("mqtt_client")
 local database = require("database")
 
@@ -40,7 +40,7 @@ end
 
 -- 开始透传
 local function on_pipe_start(topic, data)
-    local link = gateway.get_link_instanse(data.link)
+    local link = links[data.link]
     if not link then
         return
     end
@@ -56,38 +56,13 @@ end
 
 -- 结束透传
 local function on_pipe_stop(topic, data)
-    local link = gateway.get_link_instanse(data.link)
+    local link = links[data.link]
     if not link then
         return
     end
 
     cloud:unsubscribe("noob/" .. options.id .. "/link/" .. data.link .. "/down")
     link:watch(nil)
-end
-
--- 处理命令
-local function on_command(topic, pkt)
-    local ret
-    local response
-    local handler = commands[pkt.cmd]
-    if handler then
-        -- 加入异常处理
-        ret, response = pcall(handler, pkt)
-        if not ret then
-            response = commands.error(response)
-        end
-    else
-        response = commands.error("未知命令")
-    end
-
-    -- 复制消息ID
-    if pkt._id ~= nil then
-        response._id = pkt._id
-    end
-
-    if response ~= nil then
-        cloud:publish("device/" .. options.id .. "/command/response", response)
-    end
 end
 
 -- 处理配置操作
@@ -220,19 +195,20 @@ end
 
 -- 上报子设备数据（周期执行）
 local function report_sub_devices()
-    local devices = gateway.get_all_device_instanse();
     for id, dev in pairs(devices) do
-        local values = dev:values()
+        if type(dev) == "table" then
+            local values = dev:values()
 
-        local has_data = false
-        local data = {}
-        for k, v in pairs(values) do
-            data[k] = v.value
-            has_data = true
-        end
+            local has_data = false
+            local data = {}
+            for k, v in pairs(values) do
+                data[k] = v.value
+                has_data = true
+            end
 
-        if has_data then
-            cloud:publish("device/" .. id .. "/values", data)
+            if has_data then
+                cloud:publish("device/" .. id .. "/values", data)
+            end
         end
     end
 end
@@ -241,21 +217,22 @@ end
 local function report_sub_devices_status()
     local now = os.time()
 
-    local devices = gateway.get_all_device_instanse();
     for id, dev in pairs(devices) do
-        local st = ""
+        if type(dev) == "table" then
+            local st = ""
 
-        -- 10分钟无数据离线
-        if now - dev._updated > 10 * 60 then
-            st = "offline"
-        else
-            st = "online"
-        end
+            -- 10分钟无数据离线
+            if now - dev._updated > 10 * 60 then
+                st = "offline"
+            else
+                st = "online"
+            end
 
-        -- 状态变化才上传
-        if dev._status ~= st then
-            cloud:publish("device/" .. id .. "/" .. st, nil)
-            dev._status = st
+            -- 状态变化才上传
+            if dev._status ~= st then
+                cloud:publish("device/" .. id .. "/" .. st, nil)
+                dev._status = st
+            end
         end
     end
 end
@@ -264,7 +241,7 @@ end
 local function on_write(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
     log.info("on_write", id, data)
-    local dev = gateway.get_device_instanse(id)
+    local dev = devices[id]
     if dev then
         for k, v in pairs(data) do
             dev:set(k, v)
@@ -276,7 +253,7 @@ end
 local function on_sub_write(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
     log.info("on_sub_write", id, sub, data)
-    local dev = gateway.get_device_instanse(sub)
+    local dev = devices[sub]
     if dev then
         for k, v in pairs(data) do
             dev:set(k, v)
@@ -288,7 +265,7 @@ end
 local function on_read(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
     log.info("on_read", id, data)
-    local dev = gateway.get_device_instanse(id)
+    local dev = devices[id]
     if dev then
         local results = {}
         for _, k in ipairs(data) do
@@ -303,7 +280,7 @@ end
 local function on_sub_read(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
     log.info("on_sub_read", id, sub, data)
-    local dev = gateway.get_device_instanse(sub)
+    local dev = devices[sub]
     if dev then
         local results = {}
         for _, k in ipairs(data) do
@@ -318,7 +295,7 @@ end
 local function on_sync(topic, data)
     local _, _, _, id, _ = topic:find("(.+)/(.+)/(.+)")
     log.info("on_sync", id)
-    local dev = gateway.get_device_instanse(id)
+    local dev = devices[id]
     if dev then
         dev:poll()
     end
@@ -328,7 +305,7 @@ end
 local function on_sub_sync(topic, data)
     local _, _, _, id, _, sub, _ = topic:find("(.+)/(.+)/(.+)/(.+)/(.+)")
     log.info("on_sub_sync", id, sub)
-    local dev = gateway.get_device_instanse(sub)
+    local dev = devices[sub]
     if dev then
         dev:poll(data)
     end
@@ -370,7 +347,6 @@ function master.open()
     log.info("master broker connected")
 
     -- 订阅网关消息
-    cloud:subscribe("device/" .. options.id .. "/command", parse_json(on_command))
     cloud:subscribe("device/" .. options.id .. "/config/+/+", parse_json(on_config))
     cloud:subscribe("device/" .. options.id .. "/database/+/+", parse_json(on_database))
     cloud:subscribe("device/" .. options.id .. "/write", parse_json(on_write))

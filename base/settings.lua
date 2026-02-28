@@ -38,6 +38,18 @@ function settings.save(name)
     end
 end
 
+-- 清空配置
+function settings.reset(name)
+    if name then
+        configs.delete(name)
+    else
+        for i, name in ipairs(names) do
+            configs.delete(name)
+        end
+    end
+    rtos.reboot()
+end
+
 -- 加载配置
 function settings.open()
     -- 加载配置

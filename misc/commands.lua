@@ -5,7 +5,6 @@ local commands = {}
 --local tag = "commands"
 
 local configs = require("configs")
-local gateway = require("gateway")
 
 local function reply(ret, msg, data)
     return {
@@ -122,51 +121,6 @@ end
 
 function commands.fs_delete(msg)
     os.remove(msg.path)
-    return reply_ok()
-end
-
-
-function commands.device_read(msg)
-    local dev = gateway.get_device_instanse(msg.id)
-    if not dev then
-        return reply_error("device not found")
-    end
-
-    local ret, value = dev.get(msg.name)
-    if ret then
-        return reply_data(value)
-    else
-        return reply_error("device read failed")
-    end
-end
-
-function commands.device_write(msg)
-    local dev = gateway.get_device_instanse(msg.id)
-    if not dev then
-        return reply_error("device not found")
-    end
-
-    local ret = dev.set(msg.name, msg.value)
-    if ret then
-        return reply_ok()
-    else
-        return reply_error("device write failed")
-    end
-end
-
-function commands.device_action(msg)
-    local dev = gateway.get_device_instanse(msg.id)
-    if not dev then
-        return reply_error("device not found")
-    end
-
-    -- 执行一系列动作
-    for _, item in ipairs(msg.data) do
-        iot.setTimeout(function()
-            dev.set(item.name, item.value)
-        end, item.delay or 0)
-    end
-
     return reply_ok()
 end
 

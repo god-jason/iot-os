@@ -4,6 +4,11 @@ local log = iot.logger("actions")
 
 local database = require "database"
 
+-- 注册响应
+function actions.register(name, fn)
+    actions[name] = fn
+end
+
 actions.watching = false
 
 local watcher = 0
