@@ -7,7 +7,7 @@ local components = {
 -- 注册到全局
 _G.components = components
 
-local configs = require("configs")
+local settings = require("settings")
 local boot = require("boot")
 
 local types = {}
@@ -30,20 +30,12 @@ function components.create(cmp)
     return true
 end
 
-
 -- 加载组件
 function components.open()
     log.info("load")
 
-    local cms = configs.load_default("components", {})
+    local cms = settings.components
     for k, v in ipairs(cms) do
-        local ret, info = components.create(v)
-        if not ret then
-            return ret, info
-        end
-    end
-    for k, v in pairs(cms) do
-        v.name = v.name or k -- key作为设备名
         local ret, info = components.create(v)
         if not ret then
             return ret, info
@@ -52,6 +44,8 @@ function components.open()
 
     return true
 end
+
+components.deps = {"settings"}
 
 boot.register("components", components)
 

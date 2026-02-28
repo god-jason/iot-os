@@ -3,11 +3,13 @@
 local settings = {}
 
 local log = iot.logger("setting")
-local configs = require "configs"
+local configs = require("configs")
+local boot = require("boot")
 
-
--- 配置版本号
-settings.versions = configs.load_default("versions", {})
+local options = {
+    names = {},
+    versions = {}
+}
 
 -- 加载配置
 function settings.load(name)
@@ -22,19 +24,35 @@ function settings.update(name, content, version)
 
     -- 更新版本
     if version ~= nil then
-        settings.versions[name] = version
-    elseif settings.versions[name] ~= nil then
-        settings.versions[name] = settings.versions[name] + 1 -- 自增版本号
+        options.versions[name] = version
+    elseif options.versions[name] ~= nil then
+        options.versions[name] = options.versions[name] + 1 -- 自增版本号
     end
-    configs.save("versions", settings.versions)
-
+    configs.save("settings", options)
 end
 
 -- 保存配置
 function settings.save(name)
-    if  settings[name] ~= nil then
-        configs.save(name,  settings[name])
+    if settings[name] ~= nil then
+        configs.save(name, settings[name])
     end
 end
+
+-- 加载配置
+function settings.open()
+    -- 加载配置
+    options = configs.load_default("settings", options)
+
+    for i, name in ipairs(options.names) do
+        settings[name] = configs.load_default(name, {})
+    end
+end
+
+-- 关闭配置
+function settings.close()
+    -- 保存
+end
+
+boot.register("settings", settings)
 
 return settings

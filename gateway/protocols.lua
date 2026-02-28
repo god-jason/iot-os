@@ -4,25 +4,75 @@ local protocols = {}
 
 _G.protocols = protocols
 
-local configs = require("configs")
+local links = require("links")
+local boot = require("boot")
 
 local types = {}
 
 -- 注册链接
 function protocols.register(name, clazz)
-    protocols[name] = clazz
+    types[name] = clazz
 end
 
 -- 创建链接
 function protocols.create(link, name, opts)
     log.info("create", iot.json_encode(opts))
 
-    local clazz = protocols[name]
+    local clazz = types[name]
     if not clazz then
         return false, "unkown protocol" .. name
     end
 
     return true, clazz:new(link, opts)
 end
+
+local protocol_instanses = {}
+
+local function create_protocol(link)
+    -- 创建协议
+    local ret, instanse = protocols.create(link, link.protocol, link.protocol_options or {})
+    if not ret then
+        return false, instanse
+    end
+
+    protocol_instanses[link.id] = instanse
+
+    -- 打开协议
+    local ret, res, info = pcall(instanse.open, instanse)
+    if not ret then
+        return false, res
+    end
+    if not res then
+        return false, info
+    end
+    return true
+end
+
+-- 创建所有协议
+function protocols.open()
+    for i, s in pairs(links) do
+        if type(s) == "table" then
+            if s.protocol and #s.protocol > 0 then
+                local ret, info = create_protocol(s)
+                if not ret then
+                    log.error(info)
+                end
+            end
+        end
+    end
+end
+
+-- 关闭所有协议
+function protocols.close()
+    for k, instanse in pairs(protocol_instanses) do
+        pcall(instanse.close, instanse)
+    end
+    protocol_instanses = {}
+end
+
+protocols.deps = {"links", "settings"}
+
+-- 注册
+boot.register("protocols", gateway)
 
 return protocols

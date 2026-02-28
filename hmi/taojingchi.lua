@@ -37,7 +37,7 @@ tjc.set_bool，修改布尔值
 local tjc = {}
 local log = iot.logger("taojingchi")
 
-local configs = require("configs")
+local settings = require("settings")
 local boot = require("boot")
 
 local options = {}
@@ -104,10 +104,10 @@ local function on_data(id, len)
 end
 
 function tjc.open()
-    options = configs.load_default("taojingchi", {
+    options = settings.taojingchi or {
         uart_id = 1,
         baud_rate = 115200
-    })
+    }
 
     -- 连接串口屏
     uart.setup(options.uart_id, options.baud_rate or 115200, 8, 1, uart.NONE)
@@ -169,6 +169,7 @@ function tjc.set_page(name)
     uart.write(options.uart_id, str .. "\xff\xff\xff")
 end
 
+tjc.deps = {"settings"}
 boot.register("taojingchi", tjc)
 
 return tjc

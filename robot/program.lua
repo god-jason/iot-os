@@ -1,6 +1,8 @@
 local program = {}
 local log = iot.logger("program")
 
+local configs = require("configs")
+
 local VM = require("vm")
 local planner = require("planner")
 

@@ -14,7 +14,6 @@ local components = require("components")
 local program = require("program")
 local boot = require("boot")
 
-robot.deps = {"components"}
 
 robot.fsm = fsm:new()
 
@@ -60,6 +59,8 @@ end
 function robot.close()
     return true
 end
+
+robot.deps = {"components", "settings"}
 
 -- 注册
 boot.register("robot", robot)

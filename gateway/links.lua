@@ -4,7 +4,8 @@ local links = {}
 
 _G.links = links
 
-local configs = require("configs")
+local settings = require("settings")
+local boot = require("boot")
 
 local types = {}
 
@@ -44,7 +45,7 @@ function links.open()
     log.info("load")
     local lnks = {}
 
-    local cms = configs.load_default("links", {})
+    local cms = settings.links
     for k, v in ipairs(cms) do
         local ret, info = links.create(v)
         if not ret then
@@ -65,5 +66,9 @@ function links.close()
         end
     end
 end
+
+links.deps = {"settings"}
+
+boot.register("links", links)
 
 return links

@@ -4,6 +4,8 @@ local master = {}
 
 local log = iot.logger("master")
 
+local boot = require("boot")
+
 local actions = require("actions")
 local commands = require("commands")
 local settings = require("settings")
@@ -342,7 +344,7 @@ end
 
 function master.open()
     -- 加载配置
-    options = configs.load_default("master", default_options)
+    options = settings.master or default_options
 
     -- 默认使用IMEI号作为ID
     if not options.id or #options.id == 0 then
@@ -431,6 +433,15 @@ function master.task()
     end
 end
 
-iot.start(master.task)
+function master.open()
+    iot.start(master.task)
+end
+
+function master.close()
+    -- 关闭连接 
+end
+
+master.deps = {"settings"}
+boot.register("master", master)
 
 return master
