@@ -33,15 +33,8 @@ end
 function robot.open()
     log.info("open")
 
-    -- 创建设备组件
-    local ret, info = components.load()
-    if not ret then
-        log.error(info)
-        -- 应该启动失败
-    end
-
     -- 加载自定义编程
-    ret, info = program.load()
+    local ret, info = program.load()
     if not ret then
         log.error(info)
     end
