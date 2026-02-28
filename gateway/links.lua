@@ -37,23 +37,28 @@ end
 -- 加载链接
 function links.load()
     log.info("load")
+    local lnks = {}
 
     local cms = configs.load_default("links", {})
     for k, v in ipairs(cms) do
         local ret, info = links.create(v)
         if not ret then
-            return ret, info
+            log.error(info)
+        else
+            table.insert(lnks, info)
         end
     end
     for k, v in pairs(cms) do
         v.name = v.name or k -- key作为设备名
         local ret, info = links.create(v)
         if not ret then
-            return ret, info
+            log.error(info)
+        else
+            table.insert(lnks, info)
         end
     end
 
-    return true
+    return lnks
 end
 
 return links
