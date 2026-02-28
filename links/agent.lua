@@ -3,7 +3,7 @@
 local Agent = {}
 Agent.__index = Agent
 
-local binary = require("binary")
+--local binary = require("binary")
 
 local log = iot.logger("agent")
 

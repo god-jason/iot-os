@@ -20,6 +20,7 @@ end
 
 ---  关闭
 function Link:close()
+    return false, "Link close() must be implemented!"
 end
 
 ---  读取数据
