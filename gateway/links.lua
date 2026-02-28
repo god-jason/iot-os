@@ -22,20 +22,25 @@ function links.create(opts)
         return false, "unkown type" .. opts.type
     end
 
-    -- 注册到全局
     local link = clazz:new(opts)
     if opts.id and #opts.id > 0 then
+        -- 注册到全局
         links[opts.id] = link
     end
     if opts.name and #opts.name > 0 then
         links[opts.name] = link
     end
 
+    local ret, info = link:open()
+    if not ret then
+        return false, info
+    end
+
     return true, link
 end
 
 -- 加载链接
-function links.load()
+function links.open()
     log.info("load")
     local lnks = {}
 
@@ -48,17 +53,17 @@ function links.load()
             table.insert(lnks, info)
         end
     end
-    for k, v in pairs(cms) do
-        v.name = v.name or k -- key作为设备名
-        local ret, info = links.create(v)
-        if not ret then
-            log.error(info)
-        else
-            table.insert(lnks, info)
+
+    return true, lnks
+end
+
+-- 关闭连接
+function links.close()
+    for i, s in pairs(links) do
+        if type(s) == "table" then
+            pcall(s.close, s)
         end
     end
-
-    return lnks
 end
 
 return links

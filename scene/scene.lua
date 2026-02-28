@@ -42,19 +42,19 @@ function Scene:open()
 
     -- 编译条件
     for k, cond in ipairs(self.conditions) do
-        if cond.type == "script" then
+        if cond.type == "script" and type(cond.script) == "string" then
             local script = "return " .. cond.script
             local ret, info = load(script, "cond", "t", _G)
             if not ret then
                 return false, info
             end
-            cond._script = ret
+            cond.script = ret
         end
     end
 
     -- 编译响应
     for k, action in ipairs(self.actions) do
-        if action.type == "script" then
+        if action.type == "script" and type(action.script) == "string" then
             local script = "return function()\n" .. action.script .. "\nend"
             local ret, info = load(script, "action", "t", _G)
             if not ret then
@@ -65,7 +65,7 @@ function Scene:open()
             if not ret then
                 return ret, info
             end
-            action._script = info
+            action.script = info
         end
     end
 
@@ -155,7 +155,7 @@ function Scene:check()
     -- 检查条件
     for _, cond in ipairs(self.conditions) do
         if cond.type == "script" then
-            local ok, ret = pcall(cond._script)
+            local ok, ret = pcall(cond.script)
             if not ok then
                 log.error("condition execute error", ret)
                 return false
@@ -244,7 +244,7 @@ function Scene:execute()
     for _, action in ipairs(self.actions) do
         if action.type == "script" then
             -- 执行脚本
-            local ok, err = pcall(action._script)
+            local ok, err = pcall(action.script)
             if not ok then
                 log.error("action error:", err)
             end
@@ -259,7 +259,7 @@ function Scene:execute()
         elseif action.type == "scene" then
             -- 执行场景
             local scene = scenes[action.scene]
-            if scene.__index == Scene then
+            if scene.__index == Scene and not scene.triggered then
                 scene:execute()
             end
         end

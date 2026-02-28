@@ -11,13 +11,10 @@ local devices = require("devices")
 local links = require("links")
 local boot = require("boot")
 
--- 打开链接
-local function open_link(lnk)
-    local ret, info = lnk:open()
-    if not ret then
-        return false, info
-    end
+local protocol_instanses = {}
 
+-- 打开链接
+local function open_link_protocol(lnk)
     if not lnk.protocol or #lnk.protocol == 0 then
         return false, "no protocol"
     end
@@ -29,25 +26,35 @@ local function open_link(lnk)
     end
 
     -- 打开协议
-    ret, info = instanse:open()
+    local ret, info = instanse:open()
     if not ret then
         return false, info
     end
 
-    lnk.protocol_instanse = instanse
+    -- 保存
+    -- lnk.protocol_instanse = instanse
+    protocol_instanses[lnk.id] = instanse
 
     return true
+end
+
+local function close_link_protocol(link_id)
+    local instanse = protocol_instanses[link_id]
+    if instanse then
+        pcall(instanse.close, instanse)
+    end
 end
 
 -- 打开网关
 function gateway.open()
 
-    -- 加载连接
-    local lnks = links.load()
-    for i, lnk in ipairs(lnks) do
-        local ret, info = open_link(lnk)
-        if not ret then
-            log.error("open link failed", info)
+    -- 创建协议
+    for i, s in pairs(links) do
+        if type(s) == "table" then
+            local ret, info = open_link_protocol(s)
+            if not ret then
+                log.error("open link protocol failed", info)
+            end
         end
     end
 
@@ -59,16 +66,16 @@ end
 -- 关闭网关
 function gateway.close()
 
-    -- 关闭连接
-    local ret, info = links.close()
-    if not ret then
-        return ret, info
+    -- 关闭协议
+    for k, instanse in pairs(protocol_instanses) do
+        pcall(instanse.close, instanse)
     end
+    protocol_instanses = {}
 
     return true
 end
 
--- gateway.deps = {"links"}
+gateway.deps = {"links"}
 
 -- 注册
 boot.register("gateway", gateway)
