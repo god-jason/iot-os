@@ -73,8 +73,9 @@ function Serial:read()
     local ret, data = self.uart:read()
     log.info("serial read", self.port, data:toHex())
 
-    if ret and self.watcher then
-        self.watcher(data) -- 转发到监听器
+    if ret then
+        -- 转发到监听器
+        self.watcher:execute(data)
     end
     return ret, data
 end

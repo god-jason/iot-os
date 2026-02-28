@@ -1,5 +1,7 @@
 local log = iot.logger("device")
 
+local Watcher = require("watcher")
+
 --- 设备类定义
 -- 所有协议实现的子设备必须继承Device，并实现标准接口
 -- @module device
@@ -7,8 +9,6 @@ local Device = {}
 Device.__index = Device
 
 -- _G.Device = Device -- 注册到全局变量
-
-local error_unmount = "设备未挂载到连接上"
 
 --- 创建设备实例
 -- @param obj table 设备
@@ -18,6 +18,7 @@ function Device:new(obj)
     dev._values = {}
     dev._modified_values = {}
     dev._updated = 0 -- 数据更新时间
+    dev._watcher = Watcher:new()
     return dev
 end
 
@@ -103,9 +104,8 @@ function Device:put_value(key, value)
 
     self._values[key] = val
 
-    if self.watcher then
-        pcall(self.watcher, key, value)
-    end
+    -- 监听变化
+    self.watcher:execute(key, value)
 end
 
 ---  修改多值（用于采集）
@@ -118,14 +118,20 @@ function Device:put_values(values)
         has = true
     end
 
-    if has and self.watcher then
-        pcall(self.watcher)
+    -- 监听变化
+    if has then
+        self.watcher:execute()
     end
 end
 
 --- 监听值变化
 function Device:watch(cb)
-    self.watcher = cb
+    return self.watcher:watch(cb)
+end
+
+-- 取消监听
+function Device:unwatch(id)
+    self.watcher:unwatch(id)
 end
 
 return Device

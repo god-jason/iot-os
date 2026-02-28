@@ -1,3 +1,5 @@
+local Watcher = require("watcher")
+
 --- 连接类定义
 -- 所有连接必须继承Link，并实现标准接口
 -- @module link
@@ -8,7 +10,9 @@ Link.__index = Link
 -- @param obj table 连接对象
 -- @return Link 对象
 function Link:new(obj)
-    return setmetatable(obj or {}, self)
+    local link = setmetatable(obj or {}, self)
+    link.watcher = Watcher:new()
+    return link
 end
 
 ---  打开
@@ -49,7 +53,12 @@ end
 --- 注册监听回调
 -- @param cb function(data)
 function Link:watch(cb)
-    self.watcher = cb
+    return self.watcher:watch(cb)
+end
+
+-- 取消监听
+function Link:unwatch(id)
+    self.watcher:unwatch(id)
 end
 
 --- 开启透传

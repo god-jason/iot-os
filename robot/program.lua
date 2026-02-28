@@ -76,24 +76,12 @@ function program.load()
             return ret, info
         end
     end
-    for k, v in pairs(ins) do
-        local ret, info = create_instruction(k, v)
-        if not ret then
-            return ret, info
-        end
-    end
 
     -- 加载自定义计划器
     log.info("load planners")
     local pls = configs.load_default("planners", {})
     for k, v in ipairs(pls) do
         local ret, info = create_planner(v.name, v.script)
-        if not ret then
-            return ret, info
-        end
-    end
-    for k, v in pairs(pls) do
-        local ret, info = create_planner(k, v)
         if not ret then
             return ret, info
         end

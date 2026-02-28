@@ -9,10 +9,12 @@ Scene.__index = Scene
 function Scene:new(opts)
     local scene = setmetatable({
         name = opts.name or "-",
+        delay = opts.delay or 0, -- 延迟时间s，避免突发变化
         ranges = opts.ranges or {}, -- 时间范围
         triggers = opts.triggers or {}, -- 触发器
         conditions = opts.conditions or {}, -- 条件
-        actions = opts.actions or {} -- 响应
+        actions = opts.actions or {}, -- 响应
+        triggered = false
     }, Scene)
     return scene
 end
@@ -128,8 +130,7 @@ function Scene:close()
     end
 end
 
-function Scene:execute()
-
+function Scene:check()
     -- 检查时间范围
     if self.ranges and #self.ranges > 0 then
         local tm = os.date("*t")
@@ -208,19 +209,58 @@ function Scene:execute()
         end
     end
 
+    return true
+end
+
+function Scene:execute()
+    local this = self
+
+    -- 延迟处理，同时避免了快速重入
+    if self.delay and self.delay > 0 then
+        if self._timer then
+            return
+        end
+        self._timer = iot.setTimeout(function()
+            this._timer = nil
+            this:execute()
+        end, self.delay * 1000)
+        return
+    end
+
+    -- 检查条件
+    local ret = self:check()
+    if not ret then
+        self.triggered = false
+        return
+    end
+
+    -- 已经触发，则不再执行
+    if self.triggered then
+        return
+    end
+    self.triggered = true
+
     -- 执行响应
     for _, action in ipairs(self.actions) do
         if action.type == "script" then
+            -- 执行脚本
             local ok, err = pcall(action._script)
             if not ok then
                 log.error("action error:", err)
             end
         elseif action.type == "device" then
+            -- 修改变量
             local device = devices[action.device]
             if device then
                 device:set(action.key, tonumber(action.value))
             else
                 log.error("not found device:", action.device)
+            end
+        elseif action.type == "scene" then
+            -- 执行场景
+            local scene = scenes[action.scene]
+            if scene.__index == Scene then
+                scene:execute()
             end
         end
     end
