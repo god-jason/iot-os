@@ -46,7 +46,6 @@ local options = {}
 local pages = {}
 local page = {}
 
-
 -- 注册页面
 function tjc.register(name, page)
     pages[name] = page
@@ -109,10 +108,7 @@ local function on_data(id, len)
 end
 
 function tjc.open()
-    options = settings.taojingchi or {
-        uart_id = 1,
-        baud_rate = 115200
-    }
+    options = settings.taojingchi
 
     -- 连接串口屏
     uart.setup(options.uart_id, options.baud_rate or 115200, 8, 1, uart.NONE)
@@ -135,7 +131,6 @@ function tjc.open()
 
     return true
 end
-
 
 -- 设置文本
 function tjc.set_text(name, value)
@@ -171,6 +166,12 @@ function tjc.set_page(name)
 end
 
 tjc.deps = {"settings"}
+
+settings.register("taojingchi", {
+    uart_id = 1,
+    baud_rate = 115200
+})
+
 boot.register("taojingchi", tjc)
 
 return tjc

@@ -11,9 +11,17 @@ local options = {
     versions = {}
 }
 
+local defaults = {}
+
+-- 注册默认配置
+function settings.register(name, default)
+    table.insert(options.names, name)
+    defaults[name] = default
+end
+
 -- 加载配置
 function settings.load(name)
-    settings[name] = configs.load_default(name, {})
+    settings[name] = configs.load_default(name, defaults[name] or {})
 end
 
 -- 更新配置

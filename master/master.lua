@@ -420,4 +420,6 @@ end
 master.deps = {"settings"}
 boot.register("master", master)
 
+settings.register("master", default_options)
+
 return master

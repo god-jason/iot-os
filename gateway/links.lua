@@ -69,6 +69,7 @@ end
 
 links.deps = {"settings"}
 
+settings.register("links", {})
 boot.register("links", links)
 
 return links

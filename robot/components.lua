@@ -50,4 +50,6 @@ components.deps = {"settings"}
 
 boot.register("components", components)
 
+settings.register("components", {})
+
 return components
