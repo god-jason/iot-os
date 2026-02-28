@@ -37,7 +37,10 @@ tjc.set_bool，修改布尔值
 local tjc = {}
 local log = iot.logger("taojingchi")
 
-local uart_id = 1
+local configs = require("configs")
+local boot = require("boot")
+
+local options = {}
 
 local pages = {}
 local page = {}
@@ -100,12 +103,15 @@ local function on_data(id, len)
     end
 end
 
-function tjc.init(uartid, baudrate)
-    uart_id = uartid or 1
+function tjc.open()
+    options = configs.load_default("taojingchi", {
+        uart_id = 1,
+        baud_rate = 115200
+    })
 
     -- 连接串口屏
-    uart.setup(uart_id, baudrate or 115200, 8, 1, uart.NONE)
-    uart.on(uart_id, "receive", on_data)
+    uart.setup(options.uart_id, options.baud_rate or 115200, 8, 1, uart.NONE)
+    uart.on(options.uart_id, "receive", on_data)
 
     -- 屏幕刷新
     iot.start(function()
@@ -121,6 +127,8 @@ function tjc.init(uartid, baudrate)
             end
         end
     end)
+
+    return true
 end
 
 -- 注册页面
@@ -131,7 +139,7 @@ end
 -- 设置文本
 function tjc.set_text(name, value)
     local str = name .. ".txt=" .. "\"" .. value .. "\""
-    uart.write(uart_id, str .. "\xff\xff\xff")
+    uart.write(options.uart_id, str .. "\xff\xff\xff")
     -- log.info("set_text", str)
 end
 
@@ -143,7 +151,7 @@ function tjc.set_value(name, value)
 
     -- uart.write(uart_id, name .. ".val=" .. value .. "\xff\xff\xff")
     local str = name .. ".val=" .. math.floor(value)
-    uart.write(uart_id, str .. "\xff\xff\xff")
+    uart.write(options.uart_id, str .. "\xff\xff\xff")
     -- log.info("set_value", str)
 end
 
@@ -151,14 +159,16 @@ end
 function tjc.set_bool(name, value)
     value = value and 1 or 0
     local str = name .. ".val=" .. math.floor(value)
-    uart.write(uart_id, str .. "\xff\xff\xff")
+    uart.write(options.uart_id, str .. "\xff\xff\xff")
     -- log.info("set_bool", str)
 end
 
 -- 修改页面
 function tjc.set_page(name)
     local str = "page=" .. name
-    uart.write(uart_id, str .. "\xff\xff\xff")
+    uart.write(options.uart_id, str .. "\xff\xff\xff")
 end
+
+boot.register("taojingchi", tjc)
 
 return tjc

@@ -48,7 +48,7 @@ function boot.open(name)
     if not ret then
         return false, res
     end
-    if not res then
+    if res == false then
         return false, info
     end
 
@@ -76,7 +76,7 @@ function boot.close(name)
     if not ret then
         log.error(res)
     end
-    if not res then
+    if res == false then
         log.error(info)
     end
 

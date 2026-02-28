@@ -4,7 +4,6 @@ local log = iot.logger("actions")
 
 local database = require "database"
 
-
 actions.watching = false
 
 local watcher = 0
@@ -25,10 +24,7 @@ function actions.watch(data)
             actions.watching = false
         end
     end, tm)
-
-    return true
 end
-
 
 -- 清除数据
 function actions.reset()
@@ -39,7 +35,6 @@ function actions.reset()
     iot.setTimeout(iot.reboot, 2000)
     return true
 end
-
 
 -- 重启设备
 function actions.reboot()
