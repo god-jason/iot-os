@@ -10,6 +10,10 @@ local planner = require("planner")
 
 local components = require("components")
 local program = require("program")
+local boot = require("boot")
+
+robot.name = "robot"
+robot.deps = {"components"}
 
 robot.fsm = fsm:new()
 
@@ -26,14 +30,14 @@ function robot.plan(name, data)
     return true
 end
 
-function robot.init()
-    log.info("init")
+function robot.open()
+    log.info("open")
 
     -- 创建设备组件
     local ret, info = components.load()
     if not ret then
         log.error(info)
-        --应该启动失败
+        -- 应该启动失败
     end
 
     -- 加载自定义编程
@@ -48,6 +52,15 @@ function robot.init()
 
     -- 启动状态机
     robot.fsm:start()
+
+    return true
 end
+
+function robot.close()
+    return true
+end
+
+-- 注册
+boot.register("robot", robot)
 
 return robot

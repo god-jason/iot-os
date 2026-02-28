@@ -8,6 +8,7 @@ local components = {
 _G.components = components
 
 local configs = require("configs")
+local boot = require("boot")
 
 local types = {}
 
@@ -31,7 +32,7 @@ end
 
 
 -- 加载组件
-function components.load()
+function components.open()
     log.info("load")
 
     local cms = configs.load_default("components", {})
@@ -51,5 +52,7 @@ function components.load()
 
     return true
 end
+
+boot.register("components", components)
 
 return components

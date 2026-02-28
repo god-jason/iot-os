@@ -28,11 +28,11 @@ sys.taskInit(function()
 
     -- fskv.init() -- KV 数据库
 
-    -- 加载所有程序文件
+    -- 自动加载所有程序文件
     require("autoload").walk("/luadb/")
 
-    -- 启动网关
-    require("gateway").boot()
+    -- 自动启动模块
+    require("boot").startup()
 
     log.info("exit")
 end)

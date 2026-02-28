@@ -1,4 +1,3 @@
-
 local log = iot.logger("serial")
 
 --- 串口连接，继承Link
@@ -6,19 +5,19 @@ local log = iot.logger("serial")
 local Serial = {}
 Serial.__index = Serial
 
+-- 继承Link
 local Link = require("link")
-setmetatable(Serial, Link) -- 继承Link
+setmetatable(Serial, Link)
 
--- require("gateway").register_link("serial", Serial)
-local gateway = require("gateway")
-gateway.register_link("serial", Serial)
+-- 注册连接类型
+local links = require("links")
+links.register("serial", Serial)
 
 ---创建串口实例
 -- @param opts table
 -- @return table
 function Serial:new(opts)
-    local lnk = Link:new()
-    setmetatable(lnk, self)
+    local lnk = setmetatable(Link:new(), Serial)
     lnk.id = opts.id or "serial-" .. opts.port
     lnk.port = opts.port or 1
     lnk.options = opts
@@ -28,23 +27,19 @@ end
 --- 打开
 -- @return boolean 成功与否
 function Serial:open()
-    self.uart = gateway.uarts[self.port]
-    if not self.uart then
-        return false, "找不到串口实例"
+    local ret, port = iot.uart(self.port, self.options)
+    if not ret then
+        return false, port
     end
+    self.uart = port
     return true
-    -- local ret, obj = iot.uart(self.port, self.options)
-    -- if ret then
-    --     self.uart = obj
-    -- end
-    -- return ret
 end
 
 --- 写数据
 -- @param data string 数据
 -- @return boolean 成功与否
 function Serial:write(data)
-    log.info("serial write", self.port, data:toHex())
+    log.info("write", self.port, data:toHex())
     if self.peer then
         return false, "cannot write when piping"
     end

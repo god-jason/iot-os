@@ -9,9 +9,10 @@ local database = require("database")
 local protocols = require("protocols")
 local devices = require("devices")
 local links = require("links")
+local boot = require("boot")
 
+-- 打开链接
 local function open_link(lnk)
-    -- 打开链接
     local ret, info = lnk:open()
     if not ret then
         return false, info
@@ -38,7 +39,8 @@ local function open_link(lnk)
     return true
 end
 
-function gateway.init()
+-- 打开网关
+function gateway.open()
 
     -- 加载连接
     local lnks = links.load()
@@ -49,6 +51,26 @@ function gateway.init()
         end
     end
 
+    -- 加载规则引擎
+
+    return true
 end
+
+-- 关闭网关
+function gateway.close()
+
+    -- 关闭连接
+    local ret, info = links.close()
+    if not ret then
+        return ret, info
+    end
+
+    return true
+end
+
+-- gateway.deps = {"links"}
+
+-- 注册
+boot.register("gateway", gateway)
 
 return gateway
