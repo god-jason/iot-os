@@ -38,6 +38,7 @@ local tjc = {}
 local log = iot.logger("taojingchi")
 
 local settings = require("settings")
+local actions = require("actions")
 local boot = require("boot")
 
 local options = {}
@@ -45,7 +46,11 @@ local options = {}
 local pages = {}
 local page = {}
 
-local commands = {}
+
+-- 注册页面
+function tjc.register(name, page)
+    pages[name] = page
+end
 
 local function on_data(id, len)
     local data = uart.read(id, len)
@@ -93,7 +98,7 @@ local function on_data(id, len)
         end
 
         -- 处理命令（比如按钮）
-        local handler = commands[pkt.type]
+        local handler = actions[pkt.type]
         if handler then
             local ret, err = pcall(handler, pkt)
             if not ret then
@@ -131,10 +136,6 @@ function tjc.open()
     return true
 end
 
--- 注册页面
-function tjc.register(name, page)
-    pages[name] = page
-end
 
 -- 设置文本
 function tjc.set_text(name, value)
