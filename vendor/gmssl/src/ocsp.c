@@ -1,0 +1,2551 @@
+/*
+ *  Copyright 2014-2026 The GmSSL Project. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the License);
+ *  you may not use this file except in compliance with the License.
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <gmssl/oid.h>
+#include <gmssl/asn1.h>
+#include <gmssl/error.h>
+#include <gmssl/x509_crl.h>
+#include <gmssl/ocsp.h>
+
+
+static const char *ocsp_cert_status_name(int status)
+{
+	switch (status) {
+	case OCSP_cert_status_good:
+		return "good";
+	case OCSP_cert_status_revoked:
+		return "revoked";
+	case OCSP_cert_status_unknown:
+		return "unknown";
+	default:
+		return NULL;
+	}
+}
+
+
+
+int ocsp_request_item_to_der(int hash_algor,
+	const uint8_t *issuer_name_hash, size_t issuer_name_hash_len,
+	const uint8_t *issuer_key_hash, size_t issuer_key_hash_len,
+	const uint8_t *serial_number, size_t serial_number_len,
+	const uint8_t *single_request_exts, size_t single_request_exts_len,
+	uint8_t **out, size_t *outlen)
+{
+	size_t cert_id_len = 0;
+	size_t len = 0;
+
+	if (!issuer_name_hash || !issuer_name_hash_len
+		|| !issuer_key_hash || !issuer_key_hash_len
+		|| !serial_number || !serial_number_len) {
+		error_print();
+		return -1;
+	}
+	if (x509_digest_algor_to_der(hash_algor, NULL, &cert_id_len) != 1
+		|| asn1_octet_string_to_der(issuer_name_hash, issuer_name_hash_len, NULL, &cert_id_len) != 1
+		|| asn1_octet_string_to_der(issuer_key_hash, issuer_key_hash_len, NULL, &cert_id_len) != 1
+		|| asn1_integer_to_der(serial_number, serial_number_len, NULL, &cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+	len = cert_id_len;
+	if (asn1_sequence_header_to_der(cert_id_len, NULL, &len) != 1
+		|| x509_explicit_exts_to_der(0, single_request_exts, single_request_exts_len, NULL, &len) < 0
+		|| asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_sequence_header_to_der(cert_id_len, out, outlen) != 1
+		|| x509_digest_algor_to_der(hash_algor, out, outlen) != 1
+		|| asn1_octet_string_to_der(issuer_name_hash, issuer_name_hash_len, out, outlen) != 1
+		|| asn1_octet_string_to_der(issuer_key_hash, issuer_key_hash_len, out, outlen) != 1
+		|| asn1_integer_to_der(serial_number, serial_number_len, out, outlen) != 1
+		|| x509_explicit_exts_to_der(0, single_request_exts, single_request_exts_len, out, outlen) < 0) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_item_from_der(int *hash_algor,
+	const uint8_t **issuer_name_hash, size_t *issuer_name_hash_len,
+	const uint8_t **issuer_key_hash, size_t *issuer_key_hash_len,
+	const uint8_t **serial_number, size_t *serial_number_len,
+	const uint8_t **single_request_exts, size_t *single_request_exts_len,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *cert_id;
+	size_t cert_id_len;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (asn1_sequence_from_der(&cert_id, &cert_id_len, &d, &dlen) != 1
+		|| x509_digest_algor_from_der(hash_algor, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(issuer_name_hash, issuer_name_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(issuer_key_hash, issuer_key_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_integer_from_der(serial_number, serial_number_len, &cert_id, &cert_id_len) != 1
+		|| asn1_length_is_zero(cert_id_len) != 1
+		|| x509_explicit_exts_from_der(0, single_request_exts, single_request_exts_len, &d, &dlen) < 0
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_item_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+	const uint8_t *cert_id;
+	size_t cert_id_len;
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial;
+	size_t serial_len;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	format_print(fp, fmt, ind, "reqCert\n");
+	if (asn1_sequence_from_der(&cert_id, &cert_id_len, &d, &dlen) != 1
+		|| x509_digest_algor_from_der(&hash_algor, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(&issuer_name_hash, &issuer_name_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(&issuer_key_hash, &issuer_key_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_integer_from_der(&serial, &serial_len, &cert_id, &cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind + 4, "hashAlgorithm: %s\n", x509_digest_algor_name(hash_algor));
+	format_bytes(fp, fmt, ind + 4, "issuerNameHash", issuer_name_hash, issuer_name_hash_len);
+	format_bytes(fp, fmt, ind + 4, "issuerKeyHash", issuer_key_hash, issuer_key_hash_len);
+	format_bytes(fp, fmt, ind + 4, "serialNumber", serial, serial_len);
+	if (asn1_length_is_zero(cert_id_len) != 1
+		|| x509_explicit_exts_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p && x509_exts_print(fp, fmt, ind, "singleRequestExtensions", p, len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_to_der(int version,
+	const uint8_t *requestor_name, size_t requestor_name_len,
+	const uint8_t *request_list, size_t request_list_len,
+	const uint8_t *request_exts, size_t request_exts_len,
+	const uint8_t *optional_signature, size_t optional_signature_len,
+	uint8_t **out, size_t *outlen)
+{
+	size_t tbs_request_len = 0;
+	size_t len = 0;
+
+	if (!request_list || !request_list_len) {
+		error_print();
+		return -1;
+	}
+	if ((version >= 0 && x509_explicit_version_to_der(0, version, NULL, &tbs_request_len) != 1)
+		|| asn1_explicit_to_der(1, requestor_name, requestor_name_len, NULL, &tbs_request_len) < 0
+		|| asn1_sequence_to_der(request_list, request_list_len, NULL, &tbs_request_len) != 1
+		|| x509_explicit_exts_to_der(2, request_exts, request_exts_len, NULL, &tbs_request_len) < 0) {
+		error_print();
+		return -1;
+	}
+	len = tbs_request_len;
+	if (asn1_sequence_header_to_der(tbs_request_len, NULL, &len) != 1
+		|| asn1_explicit_to_der(0, optional_signature, optional_signature_len, NULL, &len) < 0
+		|| asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_sequence_header_to_der(tbs_request_len, out, outlen) != 1
+		|| (version >= 0 && x509_explicit_version_to_der(0, version, out, outlen) != 1)
+		|| asn1_explicit_to_der(1, requestor_name, requestor_name_len, out, outlen) < 0
+		|| asn1_sequence_to_der(request_list, request_list_len, out, outlen) != 1
+		|| x509_explicit_exts_to_der(2, request_exts, request_exts_len, out, outlen) < 0
+		|| asn1_explicit_to_der(0, optional_signature, optional_signature_len, out, outlen) < 0) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_from_der(int *version,
+	const uint8_t **requestor_name, size_t *requestor_name_len,
+	const uint8_t **request_list, size_t *request_list_len,
+	const uint8_t **request_exts, size_t *request_exts_len,
+	const uint8_t **optional_signature, size_t *optional_signature_len,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *tbs_request;
+	size_t tbs_request_len;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	*version = X509_version_v1;
+	if (asn1_sequence_from_der(&tbs_request, &tbs_request_len, &d, &dlen) != 1
+		|| x509_explicit_version_from_der(0, version, &tbs_request, &tbs_request_len) < 0
+		|| asn1_explicit_from_der(1, requestor_name, requestor_name_len, &tbs_request, &tbs_request_len) < 0
+		|| asn1_sequence_from_der(request_list, request_list_len, &tbs_request, &tbs_request_len) != 1
+		|| x509_explicit_exts_from_der(2, request_exts, request_exts_len, &tbs_request, &tbs_request_len) < 0
+		|| asn1_length_is_zero(tbs_request_len) != 1
+		|| asn1_explicit_from_der(0, optional_signature, optional_signature_len, &d, &dlen) < 0
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (*version == -1) {
+		*version = X509_version_v1;
+	}
+	if (*version != X509_version_v1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+	const uint8_t *tbs_request;
+	size_t tbs_request_len;
+	const uint8_t *request_list;
+	size_t request_list_len;
+	int ret;
+	int version = X509_version_v1;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	if (asn1_sequence_from_der(&tbs_request, &tbs_request_len, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "tbsRequest\n");
+	ind += 4;
+	if ((ret = x509_explicit_version_from_der(0, &version, &tbs_request, &tbs_request_len)) < 0) {
+		error_print();
+		return -1;
+	}
+	if (version == -1) version = X509_version_v1;
+	if (ret) format_print(fp, fmt, ind, "version: v1 (%d)\n", version);
+	if (version != X509_version_v1) {
+		error_print();
+		return -1;
+	}
+	if ((ret = asn1_explicit_from_der(1, &p, &len, &tbs_request, &tbs_request_len)) < 0) {
+		error_print();
+		return -1;
+	}
+	if (ret) format_bytes(fp, fmt, ind, "requestorName", p, len);
+	if (asn1_sequence_from_der(&request_list, &request_list_len, &tbs_request, &tbs_request_len) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "requestList\n");
+	while (request_list_len) {
+		const uint8_t *request;
+		size_t request_len;
+		if (asn1_sequence_from_der(&request, &request_len, &request_list, &request_list_len) != 1
+			|| ocsp_request_item_print(fp, fmt, ind + 4, "Request", request, request_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (x509_explicit_exts_from_der(2, &p, &len, &tbs_request, &tbs_request_len) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p && x509_exts_print(fp, fmt, ind, "requestExtensions", p, len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (asn1_length_is_zero(tbs_request_len) != 1) {
+		error_print();
+		return -1;
+	}
+	ind -= 4;
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) format_bytes(fp, fmt, ind, "optionalSignature", p, len);
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_request_generate(uint8_t *req, size_t *reqlen, size_t maxlen,
+	const uint8_t *cert, size_t certlen,
+	const uint8_t *issuer_cert, size_t issuer_certlen,
+	const DIGEST *digest_algor)
+{
+	const uint8_t *issuer;
+	size_t issuer_len;
+	const uint8_t *issuer_subject;
+	size_t issuer_subject_len;
+	const uint8_t *serial;
+	size_t serial_len;
+	X509_KEY issuer_public_key;
+	uint8_t issuer_name[512];
+	uint8_t *issuer_name_ptr = issuer_name;
+	size_t issuer_name_len = 0;
+	uint8_t issuer_name_hash[DIGEST_MAX_SIZE];
+	size_t issuer_name_hash_len;
+	uint8_t issuer_key_hash[DIGEST_MAX_SIZE];
+	size_t issuer_key_hash_len;
+	uint8_t request_list[256];
+	uint8_t *request_list_ptr = request_list;
+	size_t request_list_len = 0;
+	uint8_t *out;
+	size_t outlen = 0;
+	size_t len = 0;
+
+	if (!req || !reqlen || !digest_algor
+		|| !cert || !certlen || !issuer_cert || !issuer_certlen) {
+		error_print();
+		return -1;
+	}
+	out = req;
+
+	if (x509_cert_get_issuer_and_serial_number(cert, certlen, &issuer, &issuer_len, &serial, &serial_len) != 1
+		|| x509_cert_get_subject(issuer_cert, issuer_certlen, &issuer_subject, &issuer_subject_len) != 1
+		|| x509_cert_get_subject_public_key(issuer_cert, issuer_certlen, &issuer_public_key) != 1
+		|| x509_name_equ(issuer, issuer_len, issuer_subject, issuer_subject_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	// issuer_name_hash
+	if (asn1_sequence_to_der(issuer_subject, issuer_subject_len, NULL, &len) != 1
+		|| asn1_length_le(len, sizeof(issuer_name)) != 1
+		|| asn1_sequence_to_der(issuer_subject, issuer_subject_len, &issuer_name_ptr, &issuer_name_len) != 1
+		|| digest(digest_algor, issuer_name, issuer_name_len, issuer_name_hash, &issuer_name_hash_len) != 1) {
+		error_print();
+		return -1;
+	}
+	len = 0;
+
+	// issuer_key_hash
+	if (x509_public_key_digest_ex(&issuer_public_key, digest_algor, issuer_key_hash, &issuer_key_hash_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	// request_list
+	if (ocsp_request_item_to_der(digest_algor->oid,
+			issuer_name_hash, issuer_name_hash_len,
+			issuer_key_hash, issuer_key_hash_len,
+			serial, serial_len, NULL, 0, NULL, &len) != 1
+		|| asn1_length_le(len, sizeof(request_list)) != 1
+		|| ocsp_request_item_to_der(digest_algor->oid,
+			issuer_name_hash, issuer_name_hash_len,
+			issuer_key_hash, issuer_key_hash_len,
+			serial, serial_len, NULL, 0, &request_list_ptr, &request_list_len) != 1) {
+		error_print();
+		return -1;
+	}
+	len = 0;
+
+	if (ocsp_request_to_der(-1, NULL, 0, request_list, request_list_len, NULL, 0, NULL, 0, NULL, &len) != 1
+		|| asn1_length_le(len, maxlen) != 1
+		|| ocsp_request_to_der(-1, NULL, 0, request_list, request_list_len, NULL, 0, NULL, 0, &out, &outlen) != 1) {
+		error_print();
+		return -1;
+	}
+
+	*reqlen = outlen;
+	return 1;
+}
+
+/*
+CrlID ::= SEQUENCE {
+	crlUrl				[0] EXPLICIT IA5String OPTIONAL,
+	crlNum				[1] EXPLICIT INTEGER OPTIONAL,
+	crlTime				[2] EXPLICIT GeneralizedTime OPTIONAL }
+*/
+static int ocsp_crl_id_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+	const char *crl_url;
+	size_t crl_url_len;
+	const uint8_t *crl_num;
+	size_t crl_num_len;
+	time_t crl_time;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	if (!d) {
+		if (dlen) {
+			error_print();
+			return -1;
+		}
+		return 1;
+	}
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_ia5_string_from_der(&crl_url, &crl_url_len, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind, "crlUrl: %.*s\n", (int)crl_url_len, crl_url);
+	}
+	if (asn1_explicit_from_der(1, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_integer_from_der(&crl_num, &crl_num_len, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		format_bytes(fp, fmt, ind, "crlNum", crl_num, crl_num_len);
+	}
+	if (asn1_explicit_from_der(2, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_generalized_time_from_der(&crl_time, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind, "crlTime: %s", ctime(&crl_time));
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+/*
+ArchiveCutoff ::= GeneralizedTime
+*/
+static int ocsp_archive_cutoff_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	time_t archive_cutoff;
+
+	if (asn1_generalized_time_from_der(&archive_cutoff, &d, &dlen) != 1
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "%s: %s", label, ctime(&archive_cutoff));
+	return 1;
+}
+
+int ocsp_single_response_to_der(int hash_algor,
+	const uint8_t *issuer_name_hash, size_t issuer_name_hash_len,
+	const uint8_t *issuer_key_hash, size_t issuer_key_hash_len,
+	const uint8_t *serial_number, size_t serial_number_len,
+	int cert_status, time_t revocation_time, int revocation_reason,
+	time_t this_update, time_t next_update,
+	const uint8_t *exts, size_t extslen,
+	uint8_t **out, size_t *outlen)
+{
+	size_t cert_id_len = 0;
+	size_t revoked_info_len = 0;
+	size_t revocation_reason_len = 0;
+	size_t next_update_len = 0;
+	size_t len = 0;
+
+	if (!issuer_name_hash || !issuer_name_hash_len
+		|| !issuer_key_hash || !issuer_key_hash_len
+		|| !serial_number || !serial_number_len
+		|| !ocsp_cert_status_name(cert_status)
+		|| this_update == (time_t)-1) {
+		error_print();
+		return -1;
+	}
+	if (cert_status == OCSP_cert_status_revoked) {
+		if (revocation_time == (time_t)-1) {
+			error_print();
+			return -1;
+		}
+	} else if (revocation_time != (time_t)-1 || revocation_reason != -1) {
+		error_print();
+		return -1;
+	}
+
+	if (x509_digest_algor_to_der(hash_algor, NULL, &cert_id_len) != 1
+		|| asn1_octet_string_to_der(issuer_name_hash, issuer_name_hash_len, NULL, &cert_id_len) != 1
+		|| asn1_octet_string_to_der(issuer_key_hash, issuer_key_hash_len, NULL, &cert_id_len) != 1
+		|| asn1_integer_to_der(serial_number, serial_number_len, NULL, &cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (cert_status == OCSP_cert_status_revoked) {
+		if (asn1_generalized_time_to_der(revocation_time, NULL, &revoked_info_len) != 1
+			|| (revocation_reason >= 0
+				&& x509_crl_reason_to_der(revocation_reason, NULL, &revocation_reason_len) != 1)) {
+			error_print();
+			return -1;
+		}
+		if (revocation_reason >= 0) {
+			revoked_info_len += revocation_reason_len;
+			if (asn1_explicit_header_to_der(0, revocation_reason_len, NULL, &revoked_info_len) != 1) {
+				error_print();
+				return -1;
+			}
+		}
+	}
+	if (next_update != (time_t)-1) {
+		if (asn1_generalized_time_to_der(next_update, NULL, &next_update_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+
+	len = cert_id_len;
+	if (asn1_sequence_header_to_der(cert_id_len, NULL, &len) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (cert_status) {
+	case OCSP_cert_status_good:
+		if (asn1_header_to_der(ASN1_TAG_IMPLICIT(0), 0, NULL, &len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_cert_status_revoked:
+		len += revoked_info_len;
+		if (asn1_header_to_der(ASN1_TAG_EXPLICIT(1), revoked_info_len, NULL, &len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_cert_status_unknown:
+		if (asn1_header_to_der(ASN1_TAG_IMPLICIT(2), 0, NULL, &len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	}
+	if (asn1_generalized_time_to_der(this_update, NULL, &len) != 1
+		|| (next_update != (time_t)-1 && asn1_explicit_header_to_der(0, next_update_len, NULL, &len) != 1)) {
+		error_print();
+		return -1;
+	}
+	if (next_update != (time_t)-1) {
+		len += next_update_len;
+	}
+	if (x509_explicit_exts_to_der(1, exts, extslen, NULL, &len) < 0
+		|| asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_sequence_header_to_der(cert_id_len, out, outlen) != 1
+		|| x509_digest_algor_to_der(hash_algor, out, outlen) != 1
+		|| asn1_octet_string_to_der(issuer_name_hash, issuer_name_hash_len, out, outlen) != 1
+		|| asn1_octet_string_to_der(issuer_key_hash, issuer_key_hash_len, out, outlen) != 1
+		|| asn1_integer_to_der(serial_number, serial_number_len, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (cert_status) {
+	case OCSP_cert_status_good:
+		if (asn1_header_to_der(ASN1_TAG_IMPLICIT(0), 0, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_cert_status_revoked:
+		if (asn1_header_to_der(ASN1_TAG_EXPLICIT(1), revoked_info_len, out, outlen) != 1
+			|| asn1_generalized_time_to_der(revocation_time, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+		if (revocation_reason >= 0) {
+			size_t reason_len = 0;
+			if (x509_crl_reason_to_der(revocation_reason, NULL, &reason_len) != 1
+				|| asn1_explicit_header_to_der(0, reason_len, out, outlen) != 1
+				|| x509_crl_reason_to_der(revocation_reason, out, outlen) != 1) {
+				error_print();
+				return -1;
+			}
+		}
+		break;
+	case OCSP_cert_status_unknown:
+		if (asn1_header_to_der(ASN1_TAG_IMPLICIT(2), 0, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	}
+	if (asn1_generalized_time_to_der(this_update, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (next_update != (time_t)-1) {
+		if (asn1_explicit_header_to_der(0, next_update_len, out, outlen) != 1
+			|| asn1_generalized_time_to_der(next_update, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (x509_explicit_exts_to_der(1, exts, extslen, out, outlen) < 0) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_single_response_from_der(int *hash_algor,
+	const uint8_t **issuer_name_hash, size_t *issuer_name_hash_len,
+	const uint8_t **issuer_key_hash, size_t *issuer_key_hash_len,
+	const uint8_t **serial_number, size_t *serial_number_len,
+	int *cert_status, time_t *revocation_time, int *revocation_reason,
+	time_t *this_update, time_t *next_update,
+	const uint8_t **exts, size_t *extslen,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	int tag;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *cert_id;
+	size_t cert_id_len;
+	const uint8_t *p;
+	size_t len;
+	const uint8_t *q;
+	size_t qlen;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (asn1_sequence_from_der(&cert_id, &cert_id_len, &d, &dlen) != 1
+		|| x509_digest_algor_from_der(hash_algor, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(issuer_name_hash, issuer_name_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(issuer_key_hash, issuer_key_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_integer_from_der(serial_number, serial_number_len, &cert_id, &cert_id_len) != 1
+		|| asn1_length_is_zero(cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+	*revocation_time = (time_t)-1;
+	*revocation_reason = -1;
+	if (asn1_tag_from_der_readonly(&tag, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (tag) {
+	case ASN1_TAG_IMPLICIT(0):
+		if (asn1_implicit_from_der(0, &p, &len, &d, &dlen) != 1
+			|| len != 0) {
+			error_print();
+			return -1;
+		}
+		*cert_status = OCSP_cert_status_good;
+		break;
+	case ASN1_TAG_EXPLICIT(1):
+		if (asn1_type_from_der(ASN1_TAG_EXPLICIT(1), &p, &len, &d, &dlen) != 1
+			|| asn1_generalized_time_from_der(revocation_time, &p, &len) != 1
+			|| asn1_explicit_from_der(0, &q, &qlen, &p, &len) < 0) {
+			error_print();
+			return -1;
+		}
+		if (q) {
+			if (x509_crl_reason_from_der(revocation_reason, &q, &qlen) != 1
+				|| asn1_length_is_zero(qlen) != 1) {
+				error_print();
+				return -1;
+			}
+		}
+		if (asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		*cert_status = OCSP_cert_status_revoked;
+		break;
+	case ASN1_TAG_IMPLICIT(2):
+		if (asn1_implicit_from_der(2, &p, &len, &d, &dlen) != 1
+			|| len != 0) {
+			error_print();
+			return -1;
+		}
+		*cert_status = OCSP_cert_status_unknown;
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+	if (asn1_generalized_time_from_der(this_update, &d, &dlen) != 1
+		|| asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_generalized_time_from_der(next_update, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+	} else {
+		*next_update = (time_t)-1;
+	}
+	if (x509_explicit_exts_from_der(1, exts, extslen, &d, &dlen) < 0
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static int ocsp_revoked_info_print(FILE *fp, int fmt, int ind,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+	time_t tv;
+	int reason;
+
+	if (!d || !dlen) {
+		error_print();
+		return -1;
+	}
+	if (asn1_generalized_time_from_der(&tv, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "revocationTime: %s", ctime(&tv));
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (x509_crl_reason_from_der(&reason, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind, "revocationReason: %s\n", x509_crl_reason_name(reason));
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static const uint32_t oid_pkix_ocsp_crl[] = { 1,3,6,1,5,5,7,48,1,3 };
+static const uint32_t oid_pkix_ocsp_archive_cutoff[] = { 1,3,6,1,5,5,7,48,1,6 };
+
+static int ocsp_single_response_ext_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	int oid;
+	int critical = -1;
+	uint32_t nodes[32];
+	size_t nodes_cnt = 0;
+	const char *ext_name = NULL;
+	const uint8_t *val;
+	size_t vlen;
+	const uint8_t *p;
+	size_t len;
+	time_t tv;
+	int reason;
+
+	if (!d || !dlen) {
+		error_print();
+		return -1;
+	}
+	if (x509_ext_id_from_der(&oid, nodes, &nodes_cnt, &d, &dlen) != 1
+		|| asn1_boolean_from_der(&critical, &d, &dlen) < 0
+		|| asn1_octet_string_from_der(&val, &vlen, &d, &dlen) != 1
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "%s\n", label);
+
+	// extnID
+	if (asn1_object_identifier_equ(nodes, nodes_cnt,
+		oid_pkix_ocsp_crl, oid_cnt(oid_pkix_ocsp_crl))) {
+		oid = OID_pkix_ocsp_crl;
+		ext_name = "CrlID";
+	} else if (asn1_object_identifier_equ(nodes, nodes_cnt,
+		oid_pkix_ocsp_archive_cutoff, oid_cnt(oid_pkix_ocsp_archive_cutoff))) {
+		oid = OID_pkix_ocsp_archive_cutoff;
+		ext_name = "ArchiveCutoff";
+	}
+	switch (oid) {
+	case OID_ce_crl_reasons:
+	case OID_ce_invalidity_date:
+	case OID_ce_certificate_issuer:
+		ext_name = x509_crl_entry_ext_id_name(oid);
+		break;
+	default:
+		ext_name = x509_ext_id_name(oid);
+	}
+	asn1_object_identifier_print(fp, fmt, ind + 4, "extnID", ext_name, nodes, nodes_cnt);
+
+	// critical
+	if (critical != -1) {
+		format_print(fp, fmt, ind + 4, "critical: %s\n", asn1_boolean_name(critical));
+	}
+
+	switch (oid) {
+	case OID_pkix_ocsp_crl:
+		if (asn1_sequence_from_der(&p, &len, &val, &vlen) != 1
+			|| asn1_length_is_zero(vlen) != 1
+			|| ocsp_crl_id_print(fp, fmt, ind + 4, "crlID", p, len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OID_pkix_ocsp_archive_cutoff:
+		if (ocsp_archive_cutoff_print(fp, fmt, ind + 4, "archiveCutoff", val, vlen) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OID_ce_crl_reasons:
+		if (x509_crl_reason_from_der(&reason, &val, &vlen) != 1
+			|| asn1_length_is_zero(vlen) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind + 4, "reasonCode: %s\n", x509_crl_reason_name(reason));
+		break;
+	case OID_ce_invalidity_date:
+		if (asn1_generalized_time_from_der(&tv, &val, &vlen) != 1
+			|| asn1_length_is_zero(vlen) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind + 4, "invalidityDate: %s", ctime(&tv));
+		break;
+	case OID_ce_certificate_issuer:
+		if (asn1_sequence_from_der(&p, &len, &val, &vlen) != 1
+			|| asn1_length_is_zero(vlen) != 1
+			|| x509_general_names_print(fp, fmt, ind + 4, "certificateIssuer", p, len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	default:
+		format_bytes(fp, fmt, ind + 4, "extnValue", val, vlen);
+		break;
+	}
+	return 1;
+}
+
+int ocsp_single_response_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *cert_id;
+	size_t cert_id_len;
+	const uint8_t *p;
+	size_t len;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+	int hash_algor;
+	int cert_status;
+	time_t tv;
+	int tag;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	// certID
+	format_print(fp, fmt, ind, "certID\n");
+	if (asn1_sequence_from_der(&cert_id, &cert_id_len, &d, &dlen) != 1
+		|| x509_digest_algor_from_der(&hash_algor, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(&issuer_name_hash, &issuer_name_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_octet_string_from_der(&issuer_key_hash, &issuer_key_hash_len, &cert_id, &cert_id_len) != 1
+		|| asn1_integer_from_der(&serial_number, &serial_number_len, &cert_id, &cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind + 4, "hashAlgorithm: %s\n", x509_digest_algor_name(hash_algor));
+	format_bytes(fp, fmt, ind + 4, "issuerNameHash", issuer_name_hash, issuer_name_hash_len);
+	format_bytes(fp, fmt, ind + 4, "issuerKeyHash", issuer_key_hash, issuer_key_hash_len);
+	format_bytes(fp, fmt, ind + 4, "serialNumber", serial_number, serial_number_len);
+	if (asn1_length_is_zero(cert_id_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	// certStatus
+	if (asn1_tag_from_der_readonly(&tag, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (tag) {
+	case ASN1_TAG_IMPLICIT(0):
+		if (asn1_implicit_from_der(0, &p, &len, &d, &dlen) != 1 || len != 0) {
+			error_print();
+			return -1;
+		}
+		cert_status = OCSP_cert_status_good;
+		format_print(fp, fmt, ind, "certStatus: %s\n", ocsp_cert_status_name(cert_status));
+		break;
+	case ASN1_TAG_EXPLICIT(1):
+		if (asn1_type_from_der(ASN1_TAG_EXPLICIT(1), &p, &len, &d, &dlen) != 1) {
+			error_print();
+			return -1;
+		}
+		cert_status = OCSP_cert_status_revoked;
+		format_print(fp, fmt, ind, "certStatus: %s\n", ocsp_cert_status_name(cert_status));
+		if (ocsp_revoked_info_print(fp, fmt, ind + 4, p, len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case ASN1_TAG_IMPLICIT(2):
+		if (asn1_implicit_from_der(2, &p, &len, &d, &dlen) != 1 || len != 0) {
+			error_print();
+			return -1;
+		}
+		cert_status = OCSP_cert_status_unknown;
+		format_print(fp, fmt, ind, "certStatus: %s\n", ocsp_cert_status_name(cert_status));
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+
+	// thisUpdate
+	if (asn1_generalized_time_from_der(&tv, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "thisUpdate: %s", ctime(&tv));
+
+	// nextUpdate [0]
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_generalized_time_from_der(&tv, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+		format_print(fp, fmt, ind, "nextUpdate: %s", ctime(&tv));
+	}
+
+	// singleExtensions [1]
+	if (x509_explicit_exts_from_der(1, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		format_print(fp, fmt, ind, "singleExtensions\n");
+	}
+	while (len) {
+		const uint8_t *ext;
+		size_t ext_len;
+
+		if (asn1_sequence_from_der(&ext, &ext_len, &p, &len) != 1
+			|| ocsp_single_response_ext_print(fp, fmt, ind + 4, "Extension", ext, ext_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+
+int ocsp_response_data_to_der(
+	int responder_id_type, const uint8_t *responder_id, size_t responder_id_len,
+	time_t produced_at,
+	const uint8_t *single_response, size_t single_response_len,
+	const uint8_t *response_exts, size_t response_exts_len,
+	uint8_t **out, size_t *outlen)
+{
+	size_t responses_len = 0;
+	size_t len = 0;
+
+
+	// 准备一个responder_id的buf，这样不用充分计算了
+
+	if (!responder_id || !responder_id_len
+		|| !single_response || !single_response_len) {
+		error_print();
+		return -1;
+	}
+	switch (responder_id_type) {
+	case OCSP_responder_id_by_name:
+		if (asn1_explicit_to_der(1, responder_id, responder_id_len, NULL, &len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_responder_id_by_key:
+		if (asn1_implicit_octet_string_to_der(2, responder_id, responder_id_len, NULL, &len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+	if (asn1_generalized_time_to_der(produced_at, NULL, &len) != 1
+		|| asn1_any_to_der(single_response, single_response_len, NULL, &responses_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	if (asn1_sequence_header_to_der(responses_len, NULL, &len) != 1) {
+		error_print();
+		return -1;
+	}
+	len += responses_len;
+	if (x509_explicit_exts_to_der(1, response_exts, response_exts_len, NULL, &len) < 0
+		|| asn1_sequence_header_to_der(len, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (responder_id_type) {
+	case OCSP_responder_id_by_name:
+		if (asn1_explicit_to_der(1, responder_id, responder_id_len, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_responder_id_by_key:
+		if (asn1_implicit_octet_string_to_der(2, responder_id, responder_id_len, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	}
+	if (asn1_generalized_time_to_der(produced_at, out, outlen) != 1
+		|| asn1_sequence_header_to_der(responses_len, out, outlen) != 1
+		|| asn1_any_to_der(single_response, single_response_len, out, outlen) != 1
+		|| x509_explicit_exts_to_der(1, response_exts, response_exts_len, out, outlen) < 0) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_response_data_from_der(
+	int *responder_id_type, const uint8_t **responder_id, size_t *responder_id_len,
+	time_t *produced_at,
+	const uint8_t **single_response_first, size_t *single_response_first_len,
+	const uint8_t **single_response_others, size_t *single_response_others_len,
+	const uint8_t **response_exts, size_t *response_exts_len,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	int version = X509_version_v1;
+	int tag;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *responses;
+	size_t responses_len;
+	const uint8_t *p;
+	size_t len;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (x509_explicit_version_from_der(0, &version, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (version == -1) {
+		version = X509_version_v1;
+	}
+	if (version != X509_version_v1) {
+		error_print();
+		return -1;
+	}
+
+
+	if (asn1_tag_from_der_readonly(&tag, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (tag) {
+	case ASN1_TAG_EXPLICIT(1):
+		if (asn1_explicit_from_der(1, responder_id, responder_id_len, &d, &dlen) != 1) {
+			error_print();
+			return -1;
+		}
+		*responder_id_type = OCSP_responder_id_by_name;
+		break;
+	case ASN1_TAG_IMPLICIT(2):
+		if (asn1_implicit_octet_string_from_der(2, responder_id, responder_id_len, &d, &dlen) != 1) {
+			error_print();
+			return -1;
+		}
+		*responder_id_type = OCSP_responder_id_by_key;
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+
+	if (asn1_generalized_time_from_der(produced_at, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+
+
+	if (asn1_sequence_from_der(&responses, &responses_len, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (!responses) {
+		error_print();
+		return -1;
+	}
+	if (asn1_any_from_der(single_response_first, single_response_first_len, &responses, &responses_len) != 1) {
+		error_print();
+		return -1;
+	}
+	*single_response_others = responses;
+	*single_response_others_len = responses_len;
+	while (responses_len) {
+		if (asn1_sequence_from_der(&p, &len, &responses, &responses_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+
+	if (x509_explicit_exts_from_der(1, response_exts, response_exts_len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+
+
+	if (dlen) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_response_data_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	int ret;
+	int version = X509_version_v1;
+	int tag;
+	const uint8_t *p;
+	size_t len;
+	const uint8_t *responses;
+	size_t responses_len;
+	time_t produced_at;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	if ((ret = x509_explicit_version_from_der(0, &version, &d, &dlen)) < 0) {
+		error_print();
+		return -1;
+	}
+	if (version == -1) {
+		version = X509_version_v1;
+	}
+	if (ret) {
+		format_print(fp, fmt, ind, "version: v1 (%d)\n", version);
+	}
+	if (version != X509_version_v1
+		|| asn1_tag_from_der_readonly(&tag, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	switch (tag) {
+	case ASN1_TAG_EXPLICIT(1):
+		if (asn1_explicit_from_der(1, &p, &len, &d, &dlen) != 1) {
+			error_print();
+			return -1;
+		}
+		{
+			const uint8_t *name = p;
+			size_t name_len = len;
+
+			if (asn1_sequence_from_der(&p, &len, &name, &name_len) != 1
+				|| x509_name_print(fp, fmt, ind, "responderID.byName", p, len) != 1
+				|| asn1_length_is_zero(name_len) != 1) {
+				error_print();
+				return -1;
+			}
+		}
+		break;
+	case ASN1_TAG_IMPLICIT(2):
+		if (asn1_implicit_octet_string_from_der(2, &p, &len, &d, &dlen) != 1) {
+			error_print();
+			return -1;
+		}
+		format_bytes(fp, fmt, ind, "responderID.byKey", p, len);
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+	if (asn1_generalized_time_from_der(&produced_at, &d, &dlen) != 1
+		|| asn1_sequence_from_der(&responses, &responses_len, &d, &dlen) != 1
+		|| !responses_len) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "producedAt: %s", ctime(&produced_at));
+	format_print(fp, fmt, ind, "responses\n");
+	while (responses_len) {
+		if (asn1_sequence_from_der(&p, &len, &responses, &responses_len) != 1
+			|| ocsp_single_response_print(fp, fmt, ind + 4, "SingleResponse", p, len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (x509_explicit_exts_from_der(1, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p && x509_exts_print(fp, fmt, ind, "responseExtensions", p, len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+int ocsp_basic_response_to_der(
+	const uint8_t *response_data, size_t response_data_len,
+	int signature_algor,
+	const uint8_t *signature, size_t signature_len,
+	const uint8_t *certs, size_t certs_len,
+	uint8_t **out, size_t *outlen)
+{
+	size_t certs_seq_len = 0;
+	size_t len = 0;
+
+	if (!response_data || !response_data_len
+		|| !signature || !signature_len) {
+		error_print();
+		return -1;
+	}
+	if (!certs && certs_len) {
+		error_print();
+		return -1;
+	}
+	if (certs_len) {
+		if (asn1_sequence_to_der(certs, certs_len, NULL, &certs_seq_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (asn1_any_to_der(response_data, response_data_len, NULL, &len) != 1
+		|| x509_signature_algor_to_der(signature_algor, NULL, &len) != 1
+		|| asn1_bit_octets_to_der(signature, signature_len, NULL, &len) != 1
+		|| (certs_len && asn1_explicit_header_to_der(0, certs_seq_len, NULL, &len) != 1)) {
+		error_print();
+		return -1;
+	}
+	if (certs_len) {
+		len += certs_seq_len;
+	}
+	if (asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_any_to_der(response_data, response_data_len, out, outlen) != 1
+		|| x509_signature_algor_to_der(signature_algor, out, outlen) != 1
+		|| asn1_bit_octets_to_der(signature, signature_len, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (certs_len) {
+		if (asn1_explicit_header_to_der(0, certs_seq_len, out, outlen) != 1
+			|| asn1_sequence_to_der(certs, certs_len, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	return 1;
+}
+
+int ocsp_basic_response_from_der(
+	const uint8_t **response_data, size_t *response_data_len,
+	int *signature_algor,
+	const uint8_t **signature, size_t *signature_len,
+	const uint8_t **certs, size_t *certs_len,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *p;
+	size_t len;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (asn1_any_from_der(response_data, response_data_len, &d, &dlen) != 1
+		|| x509_signature_algor_from_der(signature_algor, &d, &dlen) != 1
+		|| asn1_bit_octets_from_der(signature, signature_len, &d, &dlen) != 1
+		|| asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		if (asn1_sequence_from_der(certs, certs_len, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+	} else {
+		*certs = NULL;
+		*certs_len = 0;
+	}
+	return 1;
+}
+
+int ocsp_basic_response_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	if (asn1_sequence_from_der(&p, &len, &d, &dlen) != 1
+		|| ocsp_response_data_print(fp, fmt, ind, "tbsResponseData", p, len) != 1
+		|| asn1_sequence_from_der(&p, &len, &d, &dlen) != 1
+		|| x509_signature_algor_print(fp, fmt, ind, "signatureAlgorithm", p, len) != 1
+		|| asn1_bit_octets_from_der(&p, &len, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	format_bytes(fp, fmt, ind, "signature", p, len);
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (p) {
+		const uint8_t *certs_seq = p;
+		size_t certs_seq_len = len;
+
+		if (asn1_sequence_from_der(&p, &len, &certs_seq, &certs_seq_len) != 1
+			|| x509_certs_print(fp, fmt, ind, "certs", p, len) != 1
+			|| asn1_length_is_zero(certs_seq_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+
+
+
+
+static const uint32_t oid_pkix_ocsp_basic[] = { 1,3,6,1,5,5,7,48,1,1 };
+
+static int ocsp_response_bytes_to_der(const uint8_t *basic_response,
+	size_t basic_response_len, uint8_t **out, size_t *outlen)
+{
+	size_t len = 0;
+
+	if (!basic_response || !basic_response_len) {
+		error_print();
+		return -1;
+	}
+	if (asn1_object_identifier_to_der(oid_pkix_ocsp_basic, oid_cnt(oid_pkix_ocsp_basic), NULL, &len) != 1
+		|| asn1_octet_string_to_der(basic_response, basic_response_len, NULL, &len) != 1
+		|| asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_object_identifier_to_der(oid_pkix_ocsp_basic, oid_cnt(oid_pkix_ocsp_basic), out, outlen) != 1
+		|| asn1_octet_string_to_der(basic_response, basic_response_len, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static int ocsp_response_bytes_from_der(const uint8_t **basic_response,
+	size_t *basic_response_len, const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	const uint8_t *d;
+	size_t dlen;
+	uint32_t nodes[32];
+	size_t nodes_cnt;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (asn1_object_identifier_from_der(nodes, &nodes_cnt, &d, &dlen) != 1
+		|| asn1_object_identifier_equ(nodes, nodes_cnt, oid_pkix_ocsp_basic, oid_cnt(oid_pkix_ocsp_basic)) != 1
+		|| asn1_octet_string_from_der(basic_response, basic_response_len, &d, &dlen) != 1
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static int ocsp_response_bytes_print(FILE *fp, int fmt, int ind,
+	const uint8_t *d, size_t dlen)
+{
+	uint32_t nodes[32];
+	size_t nodes_cnt;
+	const uint8_t *basic_response;
+	size_t basic_response_len;
+	const char *name = NULL;
+
+	format_print(fp, fmt, ind, "responseBytes\n");
+	ind += 4;
+
+	if (asn1_object_identifier_from_der(nodes, &nodes_cnt, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (asn1_object_identifier_equ(nodes, nodes_cnt, oid_pkix_ocsp_basic, oid_cnt(oid_pkix_ocsp_basic))) {
+		name = "id-pkix-ocsp-basic";
+	}
+	asn1_object_identifier_print(fp, fmt, ind, "responseType", name, nodes, nodes_cnt);
+	if (!name) {
+		error_print();
+		return -1;
+	}
+	if (asn1_octet_string_from_der(&basic_response, &basic_response_len, &d, &dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	{
+		const uint8_t *basic_response_seq;
+		size_t basic_response_seq_len;
+
+		if (asn1_sequence_from_der(&basic_response_seq, &basic_response_seq_len,
+				&basic_response, &basic_response_len) != 1
+			|| ocsp_basic_response_print(fp, fmt, ind, "response",
+				basic_response_seq, basic_response_seq_len) != 1
+			|| asn1_length_is_zero(basic_response_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+
+static const char *ocsp_response_status_name(int status)
+{
+	switch (status) {
+	case OCSP_response_status_successful:
+		return "successful";
+	case OCSP_response_status_malformed_request:
+		return "malformedRequest";
+	case OCSP_response_status_internal_error:
+		return "internalError";
+	case OCSP_response_status_try_later:
+		return "tryLater";
+	case OCSP_response_status_sig_required:
+		return "sigRequired";
+	case OCSP_response_status_unauthorized:
+		return "unauthorized";
+	default:
+		return NULL;
+	}
+}
+
+int ocsp_response_to_der(int response_status,
+	const uint8_t *basic_response, size_t basic_response_len,
+	uint8_t **out, size_t *outlen)
+{
+	size_t response_bytes_len = 0;
+	size_t len = 0;
+
+	if (!ocsp_response_status_name(response_status)) {
+		error_print();
+		return -1;
+	}
+	if (response_status == OCSP_response_status_successful) {
+		if (ocsp_response_bytes_to_der(basic_response, basic_response_len, NULL, &response_bytes_len) != 1) {
+			error_print();
+			return -1;
+		}
+
+
+
+	} else if (basic_response || basic_response_len) {
+		error_print();
+		return -1;
+	}
+	if (asn1_enumerated_to_der(response_status, NULL, &len) != 1
+		|| (response_status == OCSP_response_status_successful
+			&& asn1_explicit_header_to_der(0, response_bytes_len, NULL, &len) != 1)) {
+		error_print();
+		return -1;
+	}
+	if (response_status == OCSP_response_status_successful) {
+		len += response_bytes_len;
+	}
+	if (asn1_sequence_header_to_der(len, out, outlen) != 1
+		|| asn1_enumerated_to_der(response_status, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (response_status == OCSP_response_status_successful) {
+		if (asn1_explicit_header_to_der(0, response_bytes_len, out, outlen) != 1
+			|| ocsp_response_bytes_to_der(basic_response, basic_response_len, out, outlen) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+	return 1;
+}
+
+int ocsp_response_from_der(int *response_status,
+	const uint8_t **basic_response, size_t *basic_response_len,
+	const uint8_t **in, size_t *inlen)
+{
+	int ret;
+	const uint8_t *d;
+	size_t dlen;
+	const uint8_t *p;
+	size_t len;
+
+	if ((ret = asn1_sequence_from_der(&d, &dlen, in, inlen)) != 1) {
+		if (ret < 0) error_print();
+		return ret;
+	}
+	if (asn1_enumerated_from_der(response_status, &d, &dlen) != 1
+		|| !ocsp_response_status_name(*response_status)
+		|| asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0
+		|| asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	if (*response_status == OCSP_response_status_successful) {
+		if (!p
+			|| ocsp_response_bytes_from_der(basic_response, basic_response_len, &p, &len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+	} else {
+		if (p) {
+			error_print();
+			return -1;
+		}
+		*basic_response = NULL;
+		*basic_response_len = 0;
+	}
+	return 1;
+}
+
+int ocsp_response_print(FILE *fp, int fmt, int ind, const char *label,
+	const uint8_t *d, size_t dlen)
+{
+	const uint8_t *p;
+	size_t len;
+	int response_status;
+
+	format_print(fp, fmt, ind, "%s\n", label);
+	ind += 4;
+
+	if (asn1_enumerated_from_der(&response_status, &d, &dlen) != 1
+		|| !ocsp_response_status_name(response_status)) {
+		error_print();
+		return -1;
+	}
+	format_print(fp, fmt, ind, "responseStatus: %s (%d)\n",
+		ocsp_response_status_name(response_status), response_status);
+	if (asn1_explicit_from_der(0, &p, &len, &d, &dlen) < 0) {
+		error_print();
+		return -1;
+	}
+	if (response_status == OCSP_response_status_successful) {
+		const uint8_t *response_bytes;
+		size_t response_bytes_len;
+
+		if (!p
+			|| asn1_sequence_from_der(&response_bytes, &response_bytes_len, &p, &len) != 1
+			|| ocsp_response_bytes_print(fp, fmt, ind, response_bytes, response_bytes_len) != 1
+			|| asn1_length_is_zero(len) != 1) {
+			error_print();
+			return -1;
+		}
+	} else if (p) {
+		error_print();
+		return -1;
+	}
+	if (asn1_length_is_zero(dlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static const DIGEST *ocsp_digest_from_oid(int oid)
+{
+	switch (oid) {
+	case OID_sm3:
+		return DIGEST_sm3();
+#ifdef ENABLE_SHA1
+	case OID_sha1:
+		return DIGEST_sha1();
+#endif
+#ifdef ENABLE_SHA2
+	case OID_sha224:
+		return DIGEST_sha224();
+	case OID_sha256:
+		return DIGEST_sha256();
+	case OID_sha384:
+		return DIGEST_sha384();
+	case OID_sha512:
+		return DIGEST_sha512();
+#endif
+	default:
+		return NULL;
+	}
+}
+
+#define OCSP_MAX_RESPONDER_ID_SIZE	OCSP_MAX_CERT_SIZE
+#define OCSP_MAX_SINGLE_RESPONSE_SIZE	(OCSP_MAX_EXTS_SIZE + 1024)
+#define OCSP_MAX_RESPONSE_DATA_SIZE	(OCSP_MAX_RESPONDER_ID_SIZE + OCSP_MAX_SINGLE_RESPONSE_SIZE + OCSP_MAX_EXTS_SIZE + 1024)
+#define OCSP_MAX_BASIC_RESPONSE_SIZE	(OCSP_MAX_RESPONSE_DATA_SIZE + OCSP_MAX_CERTS_SIZE + X509_SIGNATURE_MAX_SIZE + 1024)
+
+static int ocsp_sign_get_request_item(const uint8_t *req, size_t reqlen,
+	int *hash_algor,
+	const uint8_t **issuer_name_hash, size_t *issuer_name_hash_len,
+	const uint8_t **issuer_key_hash, size_t *issuer_key_hash_len,
+	const uint8_t **serial_number, size_t *serial_number_len)
+{
+	const uint8_t *p;
+	size_t len;
+	int version;
+	const uint8_t *requestor_name;
+	size_t requestor_name_len;
+	const uint8_t *request_list;
+	size_t request_list_len;
+	const uint8_t *request_exts;
+	size_t request_exts_len;
+	const uint8_t *optional_signature;
+	size_t optional_signature_len;
+	const uint8_t *request;
+	size_t request_len;
+	const uint8_t *single_request_exts;
+	size_t single_request_exts_len;
+
+	if (!req || !reqlen || !hash_algor
+		|| !issuer_name_hash || !issuer_name_hash_len
+		|| !issuer_key_hash || !issuer_key_hash_len
+		|| !serial_number || !serial_number_len) {
+		error_print();
+		return -1;
+	}
+
+	p = req;
+	len = reqlen;
+	if (ocsp_request_from_der(&version,
+		&requestor_name, &requestor_name_len,
+		&request_list, &request_list_len,
+		&request_exts, &request_exts_len,
+		&optional_signature, &optional_signature_len,
+		&p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (asn1_any_from_der(&request, &request_len, &request_list, &request_list_len) != 1) {
+		error_print();
+		return -1;
+	}
+	p = request;
+	len = request_len;
+	if (ocsp_request_item_from_der(hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len,
+		serial_number, serial_number_len,
+		&single_request_exts, &single_request_exts_len,
+		&p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		error_print();
+		return -1;
+	}
+	while (request_list_len) {
+		if (asn1_sequence_from_der(&p, &len, &request_list, &request_list_len) != 1) {
+			error_print();
+			return -1;
+		}
+	}
+
+	return 1;
+}
+
+static int ocsp_sign_check_issuer_cert(const uint8_t *issuer_cert, size_t issuer_cert_len,
+	int hash_algor,
+	const uint8_t *issuer_name_hash, size_t issuer_name_hash_len,
+	const uint8_t *issuer_key_hash, size_t issuer_key_hash_len)
+{
+	const DIGEST *digest_algor;
+	const uint8_t *issuer_subject;
+	size_t issuer_subject_len;
+	X509_KEY issuer_public_key;
+	uint8_t issuer_name[OCSP_MAX_CERT_SIZE];
+	uint8_t *p = issuer_name;
+	size_t issuer_name_len = 0;
+	uint8_t name_hash[DIGEST_MAX_SIZE];
+	size_t name_hash_len;
+	uint8_t key_hash[DIGEST_MAX_SIZE];
+	size_t key_hash_len;
+
+	if (!issuer_cert || !issuer_cert_len
+		|| !issuer_name_hash || !issuer_name_hash_len
+		|| !issuer_key_hash || !issuer_key_hash_len) {
+		error_print();
+		return -1;
+	}
+	if (!(digest_algor = ocsp_digest_from_oid(hash_algor))) {
+		error_print();
+		return -1;
+	}
+	if (x509_cert_get_subject(issuer_cert, issuer_cert_len, &issuer_subject, &issuer_subject_len) != 1
+		|| x509_cert_get_subject_public_key(issuer_cert, issuer_cert_len, &issuer_public_key) != 1
+		|| asn1_sequence_to_der(issuer_subject, issuer_subject_len, NULL, &issuer_name_len) != 1
+		|| asn1_length_le(issuer_name_len, sizeof(issuer_name)) != 1) {
+		error_print();
+		return -1;
+	}
+	issuer_name_len = 0;
+	if (asn1_sequence_to_der(issuer_subject, issuer_subject_len, &p, &issuer_name_len) != 1
+		|| digest(digest_algor, issuer_name, issuer_name_len, name_hash, &name_hash_len) != 1
+		|| x509_public_key_digest_ex(&issuer_public_key, digest_algor, key_hash, &key_hash_len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (issuer_name_hash_len != name_hash_len
+		|| memcmp(issuer_name_hash, name_hash, name_hash_len) != 0
+		|| issuer_key_hash_len != key_hash_len
+		|| memcmp(issuer_key_hash, key_hash, key_hash_len) != 0) {
+		error_print();
+		return -1;
+	}
+
+	return 1;
+}
+
+static int ocsp_sign_get_responder_id(int responder_id_type,
+	const uint8_t *signer_cert, size_t signer_cert_len,
+	uint8_t *responder_id, size_t *responder_id_len, size_t maxlen)
+{
+	const uint8_t *subject;
+	size_t subject_len;
+	X509_KEY public_key;
+	uint8_t *p = responder_id;
+
+	if (!signer_cert || !signer_cert_len || !responder_id || !responder_id_len) {
+		error_print();
+		return -1;
+	}
+	*responder_id_len = 0;
+
+	switch (responder_id_type) {
+	case OCSP_responder_id_by_name:
+		if (x509_cert_get_subject(signer_cert, signer_cert_len, &subject, &subject_len) != 1
+			|| asn1_sequence_to_der(subject, subject_len, NULL, responder_id_len) != 1
+			|| asn1_length_le(*responder_id_len, maxlen) != 1) {
+			error_print();
+			return -1;
+		}
+		*responder_id_len = 0;
+		if (asn1_sequence_to_der(subject, subject_len, &p, responder_id_len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+	case OCSP_responder_id_by_key:
+#ifdef ENABLE_SHA1
+		if (x509_cert_get_subject_public_key(signer_cert, signer_cert_len, &public_key) != 1) {
+			error_print();
+			return -1;
+		}
+		if (DIGEST_MAX_SIZE > maxlen
+			|| x509_public_key_digest_ex(&public_key, DIGEST_sha1(), responder_id, responder_id_len) != 1) {
+			error_print();
+			return -1;
+		}
+		break;
+#else
+		error_print();
+		return -1;
+#endif
+	default:
+		error_print();
+		return -1;
+	}
+
+	return 1;
+}
+
+int ocsp_sign_init(OCSP_SIGN_CTX *ctx,
+	const uint8_t *req, size_t reqlen,
+	const uint8_t *issuer_cert, size_t issuer_cert_len)
+{
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+
+	if (!ctx || !req || !reqlen || !issuer_cert || !issuer_cert_len) {
+		error_print();
+		return -1;
+	}
+	memset(ctx, 0, sizeof(*ctx));
+
+	if (ocsp_sign_get_request_item(req, reqlen,
+		&hash_algor,
+		&issuer_name_hash, &issuer_name_hash_len,
+		&issuer_key_hash, &issuer_key_hash_len,
+		&serial_number, &serial_number_len) != 1
+		|| ocsp_sign_check_issuer_cert(issuer_cert, issuer_cert_len,
+		hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	ctx->req = req;
+	ctx->reqlen = reqlen;
+	ctx->issuer_cert = issuer_cert;
+	ctx->issuer_cert_len = issuer_cert_len;
+	ctx->responder_id_type = OCSP_responder_id_by_name;
+	ctx->produced_at = time(NULL);
+	ctx->next_update = (time_t)-1;
+	ctx->revocation_reason = -1;
+
+	return 1;
+}
+
+int ocsp_sign_set_responder_id_type(OCSP_SIGN_CTX *ctx, int responder_id_type)
+{
+	if (!ctx) {
+		error_print();
+		return -1;
+	}
+	switch (responder_id_type) {
+	case OCSP_responder_id_by_name:
+	case OCSP_responder_id_by_key:
+		break;
+	default:
+		error_print();
+		return -1;
+	}
+	ctx->responder_id_type = responder_id_type;
+	return 1;
+}
+
+int ocsp_sign_set_produced_at(OCSP_SIGN_CTX *ctx, time_t produced_at)
+{
+	if (!ctx || produced_at == (time_t)-1) {
+		error_print();
+		return -1;
+	}
+	ctx->produced_at = produced_at;
+	return 1;
+}
+
+int ocsp_sign_set_next_update(OCSP_SIGN_CTX *ctx, time_t next_update)
+{
+	if (!ctx || next_update == (time_t)-1) {
+		error_print();
+		return -1;
+	}
+	ctx->next_update = next_update;
+	return 1;
+}
+
+int ocsp_sign_set_revocation_reason(OCSP_SIGN_CTX *ctx, int revocation_reason)
+{
+	if (!ctx || !x509_crl_reason_name(revocation_reason)) {
+		error_print();
+		return -1;
+	}
+	ctx->revocation_reason = revocation_reason;
+	return 1;
+}
+
+int ocsp_sign_set_single_response_exts(OCSP_SIGN_CTX *ctx, const uint8_t *exts, size_t extslen)
+{
+	if (!ctx || (!exts && extslen) || extslen > OCSP_MAX_EXTS_SIZE) {
+		error_print();
+		return -1;
+	}
+	ctx->single_response_exts = exts;
+	ctx->single_response_exts_len = extslen;
+	return 1;
+}
+
+int ocsp_sign_set_response_exts(OCSP_SIGN_CTX *ctx, const uint8_t *exts, size_t extslen)
+{
+	if (!ctx || (!exts && extslen) || extslen > OCSP_MAX_EXTS_SIZE) {
+		error_print();
+		return -1;
+	}
+	ctx->response_exts = exts;
+	ctx->response_exts_len = extslen;
+	return 1;
+}
+
+int ocsp_sign_set_certs(OCSP_SIGN_CTX *ctx, const uint8_t *certs, size_t certs_len)
+{
+	if (!ctx || (!certs && certs_len) || certs_len > OCSP_MAX_CERTS_SIZE) {
+		error_print();
+		return -1;
+	}
+	ctx->certs = certs;
+	ctx->certs_len = certs_len;
+	return 1;
+}
+
+int ocsp_sign(OCSP_SIGN_CTX *ctx,
+	int cert_status, time_t revocation_time, time_t this_update,
+	const uint8_t *signer_cert, size_t signer_cert_len,
+	X509_KEY *sign_key, const char *signer_id, size_t signer_id_len,
+	uint8_t **out, size_t *outlen)
+{
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+	uint8_t responder_id[OCSP_MAX_RESPONDER_ID_SIZE];
+	size_t responder_id_len = 0;
+	uint8_t single_response[OCSP_MAX_SINGLE_RESPONSE_SIZE];
+	size_t single_response_len = 0;
+	uint8_t response_data[OCSP_MAX_RESPONSE_DATA_SIZE];
+	size_t response_data_len = 0;
+	uint8_t signature[X509_SIGNATURE_MAX_SIZE];
+	size_t signature_len;
+	uint8_t basic_response[OCSP_MAX_BASIC_RESPONSE_SIZE];
+	size_t basic_response_len = 0;
+	size_t ocsp_response_len = 0;
+	uint8_t *p;
+	int sign_algor;
+	X509_SIGN_CTX sign_ctx;
+	const void *sign_args = signer_id;
+	size_t sign_args_len = signer_id_len;
+
+	if (!ctx || !ctx->req || !ctx->reqlen
+		|| !ctx->issuer_cert || !ctx->issuer_cert_len
+		|| !outlen) {
+		error_print();
+		return -1;
+	}
+
+	if (!signer_cert || !signer_cert_len || !sign_key
+		|| this_update == (time_t)-1
+		|| !ocsp_cert_status_name(cert_status)
+		|| (!signer_id && signer_id_len)
+		|| signer_id_len > SM2_MAX_ID_LENGTH) {
+		error_print();
+		return -1;
+	}
+	if (cert_status == OCSP_cert_status_revoked) {
+		if (revocation_time == (time_t)-1) {
+			error_print();
+			return -1;
+		}
+	} else if (revocation_time != (time_t)-1 || ctx->revocation_reason != -1) {
+		error_print();
+		return -1;
+	}
+
+	if (ocsp_sign_get_request_item(ctx->req, ctx->reqlen,
+		&hash_algor,
+		&issuer_name_hash, &issuer_name_hash_len,
+		&issuer_key_hash, &issuer_key_hash_len,
+		&serial_number, &serial_number_len) != 1
+		|| ocsp_sign_check_issuer_cert(ctx->issuer_cert, ctx->issuer_cert_len,
+		hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len) != 1
+		|| ocsp_sign_get_responder_id(ctx->responder_id_type,
+		signer_cert, signer_cert_len, responder_id, &responder_id_len, sizeof(responder_id)) != 1) {
+		error_print();
+		return -1;
+	}
+
+	if (ocsp_single_response_to_der(hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len,
+		serial_number, serial_number_len,
+		cert_status, revocation_time, ctx->revocation_reason,
+		this_update, ctx->next_update,
+		ctx->single_response_exts, ctx->single_response_exts_len,
+		NULL, &single_response_len) != 1
+		|| asn1_length_le(single_response_len, sizeof(single_response)) != 1) {
+		error_print();
+		return -1;
+	}
+	p = single_response;
+	single_response_len = 0;
+	if (ocsp_single_response_to_der(hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len,
+		serial_number, serial_number_len,
+		cert_status, revocation_time, ctx->revocation_reason,
+		this_update, ctx->next_update,
+		ctx->single_response_exts, ctx->single_response_exts_len,
+		&p, &single_response_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	if (ocsp_response_data_to_der(ctx->responder_id_type,
+		responder_id, responder_id_len,
+		ctx->produced_at,
+		single_response, single_response_len,
+		ctx->response_exts, ctx->response_exts_len,
+		NULL, &response_data_len) != 1
+		|| asn1_length_le(response_data_len, sizeof(response_data)) != 1) {
+		error_print();
+		return -1;
+	}
+	p = response_data;
+	response_data_len = 0;
+	if (ocsp_response_data_to_der(ctx->responder_id_type,
+		responder_id, responder_id_len,
+		ctx->produced_at,
+		single_response, single_response_len,
+		ctx->response_exts, ctx->response_exts_len,
+		&p, &response_data_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	if (x509_key_get_sign_algor(sign_key, &sign_algor) != 1
+		|| x509_key_get_signature_size(sign_key, &signature_len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (sign_key->algor == OID_ec_public_key) {
+		signature_len = SM2_signature_typical_size;
+	}
+
+	if (x509_sign_init(&sign_ctx, sign_key, sign_args, sign_args_len) != 1) {
+		error_print();
+		return -1;
+	}
+	if ((sign_key->algor == OID_ec_public_key
+		&& x509_sign_set_signature_size(&sign_ctx, signature_len) != 1)
+		|| x509_sign(&sign_ctx, response_data, response_data_len, signature, &signature_len) != 1) {
+		x509_sign_ctx_cleanup(&sign_ctx);
+		error_print();
+		return -1;
+	}
+	x509_sign_ctx_cleanup(&sign_ctx);
+
+	if (ocsp_basic_response_to_der(response_data, response_data_len,
+		sign_algor, signature, signature_len,
+		ctx->certs, ctx->certs_len,
+		NULL, &basic_response_len) != 1
+		|| asn1_length_le(basic_response_len, sizeof(basic_response)) != 1) {
+		error_print();
+		return -1;
+	}
+	p = basic_response;
+	basic_response_len = 0;
+	if (ocsp_basic_response_to_der(response_data, response_data_len,
+		sign_algor, signature, signature_len,
+		ctx->certs, ctx->certs_len,
+		&p, &basic_response_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	if (ocsp_response_to_der(OCSP_response_status_successful,
+		basic_response, basic_response_len, NULL, &ocsp_response_len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (ocsp_response_to_der(OCSP_response_status_successful,
+		basic_response, basic_response_len, out, outlen) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static void ocsp_verify_set_reason(OCSP_SIGN_CTX *ctx, int *reason, int value)
+{
+	if (ctx) {
+		ctx->reason = value;
+	}
+	if (reason) {
+		*reason = value;
+	}
+}
+
+static int ocsp_verify_responder_id(int responder_id_type,
+	const uint8_t *responder_id, size_t responder_id_len,
+	const uint8_t *signer_cert, size_t signer_cert_len)
+{
+	uint8_t expected[OCSP_MAX_RESPONDER_ID_SIZE];
+	size_t expected_len = 0;
+
+	if (!responder_id || !responder_id_len || !signer_cert || !signer_cert_len) {
+		error_print();
+		return -1;
+	}
+	if (ocsp_sign_get_responder_id(responder_id_type, signer_cert, signer_cert_len,
+		expected, &expected_len, sizeof(expected)) != 1) {
+		error_print();
+		return -1;
+	}
+	if (expected_len != responder_id_len
+		|| memcmp(expected, responder_id, responder_id_len) != 0) {
+		return 0;
+	}
+	return 1;
+}
+
+static int ocsp_verify_signature(const uint8_t *response_data, size_t response_data_len,
+	int signature_algor, const uint8_t *signature, size_t signature_len,
+	const uint8_t *signer_cert, size_t signer_cert_len,
+	const char *signer_id, size_t signer_id_len)
+{
+	X509_KEY public_key;
+	X509_SIGN_CTX verify_ctx;
+	int sign_algor;
+	const void *sign_args = signer_id;
+	size_t sign_args_len = signer_id_len;
+
+	if (!response_data || !response_data_len
+		|| !signature || !signature_len
+		|| !signer_cert || !signer_cert_len
+		|| (!signer_id && signer_id_len)
+		|| signer_id_len > SM2_MAX_ID_LENGTH) {
+		error_print();
+		return -1;
+	}
+	if (x509_cert_get_subject_public_key(signer_cert, signer_cert_len, &public_key) != 1
+		|| x509_key_get_sign_algor(&public_key, &sign_algor) != 1) {
+		error_print();
+		return -1;
+	}
+	if (signature_algor != sign_algor) {
+		error_print();
+		return -1;
+	}
+	if (!sign_args && public_key.algor == OID_ec_public_key && public_key.algor_param == OID_sm2) {
+		sign_args = SM2_DEFAULT_ID;
+		sign_args_len = SM2_DEFAULT_ID_LENGTH;
+	}
+	if (x509_verify_init(&verify_ctx, &public_key, sign_args, sign_args_len,
+		signature, signature_len) != 1
+		|| x509_verify_update(&verify_ctx, response_data, response_data_len) != 1
+		|| x509_verify_finish(&verify_ctx) != 1) {
+		error_print();
+		return -1;
+	}
+	return 1;
+}
+
+static int ocsp_single_response_match_request(const uint8_t *single_response, size_t single_response_len,
+	int req_hash_algor,
+	const uint8_t *req_issuer_name_hash, size_t req_issuer_name_hash_len,
+	const uint8_t *req_issuer_key_hash, size_t req_issuer_key_hash_len,
+	const uint8_t *req_serial_number, size_t req_serial_number_len,
+	int *cert_status, time_t *revocation_time, int *revocation_reason,
+	time_t *this_update, time_t *next_update)
+{
+	const uint8_t *p = single_response;
+	size_t len = single_response_len;
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+	const uint8_t *exts;
+	size_t extslen;
+
+	if (!single_response || !single_response_len
+		|| !req_issuer_name_hash || !req_issuer_name_hash_len
+		|| !req_issuer_key_hash || !req_issuer_key_hash_len
+		|| !req_serial_number || !req_serial_number_len
+		|| !cert_status || !revocation_time || !revocation_reason
+		|| !this_update || !next_update) {
+		error_print();
+		return -1;
+	}
+	if (ocsp_single_response_from_der(&hash_algor,
+		&issuer_name_hash, &issuer_name_hash_len,
+		&issuer_key_hash, &issuer_key_hash_len,
+		&serial_number, &serial_number_len,
+		cert_status, revocation_time, revocation_reason,
+		this_update, next_update,
+		&exts, &extslen, &p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		error_print();
+		return -1;
+	}
+	if (hash_algor != req_hash_algor
+		|| issuer_name_hash_len != req_issuer_name_hash_len
+		|| memcmp(issuer_name_hash, req_issuer_name_hash, issuer_name_hash_len) != 0
+		|| issuer_key_hash_len != req_issuer_key_hash_len
+		|| memcmp(issuer_key_hash, req_issuer_key_hash, issuer_key_hash_len) != 0
+		|| serial_number_len != req_serial_number_len
+		|| memcmp(serial_number, req_serial_number, serial_number_len) != 0) {
+		return 0;
+	}
+	return 1;
+}
+
+static int ocsp_verify_find_single_response(
+	const uint8_t *single_response_first, size_t single_response_first_len,
+	const uint8_t *single_response_others, size_t single_response_others_len,
+	int req_hash_algor,
+	const uint8_t *req_issuer_name_hash, size_t req_issuer_name_hash_len,
+	const uint8_t *req_issuer_key_hash, size_t req_issuer_key_hash_len,
+	const uint8_t *req_serial_number, size_t req_serial_number_len,
+	int *cert_status, time_t *revocation_time, int *revocation_reason,
+	time_t *this_update, time_t *next_update)
+{
+	const uint8_t *single_response;
+	size_t single_response_len;
+	int ret;
+
+	ret = ocsp_single_response_match_request(single_response_first, single_response_first_len,
+		req_hash_algor,
+		req_issuer_name_hash, req_issuer_name_hash_len,
+		req_issuer_key_hash, req_issuer_key_hash_len,
+		req_serial_number, req_serial_number_len,
+		cert_status, revocation_time, revocation_reason,
+		this_update, next_update);
+	if (ret != 0) {
+		return ret;
+	}
+	while (single_response_others_len) {
+		if (asn1_any_from_der(&single_response, &single_response_len,
+			&single_response_others, &single_response_others_len) != 1) {
+			error_print();
+			return -1;
+		}
+		ret = ocsp_single_response_match_request(single_response, single_response_len,
+			req_hash_algor,
+			req_issuer_name_hash, req_issuer_name_hash_len,
+			req_issuer_key_hash, req_issuer_key_hash_len,
+			req_serial_number, req_serial_number_len,
+			cert_status, revocation_time, revocation_reason,
+			this_update, next_update);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+	return 0;
+}
+
+int ocsp_verify_init(OCSP_SIGN_CTX *ctx,
+	const uint8_t *req, size_t reqlen,
+	const uint8_t *issuer_cert, size_t issuer_cert_len)
+{
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+
+	if (!ctx || !req || !reqlen || !issuer_cert || !issuer_cert_len) {
+		error_print();
+		return -1;
+	}
+	memset(ctx, 0, sizeof(*ctx));
+
+	if (ocsp_sign_get_request_item(req, reqlen,
+		&hash_algor,
+		&issuer_name_hash, &issuer_name_hash_len,
+		&issuer_key_hash, &issuer_key_hash_len,
+		&serial_number, &serial_number_len) != 1
+		|| ocsp_sign_check_issuer_cert(issuer_cert, issuer_cert_len,
+		hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len) != 1) {
+		error_print();
+		return -1;
+	}
+
+	ctx->req = req;
+	ctx->reqlen = reqlen;
+	ctx->issuer_cert = issuer_cert;
+	ctx->issuer_cert_len = issuer_cert_len;
+	ctx->verify_time = time(NULL);
+	ctx->max_clock_skew = 300;
+	ctx->reason = OCSP_VERIFY_REASON_NONE;
+
+	return 1;
+}
+
+int ocsp_verify_set_time(OCSP_SIGN_CTX *ctx, time_t verify_time)
+{
+	if (!ctx || verify_time == (time_t)-1) {
+		error_print();
+		return -1;
+	}
+	ctx->verify_time = verify_time;
+	return 1;
+}
+
+int ocsp_verify_set_clock_skew(OCSP_SIGN_CTX *ctx, int seconds)
+{
+	if (!ctx || seconds < 0) {
+		error_print();
+		return -1;
+	}
+	ctx->max_clock_skew = seconds;
+	return 1;
+}
+
+int ocsp_verify_set_certs(OCSP_SIGN_CTX *ctx, const uint8_t *certs, size_t certs_len)
+{
+	if (!ctx || (!certs && certs_len) || certs_len > OCSP_MAX_CERTS_SIZE) {
+		error_print();
+		return -1;
+	}
+	ctx->certs = certs;
+	ctx->certs_len = certs_len;
+	return 1;
+}
+
+int ocsp_verify(OCSP_SIGN_CTX *ctx,
+	const uint8_t *resp, size_t resplen,
+	const uint8_t *signer_cert, size_t signer_cert_len,
+	const char *signer_id, size_t signer_id_len,
+	int *reason)
+{
+	const uint8_t *p;
+	size_t len;
+	int response_status;
+	const uint8_t *basic_response;
+	size_t basic_response_len;
+	const uint8_t *response_data;
+	size_t response_data_len;
+	int signature_algor;
+	const uint8_t *signature;
+	size_t signature_len;
+	const uint8_t *certs;
+	size_t certs_len;
+	int responder_id_type;
+	const uint8_t *responder_id;
+	size_t responder_id_len;
+	time_t produced_at;
+	const uint8_t *single_response_first;
+	size_t single_response_first_len;
+	const uint8_t *single_response_others;
+	size_t single_response_others_len;
+	const uint8_t *response_exts;
+	size_t response_exts_len;
+	int hash_algor;
+	const uint8_t *issuer_name_hash;
+	size_t issuer_name_hash_len;
+	const uint8_t *issuer_key_hash;
+	size_t issuer_key_hash_len;
+	const uint8_t *serial_number;
+	size_t serial_number_len;
+	int cert_status;
+	time_t revocation_time;
+	int revocation_reason;
+	time_t this_update;
+	time_t next_update;
+	int ret;
+
+	if (!ctx || !ctx->req || !ctx->reqlen
+		|| !ctx->issuer_cert || !ctx->issuer_cert_len
+		|| !resp || !resplen
+		|| !signer_cert || !signer_cert_len
+		|| (!signer_id && signer_id_len)
+		|| signer_id_len > SM2_MAX_ID_LENGTH) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+	ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_NONE);
+
+	p = resp;
+	len = resplen;
+	if (ocsp_response_from_der(&response_status, &basic_response, &basic_response_len,
+		&p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+	if (response_status != OCSP_response_status_successful) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_RESPONSE_STATUS_NOT_SUCCESSFUL);
+		return -1;
+	}
+
+	p = basic_response;
+	len = basic_response_len;
+	if (ocsp_basic_response_from_der(&response_data, &response_data_len,
+		&signature_algor, &signature, &signature_len,
+		&certs, &certs_len, &p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+
+	p = response_data;
+	len = response_data_len;
+	if (ocsp_response_data_from_der(&responder_id_type,
+		&responder_id, &responder_id_len,
+		&produced_at,
+		&single_response_first, &single_response_first_len,
+		&single_response_others, &single_response_others_len,
+		&response_exts, &response_exts_len,
+		&p, &len) != 1
+		|| asn1_length_is_zero(len) != 1) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+
+	ret = ocsp_verify_responder_id(responder_id_type,
+		responder_id, responder_id_len,
+		signer_cert, signer_cert_len);
+	if (ret < 0) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_BAD_RESPONDER_ID);
+		error_print();
+		return -1;
+	}
+	if (ret == 0) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_BAD_RESPONDER_ID);
+		return -1;
+	}
+	if (ocsp_verify_signature(response_data, response_data_len,
+		signature_algor, signature, signature_len,
+		signer_cert, signer_cert_len,
+		signer_id, signer_id_len) != 1) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_BAD_SIGNATURE);
+		error_print();
+		return -1;
+	}
+
+	if (ocsp_sign_get_request_item(ctx->req, ctx->reqlen,
+		&hash_algor,
+		&issuer_name_hash, &issuer_name_hash_len,
+		&issuer_key_hash, &issuer_key_hash_len,
+		&serial_number, &serial_number_len) != 1
+		|| ocsp_sign_check_issuer_cert(ctx->issuer_cert, ctx->issuer_cert_len,
+		hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len) != 1) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+
+	ret = ocsp_verify_find_single_response(single_response_first, single_response_first_len,
+		single_response_others, single_response_others_len,
+		hash_algor,
+		issuer_name_hash, issuer_name_hash_len,
+		issuer_key_hash, issuer_key_hash_len,
+		serial_number, serial_number_len,
+		&cert_status, &revocation_time, &revocation_reason,
+		&this_update, &next_update);
+	if (ret < 0) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+	if (ret == 0) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_NO_MATCHING_SINGLE_RESPONSE);
+		return -1;
+	}
+
+	if (this_update > ctx->verify_time + ctx->max_clock_skew) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_THIS_UPDATE_IN_FUTURE);
+		return -1;
+	}
+	if (next_update != (time_t)-1
+		&& ctx->verify_time - ctx->max_clock_skew > next_update) {
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_NEXT_UPDATE_EXPIRED);
+		return -1;
+	}
+
+	switch (cert_status) {
+	case OCSP_cert_status_good:
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_NONE);
+		return 1;
+	case OCSP_cert_status_revoked:
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_REVOKED);
+		return 0;
+	case OCSP_cert_status_unknown:
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_UNKNOWN);
+		return 0;
+	default:
+		ocsp_verify_set_reason(ctx, reason, OCSP_VERIFY_REASON_MALFORMED_RESPONSE);
+		error_print();
+		return -1;
+	}
+}

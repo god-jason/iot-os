@@ -1,0 +1,166 @@
+﻿/**
+ *************************************************************************************
+ * 版权所有 (C) 2023, 芯昇科技有限公司
+ * 保留所有权利。
+ *
+ * @file        iram_layout.h
+ *
+ * @brief       iram地址规划.
+ *
+ * @revision
+ *
+ * 日期           作者              修改内容
+ * 2023-07-10   ICT Team        创建
+ ************************************************************************************
+ */
+
+#ifndef _IRAM_LAYOUT_H_
+#define _IRAM_LAYOUT_H_
+
+#include <os_compiler.h>
+
+/* IRAM0 */
+#ifdef _OS_WIN
+extern char iram_base_addr[];
+#define IRAM0_BASE_ADDR					    ((unsigned int)(iram_base_addr))
+#else
+#define IRAM0_BASE_ADDR                     (0xC0200000UL)  
+#endif
+#define IRAM0_BASE_LEN_RE                   (128 * 1024UL)
+#define IRAM0_BASE_LEN                      (128 * 1024UL)
+
+#define IRAM_BASE_ADDR_AP_IDLE_STACK        (IRAM0_BASE_ADDR)
+#define IRAM_BASE_LEN_AP_IDLE_STACK         (2 * 1024UL)
+
+#define IRAM_BASE_ADDR_AP_PSM               (IRAM_BASE_ADDR_AP_IDLE_STACK + IRAM_BASE_LEN_AP_IDLE_STACK)
+#if (IRAM_BASE_ADDR_AP_PSM != 0xC0200800)
+#error "IRAM_BASE_ADDR_AP_PSM != 0xC0200800, must modify cpu-ap.lds xmake.lua"
+#endif
+#define IRAM_BASE_LEN_AP_PSM                (10 * 1024UL)
+
+#define IRAM_BASE_ADDR_CP_IDLE_STACK        (IRAM_BASE_ADDR_AP_PSM + IRAM_BASE_LEN_AP_PSM)
+#define IRAM_BASE_LEN_CP_IDLE_STACK         (2 * 1024UL)
+
+#define IRAM_BASE_ADDR_CP_PSM               (IRAM_BASE_ADDR_CP_IDLE_STACK + IRAM_BASE_LEN_CP_IDLE_STACK)
+#if (IRAM_BASE_ADDR_CP_PSM != 0xC0203800)
+#error "IRAM_BASE_ADDR_CP_PSM != 0xC0203800, must modify cpu-cp.lds cp.lua"
+#endif
+#define IRAM_BASE_LEN_CP_PSM                (9 * 1024UL)
+
+#define IRAM_BASE_ADDR_EXCEPTION_INFO       (IRAM_BASE_ADDR_CP_PSM + IRAM_BASE_LEN_CP_PSM)
+#define IRAM_BASE_ADDR_EXCEPTION_INFO_NC    (IRAM_ADDR_CACHE_TO_NONCACHE(IRAM_BASE_ADDR_EXCEPTION_INFO))
+#define IRAM_BASE_LEN_EXCEPTION_INFO        (1 * 1024UL)
+
+/* AP and CP iram share flag start */
+#define IRAM_BASE_ADDR_SHARE_FLAG           (IRAM_BASE_ADDR_EXCEPTION_INFO + IRAM_BASE_LEN_EXCEPTION_INFO)
+#define IRAM_BASE_ADDR_SHARE_FLAG_NC        (IRAM_ADDR_CACHE_TO_NONCACHE(IRAM_BASE_ADDR_SHARE_FLAG))
+#define IRAM_BASE_LEN_SHARE_FLAG            (1 * 1024UL)
+
+#define IRAM_BASE_ADDR_ASSERT_SHARE         (IRAM_BASE_ADDR_SHARE_FLAG)
+#define IRAM_BASE_ADDR_ASSERT_SHARE_NC      (IRAM_BASE_ADDR_SHARE_FLAG_NC)
+#define IRAM_BASE_LEN_ASSERT_SHARE          (16UL)
+
+#define IRAM_BASE_ADDR_EXCEPTION_SHARE      (IRAM_BASE_ADDR_ASSERT_SHARE + IRAM_BASE_LEN_ASSERT_SHARE)
+#define IRAM_BASE_ADDR_EXCEPTION_SHARE_NC   (IRAM_BASE_ADDR_ASSERT_SHARE_NC + IRAM_BASE_LEN_ASSERT_SHARE)
+#define IRAM_BASE_LEN_EXCEPTION_SHARE       (32UL)
+
+#define IRAM_BASE_ADDR_PSM_SHARE            (IRAM_BASE_ADDR_EXCEPTION_SHARE + IRAM_BASE_LEN_EXCEPTION_SHARE)
+#define IRAM_BASE_ADDR_PSM_SHARE_NC         (IRAM_BASE_ADDR_EXCEPTION_SHARE_NC + IRAM_BASE_LEN_EXCEPTION_SHARE)
+#define IRAM_BASE_LEN_PSM_SHARE             (384UL)
+
+#define IRAM_BASE_ADDR_ADC_SHARE_NC         (IRAM_BASE_ADDR_PSM_SHARE_NC + IRAM_BASE_LEN_PSM_SHARE)
+#define IRAM_BASE_LEN_ADC_SHARE             (64UL)
+#define IRAM_BASE_ADDR_XIP_CONFIG           (IRAM_BASE_ADDR_ADC_SHARE_NC + IRAM_BASE_LEN_ADC_SHARE)
+#define IRAM_BASE_LEN_XIP_CONFIG            (32UL)
+#define IRAM_BASE_ADDR_LTE_ULSRSEND_FLAG    (IRAM_BASE_ADDR_XIP_CONFIG + IRAM_BASE_LEN_XIP_CONFIG)
+#define IRAM_BASE_LEN_LTE_ULSRSEND_FLAG     (4UL)
+#define IRAM_BASE_ADDR_LTE_SUBFRAMENUM      (IRAM_BASE_ADDR_LTE_ULSRSEND_FLAG + IRAM_BASE_LEN_LTE_ULSRSEND_FLAG)
+#define IRAM_BASE_LEN_LTE_SUBFRAMENUM       (4UL)
+#define IRAM_BASE_ADDR_SW_SPINLOCK          (IRAM_BASE_ADDR_LTE_SUBFRAMENUM + IRAM_BASE_LEN_LTE_SUBFRAMENUM)
+#define IRAM_BASE_LEN_SW_SPINLOCK           (128UL)
+#define IRAM_BASE_ADDR_TRIM                 (IRAM_BASE_ADDR_SW_SPINLOCK + IRAM_BASE_LEN_SW_SPINLOCK)
+#define IRAM_BASE_LEN_TRIM                  (24UL)
+#define IRAM_BASE_ADDR_ADC_TRIM             (IRAM_BASE_ADDR_TRIM + IRAM_BASE_LEN_TRIM)
+#define IRAM_BASE_LEN_ADC_TRIM              (10UL)
+#define IRAM_BASE_ADDR_PWM_TIMER            (IRAM_BASE_ADDR_ADC_TRIM + IRAM_BASE_LEN_ADC_TRIM)
+#define IRAM_BASE_LEN_PWM_TIMER             (4UL)
+#define IRAM_BASE_ADDR_ADC_EXCEPTION_FLAG   (IRAM_BASE_ADDR_PWM_TIMER + IRAM_BASE_LEN_PWM_TIMER)
+#define IRAM_BASE_LEN_ADC_EXCEPTION_FLAG    (4UL)
+#define IRAM_BASE_ADDR_LPUART_RESTORE_INFO  (IRAM_BASE_ADDR_ADC_EXCEPTION_FLAG + IRAM_BASE_LEN_ADC_EXCEPTION_FLAG)
+#define IRAM_BASE_LEN_LPUART_RESTORE_INFO   (160UL)
+#define IRAM_BASE_ADDR_DCXO_AGE             (IRAM_BASE_ADDR_LPUART_RESTORE_INFO + IRAM_BASE_LEN_LPUART_RESTORE_INFO)
+#define IRAM_BASE_LEN_DCXO_AGE              (4UL)
+#define IRAM_BASE_ADDR_ECO_VERSION          (IRAM_BASE_ADDR_DCXO_AGE + IRAM_BASE_LEN_DCXO_AGE)
+#define IRAM_BASE_LEN_ECO_VERSION           (4UL)
+#define IRAM_BASE_ADDR_WDT_CONFIG           (IRAM_BASE_ADDR_ECO_VERSION + IRAM_BASE_LEN_ECO_VERSION)
+#define IRAM_BASE_LEN_WDT_CONFIG            (2UL)
+#define IRAM_BASE_ADDR_WDT_TIMEOUT_FLAG     (IRAM_BASE_ADDR_WDT_CONFIG + IRAM_BASE_LEN_WDT_CONFIG)
+#define IRAM_BASE_LEN_WDT_TIMEOUT_FLAG      (1UL)
+#define IRAM_BASE_ADDR_EXCEPTION_RESET_FLAG (IRAM_BASE_ADDR_WDT_TIMEOUT_FLAG + IRAM_BASE_LEN_WDT_TIMEOUT_FLAG)
+#define IRAM_BASE_LEN_EXCEPTION_RESET_FLAG  (1UL)
+
+/* AP and CP iram share flag end */
+
+#define IRAM_BASE_ADDR_CP_RE                (IRAM_BASE_ADDR_SHARE_FLAG + IRAM_BASE_LEN_SHARE_FLAG)
+#if (IRAM_BASE_ADDR_CP_RE != 0xC0206400)
+#error "IRAM_BASE_ADDR_CP_RE != 0xC0206400, must modify cpu-cp.lds cp.lua"
+#endif
+#define IRAM_BASE_LEN_CP_RE                 (103 * 1024UL)
+#if (IRAM_BASE_LEN_CP_RE != 103 * 1024UL)
+#error "IRAM_BASE_LEN_CP_RE != 103 * 1024UL, must modify cpu-cp.lds"
+#endif
+
+#define IRAM_BASE_ADDR_CP                   (IRAM0_BASE_ADDR + IRAM0_BASE_LEN_RE)
+#if (IRAM_BASE_ADDR_CP != 0xC0220000)
+#error "IRAM_BASE_ADDR_CP != 0xC0220000, must modify cpu-cp.lds cp.lua"
+#endif
+#define IRAM_BASE_LEN_CP                    (64 * 1024UL)
+#if (IRAM_BASE_LEN_CP != 64 * 1024UL)
+#error "IRAM_BASE_LEN_CP != 64 * 1024UL, must modify cpu-cp.lds"
+#endif
+
+#define IRAM_BASE_ADDR_HARQ                 (IRAM_BASE_ADDR_CP + IRAM_BASE_LEN_CP)
+#define IRAM_BASE_ADDR_HARQ_NC              (IRAM_ADDR_CACHE_TO_NONCACHE(IRAM_BASE_ADDR_HARQ))
+#define IRAM_BASE_LEN_HARQ                  (192 * 1024UL)
+#define IRAM_END_ADDR_HARQ_NC               (IRAM_BASE_ADDR_HARQ_NC + IRAM_BASE_LEN_HARQ)
+
+/* IRAM1 */
+#define IRAM1_BASE_ADDR                     (IRAM0_BASE_ADDR + IRAM0_BASE_LEN_RE + IRAM0_BASE_LEN)
+#define IRAM1_BASE_LEN                      (128 * 1024UL)
+
+/* IRAM2 */
+#define IRAM2_BASE_ADDR                     (IRAM1_BASE_ADDR + IRAM1_BASE_LEN)  
+#define IRAM2_BASE_LEN                      (128 * 1024UL)
+
+#define IRAM_BASE_ADDR_ICP                  (IRAM2_BASE_ADDR)
+#define IRAM_BASE_ADDR_ICP_NC               (IRAM_ADDR_CACHE_TO_NONCACHE(IRAM_BASE_ADDR_ICP))
+#define IRAM_BASE_LEN_ICP                   (17 * 1024UL)
+
+#define IRAM_BASE_ADDR_LTE                  (IRAM_BASE_ADDR_ICP + IRAM_BASE_LEN_ICP)
+#define IRAM_BASE_ADDR_LTE_NC               (IRAM_ADDR_CACHE_TO_NONCACHE(IRAM_BASE_ADDR_LTE))
+#define IRAM_BASE_LEN_LTE                   (1 * 1024UL)
+
+#define IRAM_BASE_ADDR_EDCP                 (IRAM_BASE_ADDR_LTE + IRAM_BASE_LEN_LTE)
+#define IRAM_BASE_LEN_EDCP                  (3 * 1024UL)
+
+#define IRAM_BASE_ADDR_UP_NODE              (IRAM_BASE_ADDR_EDCP + IRAM_BASE_LEN_EDCP)
+#define IRAM_BASE_LEN_UP_NODE               (29 * 1024UL)
+#define IRAM_END_ADDR_UP_NODE               (IRAM_BASE_ADDR_UP_NODE + IRAM_BASE_LEN_UP_NODE)
+
+#define IRAM_BASE_ADDR_AP                   (IRAM_BASE_ADDR_UP_NODE + IRAM_BASE_LEN_UP_NODE)
+#if (IRAM_BASE_ADDR_AP != 0xC026C800)
+#error "IRAM_BASE_ADDR_AP != 0xC026C800, must modify cpu-ap.lds xmake.lua"
+#endif
+#define IRAM_BASE_LEN_AP                    (IRAM2_BASE_ADDR + IRAM2_BASE_LEN - IRAM_BASE_ADDR_AP)
+
+/* idle */
+#ifdef _CPU_AP
+#define OS_IDLE_STACK_ADDR                  (IRAM_BASE_ADDR_AP_IDLE_STACK)
+#define OS_IDLE_STACK_SIZE                  (IRAM_BASE_LEN_AP_IDLE_STACK)
+#endif
+#ifdef _CPU_CP
+#define OS_IDLE_STACK_ADDR                  (IRAM_BASE_ADDR_CP_IDLE_STACK)
+#define OS_IDLE_STACK_SIZE                  (IRAM_BASE_LEN_CP_IDLE_STACK)
+#endif
+
+#endif /* End of _IRAM_LAYOUT_H_ */
