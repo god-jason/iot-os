@@ -8,18 +8,34 @@
 #define iot_fs_dir_t             uint32_t
 #define iot_fs_dirent_t          cm_fs_file_data_t
 
-int32_t iot_fs_open(const char *path, const char *mode);
-int32_t iot_fs_close(iot_fs_file_t fp);
-int32_t iot_fs_read(iot_fs_file_t fp, void *buf, uint32_t size);
-int32_t iot_fs_write(iot_fs_file_t fp, const void *buf, uint32_t size);
-int32_t iot_fs_seek(iot_fs_file_t fp, int32_t offset, int32_t whence);
-int32_t iot_fs_sync(iot_fs_file_t fp);
-int32_t iot_fs_mkdir(const char *path, uint32_t mode);
-iot_fs_dir_t *iot_fs_opendir(const char *path);
-int32_t iot_fs_closedir(iot_fs_dir_t dp);
-iot_fs_dirent_t *iot_fs_readdir(iot_fs_dir_t dp);
-int32_t iot_fs_remove(const char *path);
-int32_t iot_fs_rename(const char *oldpath, const char *newpath);
-int32_t iot_fs_access(const char *path, int32_t mode);
+#define iot_fs_open(path, mode) \
+    cm_fs_open((path), (mode))
+
+#define iot_fs_close(fp) \
+    cm_fs_close((fp))
+
+#define iot_fs_read(fp, buf, size) \
+    cm_fs_read((fp), (buf), (size))
+
+#define iot_fs_write(fp, buf, size) \
+    cm_fs_write((fp), (buf), (size))
+
+#define iot_fs_seek(fp, offset, whence) \
+    cm_fs_seek((fp), (offset), (whence))
+
+#define iot_fs_sync(fp) \
+    cm_fs_sync((fp))
+
+#define iot_fs_mkdir(path, mode) \
+    cm_fs_mkdir((path))
+
+#define iot_fs_remove(path) \
+    cm_fs_delete((path))
+
+#define iot_fs_rename(oldpath, newpath) \
+    cm_fs_move((oldpath), (newpath))
+
+#define iot_fs_access(path, mode) \
+    cm_fs_exist((path))
 
 #endif
