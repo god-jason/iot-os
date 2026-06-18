@@ -2,7 +2,7 @@
  * @file iot_adc.c
  * @brief ML307N 平台 ADC 适配器实现
  * @details 基于 cm_adc 接口实现 ADC 功能封装，
- *          支持枚举类型参数转换。
+ *          支持跨平台编译。
  */
 
 #include "iot_adc.h"
@@ -19,7 +19,7 @@
 int iot_adc_init(iot_adc_t adc)
 {
     (void)adc;
-    return 0;
+    return IOT_OK;
 }
 
 /**
@@ -30,47 +30,45 @@ int iot_adc_init(iot_adc_t adc)
 int iot_adc_deinit(iot_adc_t adc)
 {
     (void)adc;
-    return 0;
-}
-
-/**
- * @brief 读取ADC原始值
- * @param[in] adc ADC设备
- * @param[in] channel ADC通道
- * @return ADC原始值，负值表示失败
- */
-int32_t iot_adc_read_raw(iot_adc_t adc, iot_adc_channel_t channel)
-{
-    return cm_adc_read((cm_adc_dev_e)adc, (int32_t *)channel);
+    return IOT_OK;
 }
 
 /**
  * @brief 读取ADC电压值
- * @param[in] adc ADC设备
+ * @param[in] adc ADC设备 (CM_ADC_0 或 CM_ADC_1)
  * @param[out] voltage 电压值指针（单位:mV）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
-int iot_adc_read_voltage(iot_adc_t adc, int32_t *voltage)
+int iot_adc_read(iot_adc_t adc, int32_t *voltage)
 {
+    if (voltage == NULL) {
+        return IOT_ERR_PARAM;
+    }
     return cm_adc_read((cm_adc_dev_e)adc, voltage);
 }
 
 /**
  * @brief 读取VBAT电压
  * @param[out] voltage 电压值指针（单位:mV）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_read_vbat(int32_t *voltage)
 {
+    if (voltage == NULL) {
+        return IOT_ERR_PARAM;
+    }
     return cm_adc_vbat_read(voltage);
 }
 
 /**
  * @brief 读取温度
  * @param[out] temperature 温度值指针（单位:0.1摄氏度）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_read_temperature(int32_t *temperature)
 {
+    if (temperature == NULL) {
+        return IOT_ERR_PARAM;
+    }
     return cm_adc_temperature_read(temperature);
 }

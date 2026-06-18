@@ -9,6 +9,7 @@
 #define IOT_AT_ML307N_H
 
 #include "cm_virt_at.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一AT类型定义（跨平台兼容）

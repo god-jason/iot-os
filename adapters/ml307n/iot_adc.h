@@ -9,20 +9,13 @@
 #define IOT_ADC_ML307N_H
 
 #include "cm_adc.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一 ADC 类型定义（跨平台兼容）
  * ============================================================ */
 
-/** @brief ADC通道枚举 */
-typedef enum {
-    IOT_ADC_CH_0 = 0,              /**< ADC通道0 */
-    IOT_ADC_CH_1 = 1,              /**< ADC通道1 */
-    IOT_ADC_CH_VBAT = 2,           /**< 电池电压通道 */
-    IOT_ADC_CH_TEMP = 3,           /**< 温度传感器通道 */
-} iot_adc_channel_t;
-
-/** @brief ADC设备类型 */
+/** @brief ADC设备类型（直接使用平台定义） */
 typedef cm_adc_dev_e iot_adc_t;
 
 /* ============================================================
@@ -31,45 +24,37 @@ typedef cm_adc_dev_e iot_adc_t;
 
 /**
  * @brief 初始化ADC
- * @param[in] adc ADC设备
- * @return 0 成功
+ * @param[in] adc ADC设备 (CM_ADC_0 或 CM_ADC_1)
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_init(iot_adc_t adc);
 
 /**
  * @brief 去初始化ADC
  * @param[in] adc ADC设备
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_deinit(iot_adc_t adc);
 
 /**
- * @brief 读取ADC原始值
- * @param[in] adc ADC设备
- * @param[in] channel ADC通道
- * @return ADC原始值，负值表示失败
- */
-int32_t iot_adc_read_raw(iot_adc_t adc, iot_adc_channel_t channel);
-
-/**
  * @brief 读取ADC电压值
- * @param[in] adc ADC设备
+ * @param[in] adc ADC设备 (CM_ADC_0 或 CM_ADC_1)
  * @param[out] voltage 电压值指针（单位:mV）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
-int iot_adc_read_voltage(iot_adc_t adc, int32_t *voltage);
+int iot_adc_read(iot_adc_t adc, int32_t *voltage);
 
 /**
  * @brief 读取VBAT电压
  * @param[out] voltage 电压值指针（单位:mV）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_read_vbat(int32_t *voltage);
 
 /**
  * @brief 读取温度
  * @param[out] temperature 温度值指针（单位:0.1摄氏度）
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_adc_read_temperature(int32_t *temperature);
 

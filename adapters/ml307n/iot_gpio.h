@@ -1,14 +1,15 @@
 /**
  * @file iot_gpio.h
  * @brief ML307N 平台 GPIO 适配器头文件
- * @details 基于 cm_gpio 接口实现 GPIO 功能封装，
+ * @details 基于 cm_gpio_v2 接口实现 GPIO 功能封装，
  *          定义统一的 GPIO 类型，支持跨平台编译。
  */
 
 #ifndef IOT_GPIO_ML307N_H
 #define IOT_GPIO_ML307N_H
 
-#include "cm_gpio.h"
+#include "cm_gpio_v2.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一 GPIO 类型定义（跨平台兼容）
@@ -33,7 +34,7 @@ typedef enum {
     IOT_GPIO_PULL_DOWN = 2,          /**< 下拉 */
 } iot_gpio_pull_t;
 
-/** @brief GPIO中断触发模式枚举 */
+/** @brief GPIO中断触发模式枚举（与平台CM_GPIO_IT_xxx一致） */
 typedef enum {
     IOT_GPIO_IRQ_RISING      = 0,    /**< 上升沿触发 */
     IOT_GPIO_IRQ_FALLING     = 1,    /**< 下降沿触发 */
@@ -56,7 +57,7 @@ typedef void (*iot_gpio_irq_cb_t)(void *arg);
  * ============================================================ */
 
 /** @brief GPIO引脚类型 */
-typedef cm_gpio_pin_e iot_gpio_t;
+typedef cm_gpio_num_e iot_gpio_t;
 
 /* ============================================================
  * GPIO 操作函数声明
@@ -66,23 +67,38 @@ typedef cm_gpio_pin_e iot_gpio_t;
  * @brief 初始化GPIO
  * @param[in] pin GPIO引脚
  * @param[in] config GPIO配置参数
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_init(iot_gpio_t pin, const iot_gpio_config_t *config);
+
+/**
+ * @brief 去初始化GPIO
+ * @param[in] pin GPIO引脚
+ * @return 0 成功，负值表示失败
+ */
+int iot_gpio_deinit(iot_gpio_t pin);
 
 /**
  * @brief 设置GPIO方向
  * @param[in] pin GPIO引脚
  * @param[in] dir 方向
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_set_dir(iot_gpio_t pin, iot_gpio_dir_t dir);
+
+/**
+ * @brief 获取GPIO方向
+ * @param[in] pin GPIO引脚
+ * @param[out] dir 方向指针
+ * @return 0 成功，负值表示失败
+ */
+int iot_gpio_get_dir(iot_gpio_t pin, iot_gpio_dir_t *dir);
 
 /**
  * @brief 设置GPIO输出电平
  * @param[in] pin GPIO引脚
  * @param[in] level 电平
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_write(iot_gpio_t pin, iot_gpio_level_t level);
 
@@ -96,7 +112,7 @@ iot_gpio_level_t iot_gpio_read(iot_gpio_t pin);
 /**
  * @brief 翻转GPIO输出电平
  * @param[in] pin GPIO引脚
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_toggle(iot_gpio_t pin);
 
@@ -106,14 +122,14 @@ int iot_gpio_toggle(iot_gpio_t pin);
  * @param[in] mode 中断触发模式
  * @param[in] cb 中断回调函数
  * @param[in] arg 回调参数
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_irq_enable(iot_gpio_t pin, iot_gpio_irq_mode_t mode, iot_gpio_irq_cb_t cb, void *arg);
 
 /**
  * @brief 禁用GPIO中断
  * @param[in] pin GPIO引脚
- * @return 0 成功
+ * @return 0 成功，负值表示失败
  */
 int iot_gpio_irq_disable(iot_gpio_t pin);
 

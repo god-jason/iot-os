@@ -11,6 +11,7 @@
 #include "cm_audio_common.h"
 #include "cm_audio_player.h"
 #include "cm_audio_recorder.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一音频类型定义（跨平台兼容）

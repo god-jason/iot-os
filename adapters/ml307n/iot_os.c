@@ -85,7 +85,7 @@ int iot_sem_wait(iot_sem_t sem)
 int iot_sem_wait_timeout(iot_sem_t sem, uint32_t timeout_ms)
 {
     osStatus_t status = osSemaphoreAcquire(sem, timeout_ms);
-    return (status == osOK) ? 0 : -1_TIMEOUT;
+    return (status == osOK) ? IOT_OK : IOT_ERR_TIMEOUT;
 }
 
 /**
@@ -154,7 +154,7 @@ int iot_queue_send(iot_queue_t queue, const void *data, uint32_t timeout_ms)
 int iot_queue_recv(iot_queue_t queue, void *data, uint32_t timeout_ms)
 {
     osStatus_t status = osMessageQueueGet(queue, data, NULL, timeout_ms);
-    return (status == osOK) ? 0 : -1_TIMEOUT;
+    return (status == osOK) ? IOT_OK : IOT_ERR_TIMEOUT;
 }
 
 /**

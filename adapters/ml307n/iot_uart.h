@@ -9,6 +9,7 @@
 #define IOT_UART_ML307N_H
 
 #include "cm_uart.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一 UART 类型定义（跨平台兼容）

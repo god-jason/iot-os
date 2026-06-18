@@ -11,6 +11,7 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 #include "lwip/inet.h"
+#include "../../iot_types.h"
 
 /* ============================================================
  * 统一 Socket 类型定义（跨平台兼容）
