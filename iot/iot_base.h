@@ -28,6 +28,4 @@
 #include "lauxlib.h"
 
 
-
-
 #endif /* IOT_BASE_H */

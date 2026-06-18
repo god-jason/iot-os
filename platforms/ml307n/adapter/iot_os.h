@@ -119,4 +119,7 @@
 #define iot_get_tick_freq() \
     osKernelGetTickFreq()
 
+#define iot_task_exit() \
+    osThreadExit()
+
 #endif /* IOT_OS_ML307N_H */

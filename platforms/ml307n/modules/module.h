@@ -8,8 +8,8 @@
  * @date    2026.06.10
  */
 
-#ifndef IOT_COMMON_H
-#define IOT_COMMON_H
+#ifndef IOT_MODULE_H
+#define IOT_MODULE_H
 
 
 // C 标准库
@@ -27,17 +27,8 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "iot_log.h"
+#include "iot_os.h"
+#include "iot_mem.h"
 
-// 定义内存分配函数，用于动态分配内存，避免直接使用malloc/free等系统函数
-#define iot_malloc(size) cm_malloc(size)
-#define iot_free(ptr) cm_free(ptr)
-#define iot_realloc(ptr, size) cm_realloc(ptr, size)
-#define iot_calloc(size, count) cm_calloc(size, count)
-
-
-// 日志定义，打印函数史，行号，以及换行回车
-#undef LOG
-#define LOG(fmt, ...) cm_log_printf("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
-
-#endif /* IOT_BASE_H */
+#endif /* IOT_MODULE_H */

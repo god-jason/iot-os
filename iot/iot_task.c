@@ -11,6 +11,8 @@
 #include "iot_task.h"
 #include "iot_event.h"
 #include "iot_base.h"
+#include "iot_os.h"
+#include "iot_fs.h"
 #include "iot_rtos.h"
 #include "iot_modules.h"
 #include "iot.luac.h"
@@ -40,7 +42,7 @@ static bool iot_load_lua_file(lua_State* L, const char* lua_path)
     snprintf(luac_path, sizeof(luac_path), "%sc", lua_path);
     
     /* 1. 优先尝试加载 .luac 文件 */
-    if (cm_fs_exist(luac_path)) {
+    if (iot_fs_access(luac_path, 0)) {
         LOG("%s", luac_path);
         if (luaL_dofile(L, luac_path) == LUA_OK) {
             LOG("OK %s", luac_path);
@@ -52,7 +54,7 @@ static bool iot_load_lua_file(lua_State* L, const char* lua_path)
     }
     
     /* 2. 如果 .luac 加载失败，尝试加载原来的 .lua 文件 */
-    if (cm_fs_exist(lua_path)) {
+    if (iot_fs_access(lua_path, 0)) {
         LOG("%s", lua_path);
         if (luaL_dofile(L, lua_path) == LUA_OK) {
             LOG("OK %s", lua_path);
@@ -73,18 +75,18 @@ static bool iot_load_lua_file(lua_State* L, const char* lua_path)
  */
 static void delete_directory_recursive(const char *dir_path)
 {
-    cm_fs_file_data_t file_data;
-    uint32_t find_fd;
+    iot_fs_dirent_t file_data;
+    iot_fs_dir_t find_fd;
     char full_path[256];
 
     /* 打开目录遍历 */
-    find_fd = cm_fs_find_first(dir_path, &file_data);
+    find_fd = iot_fs_opendir(dir_path);
     if (find_fd == 0) {
         /* 目录为空或无法遍历 */
         return;
     }
 
-    do {
+    while (iot_fs_readdir(find_fd, &file_data) == 0) {
         /* 跳过 "." 和 ".." */
         if (file_data.file_name[0] == '.' &&
             (file_data.file_name[1] == '\0' ||
@@ -97,18 +99,18 @@ static void delete_directory_recursive(const char *dir_path)
 
         if (file_data.file_attr == 1) {
             /* 文件：直接删除 */
-            cm_fs_delete(full_path);
+            iot_fs_remove(full_path);
         } else {
             /* 目录：递归删除 */
             delete_directory_recursive(full_path);
         }
-    } while (cm_fs_find_next(find_fd, &file_data) == 0);
+    }
 
     /* 关闭遍历句柄 */
-    cm_fs_find_close(find_fd);
+    iot_fs_closedir(find_fd);
 
     /* 删除空目录 */
-    cm_fs_rmdir(dir_path);
+    iot_fs_remove(dir_path);
 }
 
 /**
@@ -119,7 +121,7 @@ static void clear_app_dir(void)
     /* 递归删除/app下所有文件和目录 */
     delete_directory_recursive(APP_DIR);
     /* 重新创建/app目录 */
-    cm_fs_mkdir(APP_DIR);
+    iot_fs_mkdir(APP_DIR, 0);
 }
 
 /**
@@ -128,7 +130,7 @@ static void clear_app_dir(void)
 static void check_and_extract_app_zip(void)
 {
     /* 检查app.zip 是否存在 */
-    if (cm_fs_exist(APP_ZIP_PATH)) {
+    if (iot_fs_access(APP_ZIP_PATH, 0)) {
         LOG("app.zip exists, clear app dir and extract");
         clear_app_dir();
         int ret = zip_decompress_file(APP_ZIP_PATH, APP_DIR);
@@ -137,7 +139,7 @@ static void check_and_extract_app_zip(void)
         } else {
             LOG("zip decompress failed ret=%d", ret);
         }
-    } else if (cm_fs_exist(APP_TAR_PATH)) {
+    } else if (iot_fs_access(APP_TAR_PATH, 0)) {
         LOG("app.tar.gz exists, clear app dir and extract");
         clear_app_dir();
         int ret = tar_decompress_file(APP_TAR_PATH, APP_DIR);
@@ -232,7 +234,7 @@ static void iot_lua_task(void* argument)
     lua_close(g_lua_state);
     g_lua_state = NULL;
 
-    osThreadExit();
+    iot_task_exit();
 }
 
 /**
@@ -241,12 +243,7 @@ static void iot_lua_task(void* argument)
 bool iot_start(void)
 {
     LOG("start");
-    osThreadAttr_t attr = {
-        .name = "lua",
-        .stack_size = LUA_STACK_SIZE,
-        .priority = osPriorityNormal
-    };
 
-    osThreadId_t tid = osThreadNew(iot_lua_task, NULL, &attr);
+    iot_task_t tid = iot_task_create("lua", iot_lua_task, NULL, LUA_STACK_SIZE, IOT_OS_PRIO_NORMAL);
     return (tid != NULL);
 }

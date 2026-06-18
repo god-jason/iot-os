@@ -12,7 +12,6 @@ local decoded = base64.decode(encoded)
 */
 
 #include "lua.h"
-#include "cm_mem.h"
 #include "iot_base.h"
 
 /*

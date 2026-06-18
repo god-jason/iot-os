@@ -8,7 +8,7 @@
 
 #include "lua.h"
 #include "iot_base.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_params.h"
 
 /* 消息队列大小 */
@@ -19,7 +19,7 @@
 
 /* 定时器上下文 */
 typedef struct {
-    osTimerId_t timer_id;
+    iot_timer_t timer_id;
     uint32_t timeout_ticks;
     uint32_t flags;
     uint32_t timer_id_lua;  /* 给Lua的ID (slot+1) */
@@ -27,7 +27,7 @@ typedef struct {
 } timer_ctx_t;
 
 /* 全局消息队列 */
-static osMessageQueueId_t g_rtos_msg_queue = NULL;
+static iot_queue_t g_rtos_msg_queue = NULL;
 
 /* Lua状态机指针 */
 static lua_State* g_lua_L = NULL;
@@ -103,7 +103,7 @@ bool iot_rtos_msg_init(void)
 {
     timer_context_init();
 
-    g_rtos_msg_queue = osMessageQueueNew(RTOS_MSG_QUEUE_SIZE, sizeof(rtos_msg_t*), NULL);
+    g_rtos_msg_queue = iot_queue_create(RTOS_MSG_QUEUE_SIZE, sizeof(rtos_msg_t*));
     if (g_rtos_msg_queue == NULL) {
         LOG("ERR queue create");
         return false;
@@ -122,7 +122,7 @@ static void iot_rtos_send_msg_internal(rtos_msg_t* msg)
         iot_rtos_msg_destroy(msg);
         return;
     }
-    osMessageQueuePut(g_rtos_msg_queue, &msg, 0, 0);
+    iot_queue_send(g_rtos_msg_queue, &msg, 0);
 }
 
 /**
@@ -221,26 +221,25 @@ static int iot_rtos_timer_create(lua_State* L)
     }
 
     timer_ctx_t* ctx = &g_timer_ctx[slot];
-    ctx->timeout_ticks = (timeout_ms * osKernelGetTickFreq()) / 1000;
+    ctx->timeout_ticks = (timeout_ms * iot_get_tick_freq()) / 1000;
     ctx->flags = periodic ? 0x01 : 0x00;
     ctx->periodic = periodic;
     ctx->timer_id_lua = slot + 1;
 
-    osTimerType_t timer_type = periodic ? osTimerPeriodic : osTimerOnce;
-    ctx->timer_id = osTimerNew(timer_callback_wrapper, timer_type, (void*)(uintptr_t)slot, NULL);
+    iot_timer_type_t timer_type = periodic ? IOT_TIMER_PERIODIC : IOT_TIMER_ONCE;
+    ctx->timer_id = iot_timer_create(timer_callback_wrapper, (void*)(uintptr_t)slot, ctx->timeout_ticks, timer_type);
 
     if (ctx->timer_id == NULL) {
-        LOG("ERR osTimerNew");
+        LOG("ERR timer create");
         ctx->timer_id_lua = 0;
         lua_pushnil(L);
         lua_pushstring(L, "failed to create timer");
         return 2;
     }
 
-    osStatus_t status = osTimerStart(ctx->timer_id, ctx->timeout_ticks);
-    if (status != osOK) {
-        LOG("ERR osTimerStart status=%d", status);
-        osTimerDelete(ctx->timer_id);
+    if (iot_timer_start(ctx->timer_id, ctx->timeout_ticks) != 0) {
+        LOG("ERR timer start");
+        iot_timer_delete(ctx->timer_id);
         ctx->timer_id = NULL;
         ctx->timer_id_lua = 0;
         lua_pushnil(L);
@@ -275,9 +274,9 @@ static int iot_rtos_timer_stop(lua_State* L)
         return 1;
     }
 
-    osStatus_t status = osTimerStop(ctx->timer_id);
-    LOG("stop id=%d, status=%d", id, status);
-    lua_pushboolean(L, (status == osOK) ? 1 : 0);
+    int ret = iot_timer_stop(ctx->timer_id);
+    LOG("stop id=%d, ret=%d", id, ret);
+    lua_pushboolean(L, (ret == 0) ? 1 : 0);
     return 1;
 }
 
@@ -303,6 +302,7 @@ static int iot_rtos_timer_is_running(lua_State* L)
         return 1;
     }
 
+    /* osTimerIsRunning has no direct iot_ wrapper, use cm_os directly */
     uint32_t running = osTimerIsRunning(ctx->timer_id);
     lua_pushboolean(L, running ? 1 : 0);
     return 1;
@@ -326,8 +326,8 @@ static int iot_rtos_timer_delete(lua_State* L)
     timer_ctx_t* ctx = &g_timer_ctx[slot];
 
     if (ctx->timer_id != NULL) {
-        osTimerStop(ctx->timer_id);
-        osTimerDelete(ctx->timer_id);
+        iot_timer_stop(ctx->timer_id);
+        iot_timer_delete(ctx->timer_id);
         ctx->timer_id = NULL;
     }
 
@@ -349,9 +349,9 @@ static int iot_rtos_recv(lua_State* L)
 {
     uint32_t timeout = (uint32_t)luaL_optinteger(L, 1, 0);
     rtos_msg_t* msg = NULL;
-    uint8_t prio = 0;
 
-    osStatus_t status = osMessageQueueGet(g_rtos_msg_queue, &msg, &prio, timeout);
+    /* 使用 osMessageQueueGet 直接获取状态，因为 iot_queue_recv 返回 void */
+    osStatus_t status = osMessageQueueGet(g_rtos_msg_queue, &msg, NULL, timeout);
     if (status != osOK || msg == NULL) {
         lua_pushnil(L);
         return 1;
