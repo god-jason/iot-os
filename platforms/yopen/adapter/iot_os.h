@@ -16,7 +16,6 @@
 
 #define iot_mutex_t              yopen_mutex_t
 #define iot_sem_t                yopen_sem_t
-#define iot_queue_t              yopen_queue_t
 #define iot_timer_t              yopen_timer_t
 #define iot_task_t               yopen_task_t
 
@@ -71,18 +70,6 @@
 
 #define iot_sem_delete(sem) \
     yopen_rtos_semaphore_delete((sem))
-
-#define iot_queue_create(msg_num, msg_size) \
-    yopen_rtos_queue_create((msg_num), (msg_size))
-
-#define iot_queue_send(queue, data, timeout_ms) \
-    yopen_rtos_queue_release((queue), (uint32_t)(msg_size), (uint8*)(data), (timeout_ms))
-
-#define iot_queue_recv(queue, data, timeout_ms) \
-    yopen_rtos_queue_acquire((queue), (uint32_t*)(msg_size), (uint8*)(data), (timeout_ms))
-
-#define iot_queue_delete(queue) \
-    yopen_rtos_queue_delete((queue))
 
 #define iot_timer_create(cb, arg, period_ms, type) \
     yopen_rtos_timer_create((cb), (arg), (period_ms), (type))

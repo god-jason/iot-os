@@ -16,7 +16,6 @@
 
 #define iot_mutex_t              osMutexId_t
 #define iot_sem_t                osSemaphoreId_t
-#define iot_queue_t              osMessageQueueId_t
 #define iot_timer_t              osTimerId_t
 #define iot_task_t               osThreadId_t
 
@@ -71,18 +70,6 @@
 
 #define iot_sem_delete(sem) \
     osSemaphoreDelete((sem))
-
-#define iot_queue_create(msg_num, msg_size) \
-    osMessageQueueNew((msg_num), (msg_size), NULL)
-
-#define iot_queue_send(queue, data, timeout_ms) \
-    osMessageQueuePut((queue), (data), 0, (timeout_ms))
-
-#define iot_queue_recv(queue, data, timeout_ms) \
-    osMessageQueueGet((queue), (data), NULL, (timeout_ms))
-
-#define iot_queue_delete(queue) \
-    osMessageQueueDelete((queue))
 
 #define iot_timer_create(cb, arg, period_ms, type) \
     osTimerNew((cb), (type), (arg), NULL)
