@@ -21,7 +21,7 @@ end
 */
 
 #include "module.h"
-#include "yopen_mem.h"
+#include "yopen_api_common.h"
 
 /**
  * @brief 获取内存信息
@@ -31,8 +31,9 @@ end
  * @return int free  空闲内存(字节)
  */
 static int luaopen_mem_info(lua_State* L) {
-    uint32 total = 0, used = 0, free = 0;
-    yopen_mem_info(&total, &used, &free);
+    uint32_t total = yopen_get_total_heap_size();
+    uint32_t free = yopen_get_free_heap_size();
+    uint32_t used = total - free;
     lua_pushinteger(L, total);
     lua_pushinteger(L, used);
     lua_pushinteger(L, free);

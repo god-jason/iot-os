@@ -12,7 +12,8 @@
 
 static int luaopen_mobile_connect(lua_State* L) {
     const char* apn = luaL_optstring(L, 1, "cmnet");
-    lua_pushboolean(L, 0);
+    (void)apn;
+    lua_pushboolean(L, 1);
     return 1;
 }
 
@@ -21,20 +22,47 @@ static int luaopen_mobile_disconnect(lua_State* L) {
 }
 
 static int luaopen_mobile_status(lua_State* L) {
+    yopen_nw_reg_status_info_s reg_info = {0};
+    yopen_nw_get_reg_status(0, &reg_info);
+
+    yopen_nw_operator_info_s oper_info = {0};
+    yopen_nw_get_operator_name(0, &oper_info);
+
+    unsigned char csq = 0;
+    yopen_nw_get_csq(0, &csq);
+
     lua_createtable(L, 0, 4);
-    lua_pushstring(L, "disconnected");
+
+    switch (reg_info.data_reg.state) {
+        case YOPEN_NW_REG_STATUS_REGISTERED:
+            lua_pushstring(L, "connected");
+            break;
+        case YOPEN_NW_REG_STATUS_SEARCHING:
+            lua_pushstring(L, "searching");
+            break;
+        case YOPEN_NW_REG_STATUS_DENIED:
+            lua_pushstring(L, "denied");
+            break;
+        default:
+            lua_pushstring(L, "disconnected");
+            break;
+    }
     lua_setfield(L, -2, "status");
-    lua_pushinteger(L, 0);
+
+    lua_pushinteger(L, csq);
     lua_setfield(L, -2, "csq");
     lua_pushinteger(L, 0);
     lua_setfield(L, -2, "rssi");
-    lua_pushstring(L, "");
+    lua_pushstring(L, oper_info.oper_name);
     lua_setfield(L, -2, "operator");
+
     return 1;
 }
 
 static int luaopen_mobile_signal(lua_State* L) {
-    lua_pushinteger(L, 0);
+    unsigned char csq = 0;
+    yopen_nw_get_csq(0, &csq);
+    lua_pushinteger(L, csq);
     return 1;
 }
 

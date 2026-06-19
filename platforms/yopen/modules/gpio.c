@@ -70,18 +70,21 @@ static int luaopen_gpio_open(lua_State* L) {
     }
 
     /* 配置GPIO */
-    yopen_pin_set_func(gpio_num, 0);  // GPIO function
-    yopen_gpio_init(gpio_num);
-    yopen_gpio_dir(gpio_num, (yopen_GpioDir)dir);
+    yopen_pin_set_func(gpio_num, 0);
+
+    yopen_GpioDir gpio_dir = (yopen_GpioDir)dir;
+    yopen_PullMode gpio_pull = PULL_DEFAULT;
+    yopen_LvlMode gpio_lvl = LVL_LOW;
 
     if (dir == GPIO_OUTPUT) {
-        yopen_gpio_write(gpio_num, GPIO_HIGH);
+        gpio_lvl = LVL_HIGH;
     } else {
-        yopen_PullMode pull_mode = PULL_DEFAULT;
-        if (pull == GPIO_PULL_UP) pull_mode = FORCE_PULL_UP;
-        else if (pull == GPIO_PULL_DOWN) pull_mode = FORCE_PULL_DOWN;
-        yopen_gpio_pull(gpio_num, pull_mode);
+        if (pull == GPIO_PULL_UP) gpio_pull = FORCE_PULL_UP;
+        else if (pull == GPIO_PULL_DOWN) gpio_pull = FORCE_PULL_DOWN;
+        else if (pull == GPIO_PULL_NONE) gpio_pull = FORCE_PULL_NONE;
     }
+
+    yopen_gpio_init(gpio_num, gpio_dir, gpio_pull, gpio_lvl);
 
     lua_pushinteger(L, id);
     return 1;
@@ -96,7 +99,7 @@ static int luaopen_gpio_open(lua_State* L) {
 static int luaopen_gpio_write(lua_State* L) {
     int gpio_id = (int)luaL_checkinteger(L, 1);
     int val = (int)luaL_checkinteger(L, 2);
-    yopen_gpio_write((yopen_GpioNum)gpio_id, val ? LVL_HIGH : LVL_LOW);
+    yopen_gpio_set_level((yopen_GpioNum)gpio_id, val ? LVL_HIGH : LVL_LOW);
     return 0;
 }
 
@@ -107,9 +110,9 @@ static int luaopen_gpio_write(lua_State* L) {
  */
 static int luaopen_gpio_read(lua_State* L) {
     int gpio_id = (int)luaL_checkinteger(L, 1);
-    uint8_t val = 0;
-    yopen_gpio_read((yopen_GpioNum)gpio_id, &val);
-    lua_pushinteger(L, val);
+    yopen_LvlMode val = LVL_LOW;
+    yopen_gpio_get_level((yopen_GpioNum)gpio_id, &val);
+    lua_pushinteger(L, val == LVL_HIGH ? 1 : 0);
     return 1;
 }
 
@@ -119,7 +122,8 @@ static int luaopen_gpio_read(lua_State* L) {
  * @return nil
  */
 static int luaopen_gpio_close(lua_State* L) {
-    (void)L;
+    int gpio_id = (int)luaL_checkinteger(L, 1);
+    yopen_gpio_deinit((yopen_GpioNum)gpio_id);
     return 0;
 }
 

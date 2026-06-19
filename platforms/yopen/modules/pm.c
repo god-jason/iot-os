@@ -53,7 +53,7 @@ static int luaopen_pm_charging(lua_State* L) {
  */
 static int luaopen_pm_sleep(lua_State* L) {
     int ms = (int)luaL_checkinteger(L, 1);
-    yopen_power_sleep(ms);
+    yopen_deepslp_timer_start((uint32_t)ms);
     return 0;
 }
 

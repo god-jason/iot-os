@@ -110,14 +110,15 @@ static int luaopen_uart_open(lua_State* L) {
     }
 
     /* 打开串口 */
-    yopen_uart_open_t uart_cfg = {0};
-    uart_cfg.baud = config.baud;
-    uart_cfg.databits = config.databits;
-    uart_cfg.stopbits = config.stopbits;
-    uart_cfg.parity = config.parity;
-    uart_cfg.flowctrl = config.flowctrl;
+    yopen_uart_config_s uart_cfg = {0};
+    uart_cfg.baudrate = config.baud;
+    uart_cfg.data_bit = config.databits;
+    uart_cfg.stop_bit = config.stopbits;
+    uart_cfg.parity_bit = config.parity;
+    uart_cfg.flow_ctrl = config.flowctrl;
 
-    if (yopen_uart_open(port, &uart_cfg) == YOPEN_UART_SUCCESS) {
+    if (yopen_uart_open(port) == YOPEN_UART_SUCCESS) {
+        yopen_uart_set_dcbconfig(port, &uart_cfg);
         current_port = port;
         lua_pushinteger(L, port);
         return 1;

@@ -35,7 +35,8 @@ udp:bind("0.0.0.0", 8888)
 */
 
 #include "module.h"
-#include "yopen_socket.h"
+#include "yopen_sockets.h"
+#include <string.h>
 
 /* Socket类型 */
 #define SOCKET_TCP  0
@@ -43,11 +44,10 @@ udp:bind("0.0.0.0", 8888)
 
 /* Socket句柄结构 */
 typedef struct {
-    yopen_socket_type_e type;
-    yopen_socket_h handle;
-    int connected;
-    char remote_ip[64];
-    int remote_port;
+    int sock;              /* socket描述符 */
+    int domain;            /* 协议族 AF_INET */
+    int type;              /* 类型 SOCK_STREAM/DGRAM */
+    int protocol;          /* 协议 IPPROTO_TCP/UDP */
 } socket_handle_t;
 
 /**
@@ -62,11 +62,10 @@ static int luaopen_socket_tcp(lua_State* L) {
         return 1;
     }
 
-    handle->type = YOPEN_SOCKET_TYPE_TCP;
-    handle->handle = 0;
-    handle->connected = 0;
-    handle->remote_ip[0] = 0;
-    handle->remote_port = 0;
+    handle->domain = AF_INET;
+    handle->type = SOCK_STREAM;
+    handle->protocol = IPPROTO_TCP;
+    handle->sock = -1;
 
     lua_pushlightuserdata(L, handle);
     return 1;
@@ -84,11 +83,10 @@ static int luaopen_socket_udp(lua_State* L) {
         return 1;
     }
 
-    handle->type = YOPEN_SOCKET_TYPE_UDP;
-    handle->handle = 0;
-    handle->connected = 0;
-    handle->remote_ip[0] = 0;
-    handle->remote_port = 0;
+    handle->domain = AF_INET;
+    handle->type = SOCK_DGRAM;
+    handle->protocol = IPPROTO_UDP;
+    handle->sock = -1;
 
     lua_pushlightuserdata(L, handle);
     return 1;
@@ -112,26 +110,32 @@ static int luaopen_socket_connect(lua_State* L) {
         return 2;
     }
 
-    handle->handle = yopen_socket_create(handle->type);
-    if (handle->handle == 0) {
+    /* 创建socket */
+    int sock = socket(handle->domain, handle->type, handle->protocol);
+    if (sock < 0) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, "create socket failed");
+        lua_pushstring(L, "socket create failed");
         return 2;
     }
 
-    strncpy(handle->remote_ip, ip, sizeof(handle->remote_ip) - 1);
-    handle->remote_port = port;
+    /* 设置目标地址 */
+    struct sockaddr_in dest_addr = {0};
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_port = htons(port);
+    dest_addr.sin_addr.s_addr = inet_addr(ip);
 
-    int ret = yopen_socket_connect(handle->handle, (char*)ip, port);
-    if (ret == 0) {
-        handle->connected = 1;
-        lua_pushboolean(L, 1);
-        return 1;
+    /* 连接 */
+    int ret = connect(sock, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
+    if (ret < 0) {
+        close(sock);
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "connect failed");
+        return 2;
     }
 
-    lua_pushboolean(L, 0);
-    lua_pushstring(L, "connect failed");
-    return 2;
+    handle->sock = sock;
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 /**
@@ -143,7 +147,7 @@ static int luaopen_socket_connect(lua_State* L) {
 static int luaopen_socket_send(lua_State* L) {
     socket_handle_t* handle = (socket_handle_t*)lua_touserdata(L, 1);
 
-    if (!handle || !handle->connected) {
+    if (!handle || handle->sock < 0) {
         lua_pushnil(L);
         return 1;
     }
@@ -151,7 +155,7 @@ static int luaopen_socket_send(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 2, &len);
 
-    int sent = yopen_socket_send(handle->handle, (uint8_t*)data, (uint32_t)len);
+    int sent = send(handle->sock, data, len, 0);
 
     if (sent >= 0) {
         lua_pushinteger(L, sent);
@@ -171,7 +175,7 @@ static int luaopen_socket_recv(lua_State* L) {
     socket_handle_t* handle = (socket_handle_t*)lua_touserdata(L, 1);
     int maxlen = (int)luaL_checkinteger(L, 2);
 
-    if (!handle || !handle->connected) {
+    if (!handle || handle->sock < 0) {
         lua_pushstring(L, "");
         return 1;
     }
@@ -186,7 +190,7 @@ static int luaopen_socket_recv(lua_State* L) {
         return 1;
     }
 
-    int len = yopen_socket_recv(handle->handle, buf, maxlen);
+    int len = recv(handle->sock, (char*)buf, maxlen, 0);
 
     if (len > 0) {
         lua_pushlstring(L, (char*)buf, len);
@@ -215,15 +219,36 @@ static int luaopen_socket_bind(lua_State* L) {
         return 1;
     }
 
-    handle->handle = yopen_socket_create(handle->type);
-    if (handle->handle == 0) {
+    /* 创建socket */
+    int sock = socket(handle->domain, handle->type, handle->protocol);
+    if (sock < 0) {
         lua_pushboolean(L, 0);
         return 1;
     }
 
-    int ret = yopen_socket_bind(handle->handle, (char*)ip, port);
+    /* 设置本地地址 */
+    struct sockaddr_in local_addr = {0};
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_port = htons(port);
+    local_addr.sin_addr.s_addr = inet_addr(ip);
 
-    lua_pushboolean(L, ret == 0);
+    /* 绑定 */
+    int ret = bind(sock, (struct sockaddr*)&local_addr, sizeof(local_addr));
+    if (ret < 0) {
+        close(sock);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+
+    /* UDP需要listen */
+    if (handle->type == SOCK_DGRAM) {
+        /* UDP不需要listen */
+    } else {
+        listen(sock, 5);
+    }
+
+    handle->sock = sock;
+    lua_pushboolean(L, 1);
     return 1;
 }
 
@@ -236,11 +261,10 @@ static int luaopen_socket_close(lua_State* L) {
     socket_handle_t* handle = (socket_handle_t*)lua_touserdata(L, 1);
 
     if (handle) {
-        if (handle->handle != 0) {
-            yopen_socket_close(handle->handle);
-            handle->handle = 0;
+        if (handle->sock >= 0) {
+            close(handle->sock);
+            handle->sock = -1;
         }
-        handle->connected = 0;
         iot_free(handle);
     }
     return 0;

@@ -23,8 +23,8 @@ print("os version:", info.version)
 */
 
 #include "module.h"
-
-extern uint32_t yopen_rtos_get_time_ms(void);
+#include "yopen_os.h"
+#include "yopen_rtc.h"
 
 /**
  * @brief 获取系统启动时间(毫秒)
@@ -32,8 +32,8 @@ extern uint32_t yopen_rtos_get_time_ms(void);
  * @return int 系统启动时间(毫秒)
  */
 static int luaopen_os_ms(lua_State* L) {
-    uint32_t ms = yopen_rtos_get_time_ms();
-    lua_pushinteger(L, (lua_Integer)ms);
+    time_t s = yopen_rtc_get_time_s();
+    lua_pushinteger(L, (lua_Integer)(s * 1000));
     return 1;
 }
 
@@ -43,7 +43,7 @@ static int luaopen_os_ms(lua_State* L) {
  * @return int 系统启动时间(秒)
  */
 static int luaopen_os_s(lua_State* L) {
-    uint32_t s = yopen_rtos_get_time_ms() / 1000;
+    time_t s = yopen_rtc_get_time_s();
     lua_pushinteger(L, (lua_Integer)s);
     return 1;
 }
@@ -70,7 +70,7 @@ static int luaopen_os_info(lua_State* L) {
  */
 static int luaopen_os_sleep(lua_State* L) {
     int ms = (int)luaL_checkinteger(L, 1);
-    yopen_rtos_task_delay(ms);
+    yopen_rtos_task_sleep_ms(ms);
     return 0;
 }
 

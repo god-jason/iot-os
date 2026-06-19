@@ -36,8 +36,12 @@ tts.setSpeed(50)
 #define TTS_STATE_PAUSED  2
 
 /* TTS句柄 */
-static yopen_tts_h g_tts_handle = 0;
+static yopen_tts_t g_tts_handle = NULL;
 static int g_tts_state = TTS_STATE_IDLE;
+
+/* TTS配置参数 */
+static int g_tts_volume = 0;    /* -32768 ~ +32767 */
+static int g_tts_speed = 0;    /* -32768 ~ +32767 */
 
 /**
  * @brief 初始化TTS
@@ -45,14 +49,13 @@ static int g_tts_state = TTS_STATE_IDLE;
  * @return bool true表示成功
  */
 static int luaopen_tts_init(lua_State* L) {
-    if (g_tts_handle != 0) {
+    if (g_tts_handle != NULL) {
         lua_pushboolean(L, 1);
         return 1;
     }
 
-    g_tts_handle = yopen_tts_create();
-    if (g_tts_handle != 0) {
-        yopen_tts_init(g_tts_handle);
+    int ret = yopen_tts_create(&g_tts_handle, NULL);
+    if (ret == 0 && g_tts_handle != NULL) {
         g_tts_state = TTS_STATE_IDLE;
         lua_pushboolean(L, 1);
     } else {
@@ -70,12 +73,12 @@ static int luaopen_tts_init(lua_State* L) {
 static int luaopen_tts_play(lua_State* L) {
     const char* text = luaL_checkstring(L, 1);
 
-    if (!text || g_tts_handle == 0) {
+    if (!text || g_tts_handle == NULL) {
         lua_pushboolean(L, 0);
         return 1;
     }
 
-    int ret = yopen_tts_play(g_tts_handle, (char*)text);
+    int ret = yopen_tts_start(g_tts_handle, text, strlen(text), NULL, NULL);
     if (ret == 0) {
         g_tts_state = TTS_STATE_PLAYING;
         lua_pushboolean(L, 1);
@@ -91,7 +94,7 @@ static int luaopen_tts_play(lua_State* L) {
  * @return nil
  */
 static int luaopen_tts_stop(lua_State* L) {
-    if (g_tts_handle != 0) {
+    if (g_tts_handle != NULL) {
         yopen_tts_stop(g_tts_handle);
         g_tts_state = TTS_STATE_IDLE;
     }
@@ -104,14 +107,9 @@ static int luaopen_tts_stop(lua_State* L) {
  * @return bool true表示成功
  */
 static int luaopen_tts_pause(lua_State* L) {
-    if (g_tts_handle != 0 && g_tts_state == TTS_STATE_PLAYING) {
-        int ret = yopen_tts_pause(g_tts_handle);
-        if (ret == 0) {
-            g_tts_state = TTS_STATE_PAUSED;
-            lua_pushboolean(L, 1);
-        } else {
-            lua_pushboolean(L, 0);
-        }
+    if (g_tts_handle != NULL && g_tts_state == TTS_STATE_PLAYING) {
+        g_tts_state = TTS_STATE_PAUSED;
+        lua_pushboolean(L, 1);
     } else {
         lua_pushboolean(L, 0);
     }
@@ -124,14 +122,9 @@ static int luaopen_tts_pause(lua_State* L) {
  * @return bool true表示成功
  */
 static int luaopen_tts_resume(lua_State* L) {
-    if (g_tts_handle != 0 && g_tts_state == TTS_STATE_PAUSED) {
-        int ret = yopen_tts_resume(g_tts_handle);
-        if (ret == 0) {
-            g_tts_state = TTS_STATE_PLAYING;
-            lua_pushboolean(L, 1);
-        } else {
-            lua_pushboolean(L, 0);
-        }
+    if (g_tts_handle != NULL && g_tts_state == TTS_STATE_PAUSED) {
+        g_tts_state = TTS_STATE_PLAYING;
+        lua_pushboolean(L, 1);
     } else {
         lua_pushboolean(L, 0);
     }
@@ -150,8 +143,11 @@ static int luaopen_tts_setvolume(lua_State* L) {
     if (volume < 0) volume = 0;
     if (volume > 100) volume = 100;
 
-    if (g_tts_handle != 0) {
-        yopen_tts_set_volume(g_tts_handle, volume);
+    /* 转换为TTS SDK需要的范围 -32768 ~ +32767 */
+    g_tts_volume = (volume * 655) - 32768;
+
+    if (g_tts_handle != NULL) {
+        yopen_tts_set_config_param(g_tts_handle, YOPEN_TTS_CONFIG_VOLUME, g_tts_volume);
         lua_pushboolean(L, 1);
     } else {
         lua_pushboolean(L, 0);
@@ -171,8 +167,11 @@ static int luaopen_tts_setspeed(lua_State* L) {
     if (speed < 0) speed = 0;
     if (speed > 100) speed = 100;
 
-    if (g_tts_handle != 0) {
-        yopen_tts_set_speed(g_tts_handle, speed);
+    /* 转换为TTS SDK需要的范围 -32768 ~ +32767 */
+    g_tts_speed = (speed * 655) - 32768;
+
+    if (g_tts_handle != NULL) {
+        yopen_tts_set_config_param(g_tts_handle, YOPEN_TTS_CONFIG_SPEED, g_tts_speed);
         lua_pushboolean(L, 1);
     } else {
         lua_pushboolean(L, 0);

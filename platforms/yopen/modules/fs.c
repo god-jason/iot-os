@@ -141,7 +141,14 @@ static int luaopen_fs_file_seek(lua_State* L) {
  */
 static int luaopen_fs_exists(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
-    lua_pushboolean(L, yopen_file_exists(path));
+    /* 使用 yopen_fopen 检查文件是否存在 */
+    QFILE fp = yopen_fopen(path, "r");
+    if (fp >= 0) {
+        yopen_fclose(fp);
+        lua_pushboolean(L, 1);
+    } else {
+        lua_pushboolean(L, 0);
+    }
     return 1;
 }
 
@@ -181,7 +188,7 @@ static int luaopen_fs_remove(lua_State* L) {
 static int luaopen_fs_rename(lua_State* L) {
     const char* oldpath = luaL_checkstring(L, 1);
     const char* newpath = luaL_checkstring(L, 2);
-    int ret = yopen_frename(oldpath, newpath);
+    int ret = yopen_rename(oldpath, newpath);
     lua_pushboolean(L, ret == YOPEN_FS_OK);
     return 1;
 }
