@@ -28,56 +28,7 @@ print("rssi:", rssi)
 
 #include "module.h"
 #include "yopen_sim.h"
-#include "yopen_ril.h"
-
-/* AT命令回调上下文 */
-typedef struct {
-    char* buffer;
-    int buffer_size;
-    int ready;
-} at_cmd_ctx_t;
-
-/* AT响应回调 */
-static int32_t at_response_callback(char *line, uint32_t line_len, void *user_data) {
-    at_cmd_ctx_t* ctx = (at_cmd_ctx_t*)user_data;
-    if (!ctx || !ctx->buffer) return -1;
-
-    /* 跳过OK/ERROR等响应行 */
-    if (strncmp(line, "OK", 2) == 0 || strncmp(line, "ERROR", 5) == 0) {
-        ctx->ready = 1;
-        return 0;
-    }
-
-    /* 复制有效数据 */
-    int copy_len = line_len < (ctx->buffer_size - 1) ? line_len : (ctx->buffer_size - 1);
-    if (copy_len > 0 && line[0] != '\r' && line[0] != '\n') {
-        memcpy(ctx->buffer, line, copy_len);
-        ctx->buffer[copy_len] = '\0';
-    }
-
-    return 0;
-}
-
-/* 同步发送AT命令 */
-static int at_cmd_sync(char* cmd, char* response, int resp_size) {
-    at_cmd_ctx_t ctx = {0};
-    ctx.buffer = response;
-    ctx.buffer_size = resp_size;
-    ctx.ready = 0;
-
-    yopen_errcode_ril_e ret = yopen_ril_send_atcmd(cmd, strlen(cmd), at_response_callback, &ctx);
-    if (ret != YOPEN_RIL_SUCCESS) {
-        return -1;
-    }
-
-    /* 等待响应 */
-    int wait_count = 100;
-    while (!ctx.ready && wait_count-- > 0) {
-        iot_sleep(10);
-    }
-
-    return ctx.ready ? 0 : -1;
-}
+#include "yopen_nw.h"
 
 /**
  * @brief 获取SIM卡状态
@@ -113,23 +64,10 @@ static int luaopen_sim_status(lua_State* L) {
  * @return string ICCID字符串
  */
 static int luaopen_sim_iccid(lua_State* L) {
-    char iccid[32] = {0};
-    char cmd[] = "AT+ICCID\r\n";
+    char iccid[YOPEN_SIM_ICCID_LEN + 1] = {0};
+    yopen_sim_errcode_e ret = yopen_sim_get_iccid(0, iccid, sizeof(iccid));
 
-    if (at_cmd_sync(cmd, iccid, sizeof(iccid)) == 0) {
-        /* 去掉空白字符 */
-        char* p = iccid;
-        char temp[32] = {0};
-        int j = 0;
-        for (int i = 0; iccid[i] != '\0' && j < sizeof(temp) - 1; i++) {
-            if (iccid[i] >= '0' && iccid[i] <= '9') {
-                temp[j++] = iccid[i];
-            }
-        }
-        strcpy(iccid, temp);
-    }
-
-    lua_pushstring(L, iccid[0] ? iccid : "");
+    lua_pushstring(L, ret == YOPEN_SIM_SUCCESS ? iccid : "");
     return 1;
 }
 
@@ -139,18 +77,10 @@ static int luaopen_sim_iccid(lua_State* L) {
  * @return string IMSI字符串
  */
 static int luaopen_sim_imsi(lua_State* L) {
-    char imsi[16] = {0};
-    char cmd[] = "AT+CIMI\r\n";
+    char imsi[YOPEN_SIM_IMSI_LEN_MAX + 1] = {0};
+    yopen_sim_errcode_e ret = yopen_sim_get_imsi(0, imsi, sizeof(imsi));
 
-    if (at_cmd_sync(cmd, imsi, sizeof(imsi)) == 0) {
-        /* 验证IMSI格式(15位数字) */
-        int len = strlen(imsi);
-        if (len >= 15) {
-            imsi[15] = '\0';
-        }
-    }
-
-    lua_pushstring(L, imsi[0] ? imsi : "");
+    lua_pushstring(L, ret == YOPEN_SIM_SUCCESS ? imsi : "");
     return 1;
 }
 
@@ -160,21 +90,9 @@ static int luaopen_sim_imsi(lua_State* L) {
  * @return int 信号强度 (0-31, 99=未知)
  */
 static int luaopen_sim_rssi(lua_State* L) {
-    char response[64] = {0};
-    char cmd[] = "AT+CSQ\r\n";
-
-    if (at_cmd_sync(cmd, response, sizeof(response)) == 0) {
-        /* 解析 +CSQ: <rssi>,<ber> */
-        char* p = strstr(response, "+CSQ:");
-        if (p) {
-            int rssi = 99;
-            sscanf(p, "+CSQ:%d", &rssi);
-            lua_pushinteger(L, rssi);
-            return 1;
-        }
-    }
-
-    lua_pushinteger(L, 99);
+    unsigned char csq = 99;
+    yopen_nw_get_csq(0, &csq);
+    lua_pushinteger(L, csq);
     return 1;
 }
 
@@ -184,30 +102,9 @@ static int luaopen_sim_rssi(lua_State* L) {
  * @return string 运营商名称
  */
 static int luaopen_sim_operator(lua_State* L) {
-    char oper[32] = {0};
-    char cmd[] = "AT+COPS?\r\n";
-
-    if (at_cmd_sync(cmd, oper, sizeof(oper)) == 0) {
-        /* 解析 +COPS: <mode>,<format>,<oper> */
-        char* p = strstr(oper, "+COPS:");
-        if (p) {
-            /* 跳过 +COPS: 0,0," */
-            p = strchr(p, '"');
-            if (p) {
-                p++;
-                char* end = strchr(p, '"');
-                if (end) {
-                    int len = end - p;
-                    if (len > 0 && len < sizeof(oper)) {
-                        strncpy(oper, p, len);
-                        oper[len] = '\0';
-                    }
-                }
-            }
-        }
-    }
-
-    lua_pushstring(L, oper[0] ? oper : "");
+    yopen_nw_operator_info_s oper_info = {0};
+    yopen_nw_get_operator_name(0, &oper_info);
+    lua_pushstring(L, oper_info.oper_name[0] ? oper_info.oper_name : "");
     return 1;
 }
 
