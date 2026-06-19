@@ -83,6 +83,9 @@
 #define iot_timer_delete(timer) \
     osTimerDelete((timer))
 
+#define iot_timer_is_running(timer) \
+    osTimerIsRunning((timer))
+
 #define iot_task_create(name, func, arg, stack_size, priority) \
     osThreadNew((func), (arg), \
         &(const osThreadAttr_t){ \

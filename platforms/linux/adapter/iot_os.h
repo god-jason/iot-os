@@ -102,6 +102,9 @@
 #define iot_timer_delete(timer) \
     timer_delete((timer))
 
+#define iot_timer_is_running(timer) \
+    ((timer) != (timer_t)0)
+
 #define iot_task_create(name, func, arg, stack_size, priority) ({ \
     pthread_t* t = malloc(sizeof(pthread_t)); \
     pthread_attr_t attr; \

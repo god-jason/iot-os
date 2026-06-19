@@ -8,6 +8,7 @@
 
 #include "iot_base.h"
 #include "iot_params.h"
+#include "iot_mem.h"
 
 /* 创建参数列表 */
 params_t* params_create(int initial_capacity)
@@ -16,16 +17,16 @@ params_t* params_create(int initial_capacity)
         initial_capacity = 4;
     }
 
-    params_t* list = (params_t*)malloc(sizeof(params_t));
+    params_t* list = (params_t*)iot_malloc(sizeof(params_t));
     if (!list) {
         LOG("ERR malloc params_t");
         return NULL;
     }
 
-    list->items = (param_t*)malloc(initial_capacity * sizeof(param_t));
+    list->items = (param_t*)iot_malloc(initial_capacity * sizeof(param_t));
     if (!list->items) {
         LOG("ERR malloc items");
-        free(list);
+        iot_free(list);
         return NULL;
     }
 
@@ -47,14 +48,14 @@ void params_destroy(params_t* list)
     /* 先释放每个参数中的字符串 */
     for (int i = 0; i < list->count; i++) {
         if (list->items[i].type == PARAM_STRING && list->items[i].value.str_val) {
-            free(list->items[i].value.str_val);
+            iot_free(list->items[i].value.str_val);
         }
     }
 
     if (list->items) {
-        free(list->items);
+        iot_free(list->items);
     }
-    free(list);
+    iot_free(list);
 }
 
 /* 确保有足够容量 */
@@ -77,7 +78,7 @@ int params_ensure_capacity(params_t* list, int additional)
 
     LOG("resize %d -> %d", list->capacity, new_capacity);
 
-    param_t* new_items = (param_t*)realloc(list->items, new_capacity * sizeof(param_t));
+    param_t* new_items = (param_t*)iot_realloc(list->items, new_capacity * sizeof(param_t));
     if (!new_items) {
         LOG("ERR realloc");
         return -1;
@@ -188,7 +189,7 @@ int params_push_string(params_t* list, const char* val, size_t len)
 
     param_t* p = &list->items[list->count];
     p->type = PARAM_STRING;
-    p->value.str_val = (char*)malloc(len + 1);
+    p->value.str_val = (char*)iot_malloc(len + 1);
     if (!p->value.str_val) {
         return -1;
     }

@@ -83,6 +83,9 @@
 #define iot_timer_delete(timer) \
     yopen_rtos_timer_delete((timer))
 
+#define iot_timer_is_running(timer) \
+    yopen_rtos_timer_is_running((timer))
+
 #define iot_task_create(name, func, arg, stack_size, priority) \
     yopen_rtos_task_create(NULL, (stack_size), (priority), (name), (func), (arg))
 

@@ -2,6 +2,7 @@
 #include "lauxlib.h"
 #include "iot_base.h"
 #include "iot_gmssl.h"
+#include "iot_mem.h"
 
 #include <gmssl/sm3.h>
 #include <gmssl/sm4.h>
@@ -74,7 +75,7 @@ static int iot_gmssl_sm4_crypt(lua_State* L, int decrypt) {
     }
 
     size_t outlen = inlen + SM4_BLOCK_SIZE;
-    uint8_t* out = (uint8_t*)cm_malloc(outlen);
+    uint8_t* out = (uint8_t*)iot_malloc(outlen);
     if (!out) {
         luaL_error(L, "memory allocation failed");
         return 0;
@@ -83,7 +84,7 @@ static int iot_gmssl_sm4_crypt(lua_State* L, int decrypt) {
     int ret = -1;
     if (strcmp(mode_str, "cbc") == 0 || strcmp(mode_str, "CBC") == 0) {
         if (ivlen != SM4_BLOCK_SIZE) {
-            cm_free(out);
+            iot_free(out);
             luaL_error(L, "CBC mode requires 16-byte IV");
             return 0;
         }
@@ -94,7 +95,7 @@ static int iot_gmssl_sm4_crypt(lua_State* L, int decrypt) {
         }
     } else if (strcmp(mode_str, "ecb") == 0 || strcmp(mode_str, "ECB") == 0) {
         if (inlen % SM4_BLOCK_SIZE != 0) {
-            cm_free(out);
+            iot_free(out);
             luaL_error(L, "ECB mode requires block-aligned input");
             return 0;
         }
@@ -103,7 +104,7 @@ static int iot_gmssl_sm4_crypt(lua_State* L, int decrypt) {
         outlen = inlen;
     } else if (strcmp(mode_str, "ctr") == 0 || strcmp(mode_str, "CTR") == 0) {
         if (ivlen != SM4_BLOCK_SIZE) {
-            cm_free(out);
+            iot_free(out);
             luaL_error(L, "CTR mode requires 16-byte counter");
             return 0;
         }
@@ -111,19 +112,19 @@ static int iot_gmssl_sm4_crypt(lua_State* L, int decrypt) {
         ret = 0;
         outlen = inlen;
     } else {
-        cm_free(out);
+        iot_free(out);
         luaL_error(L, "unsupported mode: %s", mode_str);
         return 0;
     }
 
     if (ret != 0) {
-        cm_free(out);
+        iot_free(out);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char*)out, outlen);
-    cm_free(out);
+    iot_free(out);
     return 1;
 }
 
@@ -151,13 +152,13 @@ static int iot_gmssl_sm2_keygen(lua_State* L) {
 
     /* 私钥 */
     sm2_private_key_to_der(&key, &p, &len);
-    uint8_t* priv_der = (uint8_t*)cm_malloc(len);
+    uint8_t* priv_der = (uint8_t*)iot_malloc(len);
     memcpy(priv_der, p, len);
     size_t priv_len = len;
 
     /* 公钥 */
     sm2_public_key_to_der(&key, &p, &len);
-    uint8_t* pub_der = (uint8_t*)cm_malloc(len);
+    uint8_t* pub_der = (uint8_t*)iot_malloc(len);
     memcpy(pub_der, p, len);
     size_t pub_len = len;
 
@@ -185,8 +186,8 @@ static int iot_gmssl_sm2_keygen(lua_State* L) {
     lua_pushlstring(L, (const char*)pub_hex, pub_len * 2);
     lua_settable(L, -3);
 
-    cm_free(priv_der);
-    cm_free(pub_der);
+    iot_free(priv_der);
+    iot_free(pub_der);
 
     return 1;
 }
@@ -280,20 +281,20 @@ static int iot_gmssl_rand_bytes(lua_State* L) {
         return 0;
     }
 
-    uint8_t* buf = (uint8_t*)cm_malloc(len);
+    uint8_t* buf = (uint8_t*)iot_malloc(len);
     if (!buf) {
         luaL_error(L, "memory allocation failed");
         return 0;
     }
 
     if (rand_bytes(buf, len) != 1) {
-        cm_free(buf);
+        iot_free(buf);
         luaL_error(L, "random generation failed");
         return 0;
     }
 
     lua_pushlstring(L, (const char*)buf, len);
-    cm_free(buf);
+    iot_free(buf);
     return 1;
 }
 
@@ -302,7 +303,7 @@ static int iot_gmssl_hex_encode(lua_State* L) {
     size_t len;
     const char* data = luaL_checklstring(L, 1, &len);
 
-    char* hex = (char*)cm_malloc(len * 2 + 1);
+    char* hex = (char*)iot_malloc(len * 2 + 1);
     if (!hex) {
         luaL_error(L, "memory allocation failed");
         return 0;
@@ -311,7 +312,7 @@ static int iot_gmssl_hex_encode(lua_State* L) {
     hex_encode((const uint8_t*)data, len, hex);
 
     lua_pushstring(L, hex);
-    cm_free(hex);
+    iot_free(hex);
     return 1;
 }
 
@@ -325,7 +326,7 @@ static int iot_gmssl_hex_decode(lua_State* L) {
         return 0;
     }
 
-    uint8_t* data = (uint8_t*)cm_malloc(hexlen / 2);
+    uint8_t* data = (uint8_t*)iot_malloc(hexlen / 2);
     if (!data) {
         luaL_error(L, "memory allocation failed");
         return 0;
@@ -334,7 +335,7 @@ static int iot_gmssl_hex_decode(lua_State* L) {
     size_t len = hex_decode(hex, data);
 
     lua_pushlstring(L, (const char*)data, len);
-    cm_free(data);
+    iot_free(data);
     return 1;
 }
 
@@ -343,7 +344,7 @@ static int iot_gmssl_base64_encode(lua_State* L) {
     size_t len;
     const char* data = luaL_checklstring(L, 1, &len);
 
-    char* b64 = (char*)cm_malloc(len * 2 + 1);
+    char* b64 = (char*)iot_malloc(len * 2 + 1);
     if (!b64) {
         luaL_error(L, "memory allocation failed");
         return 0;
@@ -352,7 +353,7 @@ static int iot_gmssl_base64_encode(lua_State* L) {
     size_t b64len = base64_encode((const uint8_t*)data, len, b64);
 
     lua_pushlstring(L, b64, b64len);
-    cm_free(b64);
+    iot_free(b64);
     return 1;
 }
 
@@ -361,7 +362,7 @@ static int iot_gmssl_base64_decode(lua_State* L) {
     size_t len;
     const char* b64 = luaL_checkstring(L, 1, &len);
 
-    uint8_t* data = (uint8_t*)cm_malloc(len);
+    uint8_t* data = (uint8_t*)iot_malloc(len);
     if (!data) {
         luaL_error(L, "memory allocation failed");
         return 0;
@@ -369,13 +370,13 @@ static int iot_gmssl_base64_decode(lua_State* L) {
 
     size_t outlen = base64_decode(b64, data);
     if (outlen == 0) {
-        cm_free(data);
+        iot_free(data);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char*)data, outlen);
-    cm_free(data);
+    iot_free(data);
     return 1;
 }
 

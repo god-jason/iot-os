@@ -10,6 +10,8 @@
 #include "iot_base.h"
 #include "iot_os.h"
 #include "iot_params.h"
+#include "iot_mem.h"
+#include "iot_queue.h"
 
 /* 消息队列大小 */
 #define RTOS_MSG_QUEUE_SIZE 32
@@ -130,7 +132,7 @@ static void iot_rtos_send_msg_internal(rtos_msg_t* msg)
  */
 void iot_rtos_publish(const char* str, params_t* params)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)malloc(sizeof(rtos_msg_t));
+    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
         LOG("ERR malloc PUBLISH");
         if (params) {
@@ -152,7 +154,7 @@ void iot_rtos_publish(const char* str, params_t* params)
  */
 void iot_rtos_call(void* userdata, params_t* params)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)malloc(sizeof(rtos_msg_t));
+    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
         LOG("ERR malloc CALL");
         if (params) {
@@ -174,7 +176,7 @@ void iot_rtos_call(void* userdata, params_t* params)
  */
 void iot_rtos_timeout(uint32_t timer_id)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)malloc(sizeof(rtos_msg_t));
+    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
         LOG("ERR malloc TIMEOUT id=%u", timer_id);
         return;
@@ -200,7 +202,7 @@ void iot_rtos_msg_destroy(rtos_msg_t* msg)
         params_destroy(msg->params);
     }
 
-    free(msg);
+    iot_free(msg);
 }
 
 /**
@@ -302,8 +304,8 @@ static int iot_rtos_timer_is_running(lua_State* L)
         return 1;
     }
 
-    /* osTimerIsRunning has no direct iot_ wrapper, use cm_os directly */
-    uint32_t running = osTimerIsRunning(ctx->timer_id);
+    /* 使用封装的定时器状态检查接口 */
+    uint32_t running = iot_timer_is_running(ctx->timer_id);
     lua_pushboolean(L, running ? 1 : 0);
     return 1;
 }
@@ -350,9 +352,9 @@ static int iot_rtos_recv(lua_State* L)
     uint32_t timeout = (uint32_t)luaL_optinteger(L, 1, 0);
     rtos_msg_t* msg = NULL;
 
-    /* 使用 osMessageQueueGet 直接获取状态，因为 iot_queue_recv 返回 void */
-    osStatus_t status = osMessageQueueGet(g_rtos_msg_queue, &msg, NULL, timeout);
-    if (status != osOK || msg == NULL) {
+    /* 使用封装的消息队列接收接口 */
+    bool ok = iot_queue_recv(g_rtos_msg_queue, &msg, timeout);
+    if (!ok || msg == NULL) {
         lua_pushnil(L);
         return 1;
     }

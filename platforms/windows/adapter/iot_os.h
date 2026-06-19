@@ -69,6 +69,9 @@
 #define iot_timer_delete(timer) \
     DeleteTimerQueueTimer(NULL, (timer), NULL)
 
+#define iot_timer_is_running(timer) \
+    ((timer) != NULL)
+
 #define iot_task_create(name, func, arg, stack_size, priority) \
     CreateThread(NULL, (stack_size), (LPTHREAD_START_ROUTINE)(func), (arg), 0, NULL)
 

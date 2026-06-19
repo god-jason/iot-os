@@ -28,6 +28,7 @@ zlib.zip_decompress_file("/input.zip", "/dest/")
 #include "lua.h"
 #include "iot_base.h"
 #include "zlib.h"
+#include "iot_mem.h"
 
 /* ==================== DEFLATE 接口 ==================== */
 
@@ -47,7 +48,7 @@ static int iot_zlib_deflate_compress(lua_State *L) {
     if (level > 9) level = 9;
 
     size_t dst_len = src_len + (src_len >> 12) + (src_len >> 14) + (src_len >> 25) + 21;
-    uint8_t *dst = (uint8_t *)malloc(dst_len);
+    uint8_t *dst = (uint8_t *)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
         return 1;
@@ -56,13 +57,13 @@ static int iot_zlib_deflate_compress(lua_State *L) {
     size_t compressed_len = dst_len;
     int ret = zlib_deflate_compress(src, src_len, dst, &compressed_len, level);
     if (ret != ZLIB_DEFLATE_OK) {
-        free(dst);
+        iot_free(dst);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char *)dst, compressed_len);
-    free(dst);
+    iot_free(dst);
     return 1;
 }
 
@@ -79,7 +80,7 @@ static int iot_zlib_deflate_decompress(lua_State *L) {
     size_t dst_len = src_len * 100;
     if (dst_len > 32 * 1024 * 1024) dst_len = 32 * 1024 * 1024;
 
-    uint8_t *dst = (uint8_t *)malloc(dst_len);
+    uint8_t *dst = (uint8_t *)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
         return 1;
@@ -87,13 +88,13 @@ static int iot_zlib_deflate_decompress(lua_State *L) {
 
     int ret = zlib_deflate_decompress(src, src_len, dst, dst_len);
     if (ret != ZLIB_DEFLATE_OK) {
-        free(dst);
+        iot_free(dst);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char *)dst, dst_len);
-    free(dst);
+    iot_free(dst);
     return 1;
 }
 
@@ -115,7 +116,7 @@ static int iot_zlib_gzip_compress(lua_State *L) {
     if (level > 9) level = 9;
 
     size_t dst_len = src_len + (src_len >> 12) + (src_len >> 14) + (src_len >> 25) + 21;
-    uint8_t *dst = (uint8_t *)malloc(dst_len);
+    uint8_t *dst = (uint8_t *)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
         return 1;
@@ -124,13 +125,13 @@ static int iot_zlib_gzip_compress(lua_State *L) {
     size_t compressed_len = dst_len;
     int ret = gzip_compress(src, src_len, dst, &compressed_len, level);
     if (ret != GZIP_OK) {
-        free(dst);
+        iot_free(dst);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char *)dst, compressed_len);
-    free(dst);
+    iot_free(dst);
     return 1;
 }
 
@@ -147,7 +148,7 @@ static int iot_zlib_gzip_decompress(lua_State *L) {
     size_t dst_len = src_len * 100;
     if (dst_len > 32 * 1024 * 1024) dst_len = 32 * 1024 * 1024;
 
-    uint8_t *dst = (uint8_t *)malloc(dst_len);
+    uint8_t *dst = (uint8_t *)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
         return 1;
@@ -156,13 +157,13 @@ static int iot_zlib_gzip_decompress(lua_State *L) {
     size_t decompressed_len = dst_len;
     int ret = gzip_decompress(src, src_len, dst, &decompressed_len);
     if (ret != GZIP_OK) {
-        free(dst);
+        iot_free(dst);
         lua_pushnil(L);
         return 1;
     }
 
     lua_pushlstring(L, (const char *)dst, decompressed_len);
-    free(dst);
+    iot_free(dst);
     return 1;
 }
 
@@ -231,7 +232,7 @@ static int iot_zlib_tar_compress_file(lua_State *L) {
     if (level < 1) level = 1;
     if (level > 9) level = 9;
 
-    const char **files = (const char **)malloc(file_count * sizeof(const char *));
+    const char **files = (const char **)iot_malloc(file_count * sizeof(const char *));
     if (!files) {
         lua_pushboolean(L, false);
         return 1;
@@ -244,7 +245,7 @@ static int iot_zlib_tar_compress_file(lua_State *L) {
     }
 
     int ret = tar_compress_file(".", files, file_count, dest_path, level);
-    free(files);
+    iot_free(files);
 
     lua_pushboolean(L, ret == TAR_OK);
     return 1;
@@ -294,7 +295,7 @@ static int iot_zlib_zip_compress_file(lua_State *L) {
         return 1;
     }
 
-    const char **files = (const char **)malloc(file_count * sizeof(const char *));
+    const char **files = (const char **)iot_malloc(file_count * sizeof(const char *));
     if (!files) {
         lua_pushboolean(L, false);
         return 1;
@@ -307,7 +308,7 @@ static int iot_zlib_zip_compress_file(lua_State *L) {
     }
 
     int ret = zip_compress_file(zip_path, files, file_count, level);
-    free(files);
+    iot_free(files);
 
     lua_pushboolean(L, ret == ZIP_OK);
     return 1;

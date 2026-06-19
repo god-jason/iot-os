@@ -10,6 +10,7 @@
 #include "iot_base.h"
 #include "iot_json.h"
 #include "yaml.h"
+#include "iot_mem.h"
 
 /**
  * @module yaml
@@ -37,7 +38,7 @@ static int iot_yaml_encode(lua_State *L) {
     }
 
     lua_pushstring(L, yaml);
-    free(yaml);
+    iot_free(yaml);
     return 1;
 }
 
