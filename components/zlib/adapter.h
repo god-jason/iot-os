@@ -16,8 +16,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "cm_mem.h"
-#include "cm_fs.h"
+/* 包含 IoT 核心接口 */
+#include "iot_mem.h"
+#include "iot_fs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,46 +28,38 @@ extern "C" {
  * @brief 动态内存分配宏
  * @param size 要分配的字节数
  * @return 成功返回分配内存的指针，失败返回NULL
- *
- * 适配到目标系统的内存分配函数。
  */
-#define zlib_malloc(size)       cm_malloc(size)
+#define zlib_malloc(size)       iot_malloc(size)
 
 /**
  * @brief 动态内存释放宏
  * @param ptr 要释放的内存指针
- *
- * 适配到目标系统的内存释放函数。
  */
-#define zlib_free(ptr)          cm_free(ptr)
+#define zlib_free(ptr)          iot_free(ptr)
 
 /**
  * @brief 动态内存重新分配宏
  * @param ptr 原内存指针
  * @param size 新分配的字节数
  * @return 成功返回重新分配内存的指针，失败返回NULL
- *
- * 适配到目标系统的内存重新分配函数。
  */
-#define zlib_realloc(ptr, size) cm_realloc(ptr, size)
+#define zlib_realloc(ptr, size) iot_realloc(ptr, size)
+
+/* 文件系统操作使用 iot_fs.h 接口 */
 
 /**
  * @brief 文件系统文件打开宏
  * @param path 文件路径
- * @param mode 打开模式（读/写/二进制等）
+ * @param mode 打开模式
  * @return 成功返回文件句柄，失败返回NULL
- *
- * 适配到目标系统的文件系统打开函数。
  */
-#define zlib_fs_open(path, mode)    cm_fs_open(path, mode)
+#define zlib_fs_open(path, mode)    iot_fs_open(path, mode)
 
 /**
  * @brief 文件系统文件关闭宏
  * @param fd 文件句柄
- *
- * 适配到目标系统的文件系统关闭函数。
  */
-#define zlib_fs_close(fd)           cm_fs_close(fd)
+#define zlib_fs_close(fd)           iot_fs_close(fd)
 
 /**
  * @brief 文件系统文件读取宏
@@ -74,10 +67,8 @@ extern "C" {
  * @param buf 读取数据缓冲区
  * @param size 要读取的字节数
  * @return 成功返回实际读取的字节数，失败返回-1
- *
- * 适配到目标系统的文件系统读取函数。
  */
-#define zlib_fs_read(fd, buf, size)     cm_fs_read(fd, buf, size)
+#define zlib_fs_read(fd, buf, size)     iot_fs_read(fd, buf, size)
 
 /**
  * @brief 文件系统文件写入宏
@@ -85,10 +76,8 @@ extern "C" {
  * @param buf 要写入的数据缓冲区
  * @param size 要写入的字节数
  * @return 成功返回实际写入的字节数，失败返回-1
- *
- * 适配到目标系统的文件系统写入函数。
  */
-#define zlib_fs_write(fd, buf, size)    cm_fs_write(fd, buf, size)
+#define zlib_fs_write(fd, buf, size)    iot_fs_write(fd, buf, size)
 
 /**
  * @brief 文件系统文件指针定位宏
@@ -96,41 +85,35 @@ extern "C" {
  * @param offset 偏移量
  * @param origin 起始位置（SEEK_SET/SEEK_CUR/SEEK_END）
  * @return 成功返回新位置，失败返回-1
- *
- * 适配到目标系统的文件系统定位函数。
  */
-#define zlib_fs_seek(fd, offset, origin)     cm_fs_seek(fd, offset, origin)
+#define zlib_fs_seek(fd, offset, origin)     iot_fs_seek(fd, offset, origin)
 
 /**
  * @brief 文件系统获取文件大小宏
  * @param path 文件路径
  * @return 成功返回文件大小，失败返回-1
- *
- * 适配到目标系统的获取文件大小函数。
  */
-#define zlib_fs_filesize(path)              cm_fs_filesize(path)
+#define zlib_fs_filesize(path)              iot_fs_filesize(path)
 
 /**
  * @brief 文件系统创建目录宏
  * @param path 目录路径
  * @return 成功返回0，失败返回-1
- *
- * 适配到目标系统的创建目录函数。
  */
-#define zlib_fs_mkdir(path)                 cm_fs_mkdir(path)
+#define zlib_fs_mkdir(path)                 iot_fs_mkdir(path)
 
-/* 文件打开模式（ML307N cm_fs 使用整型 flag，非 fopen 风格字符串） */
-#define ZLIB_FS_RB         CM_FS_RB
-#define ZLIB_FS_WB         CM_FS_WB
-#define ZLIB_FS_RB_PLUS    CM_FS_RBPLUS
-#define ZLIB_FS_WB_PLUS    CM_FS_WBPLUS
+/* 文件打开模式映射 */
+#define ZLIB_FS_RB         IOT_FS_MODE_RB
+#define ZLIB_FS_WB         IOT_FS_MODE_WB
+#define ZLIB_FS_RB_PLUS    IOT_FS_MODE_R_PLUS
+#define ZLIB_FS_WB_PLUS    IOT_FS_MODE_W_PLUS
 
 /* 文件指针定位起始位置 */
-#define ZLIB_FS_SEEK_SET   CM_FS_SEEK_SET
-#define ZLIB_FS_SEEK_CUR   CM_FS_SEEK_CUR
-#define ZLIB_FS_SEEK_END   CM_FS_SEEK_END
+#define ZLIB_FS_SEEK_SET   IOT_FS_SEEK_SET
+#define ZLIB_FS_SEEK_CUR   IOT_FS_SEEK_CUR
+#define ZLIB_FS_SEEK_END   IOT_FS_SEEK_END
 
-typedef cm_fs_t zlib_fs_t;
+typedef iot_fs_file_t zlib_fs_t;
 
 #ifdef __cplusplus
 }
