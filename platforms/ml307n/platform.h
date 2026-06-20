@@ -216,8 +216,20 @@
 #define iot_fs_access(path, mode) \
     cm_fs_exist((path))
 
+#define iot_fs_file_exists(path) \
+    cm_fs_exist((path))
+
 #define iot_fs_filesize(path) \
     cm_fs_filesize((path))
+
+#define iot_fs_rewind(fp) \
+    cm_fs_seek((fp), 0, CM_FS_SEEK_SET)
+
+#define iot_fs_ftruncate(fd, length) \
+    ((int)-1)
+
+#define iot_fs_rmdir_recursive(path) \
+    ((int)-1)
 
 #define iot_fs_rmdir(path) \
     cm_fs_rmdir((path))

@@ -231,8 +231,20 @@
 #define iot_fs_access(path, mode) \
     (access((path), (mode)) == 0)
 
+#define iot_fs_file_exists(path) \
+    (access((path), 0) == 0)
+
 #define iot_fs_filesize(path) \
     ({ struct stat st; stat((path), &st); st.st_size; })
+
+#define iot_fs_rewind(fp) \
+    rewind((fp))
+
+#define iot_fs_ftruncate(fd, length) \
+    (ftruncate(fileno((fd)), (length)) == 0)
+
+#define iot_fs_rmdir_recursive(path) \
+    ({ int _ret = 0; DIR *_d = opendir((path)); if (_d) { struct dirent *_p; while ((_p = readdir(_d)) != NULL) { char _path[512]; snprintf(_path, sizeof(_path), "%s/%s", (path), _p->d_name); if (_p->d_type == DT_DIR) { _ret = iot_fs_rmdir_recursive(_path); } else { _ret = remove(_path); } } closedir(_d); _ret = rmdir((path)); } else { _ret = -1; } _ret; })
 
 #define iot_fs_rmdir(path) \
     (rmdir((path)) == 0)

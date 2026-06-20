@@ -185,8 +185,20 @@
 #define iot_fs_access(path, mode) \
     (_access((path), 0) == 0)
 
+#define iot_fs_file_exists(path) \
+    (_access((path), 0) == 0)
+
 #define iot_fs_filesize(path) \
     ({ struct _stat st; _stat((path), &st); st.st_size; })
+
+#define iot_fs_rewind(fp) \
+    rewind((fp))
+
+#define iot_fs_ftruncate(fd, length) \
+    (_chsize(_fileno((fd)), (length)) == 0)
+
+#define iot_fs_rmdir_recursive(path) \
+    ((int)-1)
 
 #define iot_fs_rmdir(path) \
     (_rmdir((path)) == 0)

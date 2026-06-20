@@ -233,11 +233,23 @@
 #define iot_fs_access(path, mode) \
     yopen_file_exists((path))
 
+#define iot_fs_file_exists(path) \
+    yopen_file_exists((path))
+
 #define iot_fs_filesize(path) \
     yopen_fsize((path))
 
+#define iot_fs_rewind(fp) \
+    yopen_frewind((fp))
+
+#define iot_fs_ftruncate(fd, length) \
+    yopen_ftruncate((fd), (length))
+
+#define iot_fs_rmdir_recursive(path) \
+    yopen_rmdir_recursive((path))
+
 #define iot_fs_rmdir(path) \
-    ((int)-1)
+    yopen_rmdir((path))
 
 #define iot_fs_getinfo(info) \
     ((int)-1)
