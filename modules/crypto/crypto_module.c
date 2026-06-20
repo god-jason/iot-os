@@ -586,19 +586,394 @@ static int crypto_bin2hex(lua_State* L) {
 }
 
 /*===========================================================
+ * 校验算法 (CRC, Adler32)
+ *===========================================================*/
+
+/**
+ * @brief 计算数据校验和
+ * @api crypto.checksum(type, data)
+ * @string type 校验算法类型: "crc16", "crc32", "adler32"
+ * @string data 输入数据
+ * @return 校验值的十六进制字符串
+ */
+static int crypto_checksum(lua_State* L) {
+    const char* type = luaL_checkstring(L, 1);
+    size_t datalen;
+    const char* data = luaL_checklstring(L, 2, &datalen);
+
+    crypto_checksum_type_t checksum_type;
+    if (strcmp(type, "crc16") == 0) {
+        checksum_type = CRYPTO_CHECKSUM_CRC16;
+    } else if (strcmp(type, "crc32") == 0) {
+        checksum_type = CRYPTO_CHECKSUM_CRC32;
+    } else if (strcmp(type, "adler32") == 0) {
+        checksum_type = CRYPTO_CHECKSUM_ADLER32;
+    } else {
+        lua_pushnil(L);
+        lua_pushstring(L, "unsupported checksum type, use crc16/crc32/adler32");
+        return 2;
+    }
+
+    uint32_t result = crypto_checksum(checksum_type, (const uint8_t*)data, datalen);
+
+    /* 返回十六进制格式 */
+    char hex[16];
+    if (checksum_type == CRYPTO_CHECKSUM_CRC16) {
+        snprintf(hex, sizeof(hex), "%04X", result);
+    } else {
+        snprintf(hex, sizeof(hex), "%08X", result);
+    }
+
+    lua_pushstring(L, hex);
+    return 1;
+}
+
+/**
+ * @brief 计算 CRC16
+ * @api crypto.crc16(data, init, xorout)
+ * @string data 输入数据
+ * @int init 初始值，默认为 0xFFFF
+ * @int xorout 输出异或值，默认为 0x0000
+ * @return CRC16 值
+ */
+static int crypto_crc16(lua_State* L) {
+    size_t datalen;
+    const char* data = luaL_checklstring(L, 1, &datalen);
+    uint16_t init = (uint16_t)luaL_optinteger(L, 2, 0xFFFF);
+    uint16_t xorout = (uint16_t)luaL_optinteger(L, 3, 0x0000);
+
+    uint16_t result = crypto_crc16((const uint8_t*)data, datalen, init, xorout, 1);
+    lua_pushinteger(L, result);
+    return 1;
+}
+
+/**
+ * @brief 计算 CRC32
+ * @api crypto.crc32(data, init, xorout)
+ * @string data 输入数据
+ * @int init 初始值，默认为 0xFFFFFFFF
+ * @int xorout 输出异或值，默认为 0x00000000
+ * @return CRC32 值
+ */
+static int crypto_crc32(lua_State* L) {
+    size_t datalen;
+    const char* data = luaL_checklstring(L, 1, &datalen);
+    uint32_t init = (uint32_t)luaL_optinteger(L, 2, 0xFFFFFFFF);
+    uint32_t xorout = (uint32_t)luaL_optinteger(L, 3, 0x00000000);
+
+    uint32_t result = crypto_crc32((const uint8_t*)data, datalen, init, xorout, 1);
+    lua_pushinteger(L, result);
+    return 1;
+}
+
+/*===========================================================
+ * Base64 编解码
+ *===========================================================*/
+
+/**
+ * @brief Base64 编码
+ * @api crypto.base64_encode(data)
+ * @string data 输入数据
+ * @return Base64 编码字符串
+ */
+static int crypto_base64_encode(lua_State* L) {
+    size_t datalen;
+    const char* data = luaL_checklstring(L, 1, &datalen);
+
+    size_t outlen = crypto_base64_encode_len(datalen);
+    char* out = (char*)iot_malloc(outlen);
+    if (!out) {
+        lua_pushnil(L);
+        lua_pushstring(L, "out of memory");
+        return 2;
+    }
+
+    size_t reallen = outlen;
+    int ret = crypto_base64_encode((const uint8_t*)data, datalen, out, &reallen);
+
+    if (ret != 0) {
+        iot_free(out);
+        lua_pushnil(L);
+        lua_pushstring(L, "base64 encode failed");
+        return 2;
+    }
+
+    lua_pushlstring(L, out, reallen);
+    iot_free(out);
+
+    return 1;
+}
+
+/**
+ * @brief Base64 解码
+ * @api crypto.base64_decode(str)
+ * @string str Base64 编码字符串
+ * @return 解码后的二进制数据
+ */
+static int crypto_base64_decode(lua_State* L) {
+    size_t datalen;
+    const char* data = luaL_checklstring(L, 1, &datalen);
+
+    size_t outlen = crypto_base64_decode_len(datalen);
+    uint8_t* out = (uint8_t*)iot_malloc(outlen);
+    if (!out) {
+        lua_pushnil(L);
+        lua_pushstring(L, "out of memory");
+        return 2;
+    }
+
+    size_t reallen = outlen;
+    int ret = crypto_base64_decode(data, datalen, out, &reallen);
+
+    if (ret != 0) {
+        iot_free(out);
+        lua_pushnil(L);
+        lua_pushstring(L, "base64 decode failed");
+        return 2;
+    }
+
+    lua_pushlstring(L, (const char*)out, reallen);
+    iot_free(out);
+
+    return 1;
+}
+
+/*===========================================================
+ * X509 证书操作
+ *===========================================================*/
+
+/* X509 证书 userdata 元表 */
+#define X509_CERT_METATABLE "crypto.x509_cert"
+
+static int x509_cert_gc(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (cert && *cert) {
+        crypto_x509_free(*cert);
+        *cert = NULL;
+    }
+    return 0;
+}
+
+static int x509_cert_tostring(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (!cert || !*cert) {
+        lua_pushstring(L, "x509_cert: invalid");
+        return 1;
+    }
+
+    lua_pushfstring(L, "x509_cert: CN=%s", (*cert)->common_name ? (*cert)->common_name : "N/A");
+    return 1;
+}
+
+/**
+ * @brief 解析 PEM 格式 X509 证书
+ * @api crypto.x509_parse_pem(pem)
+ * @string pem PEM 格式证书
+ * @return X509 证书对象，失败返回 nil
+ */
+static int crypto_x509_parse_pem(lua_State* L) {
+    size_t pemlen;
+    const char* pem = luaL_checklstring(L, 1, &pemlen);
+
+    crypto_x509_cert_t* cert = crypto_x509_parse_pem(pem, pemlen);
+    if (!cert) {
+        lua_pushnil(L);
+        lua_pushstring(L, "parse x509 pem failed");
+        return 2;
+    }
+
+    crypto_x509_cert_t** udata = (crypto_x509_cert_t**)lua_newuserdata(L, sizeof(crypto_x509_cert_t*));
+    *udata = cert;
+
+    if (luaL_newmetatable(L, X509_CERT_METATABLE)) {
+        lua_pushcfunction(L, x509_cert_gc);
+        lua_setfield(L, -2, "__gc");
+        lua_pushcfunction(L, x509_cert_tostring);
+        lua_setfield(L, -2, "__tostring");
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_setmetatable(L, -2);
+
+    return 1;
+}
+
+/**
+ * @brief 获取证书主题
+ * @api cert:get_subject()
+ * @return 主题字符串
+ */
+static int x509_cert_get_subject(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (!cert || !*cert) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    char* subject = crypto_x509_get_subject(*cert);
+    if (subject) {
+        lua_pushstring(L, subject);
+        free(subject);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+/**
+ * @brief 获取证书颁发者
+ * @api cert:get_issuer()
+ * @return 颁发者字符串
+ */
+static int x509_cert_get_issuer(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (!cert || !*cert) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    char* issuer = crypto_x509_get_issuer(*cert);
+    if (issuer) {
+        lua_pushstring(L, issuer);
+        free(issuer);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+/**
+ * @brief 获取证书序列号
+ * @api cert:get_serial_number()
+ * @return 序列号字符串
+ */
+static int x509_cert_get_serial_number(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (!cert || !*cert) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    char* serial = crypto_x509_get_serial_number(*cert);
+    if (serial) {
+        lua_pushstring(L, serial);
+        free(serial);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+/**
+ * @brief 获取证书通用名称
+ * @api cert:get_common_name()
+ * @return 通用名称字符串
+ */
+static int x509_cert_get_common_name(lua_State* L) {
+    crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
+    if (!cert || !*cert) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    char* cn = crypto_x509_get_common_name(*cert);
+    if (cn) {
+        lua_pushstring(L, cn);
+        free(cn);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+/* X509 证书方法表 */
+static const luaL_Reg x509_cert_methods[] = {
+    { "get_subject",      x509_cert_get_subject },
+    { "get_issuer",       x509_cert_get_issuer },
+    { "get_serial_number",x509_cert_get_serial_number },
+    { "get_common_name",  x509_cert_get_common_name },
+    { NULL,               NULL }
+};
+
+/*===========================================================
+ * PBKDF2 密钥派生
+ *===========================================================*/
+
+/**
+ * @brief PBKDF2 密钥派生
+ * @api crypto.pbkdf2_sha256(password, salt, iterations, keylen)
+ * @string password 密码
+ * @string salt 盐值
+ * @int iterations 迭代次数
+ * @int keylen 派生密钥长度
+ * @return 派生的密钥(十六进制字符串)
+ */
+static int crypto_pbkdf2_sha256(lua_State* L) {
+    size_t passwordlen;
+    const char* password = luaL_checklstring(L, 1, &passwordlen);
+    size_t saltlen;
+    const char* salt = luaL_checklstring(L, 2, &saltlen);
+    int iterations = (int)luaL_checkinteger(L, 3);
+    int keylen = (int)luaL_checkinteger(L, 4);
+
+    if (iterations <= 0 || keylen <= 0 || keylen > 256) {
+        lua_pushnil(L);
+        lua_pushstring(L, "invalid iterations or keylen");
+        return 2;
+    }
+
+    uint8_t* key = (uint8_t*)iot_malloc(keylen);
+    if (!key) {
+        lua_pushnil(L);
+        lua_pushstring(L, "out of memory");
+        return 2;
+    }
+
+    int ret = crypto_pbkdf2_sha256((const uint8_t*)password, passwordlen,
+                                   (const uint8_t*)salt, saltlen,
+                                   iterations, keylen, key);
+
+    if (ret != 0) {
+        iot_free(key);
+        lua_pushnil(L);
+        lua_pushstring(L, "pbkdf2 failed");
+        return 2;
+    }
+
+    char* hexout;
+    if (bin_to_hex(L, key, keylen, &hexout) != 0) {
+        iot_free(key);
+        return 2;
+    }
+    iot_free(key);
+
+    lua_pushstring(L, hexout);
+    iot_free(hexout);
+
+    return 1;
+}
+
+/*===========================================================
  * 模块注册
  *===========================================================*/
 
 /* crypto 模块方法表 */
 static const luaL_Reg crypto_methods[] = {
-    { "hash",    crypto_hash },
-    { "hmac",    crypto_hmac },
-    { "encrypt", crypto_encrypt },
-    { "decrypt", crypto_decrypt },
-    { "rand",    crypto_rand },
-    { "hex2bin", crypto_hex2bin },
-    { "bin2hex", crypto_bin2hex },
-    { NULL,      NULL }
+    { "hash",         crypto_hash },
+    { "hmac",         crypto_hmac },
+    { "encrypt",      crypto_encrypt },
+    { "decrypt",      crypto_decrypt },
+    { "rand",         crypto_rand },
+    { "hex2bin",      crypto_hex2bin },
+    { "bin2hex",      crypto_bin2hex },
+    { "checksum",     crypto_checksum },
+    { "crc16",        crypto_crc16 },
+    { "crc32",        crypto_crc32 },
+    { "base64_encode",crypto_base64_encode },
+    { "base64_decode",crypto_base64_decode },
+    { "x509_parse_pem",crypto_x509_parse_pem },
+    { "pbkdf2_sha256",crypto_pbkdf2_sha256 },
+    { NULL,           NULL }
 };
 
 /* 模块初始化 */
@@ -631,6 +1006,23 @@ LUAMOD_API int luaopen_crypto(lua_State* L) {
     lua_pushstring(L, "sm4-cbc"); lua_setfield(L, -2, "SM4_CBC");
     lua_pushstring(L, "sm4-ctr"); lua_setfield(L, -2, "SM4_CTR");
     lua_pushstring(L, "sm4-gcm"); lua_setfield(L, -2, "SM4_GCM");
+
+    /* 校验算法常量 */
+    lua_pushstring(L, "crc16");   lua_setfield(L, -2, "CHECKSUM_CRC16");
+    lua_pushstring(L, "crc32");   lua_setfield(L, -2, "CHECKSUM_CRC32");
+    lua_pushstring(L, "adler32"); lua_setfield(L, -2, "CHECKSUM_ADLER32");
+
+    /* 注册 X509 证书类型元表 */
+    luaL_newmetatable(L, X509_CERT_METATABLE);
+    lua_pushcfunction(L, x509_cert_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushcfunction(L, x509_cert_tostring);
+    lua_setfield(L, -2, "__tostring");
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+    /* 注册 X509 证书方法 */
+    luaL_setfuncs(L, x509_cert_methods, 0);
+    lua_pop(L, 1);  /* 弹出元表 */
 
     return 1;
 }
