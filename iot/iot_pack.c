@@ -83,64 +83,74 @@ static void doswap(int swap, void *p, size_t n)
 	}
 }
 
-#define UNPACKNUMBER(OP,T)		\
-	case OP:				\
-	{					\
-		T a;				\
-		int m=sizeof(a);			\
-		if (i+m>len) goto done;		\
-		memcpy(&a,s+i,m);			\
-		i+=m;				\
-		doswap(swap,&a,m);			\
-		lua_pushnumber(L,(lua_Number)a);	\
-		++n;				\
-		break;				\
-	}
+#define UNPACKNUMBER(OP,T)       \
+    case OP:                    \
+    {                           \
+        T a;                    \
+        int m = sizeof(a);      \
+        if (i + m > len) {      \
+            goto done;          \
+        }                       \
+        memcpy(&a, s + i, m);   \
+        i += m;                 \
+        doswap(swap, &a, m);    \
+        lua_pushnumber(L, (lua_Number)a); \
+        ++n;                    \
+        break;                  \
+    }
 
-#define UNPACKINT(OP,T)		\
-	case OP:				\
-	{					\
-		T a;				\
-		int m=sizeof(a);			\
-		if (i+m>len) goto done;		\
-		memcpy(&a,s+i,m);			\
-		i+=m;				\
-		doswap(swap,&a,m);			\
-		lua_pushinteger(L,(lua_Integer)a);	\
-		++n;				\
-		break;				\
-	}
+#define UNPACKINT(OP,T)         \
+    case OP:                    \
+    {                           \
+        T a;                    \
+        int m = sizeof(a);      \
+        if (i + m > len) {      \
+            goto done;          \
+        }                       \
+        memcpy(&a, s + i, m);   \
+        i += m;                 \
+        doswap(swap, &a, m);    \
+        lua_pushinteger(L, (lua_Integer)a); \
+        ++n;                    \
+        break;                  \
+    }
 
-#define UNPACKINT8(OP,T)		\
-	case OP:				\
-	{					\
-		T a;				\
-		int m=sizeof(a);			\
-		if (i+m>len) goto done;		\
-		memcpy(&a,s+i,m);			\
-		i+=m;				\
-		doswap(swap,&a,m);			\
-		int8_t t = (a & 0x80)?(0xffffff00+a):a;\
-		lua_pushinteger(L,(lua_Integer)t);	\
-		++n;				\
-		break;				\
-	}
+#define UNPACKINT8(OP,T)        \
+    case OP:                    \
+    {                           \
+        T a;                    \
+        int m = sizeof(a);      \
+        if (i + m > len) {      \
+            goto done;          \
+        }                       \
+        memcpy(&a, s + i, m);   \
+        i += m;                 \
+        doswap(swap, &a, m);    \
+        int8_t t = (a & 0x80) ? (0xffffff00 + a) : a; \
+        lua_pushinteger(L, (lua_Integer)t); \
+        ++n;                    \
+        break;                  \
+    }
 
-#define UNPACKSTRING(OP,T)		\
-	case OP:				\
-	{					\
-		T l;				\
-		int m=sizeof(l);			\
-		if (i+m>len) goto done;		\
-		memcpy(&l,s+i,m);			\
-		doswap(swap,&l,m);			\
-		if (i+m+l>len) goto done;		\
-		i+=m;				\
-		lua_pushlstring(L,s+i,l);		\
-		i+=l;				\
-		++n;				\
-		break;				\
-	}
+#define UNPACKSTRING(OP,T)      \
+    case OP:                    \
+    {                           \
+        T l;                    \
+        int m = sizeof(l);      \
+        if (i + m > len) {      \
+            goto done;          \
+        }                       \
+        memcpy(&l, s + i, m);   \
+        doswap(swap, &l, m);    \
+        if (i + m + l > len) {  \
+            goto done;          \
+        }                       \
+        i += m;                 \
+        lua_pushlstring(L, s + i, l); \
+        i += l;                \
+        ++n;                    \
+        break;                  \
+    }
 
 /**
  * @brief 解包字符串
@@ -155,115 +165,130 @@ local _,a = pack.unpack(x,">h") --解包成short (2字节)
 */
 static int iot_pack_unpack(lua_State *L) 
 {
-	size_t len;
-	const char *s=luaL_checklstring(L,1,&len);
-	const unsigned char *f= (const unsigned char*)luaL_checkstring(L,2);
-	int i=luaL_optnumber(L,3,1)-1;
-	int n=0;
-	int swap=0;
-	lua_pushnil(L);
-	while (*f)
-	{
-		int c=*f++;
-		int N=1;
-		if (isdigit(*f)) 
-		{
-			N=0;
-			while (isdigit(*f)) N=10*N+(*f++)-'0';
-			if (N==0 && c==OP_STRING) { lua_pushliteral(L,""); ++n; }
-		}
-		while (N--) {
-			if (!lua_checkstack(L, n))
-				return luaL_error(L, "too many results to unpack");
-			switch (c)
-			{
-				case OP_LITTLEENDIAN:
-				case OP_BIGENDIAN:
-				case OP_NATIVE:
-				{
-					swap=doendian(c);
-					N=0;
-					break;
-				}
-				case OP_STRING:
-				{
-					++N;
-					if (i+N>len) goto done;
-					lua_pushlstring(L,s+i,N);
-					i+=N;
-					++n;
-					N=0;
-					break;
-				}
-				case OP_ZSTRING:
-				{
-					size_t l;
-					if (i>=len) goto done;
-					l=strlen(s+i);
-					lua_pushlstring(L,s+i,l);
-					i+=l+1;
-					++n;
-					break;
-				}
-				UNPACKSTRING(OP_BSTRING, unsigned char)
-				UNPACKSTRING(OP_WSTRING, unsigned short)
-				UNPACKSTRING(OP_SSTRING, size_t)
-				UNPACKNUMBER(OP_NUMBER, lua_Number)
-			#ifndef LUA_NUMBER_INTEGRAL   
-				UNPACKNUMBER(OP_DOUBLE, double)
-				UNPACKNUMBER(OP_FLOAT, float)
-			#endif   
-				UNPACKINT8(OP_CHAR, int8_t)
-				UNPACKINT(OP_BYTE, uint8_t)
-				UNPACKINT(OP_SHORT, int16_t)
-				UNPACKINT(OP_USHORT, uint16_t)
-				UNPACKINT(OP_INT, int32_t)
-				UNPACKINT(OP_UINT, uint32_t)
-				UNPACKINT(OP_LONG, int64_t)
-				UNPACKINT(OP_ULONG, uint64_t)
-				case ' ': case ',':
-				break;
-				default:
-				badcode(L,c);
-				break;
-			}
-		}
-	}
+    size_t len;
+    const char *s = luaL_checklstring(L, 1, &len);
+    const unsigned char *f = (const unsigned char*)luaL_checkstring(L, 2);
+    int i = (int)luaL_optnumber(L, 3, 1) - 1;
+    int n = 0;
+    int swap = 0;
+    lua_pushnil(L);
+    while (*f)
+    {
+        int c = *f++;
+        int N = 1;
+        if (isdigit(*f)) 
+        {
+            N = 0;
+            while (isdigit(*f)) {
+                N = N * 10 + (*f++) - '0';
+            }
+            if (N == 0 && c == OP_STRING) {
+                lua_pushliteral(L, "");
+                ++n;
+            }
+        }
+        while (N--) {
+            if (!lua_checkstack(L, n))
+                return luaL_error(L, "too many results to unpack");
+            switch (c)
+            {
+                case OP_LITTLEENDIAN:
+                case OP_BIGENDIAN:
+                case OP_NATIVE:
+                {
+                    swap = doendian(c);
+                    N = 0;
+                    break;
+                }
+                case OP_STRING:
+                {
+                    ++N;
+                    if (i + N > (int)len) goto done;
+                    lua_pushlstring(L, s + i, N);
+                    i += N;
+                    ++n;
+                    N = 0;
+                    break;
+                }
+                case OP_ZSTRING:
+                {
+                    size_t l;
+                    if (i >= (int)len) goto done;
+                    l = strlen(s + i);
+                    lua_pushlstring(L, s + i, l);
+                    i += (int)l + 1;
+                    ++n;
+                    break;
+                }
+                UNPACKSTRING(OP_BSTRING, unsigned char)
+                UNPACKSTRING(OP_WSTRING, unsigned short)
+                UNPACKSTRING(OP_SSTRING, size_t)
+                UNPACKNUMBER(OP_NUMBER, lua_Number)
+#ifdef LUA_NUMBER_INTEGRAL
+                /* 在整数模式下，double/float 返回 nil */
+                case OP_DOUBLE:
+                case OP_FLOAT:
+                {
+                    lua_pushnil(L);
+                    ++n;
+                    break;
+                }
+#else
+                UNPACKNUMBER(OP_DOUBLE, double)
+                UNPACKNUMBER(OP_FLOAT, float)
+#endif
+                UNPACKINT8(OP_CHAR, int8_t)
+                UNPACKINT(OP_BYTE, uint8_t)
+                UNPACKINT(OP_SHORT, int16_t)
+                UNPACKINT(OP_USHORT, uint16_t)
+                UNPACKINT(OP_INT, int32_t)
+                UNPACKINT(OP_UINT, uint32_t)
+                UNPACKINT(OP_LONG, int64_t)
+                UNPACKINT(OP_ULONG, uint64_t)
+                case ' ':
+                case ',':
+                    break;
+                default:
+                    badcode(L, c);
+                    break;
+            }
+        }
+    }
 done:
-	lua_pushinteger(L,i+1);
-	lua_replace(L,-n-2);
-	return n+1;
+    lua_pushinteger(L, i + 1);
+    lua_replace(L, -n - 2);
+    return n + 1;
 }
 
-#define PACKNUMBER(OP,T)			\
-	case OP:					\
-	{						\
-		T a=(T)luaL_checknumber(L,i++);		\
-		doswap(swap,&a,sizeof(a));			\
-		luaL_addlstring(&b,(void*)&a,sizeof(a));	\
-		break;					\
-	}
+#define PACKNUMBER(OP,T)           \
+    case OP:                       \
+    {                              \
+        T a = (T)luaL_checknumber(L, i++); \
+        doswap(swap, &a, sizeof(a));      \
+        luaL_addlstring(&b, (void*)&a, sizeof(a)); \
+        break;                      \
+    }
 
-#define PACKINT(OP,T)			\
-	case OP:					\
-	{						\
-		T a=(T)luaL_checkinteger(L,i++);		\
-		doswap(swap,&a,sizeof(a));			\
-		luaL_addlstring(&b,(void*)&a,sizeof(a));	\
-		break;					\
-	}
+#define PACKINT(OP,T)             \
+    case OP:                       \
+    {                              \
+        T a = (T)luaL_checkinteger(L, i++); \
+        doswap(swap, &a, sizeof(a));      \
+        luaL_addlstring(&b, (void*)&a, sizeof(a)); \
+        break;                      \
+    }
 
-#define PACKSTRING(OP,T)			\
-	case OP:					\
-	{						\
-		size_t l;					\
-		const char *a=luaL_checklstring(L,i++,&l);	\
-		T ll=(T)l;					\
-		doswap(swap,&ll,sizeof(ll));		\
-		luaL_addlstring(&b,(void*)&ll,sizeof(ll));	\
-		luaL_addlstring(&b,a,l);			\
-		break;					\
-	}
+#define PACKSTRING(OP,T)          \
+    case OP:                       \
+    {                              \
+        size_t l;                   \
+        const char *a = luaL_checklstring(L, i++, &l); \
+        T ll = (T)l;               \
+        doswap(swap, &ll, sizeof(ll)); \
+        luaL_addlstring(&b, (void*)&ll, sizeof(ll)); \
+        luaL_addlstring(&b, a, l); \
+        break;                      \
+    }
 
 /**
  * @brief 打包字符串
@@ -280,87 +305,103 @@ log.info("data", data, data:toHex())
 */
 static int iot_pack_pack(lua_State *L)
 {
-	int i=2;
-	const unsigned char *f=(const unsigned char*)luaL_checkstring(L,1);
-	int swap=0;
-	luaL_Buffer b;
-	luaL_buffinit(L,&b);
-	while (*f)
-	{
-		int c=*f++;
-		int N=1;
-		int has_count = 0;
-		int orig_count = 1;
-		if (isdigit(*f)) 
-		{
-			N=0;
-			while (isdigit(*f)) N=10*N+(*f++)-'0';
-			has_count = 1;
-			orig_count = N;
-			if (orig_count == 0 && c == OP_STRING) {
-				size_t l;
-				luaL_optlstring(L, i++, "", &l); /* consume arg for consistency */
-				continue;
-			}
-		}
-		while (N--) switch (c)
-		{
-			case OP_LITTLEENDIAN:
-			case OP_BIGENDIAN:
-			case OP_NATIVE:
-			{
-				swap=doendian(c);
-				N=0;
-				break;
-			}
-			case OP_STRING:
-			{
-				size_t l;
-				const char *a=luaL_checklstring(L,i++,&l);
-				int target_len = has_count ? orig_count : (int)l;
-				if (target_len <= 0) {
-					N=0;break;
-				}
-				if ((size_t)target_len <= l) {
-					luaL_addlstring(&b,a,target_len);
-				} else {
-					luaL_addlstring(&b,a,l);
-					int pad = target_len - (int)l;
-					while (pad--) luaL_addchar(&b,'\0');
-				}
-				N=0;break;
-			}
-			case OP_ZSTRING:
-			{
-				size_t l;
-				const char *a=luaL_checklstring(L,i++,&l);
-				luaL_addlstring(&b,a,l+1);break;
-			}
-			PACKSTRING(OP_BSTRING, uint8_t)
-			PACKSTRING(OP_WSTRING, uint16_t)
-			PACKSTRING(OP_SSTRING, size_t)
-			PACKNUMBER(OP_NUMBER, lua_Number)
-#ifndef LUA_NUMBER_INTEGRAL   
-			PACKNUMBER(OP_DOUBLE, double)
-			PACKNUMBER(OP_FLOAT, float)
+    int i = 2;
+    const unsigned char *f = (const unsigned char*)luaL_checkstring(L, 1);
+    int swap = 0;
+    luaL_Buffer b;
+    luaL_buffinit(L, &b);
+    while (*f)
+    {
+        int c = *f++;
+        int N = 1;
+        int has_count = 0;
+        int orig_count = 1;
+        if (isdigit(*f)) 
+        {
+            N = 0;
+            while (isdigit(*f)) {
+                N = N * 10 + (*f++) - '0';
+            }
+            has_count = 1;
+            orig_count = N;
+            if (orig_count == 0 && c == OP_STRING) {
+                size_t l;
+                luaL_optlstring(L, i++, "", &l); /* consume arg for consistency */
+                continue;
+            }
+        }
+        while (N--) switch (c)
+        {
+            case OP_LITTLEENDIAN:
+            case OP_BIGENDIAN:
+            case OP_NATIVE:
+            {
+                swap = doendian(c);
+                N = 0;
+                break;
+            }
+            case OP_STRING:
+            {
+                size_t l;
+                const char *a = luaL_checklstring(L, i++, &l);
+                int target_len = has_count ? orig_count : (int)l;
+                if (target_len <= 0) {
+                    N = 0;
+                    break;
+                }
+                if ((size_t)target_len <= l) {
+                    luaL_addlstring(&b, a, target_len);
+                } else {
+                    luaL_addlstring(&b, a, l);
+                    int pad = target_len - (int)l;
+                    while (pad--) {
+                        luaL_addchar(&b, '\0');
+                    }
+                }
+                N = 0;
+                break;
+            }
+            case OP_ZSTRING:
+            {
+                size_t l;
+                const char *a = luaL_checklstring(L, i++, &l);
+                luaL_addlstring(&b, a, l + 1);
+                break;
+            }
+            PACKSTRING(OP_BSTRING, uint8_t)
+            PACKSTRING(OP_WSTRING, uint16_t)
+            PACKSTRING(OP_SSTRING, size_t)
+            PACKNUMBER(OP_NUMBER, lua_Number)
+#ifdef LUA_NUMBER_INTEGRAL
+            /* 在整数模式下，double/float 作为整数打包 */
+            case OP_DOUBLE:
+            case OP_FLOAT:
+            {
+                /* 整数模式下不支持浮点数，返回错误 */
+                return luaL_error(L, "floating point not supported in this build");
+            }
+#else
+            PACKNUMBER(OP_DOUBLE, double)
+            PACKNUMBER(OP_FLOAT, float)
 #endif
-			PACKINT(OP_CHAR, int8_t)
-			PACKINT(OP_BYTE, uint8_t)
-			PACKINT(OP_SHORT, int16_t)
-			PACKINT(OP_USHORT, uint16_t)
-			PACKINT(OP_INT, int32_t)
-			PACKINT(OP_UINT, uint32_t)
-			PACKINT(OP_LONG, int64_t)
-			PACKINT(OP_ULONG, uint64_t)
-			case ' ': case ',':
-			break;
-			default:
-			badcode(L,c);
-			break;
-		}
-	}
-	luaL_pushresult(&b);
-	return 1;
+            PACKINT(OP_CHAR, int8_t)
+            PACKINT(OP_BYTE, uint8_t)
+            PACKINT(OP_SHORT, int16_t)
+            PACKINT(OP_USHORT, uint16_t)
+            PACKINT(OP_INT, int32_t)
+            PACKINT(OP_UINT, uint32_t)
+            PACKINT(OP_LONG, int64_t)
+            PACKINT(OP_ULONG, uint64_t)
+            case ' ':
+            case ',':
+                break;
+            default:
+                badcode(L, c);
+                break;
+        }
+    }
+    luaL_pushresult(&b);
+    return 1;
 }
 
 

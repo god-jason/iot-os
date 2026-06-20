@@ -232,6 +232,9 @@ static int iot_rtos_timer_create(lua_State* L)
     if (ctx->timer_id == NULL) {
         LOG("ERR timer create");
         ctx->timer_id_lua = 0;
+        ctx->timeout_ticks = 0;
+        ctx->flags = 0;
+        ctx->periodic = 0;
         lua_pushnil(L);
         lua_pushstring(L, "failed to create timer");
         return 2;
@@ -242,6 +245,9 @@ static int iot_rtos_timer_create(lua_State* L)
         iot_timer_delete(ctx->timer_id);
         ctx->timer_id = NULL;
         ctx->timer_id_lua = 0;
+        ctx->timeout_ticks = 0;
+        ctx->flags = 0;
+        ctx->periodic = 0;
         lua_pushnil(L);
         lua_pushstring(L, "failed to start timer");
         return 2;

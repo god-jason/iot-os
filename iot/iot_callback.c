@@ -15,12 +15,13 @@
  * @param L Lua状态机
  * @param idx 回调函数在栈上的位置
  * @return userdata指针，用于后续调用和释放
+ *
+ * @note 返回的 userdata 指针在调用 iot_callback_free 之前始终有效
  */
 void* iot_callback_save(lua_State* L, int idx) {
     /* 创建userdata存储回调函数 */
     void* ud = lua_newuserdata(L, sizeof(void*));
     if (!ud) {
-        LOG("ERR lua_newuserdata failed");
         return NULL;
     }
     
@@ -33,7 +34,7 @@ void* iot_callback_save(lua_State* L, int idx) {
     lua_pushvalue(L, -2);
     lua_settable(L, LUA_REGISTRYINDEX);
     
-    /* 移除栈上的userdata */
+    /* 移除栈上的userdata（已在注册表中保存引用） */
     lua_pop(L, 1);
     
     return ud;
@@ -42,10 +43,16 @@ void* iot_callback_save(lua_State* L, int idx) {
 /**
  * @brief 释放保存的回调函数
  * @param ud userdata指针
+ *
+ * @note 释放后不能再使用该 userdata 调用回调
  */
 void iot_callback_free(void* ud) {
+    if (!ud) {
+        return;
+    }
+    
     lua_State* L = iot_get_lua_state();
-    if (!L || !ud) {
+    if (!L) {
         return;
     }
     
@@ -80,14 +87,14 @@ void iot_callback_call(void* ud, params_t* params) {
 void iot_callback_call_from_stack(lua_State* L, void* ud, int nargs) {
     if (!L || !ud) return;
     
-    params_t* params = params_create(nargs);
+    params_t* params = params_create(nargs > 0 ? nargs : -nargs);
     if (!params) {
-        LOG("ERR params_create failed");
         return;
     }
     
-    for (int i = 0; i < nargs; i++) {
-        int idx = -nargs + i;
+    int count = (nargs > 0) ? nargs : -nargs;
+    for (int i = 0; i < count; i++) {
+        int idx = (nargs > 0) ? (1 + i) : (nargs + i);
         switch (lua_type(L, idx)) {
             case LUA_TBOOLEAN:
                 params_push_int(params, lua_toboolean(L, idx));

@@ -2,7 +2,7 @@
 #include "platform.h"
 #include "iot_log.h"
 
-#define IOT_WAIT_FOREVER 0xFFFFFFFFU
+/* 使用 iot_queue.h 中定义的 IOT_WAIT_FOREVER */
 
 typedef struct {
     void* buffer;

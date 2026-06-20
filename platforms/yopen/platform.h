@@ -130,19 +130,24 @@
 
 #include "yopen_debug.h"
 
-#define LOG(fmt, ...) yopen_trace("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/* LOG 宏定义已移至 iot_log.h */
 
-#define iot_log_debug(tag, fmt, ...) \
-    yopen_trace("[D][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/*===========================================================
+ * 平台打印接口
+ *===========================================================*/
 
-#define iot_log_info(tag, fmt, ...) \
-    yopen_trace("[I][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/**
+ * @brief 打印字符串（不带换行）
+ * @param str 要打印的字符串
+ */
+#define iot_puts(str) yopen_trace("%s", str)
 
-#define iot_log_warn(tag, fmt, ...) \
-    yopen_trace("[W][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
-#define iot_log_error(tag, fmt, ...) \
-    yopen_trace("[E][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/**
+ * @brief 格式化打印（不带换行）
+ * @param fmt 格式字符串
+ * @param ... 可变参数
+ */
+#define iot_printf(fmt, ...) yopen_trace(fmt, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层

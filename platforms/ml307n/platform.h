@@ -121,19 +121,24 @@
 #include "cm_os.h"
 #include "cm_sys.h"
 
-#define LOG(fmt, ...) cm_log_printf("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/* LOG 宏定义已移至 iot_log.h */
 
-#define iot_log_debug(tag, fmt, ...) \
-    cm_log_printf("[D][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/*===========================================================
+ * 平台打印接口
+ *===========================================================*/
 
-#define iot_log_info(tag, fmt, ...) \
-    cm_log_printf("[I][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/**
+ * @brief 打印字符串（不带换行）
+ * @param str 要打印的字符串
+ */
+#define iot_puts(str) cm_log_printf(0, "%s", str)
 
-#define iot_log_warn(tag, fmt, ...) \
-    cm_log_printf("[W][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
-#define iot_log_error(tag, fmt, ...) \
-    cm_log_printf("[E][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+/**
+ * @brief 格式化打印（不带换行）
+ * @param fmt 格式字符串
+ * @param ... 可变参数
+ */
+#define iot_printf(fmt, ...) cm_log_printf(0, fmt, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层

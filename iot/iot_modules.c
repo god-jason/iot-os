@@ -7,11 +7,12 @@
 */
 
 #include "iot_modules.h"
+#include "iot_log.h"
 
 /* 核心基础模块 */
 #include "iot_rtos.h"
 #include "iot_task.h"
-#include "iot_callback.h"
+#include "iot_callback.h"  /* 回调函数管理 - 不作为Lua模块注册 */
 #include "iot_event.h"
 #include "iot_params.h"
 
@@ -43,14 +44,14 @@
 static const luaL_Reg core_modules[] = {
     {"rtos",     luaopen_rtos},       /* 实时操作系统接口 */
     {"task",     luaopen_task},       /* 任务管理 */
-    {"callback", luaopen_callback},   /* 回调管理 */
     {"event",    luaopen_event},      /* 事件管理 */
     {"params",   luaopen_params},    /* 参数管理 */
+    {"log",      luaopen_log},        /* 日志模块 */
 
     {"json",     luaopen_json},       /* JSON解析 */
     {"pack",     luaopen_pack},       /* 数据打包/解包 */
     {"base64",   luaopen_base64},     /* Base64编解码 */
-    {"zlib",     luaopen_zlib},      /* 压缩解压 */
+    {"zlib",     luaopen_zlib},       /* 压缩解压 */
     {"yaml",     luaopen_yaml},       /* YAML解析 */
 
     {NULL, NULL}
@@ -64,7 +65,7 @@ static const luaL_Reg optional_modules[] = {
 
 #ifdef ENABLE_FONTS
     {"font",     luaopen_font},       /* 字体渲染 */
-    {"u8g2",     luaopen_u8g2},      /* u8g2图形库 */
+    {"u8g2",     luaopen_u8g2},       /* u8g2图形库 */
 #endif
 
 #ifdef ENABLE_GMSSL
@@ -83,11 +84,29 @@ static const luaL_Reg optional_modules[] = {
  * @param L Lua状态机
  * @param name 模块名称
  * @param func 模块初始化函数
+ * @return 0 成功，-1 失败
  */
-static void register_module(lua_State* L, const char* name, lua_CFunction func)
+static int register_module(lua_State* L, const char* name, lua_CFunction func)
 {
+    if (!L || !name || !func) {
+        LOG("ERR register_module: invalid parameter");
+        return -1;
+    }
+    
+    /* luaL_requiref 会将模块表压入栈顶（第3个参数为1时） */
     luaL_requiref(L, name, func, 1);
+    
+    /* 检查是否成功创建了模块 */
+    if (lua_isnil(L, -1)) {
+        LOG("ERR register_module: %s returned nil", name);
+        lua_pop(L, 1);
+        return -1;
+    }
+    
+    /* 弹出模块表，模块已经注册到 package.loaded 中 */
     lua_pop(L, 1);
+    
+    return 0;
 }
 
 /**
@@ -97,17 +116,28 @@ static void register_module(lua_State* L, const char* name, lua_CFunction func)
 void modules_register(lua_State* L)
 {
     const luaL_Reg *lib;
-    int count = 0;
+    int success_count = 0;
+    int fail_count = 0;
     
     /* 注册核心模块 */
     for (lib = core_modules; lib->func; lib++) {
-        register_module(L, lib->name, lib->func);
-        count++;
+        if (register_module(L, lib->name, lib->func) == 0) {
+            success_count++;
+        } else {
+            fail_count++;
+            LOG("WARN module %s register failed", lib->name);
+        }
     }
     
     /* 注册可选模块 */
     for (lib = optional_modules; lib->func; lib++) {
-        register_module(L, lib->name, lib->func);
-        count++;
+        if (register_module(L, lib->name, lib->func) == 0) {
+            success_count++;
+        } else {
+            fail_count++;
+            LOG("WARN module %s register failed", lib->name);
+        }
     }
+    
+    LOG("modules register: success=%d, failed=%d", success_count, fail_count);
 }

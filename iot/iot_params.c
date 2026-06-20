@@ -191,6 +191,7 @@ int params_push_string(params_t* list, const char* val, size_t len)
     p->type = PARAM_STRING;
     p->value.str_val = (char*)iot_malloc(len + 1);
     if (!p->value.str_val) {
+        /* 内存分配失败，确保不会留下不完整的状态 */
         return -1;
     }
 
