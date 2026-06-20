@@ -1,5 +1,9 @@
-# components/http CMakeLists.txt
 # HTTP 客户端模块，基于 net_socket 实现
+#
+# 文件结构：
+#   http.h          - HTTP 客户端接口定义
+#   http.c          - HTTP 客户端核心实现
+#   http_module.c   - Lua 绑定
 
 add_library(iot_http STATIC
     http.c
