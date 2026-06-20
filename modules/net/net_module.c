@@ -660,24 +660,24 @@ static int iot_socket_state(lua_State* L) {
 
 /**
  * @brief DNS 解析
- * @api net.dns(host, callback)
+ * @api net.lookup(host, callback)
  * @string host 主机名
  * @function callback 解析完成回调 function(ip)
  * @return bool 成功返回 true
  * @usage
- * net.dns("example.com", function(ip)
+ * net.lookup("example.com", function(ip)
  *     print("IP:", ip)
  * end)
  */
-static int iot_net_dns(lua_State* L) {
+static int iot_net_lookup(lua_State* L) {
     const char* host = luaL_checkstring(L, 1);
-    
+
     if (lua_type(L, 2) != LUA_TFUNCTION) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "callback must be a function");
         return 2;
     }
-    
+
     char ip[32] = {0};
     int ret = net_gethostbyname(host, ip);
     if (ret == 0) {
@@ -688,10 +688,10 @@ static int iot_net_dns(lua_State* L) {
         lua_call(L, 1, 0);
     } else {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, "dns resolve failed");
+        lua_pushstring(L, "lookup failed");
         return 2;
     }
-    
+
     return 1;
 }
 
@@ -720,7 +720,7 @@ static const luaL_Reg socket_methods[] = {
 /* net 模块方法表 */
 static const luaL_Reg net_methods[] = {
     { "socket", iot_net_socket_create }, /* 创建 socket */
-    { "dns",    iot_net_dns },           /* DNS 解析 */
+    { "lookup", iot_net_lookup },        /* DNS 解析 */
     { NULL,     NULL }
 };
 
