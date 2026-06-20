@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static pcf8574_priv_t pcf8574_priv;
+static driver_i2c_t pcf8574_i2c;
 
 static int pcf8574_drv_init(driver_t* drv) {
     pcf8574_priv_t* priv = &pcf8574_priv;
@@ -14,12 +15,14 @@ static int pcf8574_drv_init(driver_t* drv) {
 
 static int pcf8574_drv_open(driver_t* drv) {
     pcf8574_priv_t* priv = (pcf8574_priv_t*)drv->priv;
-    driver_i2c_write_bytes(priv->addr, &priv->output, 1);
+    driver_i2c_init(&pcf8574_i2c, 0, 400000);
+    driver_i2c_write_bytes(&pcf8574_i2c, priv->addr, &priv->output, 1);
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
 }
 
 static int pcf8574_drv_close(driver_t* drv) {
+    driver_i2c_deinit(&pcf8574_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -30,7 +33,7 @@ static int pcf8574_drv_read(driver_t* drv, void* data, size_t len) {
     }
 
     pcf8574_priv_t* priv = (pcf8574_priv_t*)drv->priv;
-    return driver_i2c_read_bytes(priv->addr, (uint8_t*)data, 1);
+    return driver_i2c_read_bytes(&pcf8574_i2c, priv->addr, (uint8_t*)data, 1);
 }
 
 static int pcf8574_drv_write(driver_t* drv, const void* data, size_t len) {
@@ -40,7 +43,7 @@ static int pcf8574_drv_write(driver_t* drv, const void* data, size_t len) {
 
     pcf8574_priv_t* priv = (pcf8574_priv_t*)drv->priv;
     priv->output = *(const uint8_t*)data;
-    return driver_i2c_write_bytes(priv->addr, (uint8_t*)data, 1);
+    return driver_i2c_write_bytes(&pcf8574_i2c, priv->addr, (uint8_t*)data, 1);
 }
 
 static int pcf8574_drv_ioctl(driver_t* drv, int cmd, void* arg) {
@@ -83,7 +86,7 @@ int pcf8574_set_pin(driver_t* drv, uint8_t pin, int level) {
     } else {
         priv->output &= ~(1 << pin);
     }
-    return driver_i2c_write_bytes(priv->addr, &priv->output, 1);
+    return driver_i2c_write_bytes(&pcf8574_i2c, priv->addr, &priv->output, 1);
 }
 
 int pcf8574_get_pin(driver_t* drv, uint8_t pin, int* level) {

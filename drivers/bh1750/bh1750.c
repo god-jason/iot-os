@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static bh1750_priv_t bh1750_priv;
+static driver_i2c_t bh1750_i2c;
 
 static int bh1750_drv_init(driver_t* drv) {
     bh1750_priv_t* priv = &bh1750_priv;
@@ -15,16 +16,24 @@ static int bh1750_drv_init(driver_t* drv) {
 
 static int bh1750_drv_open(driver_t* drv) {
     bh1750_priv_t* priv = (bh1750_priv_t*)drv->priv;
-    driver_i2c_write(priv->config.addr, BH1750_REG_CONTROL, &(uint8_t){BH1750_REG_POWER_ON}, 1);
+
+    driver_i2c_init(&bh1750_i2c, 0, 400000);
+
+    uint8_t power_on = BH1750_REG_POWER_ON;
+    driver_i2c_write_bytes(&bh1750_i2c, priv->config.addr, &power_on, 1);
     driver_delay_ms(10);
-    driver_i2c_write(priv->config.addr, BH1750_REG_CONTROL, &priv->config.mode, 1);
+
+    driver_i2c_write_bytes(&bh1750_i2c, priv->config.addr, &priv->config.mode, 1);
+
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
 }
 
 static int bh1750_drv_close(driver_t* drv) {
     bh1750_priv_t* priv = (bh1750_priv_t*)drv->priv;
-    driver_i2c_write(priv->config.addr, BH1750_REG_CONTROL, &(uint8_t){BH1750_REG_POWER_DOWN}, 1);
+    uint8_t power_down = BH1750_REG_POWER_DOWN;
+    driver_i2c_write_bytes(&bh1750_i2c, priv->config.addr, &power_down, 1);
+    driver_i2c_deinit(&bh1750_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -39,7 +48,7 @@ static int bh1750_drv_read(driver_t* drv, void* data, size_t len) {
     uint8_t buf[2];
 
     driver_delay_ms(180);
-    driver_i2c_read_bytes(priv->config.addr, buf, 2);
+    driver_i2c_read_bytes(&bh1750_i2c, priv->config.addr, buf, 2);
 
     uint16_t raw = (buf[0] << 8) | buf[1];
     float factor = (1.0f / 1.2f) * (69.0f / (float)priv->config.mtreg);

@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static mpu6050_priv_t mpu6050_priv;
+static driver_i2c_t mpu6050_i2c;
 
 static float mpu6050_get_accel_scale(uint8_t range) {
     switch (range) {
@@ -39,22 +40,25 @@ static int mpu6050_drv_open(driver_t* drv) {
     mpu6050_priv_t* priv = (mpu6050_priv_t*)drv->priv;
     uint8_t id;
 
-    driver_i2c_read(priv->config.addr, MPU6050_REG_WHO_AM_I, &id, 1);
+    driver_i2c_init(&mpu6050_i2c, 0, 400000);
+
+    driver_i2c_read_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_WHO_AM_I, &id, 1);
     if (id != 0x68) {
         return DRIVER_ERR_I2C;
     }
 
-    driver_i2c_write(priv->config.addr, MPU6050_REG_PWR_MGMT_1, &(uint8_t){0x00}, 1);
+    uint8_t pwr_mgmt = 0x00;
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_PWR_MGMT_1, &pwr_mgmt, 1);
     driver_delay_ms(100);
 
     uint8_t smplrt_div = 0x07;
-    driver_i2c_write(priv->config.addr, MPU6050_REG_SMPLRT_DIV, &smplrt_div, 1);
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_SMPLRT_DIV, &smplrt_div, 1);
 
     uint8_t config = 0x06;
-    driver_i2c_write(priv->config.addr, MPU6050_REG_CONFIG, &config, 1);
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_CONFIG, &config, 1);
 
-    driver_i2c_write(priv->config.addr, MPU6050_REG_GYRO_CONFIG, &priv->config.gyro_range, 1);
-    driver_i2c_write(priv->config.addr, MPU6050_REG_ACCEL_CONFIG, &priv->config.accel_range, 1);
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_GYRO_CONFIG, &priv->config.gyro_range, 1);
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_ACCEL_CONFIG, &priv->config.accel_range, 1);
 
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
@@ -63,7 +67,8 @@ static int mpu6050_drv_open(driver_t* drv) {
 static int mpu6050_drv_close(driver_t* drv) {
     mpu6050_priv_t* priv = (mpu6050_priv_t*)drv->priv;
     uint8_t pwr_mgmt = 0x40;
-    driver_i2c_write(priv->config.addr, MPU6050_REG_PWR_MGMT_1, &pwr_mgmt, 1);
+    driver_i2c_write_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_PWR_MGMT_1, &pwr_mgmt, 1);
+    driver_i2c_deinit(&mpu6050_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -77,7 +82,7 @@ static int mpu6050_drv_read(driver_t* drv, void* data, size_t len) {
     mpu6050_data_t* out = (mpu6050_data_t*)data;
     uint8_t buf[14];
 
-    driver_i2c_read(priv->config.addr, MPU6050_REG_ACCEL_XOUT_H, buf, 14);
+    driver_i2c_read_reg(&mpu6050_i2c, priv->config.addr, MPU6050_REG_ACCEL_XOUT_H, buf, 14);
 
     int16_t ax_raw = (buf[0] << 8) | buf[1];
     int16_t ay_raw = (buf[2] << 8) | buf[3];

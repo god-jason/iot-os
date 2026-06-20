@@ -2,16 +2,17 @@
 #include "../drivers.h"
 
 static lcd1602_priv_t lcd1602_priv;
+static driver_i2c_t lcd1602_i2c;
 
 static void lcd1602_send_cmd(lcd1602_priv_t* priv, uint8_t cmd) {
     uint8_t buf[2] = {0x00, cmd};
-    driver_i2c_write_bytes(priv->config.addr, buf, 2);
+    driver_i2c_write_bytes(&lcd1602_i2c, priv->config.addr, buf, 2);
     driver_delay_ms(2);
 }
 
 static void lcd1602_send_data(lcd1602_priv_t* priv, uint8_t data) {
     uint8_t buf[2] = {0x40, data};
-    driver_i2c_write_bytes(priv->config.addr, buf, 2);
+    driver_i2c_write_bytes(&lcd1602_i2c, priv->config.addr, buf, 2);
 }
 
 static int lcd1602_drv_init(driver_t* drv) {
@@ -26,6 +27,8 @@ static int lcd1602_drv_init(driver_t* drv) {
 
 static int lcd1602_drv_open(driver_t* drv) {
     lcd1602_priv_t* priv = (lcd1602_priv_t*)drv->priv;
+
+    driver_i2c_init(&lcd1602_i2c, 0, 400000);
 
     driver_delay_ms(50);
 
@@ -49,6 +52,7 @@ static int lcd1602_drv_open(driver_t* drv) {
 static int lcd1602_drv_close(driver_t* drv) {
     lcd1602_priv_t* priv = (lcd1602_priv_t*)drv->priv;
     lcd1602_send_cmd(priv, LCD1602_CMD_DISPLAY_CTRL | 0x00);
+    driver_i2c_deinit(&lcd1602_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -99,32 +103,16 @@ int lcd1602_clear(driver_t* drv) {
     return DRIVER_OK;
 }
 
-int lcd1602_set_cursor(driver_t* drv, int col, int row) {
+int lcd1602_set_cursor(driver_t* drv, uint8_t col, uint8_t row) {
     lcd1602_priv_t* priv = (lcd1602_priv_t*)drv->priv;
-
-    if (col < 0 || col >= priv->config.cols || row < 0 || row >= priv->config.rows) {
-        return DRIVER_ERR_INVALID;
-    }
-
-    uint8_t addr = (row == 0) ? LCD1602_LINE1_ADDR : LCD1602_LINE2_ADDR;
-    addr += col;
-    lcd1602_send_cmd(priv, LCD1602_CMD_SET_DDRAM | addr);
-
+    uint8_t addr = (row == 0) ? (0x00 + col) : (0x40 + col);
+    uint8_t cmd = LCD1602_CMD_SET_DDRAM | addr;
+    lcd1602_send_cmd(priv, cmd);
     return DRIVER_OK;
 }
 
-int lcd1602_write_char(driver_t* drv, char ch) {
-    lcd1602_priv_t* priv = (lcd1602_priv_t*)drv->priv;
-    lcd1602_send_data(priv, ch);
-    return DRIVER_OK;
-}
-
-int lcd1602_write_string(driver_t* drv, const char* str) {
-    lcd1602_priv_t* priv = (lcd1602_priv_t*)drv->priv;
-    while (*str) {
-        lcd1602_send_data(priv, *str++);
-    }
-    return DRIVER_OK;
+int lcd1602_print(driver_t* drv, const char* str) {
+    return drv->write(drv, str, strlen(str));
 }
 
 driver_t drv_lcd1602 = {

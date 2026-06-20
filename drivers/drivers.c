@@ -11,90 +11,93 @@ static driver_t* driver_list = NULL;
  * I2C 接口实现
  *===========================================================*/
 
-int driver_i2c_init(const i2c_config_t* config) {
-    (void)config;
+int driver_i2c_init(driver_i2c_t* i2c, int bus, int speed) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    memset(i2c, 0, sizeof(driver_i2c_t));
+    i2c->bus = bus;
+    i2c->fd = iot_i2c_init(bus, speed);
+
+    return (i2c->fd >= 0) ? DRIVER_OK : DRIVER_ERR_I2C;
+}
+
+int driver_i2c_deinit(driver_i2c_t* i2c) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    iot_i2c_deinit(i2c->fd);
     return DRIVER_OK;
 }
 
-int driver_i2c_deinit(void) {
-    return DRIVER_OK;
+int driver_i2c_write_reg(driver_i2c_t* i2c, uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    return iot_i2c_write(i2c->fd, addr, reg, data, len);
 }
 
-int driver_i2c_read(uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
-    (void)addr;
-    (void)reg;
-    (void)data;
-    (void)len;
-    return DRIVER_OK;
+int driver_i2c_read_reg(driver_i2c_t* i2c, uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    return iot_i2c_read(i2c->fd, addr, reg, data, len);
 }
 
-int driver_i2c_write(uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
-    (void)addr;
-    (void)reg;
-    (void)data;
-    (void)len;
-    return DRIVER_OK;
+int driver_i2c_write_bytes(driver_i2c_t* i2c, uint8_t addr, const uint8_t* data, size_t len) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    return iot_i2c_write_raw(i2c->fd, addr, data, len);
 }
 
-int driver_i2c_read_bytes(uint8_t addr, uint8_t* data, size_t len) {
-    (void)addr;
-    (void)data;
-    (void)len;
-    return DRIVER_OK;
-}
+int driver_i2c_read_bytes(driver_i2c_t* i2c, uint8_t addr, uint8_t* data, size_t len) {
+    if (!i2c) {
+        return DRIVER_ERR_INVALID;
+    }
 
-int driver_i2c_write_bytes(uint8_t addr, const uint8_t* data, size_t len) {
-    (void)addr;
-    (void)data;
-    (void)len;
-    return DRIVER_OK;
+    return iot_i2c_read_raw(i2c->fd, addr, data, len);
 }
 
 /*===========================================================
  * SPI 接口实现
  *===========================================================*/
 
-int driver_spi_init(const spi_config_t* config) {
-    (void)config;
+int driver_spi_init(driver_spi_t* spi, int bus, int cs, int speed, int mode) {
+    if (!spi) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    memset(spi, 0, sizeof(driver_spi_t));
+    spi->bus = bus;
+    spi->cs = cs;
+    spi->speed = speed;
+    spi->mode = mode;
+    spi->fd = iot_spi_init(bus, cs, mode, speed);
+
+    return (spi->fd >= 0) ? DRIVER_OK : DRIVER_ERR_SPI;
+}
+
+int driver_spi_deinit(driver_spi_t* spi) {
+    if (!spi) {
+        return DRIVER_ERR_INVALID;
+    }
+
+    iot_spi_deinit(spi->fd);
     return DRIVER_OK;
 }
 
-int driver_spi_deinit(void) {
-    return DRIVER_OK;
-}
+int driver_spi_transfer(driver_spi_t* spi, uint8_t* tx, uint8_t* rx, size_t len) {
+    if (!spi) {
+        return DRIVER_ERR_INVALID;
+    }
 
-int driver_spi_transfer(uint8_t* tx, uint8_t* rx, size_t len) {
-    (void)tx;
-    (void)rx;
-    (void)len;
-    return DRIVER_OK;
-}
-
-/*===========================================================
- * GPIO 接口实现
- *===========================================================*/
-
-int driver_gpio_init(int pin, gpio_dir_t dir) {
-    (void)pin;
-    (void)dir;
-    return DRIVER_OK;
-}
-
-int driver_gpio_deinit(int pin) {
-    (void)pin;
-    return DRIVER_OK;
-}
-
-int driver_gpio_set_level(int pin, gpio_level_t level) {
-    (void)pin;
-    (void)level;
-    return DRIVER_OK;
-}
-
-int driver_gpio_get_level(int pin, gpio_level_t* level) {
-    (void)pin;
-    (void)level;
-    return DRIVER_OK;
+    return iot_spi_transfer(spi->fd, tx, rx, len, spi->speed);
 }
 
 /*===========================================================
@@ -102,11 +105,26 @@ int driver_gpio_get_level(int pin, gpio_level_t* level) {
  *===========================================================*/
 
 void driver_delay_ms(uint32_t ms) {
-    iot_os_delay_ms(ms);
+    iot_task_delay(ms);
 }
 
 void driver_delay_us(uint32_t us) {
-    iot_os_delay_us(us);
+#ifdef __linux__
+    usleep(us);
+#elif defined(_WIN32) || defined(_WIN64)
+    HANDLE timer;
+    LARGE_INTEGER due_time;
+    due_time.QuadPart = -(int64_t)us * 10;
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    if (timer) {
+        SetWaitableTimer(timer, &due_time, 0, NULL, NULL, FALSE, 0);
+        WaitForSingleObject(timer, INFINITE);
+        CloseHandle(timer);
+    }
+#else
+    volatile int i;
+    for (i = 0; i < us * 10; i++);
+#endif
 }
 
 /*===========================================================
@@ -140,35 +158,3 @@ driver_t* driver_find(const char* name) {
 
     return NULL;
 }
-
-int driver_unregister(const char* name) {
-    driver_t **pprev = &driver_list;
-    driver_t *curr = driver_list;
-
-    while (curr) {
-        if (strcmp(curr->name, name) == 0) {
-            *pprev = curr->next;
-            return DRIVER_OK;
-        }
-        pprev = &curr->next;
-        curr = curr->next;
-    }
-
-    return DRIVER_ERR_INVALID;
-}
-
-/*===========================================================
- * 驱动全局链表定义
- *===========================================================*/
-
-#define DRIVER_LIST_ENTRY(drv) \
-    driver_t* drv_##drv##_next
-
-static DRIVER_LIST_ENTRY(bme280);
-static DRIVER_LIST_ENTRY(bh1750);
-static DRIVER_LIST_ENTRY(dht11);
-static DRIVER_LIST_ENTRY(dht22);
-static DRIVER_LIST_ENTRY(ssd1306);
-static DRIVER_LIST_ENTRY(mpu6050);
-static DRIVER_LIST_ENTRY(pcf8574);
-static DRIVER_LIST_ENTRY(ads1115);

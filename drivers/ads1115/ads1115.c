@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static ads1115_priv_t ads1115_priv;
+static driver_i2c_t ads1115_i2c;
 
 static float ads1115_get_vref(uint8_t pga) {
     switch (pga) {
@@ -39,11 +40,13 @@ static int ads1115_drv_init(driver_t* drv) {
 }
 
 static int ads1115_drv_open(driver_t* drv) {
+    driver_i2c_init(&ads1115_i2c, 0, 400000);
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
 }
 
 static int ads1115_drv_close(driver_t* drv) {
+    driver_i2c_deinit(&ads1115_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -97,12 +100,12 @@ int ads1115_read(driver_t* drv, int channel, ads1115_data_t* data) {
     config |= 0x0018;
 
     uint8_t cfg_buf[3] = {ADS1115_REG_CONFIG, (config >> 8) & 0xFF, config & 0xFF};
-    driver_i2c_write_bytes(priv->config.addr, cfg_buf, 3);
+    driver_i2c_write_bytes(&ads1115_i2c, priv->config.addr, cfg_buf, 3);
 
     driver_delay_ms(10);
 
     uint8_t buf[2];
-    driver_i2c_read(priv->config.addr, ADS1115_REG_CONVERSION, buf, 2);
+    driver_i2c_read_reg(&ads1115_i2c, priv->config.addr, ADS1115_REG_CONVERSION, buf, 2);
 
     data->raw = (int16_t)((buf[0] << 8) | buf[1]);
     data->voltage = ((float)data->raw / 32768.0f) * priv->config.vref;

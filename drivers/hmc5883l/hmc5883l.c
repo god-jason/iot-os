@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static hmc5883l_priv_t hmc5883l_priv;
+static driver_i2c_t hmc5883l_i2c;
 
 static float hmc5883l_get_sensitivity(uint8_t scale) {
     switch (scale) {
@@ -31,19 +32,21 @@ static int hmc5883l_drv_init(driver_t* drv) {
 static int hmc5883l_drv_open(driver_t* drv) {
     hmc5883l_priv_t* priv = (hmc5883l_priv_t*)drv->priv;
 
+    driver_i2c_init(&hmc5883l_i2c, 0, 400000);
+
     uint8_t id[3];
-    driver_i2c_read(priv->config.addr, HMC5883L_REG_ID_A, id, 3);
+    driver_i2c_read_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_ID_A, id, 3);
     if (id[0] != 0x48 || id[1] != 0x34 || id[2] != 0x33) {
         return DRIVER_ERR_I2C;
     }
 
     uint8_t config_a = 0x70;
-    driver_i2c_write(priv->config.addr, HMC5883L_REG_CONFIG_A, &config_a, 1);
+    driver_i2c_write_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_CONFIG_A, &config_a, 1);
 
     uint8_t config_b = (priv->config.scale << 5);
-    driver_i2c_write(priv->config.addr, HMC5883L_REG_CONFIG_B, &config_b, 1);
+    driver_i2c_write_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_CONFIG_B, &config_b, 1);
 
-    driver_i2c_write(priv->config.addr, HMC5883L_REG_MODE, &priv->config.mode, 1);
+    driver_i2c_write_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_MODE, &priv->config.mode, 1);
 
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
@@ -52,7 +55,8 @@ static int hmc5883l_drv_open(driver_t* drv) {
 static int hmc5883l_drv_close(driver_t* drv) {
     hmc5883l_priv_t* priv = (hmc5883l_priv_t*)drv->priv;
     uint8_t mode = HMC5883L_MODE_IDLE;
-    driver_i2c_write(priv->config.addr, HMC5883L_REG_MODE, &mode, 1);
+    driver_i2c_write_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_MODE, &mode, 1);
+    driver_i2c_deinit(&hmc5883l_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -66,7 +70,7 @@ static int hmc5883l_drv_read(driver_t* drv, void* data, size_t len) {
     hmc5883l_data_t* out = (hmc5883l_data_t*)data;
     uint8_t buf[6];
 
-    driver_i2c_read(priv->config.addr, HMC5883L_REG_OUT_X_MSB, buf, 6);
+    driver_i2c_read_reg(&hmc5883l_i2c, priv->config.addr, HMC5883L_REG_OUT_X_MSB, buf, 6);
 
     int16_t x_raw = (int16_t)((buf[0] << 8) | buf[1]);
     int16_t z_raw = (int16_t)((buf[2] << 8) | buf[3]);

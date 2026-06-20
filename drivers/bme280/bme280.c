@@ -2,6 +2,7 @@
 #include "../drivers.h"
 
 static bme280_priv_t bme280_priv;
+static driver_i2c_t bme280_i2c;
 
 static int bme280_read_calib(bme280_priv_t* priv);
 static int32_t bme280_compensate_temperature(bme280_priv_t* priv, int32_t adc_T);
@@ -26,12 +27,14 @@ static int bme280_drv_open(driver_t* drv) {
     bme280_priv_t* priv = (bme280_priv_t*)drv->priv;
     uint8_t id;
 
-    driver_i2c_read(priv->config.addr, BME280_REG_ID, &id, 1);
+    driver_i2c_init(&bme280_i2c, 0, 400000);
+    driver_i2c_read_reg(&bme280_i2c, priv->config.addr, BME280_REG_ID, &id, 1);
     if (id != 0x60) {
         return DRIVER_ERR_I2C;
     }
 
-    driver_i2c_write(priv->config.addr, BME280_REG_RESET, &(uint8_t){BME280_RESET_VALUE}, 1);
+    uint8_t reset = BME280_RESET_VALUE;
+    driver_i2c_write_reg(&bme280_i2c, priv->config.addr, BME280_REG_RESET, &reset, 1);
     driver_delay_ms(10);
 
     if (bme280_read_calib(priv) != DRIVER_OK) {
@@ -39,19 +42,20 @@ static int bme280_drv_open(driver_t* drv) {
     }
 
     uint8_t ctrl_hum = priv->config.osrs_h;
-    driver_i2c_write(priv->config.addr, BME280_REG_CTRL_HUM, &ctrl_hum, 1);
+    driver_i2c_write_reg(&bme280_i2c, priv->config.addr, BME280_REG_CTRL_HUM, &ctrl_hum, 1);
 
     uint8_t ctrl_meas = (priv->config.osrs_t << 5) | (priv->config.osrs_p << 2) | priv->config.mode;
-    driver_i2c_write(priv->config.addr, BME280_REG_CTRL_MEAS, &ctrl_meas, 1);
+    driver_i2c_write_reg(&bme280_i2c, priv->config.addr, BME280_REG_CTRL_MEAS, &ctrl_meas, 1);
 
     uint8_t config = (priv->config.t_sb << 5) | (priv->config.filter << 2);
-    driver_i2c_write(priv->config.addr, BME280_REG_CONFIG, &config, 1);
+    driver_i2c_write_reg(&bme280_i2c, priv->config.addr, BME280_REG_CONFIG, &config, 1);
 
     drv->status = DRIVER_STATUS_OPENED;
     return DRIVER_OK;
 }
 
 static int bme280_drv_close(driver_t* drv) {
+    driver_i2c_deinit(&bme280_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }
@@ -65,7 +69,7 @@ static int bme280_drv_read(driver_t* drv, void* data, size_t len) {
     bme280_data_t* out = (bme280_data_t*)data;
     uint8_t buf[8];
 
-    driver_i2c_read(priv->config.addr, BME280_REG_PRESS_MSB, buf, 8);
+    driver_i2c_read_reg(&bme280_i2c, priv->config.addr, BME280_REG_PRESS_MSB, buf, 8);
 
     int32_t adc_P = (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
     int32_t adc_T = (buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4);
@@ -100,7 +104,7 @@ static int bme280_drv_deinit(driver_t* drv) {
 static int bme280_read_calib(bme280_priv_t* priv) {
     uint8_t buf[24];
 
-    driver_i2c_read(priv->config.addr, 0x88, buf, 24);
+    driver_i2c_read_reg(&bme280_i2c, priv->config.addr, 0x88, buf, 24);
 
     priv->calib.dig_T1 = (uint16_t)((buf[1] << 8) | buf[0]);
     priv->calib.dig_T2 = (int16_t)((buf[3] << 8) | buf[2]);
@@ -115,9 +119,9 @@ static int bme280_read_calib(bme280_priv_t* priv) {
     priv->calib.dig_P8 = (int16_t)((buf[21] << 8) | buf[20]);
     priv->calib.dig_P9 = (int16_t)((buf[23] << 8) | buf[22]);
 
-    driver_i2c_read(priv->config.addr, 0xA1, &priv->calib.dig_H1, 1);
+    driver_i2c_read_reg(&bme280_i2c, priv->config.addr, 0xA1, &priv->calib.dig_H1, 1);
 
-    driver_i2c_read(priv->config.addr, 0xE1, buf, 7);
+    driver_i2c_read_reg(&bme280_i2c, priv->config.addr, 0xE1, buf, 7);
 
     priv->calib.dig_H2 = (int16_t)((buf[1] << 8) | buf[0]);
     priv->calib.dig_H3 = buf[2];
@@ -190,7 +194,7 @@ int bme280_read(driver_t* drv, bme280_data_t* data) {
 int bme280_reset(driver_t* drv) {
     bme280_priv_t* priv = (bme280_priv_t*)drv->priv;
     uint8_t val = BME280_RESET_VALUE;
-    return driver_i2c_write(priv->config.addr, BME280_REG_RESET, &val, 1);
+    return driver_i2c_write_reg(&bme280_i2c, priv->config.addr, BME280_REG_RESET, &val, 1);
 }
 
 driver_t drv_bme280 = {

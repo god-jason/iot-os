@@ -2,17 +2,18 @@
 #include "../drivers.h"
 
 static ssd1306_priv_t ssd1306_priv;
+static driver_i2c_t ssd1306_i2c;
 
 static void ssd1306_send_cmd(ssd1306_priv_t* priv, uint8_t cmd) {
     uint8_t buf[2] = {SSD1306_REG_CMD, cmd};
-    driver_i2c_write_bytes(priv->addr, buf, 2);
+    driver_i2c_write_bytes(&ssd1306_i2c, priv->addr, buf, 2);
 }
 
 static void ssd1306_send_data(ssd1306_priv_t* priv, const uint8_t* data, size_t len) {
     uint8_t buf[SSD1306_BUFFER_SIZE + 1];
     buf[0] = SSD1306_REG_DATA;
     memcpy(buf + 1, data, len);
-    driver_i2c_write_bytes(priv->addr, buf, len + 1);
+    driver_i2c_write_bytes(&ssd1306_i2c, priv->addr, buf, len + 1);
 }
 
 static int ssd1306_drv_init(driver_t* drv) {
@@ -28,6 +29,8 @@ static int ssd1306_drv_init(driver_t* drv) {
 
 static int ssd1306_drv_open(driver_t* drv) {
     ssd1306_priv_t* priv = (ssd1306_priv_t*)drv->priv;
+
+    driver_i2c_init(&ssd1306_i2c, 0, 400000);
 
     ssd1306_send_cmd(priv, SSD1306_CMD_DISPLAY_OFF);
     ssd1306_send_cmd(priv, SSD1306_CMD_SET_DISPLAY_CLOCK);
@@ -60,6 +63,7 @@ static int ssd1306_drv_open(driver_t* drv) {
 static int ssd1306_drv_close(driver_t* drv) {
     ssd1306_priv_t* priv = (ssd1306_priv_t*)drv->priv;
     ssd1306_send_cmd(priv, SSD1306_CMD_DISPLAY_OFF);
+    driver_i2c_deinit(&ssd1306_i2c);
     drv->status = DRIVER_STATUS_INITED;
     return DRIVER_OK;
 }

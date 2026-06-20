@@ -8,6 +8,13 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
+
+/*===========================================================
+ * 平台扩展接口
+ *===========================================================*/
+#include "platform.h"
+#include "platform_ext.h"
 
 /*===========================================================
  * 驱动类型枚举
@@ -104,55 +111,76 @@ typedef struct {
 #define DRIVER_ERR_CRC          -6
 
 /*===========================================================
- * I2C 接口定义
+ * GPIO 类型重定义 (兼容 platform_ext.h)
  *===========================================================*/
 
-typedef struct {
-    int bus;
-    uint8_t addr;
-    int speed;
-} i2c_config_t;
+#ifndef GPIO_DIR_INPUT
+    #define GPIO_DIR_INPUT       0
+#endif
 
-int driver_i2c_init(const i2c_config_t* config);
-int driver_i2c_deinit(void);
-int driver_i2c_read(uint8_t addr, uint8_t reg, uint8_t* data, size_t len);
-int driver_i2c_write(uint8_t addr, uint8_t reg, const uint8_t* data, size_t len);
-int driver_i2c_read_bytes(uint8_t addr, uint8_t* data, size_t len);
-int driver_i2c_write_bytes(uint8_t addr, const uint8_t* data, size_t len);
+#ifndef GPIO_DIR_OUTPUT
+    #define GPIO_DIR_OUTPUT      1
+#endif
+
+#ifndef GPIO_LEVEL_LOW
+    #define GPIO_LEVEL_LOW       0
+#endif
+
+#ifndef GPIO_LEVEL_HIGH
+    #define GPIO_LEVEL_HIGH      1
+#endif
+
+typedef int gpio_dir_t;
+typedef int gpio_level_t;
 
 /*===========================================================
- * SPI 接口定义
+ * I2C 句柄和配置
  *===========================================================*/
 
 typedef struct {
     int bus;
-    int cs_pin;
+    int fd;
+    uint8_t addr;
+} driver_i2c_t;
+
+int driver_i2c_init(driver_i2c_t* i2c, int bus, int speed);
+int driver_i2c_deinit(driver_i2c_t* i2c);
+int driver_i2c_write_reg(driver_i2c_t* i2c, uint8_t addr, uint8_t reg, const uint8_t* data, size_t len);
+int driver_i2c_read_reg(driver_i2c_t* i2c, uint8_t addr, uint8_t reg, uint8_t* data, size_t len);
+int driver_i2c_write_bytes(driver_i2c_t* i2c, uint8_t addr, const uint8_t* data, size_t len);
+int driver_i2c_read_bytes(driver_i2c_t* i2c, uint8_t addr, uint8_t* data, size_t len);
+
+/*===========================================================
+ * SPI 句柄和配置
+ *===========================================================*/
+
+typedef struct {
+    int bus;
+    int cs;
+    int fd;
     int speed;
     int mode;
-} spi_config_t;
+} driver_spi_t;
 
-int driver_spi_init(const spi_config_t* config);
-int driver_spi_deinit(void);
-int driver_spi_transfer(uint8_t* tx, uint8_t* rx, size_t len);
+int driver_spi_init(driver_spi_t* spi, int bus, int cs, int speed, int mode);
+int driver_spi_deinit(driver_spi_t* spi);
+int driver_spi_transfer(driver_spi_t* spi, uint8_t* tx, uint8_t* rx, size_t len);
 
 /*===========================================================
- * GPIO 接口定义
+ * GPIO 接口定义 (直接使用 platform_ext.h)
  *===========================================================*/
 
-typedef enum {
-    GPIO_DIR_INPUT = 0,
-    GPIO_DIR_OUTPUT
-} gpio_dir_t;
+#define driver_gpio_init(pin, dir) \
+    iot_gpio_init(pin, dir)
 
-typedef enum {
-    GPIO_LEVEL_LOW = 0,
-    GPIO_LEVEL_HIGH
-} gpio_level_t;
+#define driver_gpio_deinit(pin) \
+    iot_gpio_deinit(pin)
 
-int driver_gpio_init(int pin, gpio_dir_t dir);
-int driver_gpio_deinit(int pin);
-int driver_gpio_set_level(int pin, gpio_level_t level);
-int driver_gpio_get_level(int pin, gpio_level_t* level);
+#define driver_gpio_set_level(pin, level) \
+    iot_gpio_write(pin, level)
+
+#define driver_gpio_get_level(pin, level_ptr) \
+    (*(level_ptr) = iot_gpio_read(pin))
 
 /*===========================================================
  * 延时接口定义
@@ -181,6 +209,12 @@ extern driver_t drv_ssd1306;
 extern driver_t drv_mpu6050;
 extern driver_t drv_pcf8574;
 extern driver_t drv_ads1115;
+extern driver_t drv_ds18b20;
+extern driver_t drv_hmc5883l;
+extern driver_t drv_lcd1602;
+extern driver_t drv_relay;
+extern driver_t drv_led;
+extern driver_t drv_buzzer;
 
 #ifdef __cplusplus
 }
