@@ -5,14 +5,18 @@
 #ifndef IOT_PLATFORM_LINUX_H
 #define IOT_PLATFORM_LINUX_H
 
-/*===========================================================
- * OS 适配层
- *===========================================================*/
-
 #include <pthread.h>
 #include <semaphore.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <dirent.h>
+
+/*===========================================================
+ * OS 适配层
+ *===========================================================*/
 
 #define iot_mutex_t              pthread_mutex_t*
 #define iot_sem_t                sem_t*
@@ -151,15 +155,23 @@
  * 日志适配层
  *===========================================================*/
 
-#include <stdio.h>
-
 #define LOG(fmt, ...) printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_debug(tag, fmt, ...) \
+    printf("[D][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_info(tag, fmt, ...) \
+    printf("[I][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_warn(tag, fmt, ...) \
+    printf("[W][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_error(tag, fmt, ...) \
+    printf("[E][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层
  *===========================================================*/
-
-#include <stdlib.h>
 
 #define iot_malloc(size) \
     malloc((size_t)(size))
@@ -176,11 +188,6 @@
 /*===========================================================
  * 文件系统适配层
  *===========================================================*/
-
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
 
 #define iot_fs_file_t            FILE*
 #define iot_fs_dir_t             DIR*

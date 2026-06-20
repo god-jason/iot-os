@@ -12,6 +12,12 @@
  * GPIO 适配层 (模拟接口)
  *===========================================================*/
 
+#define IOT_GPIO_DIR_INPUT       0
+#define IOT_GPIO_DIR_OUTPUT      1
+
+#define IOT_GPIO_LEVEL_LOW       0
+#define IOT_GPIO_LEVEL_HIGH      1
+
 #define IOT_GPIO_MAX_PIN         32
 
 typedef struct {
@@ -86,6 +92,7 @@ typedef struct {
 static iot_i2c_handle_t iot_i2c_table[2];
 
 static inline int iot_i2c_init_internal(int bus, int speed) {
+    (void)speed;
     if (bus < 0 || bus >= 2) return -1;
 
     iot_i2c_table[bus].bus = bus;
@@ -94,30 +101,30 @@ static inline int iot_i2c_init_internal(int bus, int speed) {
     return bus;
 }
 
-static inline int iot_i2c_deinit_internal(int bus) {
-    if (bus < 0 || bus >= 2) return -1;
+static inline int iot_i2c_deinit_internal(int fd) {
+    if (fd < 0 || fd >= 2) return -1;
 
-    iot_i2c_table[bus].len = 0;
+    iot_i2c_table[fd].len = 0;
     return 0;
 }
 
-static inline int iot_i2c_write_internal(int bus, uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
-    if (bus < 0 || bus >= 2) return -1;
+static inline int iot_i2c_write_internal(int fd, uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
+    if (fd < 0 || fd >= 2) return -1;
 
-    iot_i2c_table[bus].addr = addr;
-    iot_i2c_table[bus].reg = reg;
-    memcpy(iot_i2c_table[bus].data, data, len);
-    iot_i2c_table[bus].len = len;
+    iot_i2c_table[fd].addr = addr;
+    iot_i2c_table[fd].reg = reg;
+    memcpy(iot_i2c_table[fd].data, data, len);
+    iot_i2c_table[fd].len = len;
 
     return (int)len;
 }
 
-static inline int iot_i2c_read_internal(int bus, uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
-    if (bus < 0 || bus >= 2) return -1;
+static inline int iot_i2c_read_internal(int fd, uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
+    if (fd < 0 || fd >= 2) return -1;
 
-    iot_i2c_table[bus].addr = addr;
-    iot_i2c_table[bus].reg = reg;
-    memcpy(data, iot_i2c_table[bus].data, len);
+    iot_i2c_table[fd].addr = addr;
+    iot_i2c_table[fd].reg = reg;
+    memcpy(data, iot_i2c_table[fd].data, len);
 
     return (int)len;
 }
@@ -125,20 +132,20 @@ static inline int iot_i2c_read_internal(int bus, uint8_t addr, uint8_t reg, uint
 #define iot_i2c_init(bus, speed) \
     iot_i2c_init_internal(bus, speed)
 
-#define iot_i2c_deinit(bus) \
-    iot_i2c_deinit_internal(bus)
+#define iot_i2c_deinit(fd) \
+    iot_i2c_deinit_internal(fd)
 
-#define iot_i2c_write(bus, addr, reg, data, len) \
-    iot_i2c_write_internal(bus, addr, reg, data, len)
+#define iot_i2c_write(fd, addr, reg, data, len) \
+    iot_i2c_write_internal(fd, addr, reg, data, len)
 
-#define iot_i2c_read(bus, addr, reg, data, len) \
-    iot_i2c_read_internal(bus, addr, reg, data, len)
+#define iot_i2c_read(fd, addr, reg, data, len) \
+    iot_i2c_read_internal(fd, addr, reg, data, len)
 
-#define iot_i2c_write_raw(bus, addr, data, len) \
-    iot_i2c_write_internal(bus, addr, 0, data, len)
+#define iot_i2c_write_raw(fd, addr, data, len) \
+    iot_i2c_write_internal(fd, addr, 0, data, len)
 
-#define iot_i2c_read_raw(bus, addr, data, len) \
-    iot_i2c_read_internal(bus, addr, 0, data, len)
+#define iot_i2c_read_raw(fd, addr, data, len) \
+    iot_i2c_read_internal(fd, addr, 0, data, len)
 
 /*===========================================================
  * SPI 适配层 (模拟接口)
@@ -176,19 +183,20 @@ static inline int iot_spi_init_internal(int bus, int cs, int mode, int speed) {
     return bus;
 }
 
-static inline int iot_spi_deinit_internal(int bus) {
-    if (bus < 0 || bus >= 2) return -1;
+static inline int iot_spi_deinit_internal(int fd) {
+    if (fd < 0 || fd >= 2) return -1;
 
-    iot_spi_table[bus].len = 0;
+    iot_spi_table[fd].len = 0;
     return 0;
 }
 
-static inline int iot_spi_transfer_internal(int bus, uint8_t* tx, uint8_t* rx, size_t len) {
-    if (bus < 0 || bus >= 2) return -1;
+static inline int iot_spi_transfer_internal(int fd, uint8_t* tx, uint8_t* rx, size_t len, int speed) {
+    (void)speed;
+    if (fd < 0 || fd >= 2) return -1;
 
-    memcpy(iot_spi_table[bus].tx_buf, tx, len);
-    memcpy(rx, iot_spi_table[bus].rx_buf, len);
-    iot_spi_table[bus].len = len;
+    memcpy(iot_spi_table[fd].tx_buf, tx, len);
+    memcpy(rx, iot_spi_table[fd].rx_buf, len);
+    iot_spi_table[fd].len = len;
 
     return (int)len;
 }
@@ -196,16 +204,19 @@ static inline int iot_spi_transfer_internal(int bus, uint8_t* tx, uint8_t* rx, s
 #define iot_spi_init(bus, cs, mode, speed) \
     iot_spi_init_internal(bus, cs, mode, speed)
 
-#define iot_spi_deinit(bus) \
-    iot_spi_deinit_internal(bus)
+#define iot_spi_deinit(fd) \
+    iot_spi_deinit_internal(fd)
 
-#define iot_spi_write(bus, data, len) \
-    iot_spi_transfer_internal(bus, data, iot_spi_table[bus].rx_buf, len)
+#define iot_spi_write(fd, data, len) \
+    iot_spi_transfer_internal(fd, data, iot_spi_table[fd].rx_buf, len, 0)
 
-#define iot_spi_read(bus, data, len) \
-    iot_spi_transfer_internal(bus, iot_spi_table[bus].tx_buf, data, len)
+#define iot_spi_read(fd, data, len) \
+    iot_spi_transfer_internal(fd, iot_spi_table[fd].tx_buf, data, len, 0)
 
-#define iot_spi_transfer_raw(bus, tx, rx, len, speed) \
-    iot_spi_transfer_internal(bus, tx, rx, len)
+#define iot_spi_transfer(fd, tx, rx, len) \
+    iot_spi_transfer_internal(fd, tx, rx, len, 0)
+
+#define iot_spi_transfer_raw(fd, tx, rx, len, speed) \
+    iot_spi_transfer_internal(fd, tx, rx, len, speed)
 
 #endif /* IOT_PLATFORM_WINDOWS_EXT_H */

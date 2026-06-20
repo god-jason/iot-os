@@ -5,11 +5,15 @@
 #ifndef IOT_PLATFORM_WINDOWS_H
 #define IOT_PLATFORM_WINDOWS_H
 
+#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <io.h>
+#include <direct.h>
+
 /*===========================================================
  * OS 适配层
  *===========================================================*/
-
-#include <windows.h>
 
 #define iot_mutex_t              HANDLE
 #define iot_sem_t                HANDLE
@@ -105,15 +109,23 @@
  * 日志适配层
  *===========================================================*/
 
-#include <stdio.h>
-
 #define LOG(fmt, ...) printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_debug(tag, fmt, ...) \
+    printf("[D][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_info(tag, fmt, ...) \
+    printf("[I][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_warn(tag, fmt, ...) \
+    printf("[W][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_error(tag, fmt, ...) \
+    printf("[E][%s] %s():%d " fmt "\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层
  *===========================================================*/
-
-#include <stdlib.h>
 
 #define iot_malloc(size) \
     malloc((size_t)(size))
@@ -130,10 +142,6 @@
 /*===========================================================
  * 文件系统适配层
  *===========================================================*/
-
-#include <stdio.h>
-#include <io.h>
-#include <direct.h>
 
 #define iot_fs_file_t            FILE*
 #define iot_fs_dir_t             intptr_t

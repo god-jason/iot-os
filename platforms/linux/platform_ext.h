@@ -16,13 +16,13 @@
 #include <string.h>
 #include <errno.h>
 
-#define IOT_GPIO_MAX_PIN         256
+#define IOT_GPIO_DIR_INPUT       0
+#define IOT_GPIO_DIR_OUTPUT      1
 
-typedef struct {
-    int pin;
-    int fd;
-    int exported;
-} iot_gpio_handle_t;
+#define IOT_GPIO_LEVEL_LOW       0
+#define IOT_GPIO_LEVEL_HIGH      1
+
+#define IOT_GPIO_MAX_PIN         256
 
 static inline int iot_gpio_export(int pin) {
     char path[64];
@@ -126,6 +126,9 @@ static inline int iot_gpio_get_value(int pin) {
 #define iot_gpio_read(pin) \
     iot_gpio_get_value(pin)
 
+#define iot_gpio_set_dir(pin, dir) \
+    iot_gpio_set_direction(pin, dir)
+
 /*===========================================================
  * I2C 适配层
  *===========================================================*/
@@ -136,12 +139,6 @@ static inline int iot_gpio_get_value(int pin) {
 #define IOT_I2C_BUS_0           0
 #define IOT_I2C_BUS_1           1
 #define IOT_I2C_BUS_2           2
-
-typedef struct {
-    int bus;
-    int fd;
-    uint8_t addr;
-} iot_i2c_handle_t;
 
 static inline int iot_i2c_open_bus(int bus) {
     char path[32];
@@ -181,6 +178,7 @@ static inline int iot_i2c_read_bytes(int fd, uint8_t addr, uint8_t* data, size_t
 }
 
 #define iot_i2c_init(bus, speed) ({ \
+    (void)speed; \
     iot_i2c_open_bus(bus); \
 })
 
@@ -214,15 +212,6 @@ static inline int iot_i2c_read_bytes(int fd, uint8_t addr, uint8_t* data, size_t
 #define IOT_SPI_MODE_2          2
 #define IOT_SPI_MODE_3          3
 
-typedef struct {
-    int bus;
-    int cs;
-    int fd;
-    int mode;
-    int speed;
-    int bits;
-} iot_spi_handle_t;
-
 static inline int iot_spi_open(int bus, int cs) {
     char path[32];
     int fd;
@@ -244,7 +233,7 @@ static inline int iot_spi_set_bits(int fd, int bits) {
     return ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 }
 
-static inline int iot_spi_transfer(int fd, uint8_t* tx, uint8_t* rx, size_t len, int speed) {
+static inline int iot_spi_transfer_internal(int fd, uint8_t* tx, uint8_t* rx, size_t len, int speed) {
     struct spi_ioc_transfer tr = {
         .tx_buf = (unsigned long)tx,
         .rx_buf = (unsigned long)rx,
@@ -271,12 +260,15 @@ static inline int iot_spi_transfer(int fd, uint8_t* tx, uint8_t* rx, size_t len,
     close(fd)
 
 #define iot_spi_write(fd, data, len) \
-    iot_spi_transfer(fd, data, NULL, len, 1000000)
+    iot_spi_transfer_internal(fd, data, NULL, len, 1000000)
 
 #define iot_spi_read(fd, data, len) \
-    iot_spi_transfer(fd, NULL, data, len, 1000000)
+    iot_spi_transfer_internal(fd, NULL, data, len, 1000000)
+
+#define iot_spi_transfer(fd, tx, rx, len) \
+    iot_spi_transfer_internal(fd, tx, rx, len, 1000000)
 
 #define iot_spi_transfer_raw(fd, tx, rx, len, speed) \
-    iot_spi_transfer(fd, tx, rx, len, speed)
+    iot_spi_transfer_internal(fd, tx, rx, len, speed)
 
 #endif /* IOT_PLATFORM_LINUX_EXT_H */

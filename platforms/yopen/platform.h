@@ -130,21 +130,19 @@
 
 #include "yopen_debug.h"
 
-// 日志定义，打印函数史，行号，以及换行回车
-#undef LOG
 #define LOG(fmt, ...) yopen_trace("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define iot_log_debug(tag, fmt, ...) \
-    yopen_trace("[%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    yopen_trace("[D][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define iot_log_info(tag, fmt, ...) \
-    yopen_trace("[%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    yopen_trace("[I][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define iot_log_warn(tag, fmt, ...) \
-    yopen_trace("[%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    yopen_trace("[W][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define iot_log_error(tag, fmt, ...) \
-    yopen_trace("[%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    yopen_trace("[E][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层

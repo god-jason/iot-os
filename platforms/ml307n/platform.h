@@ -121,9 +121,19 @@
 #include "cm_os.h"
 #include "cm_sys.h"
 
-// 日志定义，打印函数史，行号，以及换行回车
-#undef LOG
 #define LOG(fmt, ...) cm_log_printf("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_debug(tag, fmt, ...) \
+    cm_log_printf("[D][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_info(tag, fmt, ...) \
+    cm_log_printf("[I][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_warn(tag, fmt, ...) \
+    cm_log_printf("[W][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define iot_log_error(tag, fmt, ...) \
+    cm_log_printf("[E][%s] %s():%d " fmt "\r\n", tag, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /*===========================================================
  * 内存适配层
