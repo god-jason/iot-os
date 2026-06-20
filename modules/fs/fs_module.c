@@ -1,6 +1,6 @@
 /**
  * @file fs_module.c
- * @brief 基于 iot_fs.h 的 Lua 文件系统封装
+ * @brief 基于 platform.h fs 适配层的 Lua 文件系统封装
  *
  * 提供面向对象的文件系统接口
  */
@@ -9,8 +9,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <dirent.h>
 
 /* Lua 头文件 */
 #include "lua.h"
@@ -20,8 +18,6 @@
 /* IoT 核心头文件 */
 #include "platform.h"
 #include "iot_callback.h"
-
-/* fs 组件头文件 */
 
 /*===========================================================
  * 类型定义
@@ -140,7 +136,7 @@ static void dir_ctx_destroy(dir_lua_ctx_t* ctx) {
 
     /* 关闭目录 */
     if (ctx->dir && !ctx->closed) {
-        closedir(ctx->dir);
+        iot_fs_closedir(ctx->dir);
     }
 
     iot_free(ctx);
@@ -326,7 +322,17 @@ static int iot_file_readline(lua_State* L) {
     }
 
     char buf[1024];
-    if (fgets(buf, sizeof(buf), ctx->fp)) {
+    int i = 0;
+    while (i < sizeof(buf) - 1) {
+        char c;
+        int ret = iot_fs_read(ctx->fp, &c, 1);
+        if (ret != 1) break;
+        buf[i++] = c;
+        if (c == '\n') break;
+    }
+    buf[i] = '\0';
+
+    if (i > 0 || (i == 0 && buf[0] != '\0')) {
         lua_pushstring(L, buf);
     } else {
         lua_pushnil(L);
@@ -353,7 +359,10 @@ static int iot_file_writeline(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 2, &len);
 
-    int written = fprintf(ctx->fp, "%s\n", data);
+    int written = iot_fs_write(ctx->fp, data, len);
+    if (written >= 0) {
+        written += iot_fs_write(ctx->fp, "\n", 1);
+    }
     lua_pushinteger(L, written);
     return 1;
 }
@@ -380,7 +389,7 @@ static int iot_file_seek(lua_State* L) {
 
     int ret = iot_fs_seek(ctx->fp, offset, whence);
     if (ret == 0) {
-        lua_pushinteger(L, ftell(ctx->fp));
+        lua_pushinteger(L, iot_fs_tell(ctx->fp));
     } else {
         lua_pushinteger(L, -1);
     }
@@ -442,10 +451,10 @@ static int iot_file_size(lua_State* L) {
         return 1;
     }
 
-    long current = ftell(ctx->fp);
-    fseek(ctx->fp, 0, 2);
-    long size = ftell(ctx->fp);
-    fseek(ctx->fp, current, 0);
+    long current = iot_fs_tell(ctx->fp);
+    iot_fs_seek(ctx->fp, 0, IOT_FS_SEEK_END);
+    long size = iot_fs_tell(ctx->fp);
+    iot_fs_seek(ctx->fp, current, IOT_FS_SEEK_SET);
 
     lua_pushinteger(L, size);
     return 1;
@@ -485,7 +494,7 @@ static int iot_fs_opendir(lua_State* L) {
     }
 
     /* 打开目录 */
-    ctx->dir = opendir(path);
+    ctx->dir = iot_fs_opendir(path);
     if (!ctx->dir) {
         iot_free(ctx);
         lua_pushnil(L);
@@ -521,12 +530,9 @@ static int iot_dir_read(lua_State* L) {
         return 1;
     }
 
-    struct dirent* entry = readdir(ctx->dir);
-    if (entry) {
-        lua_pushstring(L, entry->d_name);
-    } else {
-        lua_pushnil(L);
-    }
+    iot_fs_dirent_t entry;
+    iot_fs_readdir(ctx->dir, &entry);
+    lua_pushstring(L, ((struct dirent*)&entry)->d_name);
 
     return 1;
 }
@@ -661,40 +667,40 @@ static int iot_fs_access(lua_State* L) {
 static int iot_fs_stat(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
 
-    struct stat st;
-    if (stat(path, &st) != 0) {
+    if (!iot_fs_access(path, 0)) {
         lua_pushnil(L);
         return 1;
     }
 
     lua_newtable(L);
 
+    long filesize = iot_fs_filesize(path);
     lua_pushstring(L, "size");
-    lua_pushinteger(L, st.st_size);
+    lua_pushinteger(L, filesize);
     lua_settable(L, -3);
 
     lua_pushstring(L, "mode");
-    lua_pushinteger(L, st.st_mode);
+    lua_pushinteger(L, 0);
     lua_settable(L, -3);
 
     lua_pushstring(L, "mtime");
-    lua_pushinteger(L, st.st_mtime);
+    lua_pushinteger(L, 0);
     lua_settable(L, -3);
 
     lua_pushstring(L, "atime");
-    lua_pushinteger(L, st.st_atime);
+    lua_pushinteger(L, 0);
     lua_settable(L, -3);
 
     lua_pushstring(L, "ctime");
-    lua_pushinteger(L, st.st_ctime);
+    lua_pushinteger(L, 0);
     lua_settable(L, -3);
 
     lua_pushstring(L, "is_dir");
-    lua_pushboolean(L, S_ISDIR(st.st_mode));
+    lua_pushboolean(L, 0);
     lua_settable(L, -3);
 
     lua_pushstring(L, "is_file");
-    lua_pushboolean(L, S_ISREG(st.st_mode));
+    lua_pushboolean(L, 1);
     lua_settable(L, -3);
 
     return 1;

@@ -221,7 +221,7 @@
 #define iot_fs_sync(fp) \
     yopen_fflush((fp))
 
-#define iot_fs_mkdir(path) \
+#define iot_fs_mkdir(path, mode) \
     yopen_mkdir((path))
 
 #define iot_fs_remove(path) \
@@ -233,10 +233,48 @@
 #define iot_fs_access(path, mode) \
     yopen_file_exists((path))
 
+#define iot_fs_filesize(path) \
+    yopen_fsize((path))
+
+#define iot_fs_rmdir(path) \
+    ((int)-1)
+
+#define iot_fs_getinfo(info) \
+    ((int)-1)
+
+#define iot_fs_find_first(path, file_data) \
+    ((uint32_t)-1)
+
+#define iot_fs_find_next(find_fd, file_data) \
+    ((int)-1)
+
+#define iot_fs_find_close(find_fd) \
+    ((int)-1)
+
+#define iot_fs_opendir(path) \
+    ((QDIR*)-1)
+
+#define iot_fs_readdir(dir, entry) \
+    ((void*)(dir))
+
+#define iot_fs_closedir(dir) \
+    ((int)-1)
+
 #define iot_fs_tell(fp) \
     yopen_ftell((fp))
 
 #define iot_fs_size(fp) \
     yopen_fsize((fp))
+
+#define IOT_FS_RB                "rb"
+#define IOT_FS_WB                "wb"
+#define IOT_FS_AB                "ab"
+#define IOT_FS_WBPLUS            "wb+"
+#define IOT_FS_ABPLUS            "ab+"
+#define IOT_FS_RBPLUS            "rb+"
+
+#define IOT_FS_SEEK_SET          SEEK_SET
+#define IOT_FS_SEEK_CUR          SEEK_CUR
+#define IOT_FS_SEEK_END          SEEK_END
 
 #endif /* IOT_PLATFORM_YOPEN_H */

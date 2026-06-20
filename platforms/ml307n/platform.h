@@ -216,4 +216,48 @@
 #define iot_fs_access(path, mode) \
     cm_fs_exist((path))
 
+#define iot_fs_filesize(path) \
+    cm_fs_filesize((path))
+
+#define iot_fs_rmdir(path) \
+    cm_fs_rmdir((path))
+
+#define iot_fs_getinfo(info) \
+    cm_fs_getinfo((info))
+
+#define iot_fs_find_first(path, file_data) \
+    cm_fs_find_first((path), (file_data))
+
+#define iot_fs_find_next(find_fd, file_data) \
+    cm_fs_find_next((find_fd), (file_data))
+
+#define iot_fs_find_close(find_fd) \
+    cm_fs_find_close((find_fd))
+
+#define iot_fs_opendir(path) \
+    cm_fs_find_first((path), NULL)
+
+#define iot_fs_readdir(dir, entry) \
+    cm_fs_find_next((dir), (entry))
+
+#define iot_fs_closedir(dir) \
+    cm_fs_find_close((dir))
+
+#define iot_fs_tell(fp) \
+    ((long)0)
+
+#define iot_fs_size(fp) \
+    ((long)0)
+
+#define IOT_FS_RB                CM_FS_RB
+#define IOT_FS_WB                CM_FS_WB
+#define IOT_FS_AB                CM_FS_AB
+#define IOT_FS_WBPLUS            CM_FS_WBPLUS
+#define IOT_FS_ABPLUS            CM_FS_ABPLUS
+#define IOT_FS_RBPLUS            CM_FS_RBPLUS
+
+#define IOT_FS_SEEK_SET          CM_FS_SEEK_SET
+#define IOT_FS_SEEK_CUR          CM_FS_SEEK_CUR
+#define IOT_FS_SEEK_END          CM_FS_SEEK_END
+
 #endif /* IOT_PLATFORM_ML307N_H */
