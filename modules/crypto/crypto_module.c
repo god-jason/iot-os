@@ -16,7 +16,7 @@
 
 /* IoT 核心头文件 */
 #include "iot_log.h"
-#include "iot_mem.h"
+#include "platform.h"
 
 /* 加密库头文件 */
 #include "crypto.h"

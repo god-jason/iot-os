@@ -1,5 +1,13 @@
-#ifndef IOT_OS_WINDOWS_H
-#define IOT_OS_WINDOWS_H
+/**
+ * @file platform.h
+ * @brief Windows 平台适配头文件
+ */
+#ifndef IOT_PLATFORM_WINDOWS_H
+#define IOT_PLATFORM_WINDOWS_H
+
+/*===========================================================
+ * OS 适配层
+ *===========================================================*/
 
 #include <windows.h>
 
@@ -93,4 +101,72 @@
 #define iot_task_exit() \
     ExitThread(0)
 
-#endif
+/*===========================================================
+ * 日志适配层
+ *===========================================================*/
+
+#include <stdio.h>
+
+#define LOG(fmt, ...) printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+/*===========================================================
+ * 内存适配层
+ *===========================================================*/
+
+#include <stdlib.h>
+
+#define iot_malloc(size) \
+    malloc((size_t)(size))
+
+#define iot_calloc(nmemb, size) \
+    calloc((size_t)(nmemb), (size_t)(size))
+
+#define iot_realloc(ptr, size) \
+    realloc((void *)(ptr), (size_t)(size))
+
+#define iot_free(ptr) \
+    free((void *)(ptr))
+
+/*===========================================================
+ * 文件系统适配层
+ *===========================================================*/
+
+#include <stdio.h>
+#include <io.h>
+#include <direct.h>
+
+#define iot_fs_file_t            FILE*
+#define iot_fs_dir_t             intptr_t
+#define iot_fs_dirent_t          struct _finddata_t
+
+#define iot_fs_open(path, mode) \
+    fopen((path), (mode))
+
+#define iot_fs_close(fp) \
+    fclose((fp))
+
+#define iot_fs_read(fp, buf, size) \
+    fread((buf), 1, (size), (fp))
+
+#define iot_fs_write(fp, buf, size) \
+    fwrite((buf), 1, (size), (fp))
+
+#define iot_fs_seek(fp, offset, whence) \
+    fseek((fp), (offset), (whence))
+
+#define iot_fs_sync(fp) \
+    fflush((fp))
+
+#define iot_fs_mkdir(path, mode) \
+    (_mkdir((path)) == 0)
+
+#define iot_fs_remove(path) \
+    (remove((path)) == 0)
+
+#define iot_fs_rename(oldpath, newpath) \
+    (rename((oldpath), (newpath)) == 0)
+
+#define iot_fs_access(path, mode) \
+    (_access((path), 0) == 0)
+
+#endif /* IOT_PLATFORM_WINDOWS_H */

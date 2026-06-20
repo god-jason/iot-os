@@ -18,14 +18,10 @@
 #include "lauxlib.h"
 
 /* IoT 核心头文件 */
-#include "iot_log.h"
-#include "iot_mem.h"
-#include "iot_os.h"
+#include "platform.h"
 #include "iot_callback.h"
-#include "iot_params.h"
 
 /* fs 组件头文件 */
-#include "iot_fs.h"
 
 /*===========================================================
  * 类型定义

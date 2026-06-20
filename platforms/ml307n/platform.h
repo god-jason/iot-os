@@ -1,12 +1,13 @@
 /**
- * @file iot_os.h
- * @brief ML307N 平台操作系统适配器宏定义
- * @details 基于 cm_os.h 接口实现操作系统功能宏定义，
- *          提供统一的 OS 类型和操作接口，支持跨平台编译。
+ * @file platform.h
+ * @brief ML307N 平台适配头文件
  */
+#ifndef IOT_PLATFORM_ML307N_H
+#define IOT_PLATFORM_ML307N_H
 
-#ifndef IOT_OS_ML307N_H
-#define IOT_OS_ML307N_H
+/*===========================================================
+ * OS 适配层
+ *===========================================================*/
 
 #include "cm_os.h"
 
@@ -112,4 +113,92 @@
 #define iot_task_exit() \
     osThreadExit()
 
-#endif /* IOT_OS_ML307N_H */
+/*===========================================================
+ * 日志适配层
+ *===========================================================*/
+
+#include "os.h"
+#include "cm_os.h"
+#include "cm_sys.h"
+
+// 日志定义，打印函数史，行号，以及换行回车
+#undef LOG
+#define LOG(fmt, ...) cm_log_printf("[iot] %s():%d " fmt "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+/*===========================================================
+ * 内存适配层
+ *===========================================================*/
+
+#include "cm_mem.h"
+
+/** @brief 内存对齐分配（按4字节对齐）
+ * @param[in] size 分配内存大小（字节）
+ * @return 分配成功的内存指针，NULL表示失败
+ */
+#define iot_malloc(size) \
+    cm_malloc((size_t)(size))
+
+/** @brief 内存分配并清零（按4字节对齐）
+ * @param[in] nmemb 元素个数
+ * @param[in] size  每个元素大小（字节）
+ * @return 分配成功的内存指针，NULL表示失败
+ */
+#define iot_calloc(nmemb, size) \
+    cm_calloc((size_t)(nmemb), (size_t)(size))
+
+/** @brief 重新分配内存（按4字节对齐）
+ * @param[in] ptr  原内存指针（可为NULL）
+ * @param[in] size 新内存大小（字节）
+ * @return 新分配的内存指针，NULL表示失败
+ */
+#define iot_realloc(ptr, size) \
+    cm_realloc((void *)(ptr), (size_t)(size))
+
+/** @brief 释放内存
+ * @param[in] ptr 待释放的内存指针（可为NULL）
+ */
+#define iot_free(ptr) \
+    cm_free((void *)(ptr))
+
+/*===========================================================
+ * 文件系统适配层
+ *===========================================================*/
+
+#include <stdint.h>
+#include "cm_fs.h"
+
+#define iot_fs_file_t            cm_fs_t
+#define iot_fs_dir_t             uint32_t
+#define iot_fs_dirent_t          cm_fs_file_data_t
+
+#define iot_fs_open(path, mode) \
+    cm_fs_open((path), (mode))
+
+#define iot_fs_close(fp) \
+    cm_fs_close((fp))
+
+#define iot_fs_read(fp, buf, size) \
+    cm_fs_read((fp), (buf), (size))
+
+#define iot_fs_write(fp, buf, size) \
+    cm_fs_write((fp), (buf), (size))
+
+#define iot_fs_seek(fp, offset, whence) \
+    cm_fs_seek((fp), (offset), (whence))
+
+#define iot_fs_sync(fp) \
+    cm_fs_sync((fp))
+
+#define iot_fs_mkdir(path, mode) \
+    cm_fs_mkdir((path))
+
+#define iot_fs_remove(path) \
+    cm_fs_delete((path))
+
+#define iot_fs_rename(oldpath, newpath) \
+    cm_fs_move((oldpath), (newpath))
+
+#define iot_fs_access(path, mode) \
+    cm_fs_exist((path))
+
+#endif /* IOT_PLATFORM_ML307N_H */

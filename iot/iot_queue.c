@@ -1,7 +1,6 @@
 #include "iot_queue.h"
-#include "iot_os.h"
+#include "platform.h"
 #include "iot_log.h"
-#include "iot_mem.h"
 
 #define IOT_WAIT_FOREVER 0xFFFFFFFFU
 

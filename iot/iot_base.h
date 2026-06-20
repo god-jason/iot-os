@@ -20,10 +20,7 @@
 #include <stdbool.h>
 
 // 系统头文件
-#include "iot_os.h"
-#include "iot_mem.h"
-#include "iot_fs.h"
-#include "iot_log.h"
+#include "platform.h"
 #include "lua.h"
 #include "lauxlib.h"
 

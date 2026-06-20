@@ -17,8 +17,7 @@
 #include <stddef.h>
 
 /* 包含 IoT 核心接口 */
-#include "iot_mem.h"
-#include "iot_fs.h"
+#include "platform.h"
 
 #ifdef __cplusplus
 extern "C" {

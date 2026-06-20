@@ -8,9 +8,7 @@
 
 #include "lua.h"
 #include "iot_base.h"
-#include "iot_os.h"
 #include "iot_params.h"
-#include "iot_mem.h"
 #include "iot_queue.h"
 
 /* 消息队列大小 */

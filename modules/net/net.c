@@ -6,8 +6,7 @@
  */
 
 #include "net.h"
-#include "iot_os.h"
-#include "iot_mem.h"
+#include "platform.h"
 
 #include <string.h>
 #include <stdio.h>

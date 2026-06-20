@@ -8,7 +8,7 @@
 
 #include "iot_base.h"
 #include "iot_params.h"
-#include "iot_mem.h"
+#include "platform.h"
 
 /* 创建参数列表 */
 params_t* params_create(int initial_capacity)

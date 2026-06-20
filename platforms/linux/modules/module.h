@@ -11,7 +11,6 @@
 #include "lauxlib.h"
 
 #include "iot_log.h"
-#include "iot_os.h"
-#include "iot_mem.h"
+#include "platform.h"
 
 #endif
