@@ -19,38 +19,8 @@
 /* 核心模块列表 */
 static const luaL_Reg core_modules[] = {
     {"rtos",     luaopen_rtos},       /* 实时操作系统接口 */
-    {"task",     luaopen_task},       /* 任务管理 */
-    {"event",    luaopen_event},      /* 事件管理 */
-    {"params",   luaopen_params},    /* 参数管理 */
     {"log",      luaopen_log},        /* 日志模块 */
-
-    {"json",     luaopen_json},       /* JSON解析 */
     {"pack",     luaopen_pack},       /* 数据打包/解包 */
-    {"base64",   luaopen_base64},     /* Base64编解码 */
-    {"zlib",     luaopen_zlib},       /* 压缩解压 */
-    {"yaml",     luaopen_yaml},       /* YAML解析 */
-
-    {NULL, NULL}
-};
-
-/* 可选核心模块列表 */
-static const luaL_Reg optional_modules[] = {
-#ifdef ENABLE_SQLITE3
-    {"sqlite3",  luaopen_sqlite3},    /* SQLite3数据库 */
-#endif
-
-#ifdef ENABLE_FONTS
-    {"font",     luaopen_font},       /* 字体渲染 */
-    {"u8g2",     luaopen_u8g2},       /* u8g2图形库 */
-#endif
-
-#ifdef ENABLE_GMSSL
-    {"gmssl",    luaopen_gmssl},      /* 国密算法库 */
-#endif
-
-#ifdef ENABLE_JPEG
-    {"jpeg",     luaopen_jpeg},       /* JPEG编解码 */
-#endif
 
     {NULL, NULL}
 };
@@ -97,16 +67,6 @@ void modules_register(lua_State* L)
     
     /* 注册核心模块 */
     for (lib = core_modules; lib->func; lib++) {
-        if (register_module(L, lib->name, lib->func) == 0) {
-            success_count++;
-        } else {
-            fail_count++;
-            LOG("WARN module %s register failed", lib->name);
-        }
-    }
-    
-    /* 注册可选模块 */
-    for (lib = optional_modules; lib->func; lib++) {
         if (register_module(L, lib->name, lib->func) == 0) {
             success_count++;
         } else {

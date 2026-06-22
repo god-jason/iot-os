@@ -159,7 +159,20 @@
 
 #define iot_fs_file_t            FILE*
 #define iot_fs_dir_t             intptr_t
-#define iot_fs_dirent_t          struct _finddata_t
+
+/* Windows 目录遍历上下文结构 */
+typedef struct {
+    intptr_t handle;
+    struct _finddata_t entry;
+    int valid;
+} _iot_fs_dirent_ctx_t;
+
+#define iot_fs_dirent_t          _iot_fs_dirent_ctx_t
+
+/* 目录项成员访问宏 */
+#define iot_fs_dirent_name(dirent)       ((dirent).valid ? (dirent).entry.name : "")
+#define iot_fs_dirent_is_dir(dirent)     ((dirent).valid ? (((dirent).entry.attrib & 0x10) != 0) : 0)
+#define iot_fs_dirent_size(dirent)       ((dirent).valid ? (dirent).entry.size : 0)
 
 #define iot_fs_open(path, mode) \
     fopen((path), (mode))
@@ -224,8 +237,16 @@
 #define iot_fs_opendir(path) \
     ((intptr_t)_findfirst((path), NULL))
 
+/* Windows _findnext 实现 */
+static inline int _iot_fs_readdir(iot_fs_dir_t dir, iot_fs_dirent_t* entry) {
+    if (!entry) return -1;
+    entry->handle = dir;
+    int ret = _findnext(dir, &entry->entry);
+    entry->valid = (ret == 0) ? 1 : 0;
+    return ret;
+}
 #define iot_fs_readdir(dir, entry) \
-    ((void*)(dir))
+    _iot_fs_readdir((dir), (entry))
 
 #define iot_fs_closedir(dir) \
     (_findclose((intptr_t)(dir)))

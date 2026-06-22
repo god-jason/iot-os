@@ -62,7 +62,8 @@ int fs_dir_read(fs_dir_t* dir, fs_dir_entry_t* entry) {
         return -1;
     }
 
-    const char* name = ((struct _finddata_t*)&raw_entry)->name;
+    /* 获取文件名 */
+    const char* name = iot_fs_dirent_name(raw_entry);
     if (!name || name[0] == '\0') {
         return -1;
     }

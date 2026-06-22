@@ -10,6 +10,8 @@
 #include "iot_base.h"
 #include "iot_params.h"
 #include "iot_queue.h"
+#include "iot_rtos.h"
+#include "iot_log.h"
 
 /* 消息队列大小 */
 #define RTOS_MSG_QUEUE_SIZE 32

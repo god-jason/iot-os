@@ -207,6 +207,11 @@
 #define iot_fs_dir_t             DIR*
 #define iot_fs_dirent_t          struct dirent
 
+/* 目录项成员访问宏 */
+#define iot_fs_dirent_name(dirent)       ((dirent)->d_name)
+#define iot_fs_dirent_is_dir(dirent)     ((dirent)->d_type == DT_DIR)
+#define iot_fs_dirent_size(dirent)       ((long)0)
+
 #define iot_fs_open(path, mode) \
     fopen((path), (mode))
 

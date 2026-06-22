@@ -85,22 +85,31 @@ static void delete_directory_recursive(const char *dir_path)
     }
 
     while (iot_fs_readdir(find_fd, &file_data) == 0) {
+        /* 获取文件名 */
+        const char* name = iot_fs_dirent_name(file_data);
+
+        /* 跳过无效或空名称 */
+        if (!name || name[0] == '\0') {
+            continue;
+        }
+
         /* 跳过 "." 和 ".." */
-        if (file_data.file_name[0] == '.' &&
-            (file_data.file_name[1] == '\0' ||
-             (file_data.file_name[1] == '.' && file_data.file_name[2] == '\0'))) {
+        if (name[0] == '.' &&
+            (name[1] == '\0' ||
+             (name[1] == '.' && name[2] == '\0'))) {
             continue;
         }
 
         /* 构建完整路径 */
-        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, file_data.file_name);
+        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, name);
 
-        if (file_data.file_attr == 1) {
-            /* 文件：直接删除 */
-            iot_fs_remove(full_path);
-        } else {
+        /* 判断是否为目录 */
+        if (iot_fs_dirent_is_dir(file_data)) {
             /* 目录：递归删除 */
             delete_directory_recursive(full_path);
+        } else {
+            /* 文件：直接删除 */
+            iot_fs_remove(full_path);
         }
     }
 
