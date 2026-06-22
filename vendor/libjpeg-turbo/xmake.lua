@@ -2,7 +2,7 @@
 
 target("libjpeg-turbo")
     set_kind("static")
-    
+
     -- 添加源文件（排除工具和测试文件）
     add_files("src/jaricom.c", "src/jcapimin.c", "src/jcapistd.c", "src/jcarith.c")
     add_files("src/jccoefct.c", "src/jccolext.c", "src/jccolor.c", "src/jcdctmgr.c")
@@ -21,13 +21,15 @@ target("libjpeg-turbo")
     add_files("src/jidctred.c", "src/jmemmgr.c", "src/jmemnobs.c", "src/jquant1.c")
     add_files("src/jquant2.c", "src/jstdhuff.c", "src/jutils.c")
     add_files("src/transupp.c", "src/cdjpeg.c")
-    add_headerfiles("src/jpegint.h", "src/jmorecfg.h")
-    
-    -- MD5 支持
+    add_headerfiles("src/jpeglib.h", "src/jerror.h", "src/jmorecfg.h", "src/jpegint.h")
+
+    -- MD5 和 SPNG 支持
     add_files("src/md5/md5.c", "src/md5/md5hl.c")
-    
+    add_files("src/spng/spng.c")
+    add_headerfiles("src/md5/md5.h", "src/spng/spng.h")
+
     -- 包含目录
-    add_includedirs("src")
-    
+    add_includedirs("src", "src/md5", "src/spng")
+
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
