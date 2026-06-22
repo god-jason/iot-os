@@ -18,6 +18,8 @@
 /* IoT 核心头文件 */
 #include "platform.h"
 #include "iot_callback.h"
+#include "fs_path.h"
+#include "fs_dir.h"
 
 /*===========================================================
  * 类型定义
@@ -707,6 +709,135 @@ static int iot_fs_stat(lua_State* L) {
 }
 
 /*===========================================================
+ * Lua 方法实现 - 路径处理
+ *===========================================================*/
+
+static int iot_fs_basename(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    const char* base = fs_path_basename(path);
+    if (base) {
+        lua_pushstring(L, base);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_dirname(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    char buf[512];
+    if (fs_path_dirname(path, buf, sizeof(buf))) {
+        lua_pushstring(L, buf);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_extname(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    const char* ext = fs_path_extname(path);
+    if (ext) {
+        lua_pushstring(L, ext);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_join(lua_State* L) {
+    const char* path1 = luaL_checkstring(L, 1);
+    const char* path2 = luaL_checkstring(L, 2);
+    char buf[1024];
+    if (fs_path_join(buf, sizeof(buf), path1, path2)) {
+        lua_pushstring(L, buf);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_is_absolute(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    lua_pushboolean(L, fs_path_is_absolute(path));
+    return 1;
+}
+
+static int iot_fs_normalize(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    char buf[1024];
+    if (fs_path_normalize(buf, sizeof(buf), path)) {
+        lua_pushstring(L, buf);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_stem(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    char buf[512];
+    if (fs_path_stem(buf, sizeof(buf), path)) {
+        lua_pushstring(L, buf);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int iot_fs_split(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    char dir_buf[512];
+    char base_buf[512];
+    
+    if (fs_path_split(path, dir_buf, sizeof(dir_buf), base_buf, sizeof(base_buf)) == 0) {
+        lua_pushstring(L, dir_buf);
+        lua_pushstring(L, base_buf);
+        return 2;
+    } else {
+        lua_pushnil(L);
+        return 1;
+    }
+}
+
+static int iot_fs_lsdir(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+    
+    fs_dir_entry_t* entries = NULL;
+    int count = 0;
+    
+    if (fs_dir_list(path, &entries, &count) != 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "failed to list directory");
+        return 2;
+    }
+    
+    lua_newtable(L);
+    
+    for (int i = 0; i < count; i++) {
+        lua_newtable(L);
+        
+        lua_pushstring(L, entries[i].name);
+        lua_setfield(L, -2, "name");
+        
+        lua_pushboolean(L, entries[i].is_dir);
+        lua_setfield(L, -2, "is_dir");
+        
+        lua_pushinteger(L, entries[i].size);
+        lua_setfield(L, -2, "size");
+        
+        lua_pushinteger(L, entries[i].mtime);
+        lua_setfield(L, -2, "mtime");
+        
+        lua_rawseti(L, -2, i + 1);
+    }
+    
+    fs_dir_free_list(entries);
+    
+    return 1;
+}
+
+/*===========================================================
  * Lua 模块定义
  *===========================================================*/
 
@@ -736,15 +867,23 @@ static const luaL_Reg dir_methods[] = {
 
 /* fs 模块方法表 */
 static const luaL_Reg fs_methods[] = {
-    { "open",    iot_fs_open },    /* 打开文件 */
-    { "opendir", iot_fs_opendir }, /* 打开目录 */
-    { "mkdir",   iot_fs_mkdir },   /* 创建目录 */
-    { "remove",  iot_fs_remove },  /* 删除文件 */
-    { "rename",  iot_fs_rename },  /* 重命名 */
-    { "exists",  iot_fs_exists },  /* 检查存在 */
-    { "access",  iot_fs_access },  /* 检查权限 */
-    { "stat",    iot_fs_stat },    /* 获取文件信息 */
-    { NULL,      NULL }
+    { "open",          iot_fs_open },          /* 打开文件 */
+    { "mkdir",         iot_fs_mkdir },         /* 创建目录 */
+    { "remove",        iot_fs_remove },        /* 删除文件 */
+    { "rename",        iot_fs_rename },        /* 重命名 */
+    { "exists",        iot_fs_exists },        /* 检查存在 */
+    { "access",        iot_fs_access },        /* 检查权限 */
+    { "stat",          iot_fs_stat },          /* 获取文件信息 */
+    { "basename",      iot_fs_basename },      /* 获取文件名 */
+    { "dirname",       iot_fs_dirname },       /* 获取目录名 */
+    { "extname",       iot_fs_extname },       /* 获取扩展名 */
+    { "join",          iot_fs_join },          /* 拼接路径 */
+    { "isAbsolute",    iot_fs_is_absolute },   /* 判断绝对路径 */
+    { "normalize",     iot_fs_normalize },     /* 规范化路径 */
+    { "stem",          iot_fs_stem },          /* 获取不含扩展名的文件名 */
+    { "split",         iot_fs_split },         /* 分割路径 */
+    { "lsdir",         iot_fs_lsdir },         /* 遍历目录 */
+    { NULL,            NULL }
 };
 
 /* 常量定义 */
