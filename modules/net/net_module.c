@@ -548,43 +548,6 @@ static const luaL_Reg net_methods[] = {
 };
 
 /**
- * @brief net 模块常量定义
- */
-static const luaL_Const net_constants[] = {
-    { "AF_INET",               2 },
-    { "SOCK_STREAM",           1 },
-    { "SOCK_DGRAM",            2 },
-    { "IPPROTO_TCP",           6 },
-    { "IPPROTO_UDP",           17 },
-
-    { "CLOSED",                NET_SOCK_STATE_CLOSED },
-    { "OPENED",                NET_SOCK_STATE_OPENED },
-    { "LISTENING",             NET_SOCK_STATE_LISTENING },
-    { "CONNECTING",            NET_SOCK_STATE_CONNECTING },
-    { "CONNECTED",             NET_SOCK_STATE_CONNECTED },
-    { "SSL_HANDSHAKE",         NET_SOCK_STATE_SSL_HANDSHAKE },
-    { "ERROR",                 NET_SOCK_STATE_ERROR },
-
-    { "EVENT_CONNECTED",       NET_EVENT_CONNECTED },
-    { "EVENT_DISCONNECTED",    NET_EVENT_DISCONNECTED },
-    { "EVENT_ACCEPT",          NET_EVENT_ACCEPT },
-    { "EVENT_RECV",            NET_EVENT_RECV },
-    { "EVENT_SEND",            NET_EVENT_SEND },
-    { "EVENT_ERROR",           NET_EVENT_ERROR },
-
-    { "SSL_PROTOCOL_TLS12",    NET_SSL_PROTOCOL_TLS12 },
-    { "SSL_PROTOCOL_TLS13",    NET_SSL_PROTOCOL_TLS13 },
-    { "SSL_PROTOCOL_TLCP",     NET_SSL_PROTOCOL_TLCP },
-    { "SSL_PROTOCOL_AUTO",     NET_SSL_PROTOCOL_AUTO },
-
-    { "SSL_VERIFY_NONE",       NET_SSL_VERIFY_NONE },
-    { "SSL_VERIFY_OPTIONAL",   NET_SSL_VERIFY_OPTIONAL },
-    { "SSL_VERIFY_REQUIRED",   NET_SSL_VERIFY_REQUIRED },
-
-    { NULL, 0 }
-};
-
-/**
  * @brief Lua 模块加载函数
  * @param L Lua 状态机
  * @return 返回模块表
@@ -592,11 +555,40 @@ static const luaL_Const net_constants[] = {
 LUAMOD_API int luaopen_net_register(lua_State* L) {
     luaL_newlib(L, net_methods);
 
-    const luaL_Const* constant = net_constants;
-    for (; constant->name; constant++) {
-        lua_pushinteger(L, constant->value);
-        lua_setfield(L, -2, constant->name);
-    }
+    /* 注册常量 - 地址族和协议 */
+    lua_pushinteger(L, 2);                        lua_setfield(L, -2, "AF_INET");
+    lua_pushinteger(L, 1);                        lua_setfield(L, -2, "SOCK_STREAM");
+    lua_pushinteger(L, 2);                        lua_setfield(L, -2, "SOCK_DGRAM");
+    lua_pushinteger(L, 6);                        lua_setfield(L, -2, "IPPROTO_TCP");
+    lua_pushinteger(L, 17);                       lua_setfield(L, -2, "IPPROTO_UDP");
+
+    /* 注册常量 - Socket 状态 */
+    lua_pushinteger(L, NET_SOCK_STATE_CLOSED);     lua_setfield(L, -2, "CLOSED");
+    lua_pushinteger(L, NET_SOCK_STATE_OPENED);     lua_setfield(L, -2, "OPENED");
+    lua_pushinteger(L, NET_SOCK_STATE_LISTENING);  lua_setfield(L, -2, "LISTENING");
+    lua_pushinteger(L, NET_SOCK_STATE_CONNECTING); lua_setfield(L, -2, "CONNECTING");
+    lua_pushinteger(L, NET_SOCK_STATE_CONNECTED);  lua_setfield(L, -2, "CONNECTED");
+    lua_pushinteger(L, NET_SOCK_STATE_SSL_HANDSHAKE); lua_setfield(L, -2, "SSL_HANDSHAKE");
+    lua_pushinteger(L, NET_SOCK_STATE_ERROR);       lua_setfield(L, -2, "ERROR");
+
+    /* 注册常量 - Socket 事件 */
+    lua_pushinteger(L, NET_EVENT_CONNECTED);    lua_setfield(L, -2, "EVENT_CONNECTED");
+    lua_pushinteger(L, NET_EVENT_DISCONNECTED); lua_setfield(L, -2, "EVENT_DISCONNECTED");
+    lua_pushinteger(L, NET_EVENT_ACCEPT);       lua_setfield(L, -2, "EVENT_ACCEPT");
+    lua_pushinteger(L, NET_EVENT_RECV);         lua_setfield(L, -2, "EVENT_RECV");
+    lua_pushinteger(L, NET_EVENT_SEND);        lua_setfield(L, -2, "EVENT_SEND");
+    lua_pushinteger(L, NET_EVENT_ERROR);        lua_setfield(L, -2, "EVENT_ERROR");
+
+    /* 注册常量 - SSL 协议版本 */
+    lua_pushinteger(L, NET_SSL_PROTOCOL_TLS12); lua_setfield(L, -2, "SSL_PROTOCOL_TLS12");
+    lua_pushinteger(L, NET_SSL_PROTOCOL_TLS13); lua_setfield(L, -2, "SSL_PROTOCOL_TLS13");
+    lua_pushinteger(L, NET_SSL_PROTOCOL_TLCP);  lua_setfield(L, -2, "SSL_PROTOCOL_TLCP");
+    lua_pushinteger(L, NET_SSL_PROTOCOL_AUTO);  lua_setfield(L, -2, "SSL_PROTOCOL_AUTO");
+
+    /* 注册常量 - SSL 证书验证级别 */
+    lua_pushinteger(L, NET_SSL_VERIFY_NONE);     lua_setfield(L, -2, "SSL_VERIFY_NONE");
+    lua_pushinteger(L, NET_SSL_VERIFY_OPTIONAL); lua_setfield(L, -2, "SSL_VERIFY_OPTIONAL");
+    lua_pushinteger(L, NET_SSL_VERIFY_REQUIRED); lua_setfield(L, -2, "SSL_VERIFY_REQUIRED");
 
     luaL_newmetatable(L, "net.socket");
     lua_pushvalue(L, -1);

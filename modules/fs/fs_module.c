@@ -655,22 +655,6 @@ static const luaL_Reg fs_methods[] = {
     { NULL,            NULL }
 };
 
-/* 常量定义 */
-static const luaL_Const fs_constants[] = {
-    /* 文件打开模式 */
-    { "R_OK",  4 },  /* 可读 */
-    { "W_OK",  2 },  /* 可写 */
-    { "X_OK",  1 },  /* 可执行 */
-    { "F_OK",  0 },  /* 存在 */
-
-    /* 文件指针位置 */
-    { "SEEK_SET", 0 }, /* 文件头 */
-    { "SEEK_CUR", 1 }, /* 当前位置 */
-    { "SEEK_END", 2 }, /* 文件尾 */
-
-    { NULL, 0 }
-};
-
 /**
  * @brief 注册 fs 模块
  */
@@ -685,11 +669,16 @@ int luaopen_fs_register(lua_State* L) {
     /* 创建 fs 模块 */
     luaL_newlib(L, fs_methods);
 
-    /* 注册常量 */
-    for (const luaL_Const* c = fs_constants; c->name; c++) {
-        lua_pushinteger(L, c->value);
-        lua_setfield(L, -2, c->name);
-    }
+    /* 注册常量 - 文件权限 */
+    lua_pushinteger(L, 4);  lua_setfield(L, -2, "R_OK");  /* 可读 */
+    lua_pushinteger(L, 2);  lua_setfield(L, -2, "W_OK");  /* 可写 */
+    lua_pushinteger(L, 1);  lua_setfield(L, -2, "X_OK");  /* 可执行 */
+    lua_pushinteger(L, 0);  lua_setfield(L, -2, "F_OK");  /* 存在 */
+
+    /* 注册常量 - 文件指针位置 */
+    lua_pushinteger(L, 0);  lua_setfield(L, -2, "SEEK_SET"); /* 文件头 */
+    lua_pushinteger(L, 1);  lua_setfield(L, -2, "SEEK_CUR"); /* 当前位置 */
+    lua_pushinteger(L, 2);  lua_setfield(L, -2, "SEEK_END"); /* 文件尾 */
 
     return 1;
 }

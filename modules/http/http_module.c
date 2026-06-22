@@ -650,38 +650,30 @@ static const luaL_Reg http_module_methods[] = {
     { NULL,          NULL }
 };
 
-static const luaL_Const http_constants[] = {
-    { "GET",     HTTP_METHOD_GET },
-    { "POST",    HTTP_METHOD_POST },
-    { "PUT",     HTTP_METHOD_PUT },
-    { "DELETE",  HTTP_METHOD_DELETE },
-    { "HEAD",    HTTP_METHOD_HEAD },
-    { "OPTIONS", HTTP_METHOD_OPTIONS },
-    
-    { "STATUS_OK",              HTTP_STATUS_OK },
-    { "STATUS_CREATED",         HTTP_STATUS_CREATED },
-    { "STATUS_NO_CONTENT",      HTTP_STATUS_NO_CONTENT },
-    { "STATUS_REDIRECT",        HTTP_STATUS_REDIRECT },
-    { "STATUS_FOUND",           HTTP_STATUS_FOUND },
-    { "STATUS_NOT_MODIFIED",    HTTP_STATUS_NOT_MODIFIED },
-    { "STATUS_BAD_REQUEST",     HTTP_STATUS_BAD_REQUEST },
-    { "STATUS_UNAUTHORIZED",    HTTP_STATUS_UNAUTHORIZED },
-    { "STATUS_FORBIDDEN",       HTTP_STATUS_FORBIDDEN },
-    { "STATUS_NOT_FOUND",       HTTP_STATUS_NOT_FOUND },
-    { "STATUS_SERVER_ERROR",    HTTP_STATUS_SERVER_ERROR },
-    { "STATUS_SERVICE_UNAVAIL", HTTP_STATUS_SERVICE_UNAVAIL },
-    
-    { NULL, 0 }
-};
-
 LUAMOD_API int luaopen_http_register(lua_State* L) {
     luaL_newlib(L, http_module_methods);
     
-    const luaL_Const* constant = http_constants;
-    for (; constant->name; constant++) {
-        lua_pushinteger(L, constant->value);
-        lua_setfield(L, -2, constant->name);
-    }
+    /* 注册常量 - HTTP 方法 */
+    lua_pushinteger(L, HTTP_METHOD_GET);     lua_setfield(L, -2, "GET");
+    lua_pushinteger(L, HTTP_METHOD_POST);    lua_setfield(L, -2, "POST");
+    lua_pushinteger(L, HTTP_METHOD_PUT);     lua_setfield(L, -2, "PUT");
+    lua_pushinteger(L, HTTP_METHOD_DELETE);  lua_setfield(L, -2, "DELETE");
+    lua_pushinteger(L, HTTP_METHOD_HEAD);    lua_setfield(L, -2, "HEAD");
+    lua_pushinteger(L, HTTP_METHOD_OPTIONS); lua_setfield(L, -2, "OPTIONS");
+    
+    /* 注册常量 - HTTP 状态码 */
+    lua_pushinteger(L, HTTP_STATUS_OK);              lua_setfield(L, -2, "STATUS_OK");
+    lua_pushinteger(L, HTTP_STATUS_CREATED);         lua_setfield(L, -2, "STATUS_CREATED");
+    lua_pushinteger(L, HTTP_STATUS_NO_CONTENT);      lua_setfield(L, -2, "STATUS_NO_CONTENT");
+    lua_pushinteger(L, HTTP_STATUS_REDIRECT);        lua_setfield(L, -2, "STATUS_REDIRECT");
+    lua_pushinteger(L, HTTP_STATUS_FOUND);           lua_setfield(L, -2, "STATUS_FOUND");
+    lua_pushinteger(L, HTTP_STATUS_NOT_MODIFIED);    lua_setfield(L, -2, "STATUS_NOT_MODIFIED");
+    lua_pushinteger(L, HTTP_STATUS_BAD_REQUEST);     lua_setfield(L, -2, "STATUS_BAD_REQUEST");
+    lua_pushinteger(L, HTTP_STATUS_UNAUTHORIZED);    lua_setfield(L, -2, "STATUS_UNAUTHORIZED");
+    lua_pushinteger(L, HTTP_STATUS_FORBIDDEN);       lua_setfield(L, -2, "STATUS_FORBIDDEN");
+    lua_pushinteger(L, HTTP_STATUS_NOT_FOUND);       lua_setfield(L, -2, "STATUS_NOT_FOUND");
+    lua_pushinteger(L, HTTP_STATUS_SERVER_ERROR);    lua_setfield(L, -2, "STATUS_SERVER_ERROR");
+    lua_pushinteger(L, HTTP_STATUS_SERVICE_UNAVAIL); lua_setfield(L, -2, "STATUS_SERVICE_UNAVAIL");
     
     luaL_newmetatable(L, HTTP_CTX_METATABLE);
     lua_pushvalue(L, -1);

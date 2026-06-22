@@ -53,7 +53,6 @@ static const luaL_Reg platform_modules[] = {
     {"os",     luaopen_os},           /* 操作系统接口 */
     {"pm",     luaopen_pm},           /* 电源管理 */
     {"at",     luaopen_at},           /* AT命令接口 */
-    {"log",    luaopen_log_register},          /* 日志系统 */
     {"mem",    luaopen_mem},          /* 内存管理 */
     {"cpu",    luaopen_cpu},          /* CPU信息 */
 

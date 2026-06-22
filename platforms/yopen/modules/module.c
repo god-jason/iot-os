@@ -10,7 +10,6 @@
 extern int luaopen_os(lua_State* L);
 extern int luaopen_pm(lua_State* L);
 extern int luaopen_at(lua_State* L);
-extern int luaopen_log_register(lua_State* L);
 extern int luaopen_mem(lua_State* L);
 extern int luaopen_fs(lua_State* L);
 extern int luaopen_gpio(lua_State* L);

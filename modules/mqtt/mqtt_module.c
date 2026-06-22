@@ -531,45 +531,39 @@ static const luaL_Reg mqtt_module_methods[] = {
     { NULL,                       NULL }
 };
 
-static const luaL_Const mqtt_constants[] = {
-    { "QOS_0",                 MQTT_QOS_0 },
-    { "QOS_1",                 MQTT_QOS_1 },
-    { "QOS_2",                 MQTT_QOS_2 },
-    
-    { "STATE_DISCONNECTED",    MQTT_STATE_DISCONNECTED },
-    { "STATE_CONNECTING",      MQTT_STATE_CONNECTING },
-    { "STATE_CONNECTED",       MQTT_STATE_CONNECTED },
-    { "STATE_ERROR",           MQTT_STATE_ERROR },
-    
-    { "ERR_SUCCESS",           MQTT_ERR_SUCCESS },
-    { "ERR_CONNECT",           MQTT_ERR_CONNECT },
-    { "ERR_SEND",              MQTT_ERR_SEND },
-    { "ERR_RECV",              MQTT_ERR_RECV },
-    { "ERR_TIMEOUT",           MQTT_ERR_TIMEOUT },
-    { "ERR_PROTOCOL",          MQTT_ERR_PROTOCOL },
-    { "ERR_QOS",               MQTT_ERR_QOS },
-    { "ERR_KEEPALIVE",         MQTT_ERR_KEEPALIVE },
-    { "ERR_MEMORY",            MQTT_ERR_MEMORY },
-    { "ERR_PARAM",             MQTT_ERR_PARAM },
-    
-    { "CONNACK_ACCEPTED",           MQTT_CONNACK_ACCEPTED },
-    { "CONNACK_UNACCEPTABLE_PROTO",MQTT_CONNACK_UNACCEPTABLE_PROTO },
-    { "CONNACK_IDENTIFIER_REJECTED",MQTT_CONNACK_IDENTIFIER_REJECTED },
-    { "CONNACK_SERVER_UNAVAILABLE", MQTT_CONNACK_SERVER_UNAVAILABLE },
-    { "CONNACK_BAD_AUTH",           MQTT_CONNACK_BAD_AUTH },
-    { "CONNACK_NOT_AUTHORIZED",     MQTT_CONNACK_NOT_AUTHORIZED },
-    
-    { NULL, 0 }
-};
-
 LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
     luaL_newlib(L, mqtt_module_methods);
     
-    const luaL_Const* constant = mqtt_constants;
-    for (; constant->name; constant++) {
-        lua_pushinteger(L, constant->value);
-        lua_setfield(L, -2, constant->name);
-    }
+    /* 注册常量 - MQTT QoS 级别 */
+    lua_pushinteger(L, MQTT_QOS_0); lua_setfield(L, -2, "QOS_0");
+    lua_pushinteger(L, MQTT_QOS_1); lua_setfield(L, -2, "QOS_1");
+    lua_pushinteger(L, MQTT_QOS_2); lua_setfield(L, -2, "QOS_2");
+    
+    /* 注册常量 - MQTT 连接状态 */
+    lua_pushinteger(L, MQTT_STATE_DISCONNECTED); lua_setfield(L, -2, "STATE_DISCONNECTED");
+    lua_pushinteger(L, MQTT_STATE_CONNECTING);   lua_setfield(L, -2, "STATE_CONNECTING");
+    lua_pushinteger(L, MQTT_STATE_CONNECTED);     lua_setfield(L, -2, "STATE_CONNECTED");
+    lua_pushinteger(L, MQTT_STATE_ERROR);         lua_setfield(L, -2, "STATE_ERROR");
+    
+    /* 注册常量 - MQTT 错误码 */
+    lua_pushinteger(L, MQTT_ERR_SUCCESS);   lua_setfield(L, -2, "ERR_SUCCESS");
+    lua_pushinteger(L, MQTT_ERR_CONNECT);   lua_setfield(L, -2, "ERR_CONNECT");
+    lua_pushinteger(L, MQTT_ERR_SEND);      lua_setfield(L, -2, "ERR_SEND");
+    lua_pushinteger(L, MQTT_ERR_RECV);      lua_setfield(L, -2, "ERR_RECV");
+    lua_pushinteger(L, MQTT_ERR_TIMEOUT);   lua_setfield(L, -2, "ERR_TIMEOUT");
+    lua_pushinteger(L, MQTT_ERR_PROTOCOL);  lua_setfield(L, -2, "ERR_PROTOCOL");
+    lua_pushinteger(L, MQTT_ERR_QOS);       lua_setfield(L, -2, "ERR_QOS");
+    lua_pushinteger(L, MQTT_ERR_KEEPALIVE); lua_setfield(L, -2, "ERR_KEEPALIVE");
+    lua_pushinteger(L, MQTT_ERR_MEMORY);    lua_setfield(L, -2, "ERR_MEMORY");
+    lua_pushinteger(L, MQTT_ERR_PARAM);     lua_setfield(L, -2, "ERR_PARAM");
+    
+    /* 注册常量 - MQTT CONNACK 码 */
+    lua_pushinteger(L, MQTT_CONNACK_ACCEPTED);            lua_setfield(L, -2, "CONNACK_ACCEPTED");
+    lua_pushinteger(L, MQTT_CONNACK_UNACCEPTABLE_PROTO);  lua_setfield(L, -2, "CONNACK_UNACCEPTABLE_PROTO");
+    lua_pushinteger(L, MQTT_CONNACK_IDENTIFIER_REJECTED); lua_setfield(L, -2, "CONNACK_IDENTIFIER_REJECTED");
+    lua_pushinteger(L, MQTT_CONNACK_SERVER_UNAVAILABLE);  lua_setfield(L, -2, "CONNACK_SERVER_UNAVAILABLE");
+    lua_pushinteger(L, MQTT_CONNACK_BAD_AUTH);            lua_setfield(L, -2, "CONNACK_BAD_AUTH");
+    lua_pushinteger(L, MQTT_CONNACK_NOT_AUTHORIZED);      lua_setfield(L, -2, "CONNACK_NOT_AUTHORIZED");
     
     luaL_newmetatable(L, MQTT_CTX_METATABLE);
     lua_pushvalue(L, -1);
