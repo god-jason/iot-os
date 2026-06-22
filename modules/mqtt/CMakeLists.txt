@@ -1,6 +1,7 @@
 add_library(iot_mqtt STATIC
     mqtt_packets.c
     mqtt_client.c
+    mqtt_manager.c
     mqtt_module.c
 )
 

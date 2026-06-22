@@ -1,3 +1,11 @@
+/**
+ * @file net_module.c
+ * @brief 网络模块 Lua 绑定实现
+ *
+ * 实现网络模块到 Lua 的接口封装，提供异步网络操作能力
+ * 事件通过 iot_rtos_call 回传到 Lua VM 中
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,11 +21,20 @@
 
 #include "net.h"
 
+/**
+ * @brief socket Lua 上下文结构
+ */
 typedef struct socket_lua_ctx {
-    net_socket_t* sock;
-    void* userdata;
+    net_socket_t* sock;     /* 底层 socket 句柄 */
+    void* userdata;         /* Lua 回调 userdata */
 } socket_lua_ctx_t;
 
+/**
+ * @brief 从 Lua userdata 获取 socket 上下文
+ * @param L Lua 状态机
+ * @param idx 参数索引
+ * @return socket 上下文指针，失败返回 NULL
+ */
 static socket_lua_ctx_t* socket_get_ctx_from_userdata(lua_State* L, int idx) {
     if (lua_type(L, idx) != LUA_TUSERDATA) {
         return NULL;
@@ -26,6 +43,10 @@ static socket_lua_ctx_t* socket_get_ctx_from_userdata(lua_State* L, int idx) {
     return ctx_ptr && *ctx_ptr ? *ctx_ptr : NULL;
 }
 
+/**
+ * @brief 创建 socket Lua 上下文
+ * @return 上下文指针，失败返回 NULL
+ */
 static socket_lua_ctx_t* socket_ctx_create(void) {
     socket_lua_ctx_t* ctx = (socket_lua_ctx_t*)iot_malloc(sizeof(socket_lua_ctx_t));
     if (ctx) {
@@ -34,6 +55,10 @@ static socket_lua_ctx_t* socket_ctx_create(void) {
     return ctx;
 }
 
+/**
+ * @brief 销毁 socket Lua 上下文
+ * @param ctx 上下文指针
+ */
 static void socket_ctx_destroy(socket_lua_ctx_t* ctx) {
     if (!ctx) return;
     if (ctx->sock) {
@@ -42,6 +67,12 @@ static void socket_ctx_destroy(socket_lua_ctx_t* ctx) {
     iot_free(ctx);
 }
 
+/**
+ * @brief socket 事件回调函数
+ * @param sock socket 句柄
+ * @param event 事件类型
+ * @param user_data 用户数据
+ */
 static void socket_event_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
     socket_lua_ctx_t* ctx = (socket_lua_ctx_t*)user_data;
     if (!ctx || !ctx->userdata) return;
@@ -64,6 +95,11 @@ static void socket_event_callback(net_socket_t* sock, net_event_type_t event, vo
     params_destroy(params);
 }
 
+/**
+ * @brief 创建普通 socket（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回新创建的 socket userdata
+ */
 static int iot_net_socket_create(lua_State* L) {
     int type = (int)luaL_optinteger(L, 1, 1);
 
@@ -90,6 +126,11 @@ static int iot_net_socket_create(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 创建 SSL socket（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回新创建的 SSL socket userdata
+ */
 static int iot_net_ssl_socket_create(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_ctx_create();
     if (!ctx) {
@@ -166,6 +207,11 @@ static int iot_net_ssl_socket_create(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 设置 socket 回调（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功，false 失败
+ */
 static int iot_socket_set_callback(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -183,6 +229,11 @@ static int iot_socket_set_callback(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 连接到远程服务器（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功（异步连接中），false 失败
+ */
 static int iot_socket_connect(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -198,6 +249,11 @@ static int iot_socket_connect(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 发送数据（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回发送的字节数，-1 失败
+ */
 static int iot_socket_send(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -213,6 +269,11 @@ static int iot_socket_send(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 接收数据（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回接收到的数据字符串，nil 表示无数据
+ */
 static int iot_socket_recv(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -233,6 +294,11 @@ static int iot_socket_recv(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 绑定 socket 到指定地址（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功，false 失败
+ */
 static int iot_socket_bind(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -248,6 +314,11 @@ static int iot_socket_bind(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 开始监听 socket（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功，false 失败
+ */
 static int iot_socket_listen(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -262,6 +333,11 @@ static int iot_socket_listen(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 接受新连接（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回新连接的 socket userdata，失败返回 nil
+ */
 static int iot_socket_accept(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -291,6 +367,11 @@ static int iot_socket_accept(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 关闭 socket（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 0
+ */
 static int iot_socket_close(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -301,6 +382,11 @@ static int iot_socket_close(lua_State* L) {
     return 0;
 }
 
+/**
+ * @brief 获取 socket 状态（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 socket 状态值
+ */
 static int iot_socket_state(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -313,6 +399,11 @@ static int iot_socket_state(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 检查是否为 SSL socket（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 是 SSL socket，false 不是
+ */
 static int iot_socket_is_ssl(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -325,6 +416,11 @@ static int iot_socket_is_ssl(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 检查 SSL 握手是否完成（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 握手完成，false 未完成
+ */
 static int iot_socket_ssl_handshake_done(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -337,6 +433,11 @@ static int iot_socket_ssl_handshake_done(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief 获取 SSL 错误信息（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回错误信息字符串
+ */
 static int iot_socket_ssl_get_error(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
     if (!ctx) {
@@ -349,6 +450,35 @@ static int iot_socket_ssl_get_error(lua_State* L) {
     return 1;
 }
 
+/**
+ * @brief DNS 解析完成回调函数
+ * @param name 主机名
+ * @param ip 解析后的 IP 地址（NULL 表示解析失败）
+ * @param user_data 用户数据
+ */
+static void dns_resolve_callback(const char* name, const char* ip, void* user_data) {
+    void* userdata = (void*)user_data;
+    if (!userdata) return;
+
+    params_t* params = params_create(2);
+    if (!params) return;
+
+    params_push_string(params, name, strlen(name));
+    if (ip) {
+        params_push_string(params, ip, strlen(ip));
+    } else {
+        params_push_nil(params);
+    }
+
+    iot_rtos_call(userdata, params);
+    params_destroy(params);
+}
+
+/**
+ * @brief 异步 DNS 解析（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功（异步进行中），false 失败
+ */
 static int iot_net_dns_resolve(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
 
@@ -359,22 +489,35 @@ static int iot_net_dns_resolve(lua_State* L) {
 
     void* userdata = lua_touserdata(L, 2);
 
-    int ret = net_dns_resolve(name, NULL, userdata);
+    int ret = net_dns_resolve(name, dns_resolve_callback, userdata);
     lua_pushboolean(L, ret >= 0);
     return 1;
 }
 
+/**
+ * @brief 初始化网络模块（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 true 成功，false 失败
+ */
 static int iot_net_init(lua_State* L) {
     int ret = net_init();
     lua_pushboolean(L, ret >= 0);
     return 1;
 }
 
+/**
+ * @brief 反初始化网络模块（Lua 接口）
+ * @param L Lua 状态机
+ * @return 返回 0
+ */
 static int iot_net_deinit(lua_State* L) {
     net_deinit();
     return 0;
 }
 
+/**
+ * @brief socket 对象方法表
+ */
 static const luaL_Reg socket_methods[] = {
     { "set_callback",          iot_socket_set_callback },
     { "connect",               iot_socket_connect },
@@ -392,6 +535,9 @@ static const luaL_Reg socket_methods[] = {
     { NULL,                    NULL }
 };
 
+/**
+ * @brief net 模块方法表
+ */
 static const luaL_Reg net_methods[] = {
     { "socket",                iot_net_socket_create },
     { "ssl_socket",            iot_net_ssl_socket_create },
@@ -401,6 +547,9 @@ static const luaL_Reg net_methods[] = {
     { NULL,                    NULL }
 };
 
+/**
+ * @brief net 模块常量定义
+ */
 static const luaL_Const net_constants[] = {
     { "AF_INET",               2 },
     { "SOCK_STREAM",           1 },
@@ -435,6 +584,11 @@ static const luaL_Const net_constants[] = {
     { NULL, 0 }
 };
 
+/**
+ * @brief Lua 模块加载函数
+ * @param L Lua 状态机
+ * @return 返回模块表
+ */
 LUAMOD_API int luaopen_net(lua_State* L) {
     luaL_newlib(L, net_methods);
 
