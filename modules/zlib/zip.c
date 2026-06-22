@@ -12,7 +12,7 @@
 
 #include "zip.h"
 #include "deflate.h"
-#include "adapter.h"
+#include "platform.h"
 #include <string.h>
 
 /* ZIP格式签名常量 */
@@ -70,11 +70,11 @@ static int zip_mkdir_recursive(const char *path) {
     for (p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            zlib_fs_mkdir(tmp);
+            iot_fs_mkdir(tmp, 0);
             *p = '/';
         }
     }
-    return zlib_fs_mkdir(tmp);
+    return iot_fs_mkdir(tmp, 0);
 }
 
 /**
@@ -95,7 +95,7 @@ int zip_open(zip_t *zip, const char *zip_path) {
     memset(zip, 0, sizeof(zip_t));
     
     /* 打开ZIP文件 */
-    zlib_fs_t fd = zlib_fs_open(zip_path, ZLIB_FS_RB);
+    iot_fs_file_t fd = iot_fs_open(zip_path, IOT_FS_RB);
     if (!fd) {
         return ZIP_ERR_FILE;
     }
@@ -103,24 +103,24 @@ int zip_open(zip_t *zip, const char *zip_path) {
     zip->fd = fd;
     
     /* 获取文件大小 */
-    int32_t size = zlib_fs_filesize(zip_path);
+    int32_t size = iot_fs_filesize(zip_path);
     if (size < 0) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_FILE;
     }
     zip->size = size;
     
     /* 读取文件末尾区域，查找中央目录结束标记 */
-    uint8_t *buf = (uint8_t *)zlib_malloc(46);
+    uint8_t *buf = (uint8_t *)iot_malloc(46);
     if (!buf) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_MEM;
     }
     
-    zlib_fs_seek(fd, size - 46, ZLIB_FS_SEEK_SET);
-    if (zlib_fs_read(fd, buf, 46) < 22) {
-        zlib_free(buf);
-        zlib_fs_close(fd);
+    iot_fs_seek(fd, size - 46, IOT_FS_SEEK_SET);
+    if (iot_fs_read(fd, buf, 46) < 22) {
+        iot_free(buf);
+        iot_fs_close(fd);
         return ZIP_ERR_FORMAT;
     }
     
@@ -135,17 +135,17 @@ int zip_open(zip_t *zip, const char *zip_path) {
             break;
         }
     }
-    zlib_free(buf);
+    iot_free(buf);
     
     if (!found) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_FORMAT;
     }
     
     /* 解析中央目录结束记录 */
     uint32_t sig = zip_read_le32(&p);
     if (sig != ZIP_END_CENTRAL_DIR_SIG) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_FORMAT;
     }
     
@@ -158,30 +158,30 @@ int zip_open(zip_t *zip, const char *zip_path) {
     
     /* 验证中央目录位置的有效性 */
     if (central_dir_offset + central_dir_size > (size_t)zip->size) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_FORMAT;
     }
     
     /* 分配条目数组 */
-    zip->entries = (zip_entry_t *)zlib_malloc(entry_count * sizeof(zip_entry_t));
+    zip->entries = (zip_entry_t *)iot_malloc(entry_count * sizeof(zip_entry_t));
     if (!zip->entries) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return ZIP_ERR_MEM;
     }
     zip->entry_count = entry_count;
     
     /* 读取中央目录 */
-    buf = (uint8_t *)zlib_malloc(central_dir_size);
+    buf = (uint8_t *)iot_malloc(central_dir_size);
     if (!buf) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         zip_close(zip);
         return ZIP_ERR_MEM;
     }
     
-    zlib_fs_seek(fd, central_dir_offset, ZLIB_FS_SEEK_SET);
-    if (zlib_fs_read(fd, buf, central_dir_size) != (int32_t)central_dir_size) {
-        zlib_free(buf);
-        zlib_fs_close(fd);
+    iot_fs_seek(fd, central_dir_offset, IOT_FS_SEEK_SET);
+    if (iot_fs_read(fd, buf, central_dir_size) != (int32_t)central_dir_size) {
+        iot_free(buf);
+        iot_fs_close(fd);
         zip_close(zip);
         return ZIP_ERR_FILE;
     }
@@ -191,8 +191,8 @@ int zip_open(zip_t *zip, const char *zip_path) {
     for (int i = 0; i < entry_count; i++) {
         sig = zip_read_le32(&p);
         if (sig != ZIP_CENTRAL_DIR_SIG) {
-            zlib_free(buf);
-            zlib_fs_close(fd);
+            iot_free(buf);
+            iot_fs_close(fd);
             zip_close(zip);
             return ZIP_ERR_FORMAT;
         }
@@ -216,10 +216,10 @@ int zip_open(zip_t *zip, const char *zip_path) {
         uint32_t local_offset = zip_read_le32(&p);     /* 本地文件头偏移 */
         
         /* 分配文件名内存并复制 */
-        zip->entries[i].filename = (char *)zlib_malloc(filename_len + 1);
+        zip->entries[i].filename = (char *)iot_malloc(filename_len + 1);
         if (!zip->entries[i].filename) {
-            zlib_free(buf);
-            zlib_fs_close(fd);
+            iot_free(buf);
+            iot_fs_close(fd);
             zip_close(zip);
             return ZIP_ERR_MEM;
         }
@@ -237,7 +237,7 @@ int zip_open(zip_t *zip, const char *zip_path) {
         p += filename_len + extra_len + comment_len;
     }
     
-    zlib_free(buf);
+    iot_free(buf);
     return ZIP_OK;
 }
 
@@ -255,15 +255,15 @@ void zip_close(zip_t *zip) {
     if (zip->entries) {
         for (int i = 0; i < zip->entry_count; i++) {
             if (zip->entries[i].filename) {
-                zlib_free(zip->entries[i].filename);
+                iot_free(zip->entries[i].filename);
             }
         }
-        zlib_free(zip->entries);
+        iot_free(zip->entries);
     }
     
     /* 关闭文件句柄 */
     if (zip->fd) {
-        zlib_fs_close((zlib_fs_t)zip->fd);
+        iot_fs_close((iot_fs_file_t)zip->fd);
     }
     
     memset(zip, 0, sizeof(zip_t));
@@ -318,9 +318,9 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
     
     /* 读取本地文件头 */
     uint8_t header[30];
-    zlib_fs_t fd = (zlib_fs_t)zip->fd;
-    zlib_fs_seek(fd, entry->offset, ZLIB_FS_SEEK_SET);
-    if (zlib_fs_read(fd, header, 30) != 30) {
+    iot_fs_file_t fd = (iot_fs_file_t)zip->fd;
+    iot_fs_seek(fd, entry->offset, IOT_FS_SEEK_SET);
+    if (iot_fs_read(fd, header, 30) != 30) {
         return ZIP_ERR_FILE;
     }
     
@@ -349,28 +349,28 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
     /* 根据压缩方法处理 */
     if (compression_method == ZIP_STORED) {
         /* 无压缩：直接复制 */
-        zlib_fs_seek(fd, data_offset, ZLIB_FS_SEEK_SET);
-        if (zlib_fs_read(fd, buf, uncompressed_size) != (int32_t)uncompressed_size) {
+        iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
+        if (iot_fs_read(fd, buf, uncompressed_size) != (int32_t)uncompressed_size) {
             return ZIP_ERR_FILE;
         }
     } else if (compression_method == ZIP_DEFLATED) {
         /* DEFLATE压缩：先读取压缩数据，再解压 */
-        uint8_t *compressed = (uint8_t *)zlib_malloc(compressed_size);
+        uint8_t *compressed = (uint8_t *)iot_malloc(compressed_size);
         if (!compressed) {
             return ZIP_ERR_MEM;
         }
         
-        zlib_fs_seek(fd, data_offset, ZLIB_FS_SEEK_SET);
-        if (zlib_fs_read(fd, compressed, compressed_size) != (int32_t)compressed_size) {
-            zlib_free(compressed);
+        iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
+        if (iot_fs_read(fd, compressed, compressed_size) != (int32_t)compressed_size) {
+            iot_free(compressed);
             return ZIP_ERR_FILE;
         }
         
         if (zlib_deflate_decompress(compressed, compressed_size, buf, uncompressed_size) < 0) {
-            zlib_free(compressed);
+            iot_free(compressed);
             return ZIP_ERR_FORMAT;
         }
-        zlib_free(compressed);
+        iot_free(compressed);
     } else {
         return ZIP_ERR_FORMAT;
     }
@@ -420,27 +420,27 @@ int zip_extract_entry_to_file(zip_t *zip, int index, const char *output_path) {
     }
     
     /* 分配内存并解压到内存 */
-    uint8_t *buf = (uint8_t *)zlib_malloc(entry->uncompressed_size);
+    uint8_t *buf = (uint8_t *)iot_malloc(entry->uncompressed_size);
     if (!buf) {
         return ZIP_ERR_MEM;
     }
     
     int ret = zip_extract_entry_to_memory(zip, index, buf, entry->uncompressed_size);
     if (ret != ZIP_OK) {
-        zlib_free(buf);
+        iot_free(buf);
         return ret;
     }
     
     /* 写入目标文件 */
-    zlib_fs_t fd = zlib_fs_open(output_path, ZLIB_FS_WB);
+    iot_fs_file_t fd = iot_fs_open(output_path, IOT_FS_WB);
     if (!fd) {
-        zlib_free(buf);
+        iot_free(buf);
         return ZIP_ERR_FILE;
     }
     
-    int32_t written = zlib_fs_write(fd, buf, entry->uncompressed_size);
-    zlib_fs_close(fd);
-    zlib_free(buf);
+    int32_t written = iot_fs_write(fd, buf, entry->uncompressed_size);
+    iot_fs_close(fd);
+    iot_free(buf);
     
     if (written != (int32_t)entry->uncompressed_size) {
         return ZIP_ERR_FILE;
@@ -590,7 +590,7 @@ int zip_create(zip_t *zip, const char *zip_path) {
     memset(zip, 0, sizeof(zip_t));
     
     /* 打开输出文件 */
-    zlib_fs_t fd = zlib_fs_open(zip_path, ZLIB_FS_WB);
+    iot_fs_file_t fd = iot_fs_open(zip_path, IOT_FS_WB);
     if (!fd) {
         return ZIP_ERR_FILE;
     }
@@ -636,14 +636,14 @@ int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char 
     
     if (compression_method == ZIP_DEFLATED && data_len > 0) {
         compressed_size = zlib_deflate_bound(data_len);
-        compressed_data = (uint8_t *)zlib_malloc(compressed_size);
+        compressed_data = (uint8_t *)iot_malloc(compressed_size);
         if (!compressed_data) {
             return ZIP_ERR_MEM;
         }
         
         int ret = zlib_deflate_compress(data, data_len, compressed_data, &compressed_size, level);
         if (ret != ZLIB_DEFLATE_OK) {
-            zlib_free(compressed_data);
+            iot_free(compressed_data);
             return ZIP_ERR_MEM;
         }
     } else {
@@ -653,10 +653,10 @@ int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char 
     
     /* 计算本地文件头大小 */
     size_t header_size = 30 + filename_len;
-    uint8_t *header = (uint8_t *)zlib_malloc(header_size);
+    uint8_t *header = (uint8_t *)iot_malloc(header_size);
     if (!header) {
         if (compression_method == ZIP_DEFLATED) {
-            zlib_free(compressed_data);
+            iot_free(compressed_data);
         }
         return ZIP_ERR_MEM;
     }
@@ -680,21 +680,21 @@ int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char 
     size_t local_header_offset = zip->size;
     
     /* 写入本地文件头 */
-    zlib_fs_t fd = (zlib_fs_t)zip->fd;
-    if (zlib_fs_write(fd, header, header_size) != (int32_t)header_size) {
-        zlib_free(header);
+    iot_fs_file_t fd = (iot_fs_file_t)zip->fd;
+    if (iot_fs_write(fd, header, header_size) != (int32_t)header_size) {
+        iot_free(header);
         if (compression_method == ZIP_DEFLATED) {
-            zlib_free(compressed_data);
+            iot_free(compressed_data);
         }
         return ZIP_ERR_FILE;
     }
     zip->size += header_size;
-    zlib_free(header);
+    iot_free(header);
     
     /* 写入压缩数据 */
-    if (zlib_fs_write(fd, compressed_data, compressed_size) != (int32_t)compressed_size) {
+    if (iot_fs_write(fd, compressed_data, compressed_size) != (int32_t)compressed_size) {
         if (compression_method == ZIP_DEFLATED) {
-            zlib_free(compressed_data);
+            iot_free(compressed_data);
         }
         return ZIP_ERR_FILE;
     }
@@ -702,17 +702,17 @@ int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char 
     
     /* 释放压缩数据（如果是动态分配的） */
     if (compression_method == ZIP_DEFLATED) {
-        zlib_free(compressed_data);
+        iot_free(compressed_data);
     }
     
     /* 保存条目信息到内存（用于中央目录） */
-    zip_entry_t *new_entries = (zip_entry_t *)zlib_realloc(zip->entries, (zip->entry_count + 1) * sizeof(zip_entry_t));
+    zip_entry_t *new_entries = (zip_entry_t *)iot_realloc(zip->entries, (zip->entry_count + 1) * sizeof(zip_entry_t));
     if (!new_entries) {
         return ZIP_ERR_MEM;
     }
     zip->entries = new_entries;
     
-    zip->entries[zip->entry_count].filename = (char *)zlib_malloc(filename_len + 1);
+    zip->entries[zip->entry_count].filename = (char *)iot_malloc(filename_len + 1);
     if (!zip->entries[zip->entry_count].filename) {
         return ZIP_ERR_MEM;
     }
@@ -746,35 +746,35 @@ int zip_add_file(zip_t *zip, const char *file_path, const char *entry_name, int 
     }
     
     /* 打开源文件 */
-    zlib_fs_t src_fd = zlib_fs_open(file_path, ZLIB_FS_RB);
+    iot_fs_file_t src_fd = iot_fs_open(file_path, IOT_FS_RB);
     if (!src_fd) {
         return ZIP_ERR_FILE;
     }
     
     /* 获取文件大小 */
-    int32_t file_size = zlib_fs_filesize(file_path);
+    int32_t file_size = iot_fs_filesize(file_path);
     if (file_size < 0) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return ZIP_ERR_FILE;
     }
     
     /* 读取文件内容 */
-    uint8_t *data = (uint8_t *)zlib_malloc(file_size);
+    uint8_t *data = (uint8_t *)iot_malloc(file_size);
     if (!data) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return ZIP_ERR_MEM;
     }
     
-    if (zlib_fs_read(src_fd, data, file_size) != file_size) {
-        zlib_free(data);
-        zlib_fs_close(src_fd);
+    if (iot_fs_read(src_fd, data, file_size) != file_size) {
+        iot_free(data);
+        iot_fs_close(src_fd);
         return ZIP_ERR_FILE;
     }
-    zlib_fs_close(src_fd);
+    iot_fs_close(src_fd);
     
     /* 添加到ZIP */
     int ret = zip_add_memory(zip, data, file_size, entry_name, level);
-    zlib_free(data);
+    iot_free(data);
     
     return ret;
 }
@@ -792,7 +792,7 @@ int zip_finish(zip_t *zip) {
         return ZIP_ERR_FORMAT;
     }
     
-    zlib_fs_t fd = (zlib_fs_t)zip->fd;
+    iot_fs_file_t fd = (iot_fs_file_t)zip->fd;
     size_t central_dir_offset = zip->size;
     
     /* 写入中央目录条目 */
@@ -801,7 +801,7 @@ int zip_finish(zip_t *zip) {
         size_t filename_len = strlen(entry->filename);
         size_t entry_size = 46 + filename_len;
         
-        uint8_t *buf = (uint8_t *)zlib_malloc(entry_size);
+        uint8_t *buf = (uint8_t *)iot_malloc(entry_size);
         if (!buf) {
             return ZIP_ERR_MEM;
         }
@@ -826,12 +826,12 @@ int zip_finish(zip_t *zip) {
         zip_write_le32(&p, entry->offset);
         memcpy(p, entry->filename, filename_len);
         
-        if (zlib_fs_write(fd, buf, entry_size) != (int32_t)entry_size) {
-            zlib_free(buf);
+        if (iot_fs_write(fd, buf, entry_size) != (int32_t)entry_size) {
+            iot_free(buf);
             return ZIP_ERR_FILE;
         }
         zip->size += entry_size;
-        zlib_free(buf);
+        iot_free(buf);
     }
     
     /* 写入中央目录结束记录 */
@@ -847,13 +847,13 @@ int zip_finish(zip_t *zip) {
     zip_write_le32(&p, (uint32_t)central_dir_offset);
     zip_write_le16(&p, 0x0000);          /* 注释长度 */
     
-    if (zlib_fs_write(fd, end_record, 22) != 22) {
+    if (iot_fs_write(fd, end_record, 22) != 22) {
         return ZIP_ERR_FILE;
     }
     zip->size += 22;
     
     /* 关闭文件 */
-    zlib_fs_close(fd);
+    iot_fs_close(fd);
     zip->fd = NULL;
     
     return ZIP_OK;

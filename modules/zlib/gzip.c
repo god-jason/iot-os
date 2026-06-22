@@ -12,7 +12,7 @@
 
 #include "gzip.h"
 #include "deflate.h"
-#include "adapter.h"
+#include "platform.h"
 #include <string.h>
 
 /* GZIP格式常量定义 */
@@ -190,40 +190,40 @@ int gzip_decompress_file(const char *src_path, const char *dst_path) {
     }
     
     /* 打开源文件 */
-    zlib_fs_t src_fd = zlib_fs_open(src_path, ZLIB_FS_RB);
+    iot_fs_file_t src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
         return GZIP_ERR_FILE;
     }
     
     /* 获取文件大小 */
-    int32_t file_size = zlib_fs_filesize(src_path);
+    int32_t file_size = iot_fs_filesize(src_path);
     if (file_size < 18) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return GZIP_ERR_FORMAT;
     }
     
     /* 分配内存并读取文件 */
-    uint8_t *src_buf = (uint8_t *)zlib_malloc(file_size);
+    uint8_t *src_buf = (uint8_t *)iot_malloc(file_size);
     if (!src_buf) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return GZIP_ERR_MEM;
     }
     
-    if (zlib_fs_read(src_fd, src_buf, file_size) != file_size) {
-        zlib_free(src_buf);
-        zlib_fs_close(src_fd);
+    if (iot_fs_read(src_fd, src_buf, file_size) != file_size) {
+        iot_free(src_buf);
+        iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
-    zlib_fs_close(src_fd);
+    iot_fs_close(src_fd);
     
     /* 从文件尾部读取预期的解压后大小 */
     const uint8_t *p = src_buf + file_size - 8;
     uint32_t dst_size = p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
     
     /* 分配解压缓冲区 */
-    uint8_t *dst_buf = (uint8_t *)zlib_malloc(dst_size);
+    uint8_t *dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
-        zlib_free(src_buf);
+        iot_free(src_buf);
         return GZIP_ERR_MEM;
     }
     
@@ -231,29 +231,29 @@ int gzip_decompress_file(const char *src_path, const char *dst_path) {
     size_t out_len = dst_size;
     int ret = gzip_decompress(src_buf, file_size, dst_buf, &out_len);
     if (ret != GZIP_OK) {
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return ret;
     }
     
     /* 写入目标文件 */
-    zlib_fs_t dst_fd = zlib_fs_open(dst_path, ZLIB_FS_WB);
+    iot_fs_file_t dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
     
-    if (zlib_fs_write(dst_fd, dst_buf, dst_size) != dst_size) {
-        zlib_fs_close(dst_fd);
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+    if (iot_fs_write(dst_fd, dst_buf, dst_size) != dst_size) {
+        iot_fs_close(dst_fd);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
     
-    zlib_fs_close(dst_fd);
-    zlib_free(dst_buf);
-    zlib_free(src_buf);
+    iot_fs_close(dst_fd);
+    iot_free(dst_buf);
+    iot_free(src_buf);
     
     return GZIP_OK;
 }
@@ -274,65 +274,65 @@ int gzip_compress_file(const char *src_path, const char *dst_path, int level) {
     }
     
     /* 打开源文件 */
-    zlib_fs_t src_fd = zlib_fs_open(src_path, ZLIB_FS_RB);
+    iot_fs_file_t src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
         return GZIP_ERR_FILE;
     }
     
-    int32_t file_size = zlib_fs_filesize(src_path);
+    int32_t file_size = iot_fs_filesize(src_path);
     if (file_size <= 0) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
     
     /* 读取源文件数据 */
-    uint8_t *src_buf = (uint8_t *)zlib_malloc(file_size);
+    uint8_t *src_buf = (uint8_t *)iot_malloc(file_size);
     if (!src_buf) {
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         return GZIP_ERR_MEM;
     }
     
-    if (zlib_fs_read(src_fd, src_buf, file_size) != file_size) {
-        zlib_free(src_buf);
-        zlib_fs_close(src_fd);
+    if (iot_fs_read(src_fd, src_buf, file_size) != file_size) {
+        iot_free(src_buf);
+        iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
-    zlib_fs_close(src_fd);
+    iot_fs_close(src_fd);
     
     /* 分配压缩缓冲区 */
     size_t dst_size = zlib_deflate_bound(file_size) + 18;
-    uint8_t *dst_buf = (uint8_t *)zlib_malloc(dst_size);
+    uint8_t *dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
-        zlib_free(src_buf);
+        iot_free(src_buf);
         return GZIP_ERR_MEM;
     }
     
     /* 执行压缩 */
     int ret = gzip_compress(src_buf, file_size, dst_buf, &dst_size, level);
     if (ret != GZIP_OK) {
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return ret;
     }
     
     /* 写入目标文件 */
-    zlib_fs_t dst_fd = zlib_fs_open(dst_path, ZLIB_FS_WB);
+    iot_fs_file_t dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
     
-    if (zlib_fs_write(dst_fd, dst_buf, dst_size) != (int32_t)dst_size) {
-        zlib_fs_close(dst_fd);
-        zlib_free(dst_buf);
-        zlib_free(src_buf);
+    if (iot_fs_write(dst_fd, dst_buf, dst_size) != (int32_t)dst_size) {
+        iot_fs_close(dst_fd);
+        iot_free(dst_buf);
+        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
     
-    zlib_fs_close(dst_fd);
-    zlib_free(dst_buf);
-    zlib_free(src_buf);
+    iot_fs_close(dst_fd);
+    iot_free(dst_buf);
+    iot_free(src_buf);
     
     return GZIP_OK;
 }

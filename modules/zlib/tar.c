@@ -12,7 +12,7 @@
 
 #include "tar.h"
 #include "gzip.h"
-#include "adapter.h"
+#include "platform.h"
 #include <string.h>
 #include <time.h>
 
@@ -113,11 +113,11 @@ static int tar_mkdir_recursive(const char *path) {
     for (p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            zlib_fs_mkdir(tmp);
+            tots_mkdir(tmp);
             *p = '/';
         }
     }
-    return zlib_fs_mkdir(tmp);
+    return tots_mkdir(tmp);
 }
 
 /**
@@ -140,7 +140,7 @@ int tar_open(tar_t *tar, const char *tar_path) {
     
     memset(tar, 0, sizeof(tar_t));
     
-    zlib_fs_t fd = zlib_fs_open(tar_path, ZLIB_FS_RB);
+    iot_fs_file_t fd = iot_fs_open(tar_path,IOT_FS_RBPLUS);
     if (!fd) {
         return TAR_ERR_FILE;
     }
@@ -151,46 +151,46 @@ int tar_open(tar_t *tar, const char *tar_path) {
     int entry_count = 0;
     
     while (1) {
-        if (zlib_fs_read(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+        if (iot_fs_read(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
             break;
         }
         
         if (hdr.name[0] == '\0') {
             uint8_t zero_block[TAR_BLOCK_SIZE] = {0};
-            if (zlib_fs_read(fd, zero_block, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+            if (iot_fs_read(fd, zero_block, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
                 break;
             }
             break;
         }
         
         if (strncmp(hdr.magic, TAR_MAGIC, 6) != 0) {
-            zlib_fs_close(fd);
+            iot_fs_close(fd);
             return TAR_ERR_FORMAT;
         }
         
         entry_count++;
         uint64_t size = tar_str_to_num(hdr.size, 12);
         size = (size + TAR_BLOCK_SIZE - 1) & ~(TAR_BLOCK_SIZE - 1);
-        zlib_fs_seek(fd, size, ZLIB_FS_SEEK_CUR);
+        iot_fs_seek(fd, size, IOT_FS_SEEK_CUR);
     }
     
-    zlib_fs_seek(fd, 0, ZLIB_FS_SEEK_SET);
+    iot_fs_seek(fd, 0, IOT_FS_SEEK_SET);
     
-    tar->entries = (tar_entry_t *)zlib_malloc(entry_count * sizeof(tar_entry_t));
+    tar->entries = (tar_entry_t *)iot_malloc(entry_count * sizeof(tar_entry_t));
     if (!tar->entries) {
-        zlib_fs_close(fd);
+        iot_fs_close(fd);
         return TAR_ERR_MEM;
     }
     
     tar->entry_count = entry_count;
     
     for (int i = 0; i < entry_count; i++) {
-        if (zlib_fs_read(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+        if (iot_fs_read(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
             tar_close(tar);
             return TAR_ERR_FILE;
         }
         
-        tar->entries[i].filename = (char *)zlib_malloc(256);
+        tar->entries[i].filename = (char *)iot_malloc(256);
         if (!tar->entries[i].filename) {
             tar_close(tar);
             return TAR_ERR_MEM;
@@ -209,7 +209,7 @@ int tar_open(tar_t *tar, const char *tar_path) {
         
         uint64_t size = tar->entries[i].size;
         size = (size + TAR_BLOCK_SIZE - 1) & ~(TAR_BLOCK_SIZE - 1);
-        zlib_fs_seek(fd, size, ZLIB_FS_SEEK_CUR);
+        iot_fs_seek(fd, size, IOT_FS_SEEK_CUR);
     }
     
     return TAR_OK;
@@ -227,14 +227,14 @@ void tar_close(tar_t *tar) {
     if (tar->entries) {
         for (int i = 0; i < tar->entry_count; i++) {
             if (tar->entries[i].filename) {
-                zlib_free(tar->entries[i].filename);
+                iot_free(tar->entries[i].filename);
             }
         }
-        zlib_free(tar->entries);
+        iot_free(tar->entries);
     }
     
     if (tar->fd) {
-        zlib_fs_close((zlib_fs_t)tar->fd);
+        iot_fs_close((iot_fs_file_t)tar->fd);
     }
     
     memset(tar, 0, sizeof(tar_t));
@@ -276,22 +276,22 @@ int tar_get_entry(tar_t *tar, int index, tar_entry_t *entry) {
  * 内部函数，用于定位指定条目的头部位置和数据偏移。
  */
 static int tar_find_entry(tar_t *tar, int index, tar_header_t *hdr, int64_t *offset) {
-    zlib_fs_t fd = (zlib_fs_t)tar->fd;
-    zlib_fs_seek(fd, 0, ZLIB_FS_SEEK_SET);
+    iot_fs_file_t fd = (iot_fs_file_t)tar->fd;
+    iot_fs_seek(fd, 0, IOT_FS_SEEK_SET);
     
     for (int i = 0; i <= index; i++) {
-        if (zlib_fs_read(fd, hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+        if (iot_fs_read(fd, hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
             return -1;
         }
         
         if (i == index) {
-            *offset = zlib_fs_seek(fd, 0, ZLIB_FS_SEEK_CUR);
+            *offset = iot_fs_seek(fd, 0, IOT_FS_SEEK_CUR);
             return 0;
         }
         
         uint64_t size = tar_str_to_num(hdr->size, 12);
         size = (size + TAR_BLOCK_SIZE - 1) & ~(TAR_BLOCK_SIZE - 1);
-        zlib_fs_seek(fd, size, ZLIB_FS_SEEK_CUR);
+        iot_fs_seek(fd, size, IOT_FS_SEEK_CUR);
     }
     
     return -1;
@@ -324,10 +324,10 @@ int tar_extract_entry_to_memory(tar_t *tar, int index, uint8_t *buf, size_t buf_
         return TAR_ERR_FILE;
     }
     
-    zlib_fs_t fd = (zlib_fs_t)tar->fd;
-    zlib_fs_seek(fd, offset, ZLIB_FS_SEEK_SET);
+    iot_fs_file_t fd = (iot_fs_file_t)tar->fd;
+    iot_fs_seek(fd, offset, IOT_FS_SEEK_SET);
     
-    if (zlib_fs_read(fd, buf, entry->size) != (int32_t)entry->size) {
+    if (iot_fs_read(fd, buf, entry->size) != (int32_t)entry->size) {
         return TAR_ERR_FILE;
     }
     
@@ -362,26 +362,26 @@ int tar_extract_entry_to_file(tar_t *tar, int index, const char *output_path) {
         tar_mkdir_recursive(dir_path);
     }
     
-    uint8_t *buf = (uint8_t *)zlib_malloc(entry->size);
+    uint8_t *buf = (uint8_t *)iot_malloc(entry->size);
     if (!buf) {
         return TAR_ERR_MEM;
     }
     
     int ret = tar_extract_entry_to_memory(tar, index, buf, entry->size);
     if (ret != TAR_OK) {
-        zlib_free(buf);
+        iot_free(buf);
         return ret;
     }
     
-    zlib_fs_t fd = zlib_fs_open(output_path, ZLIB_FS_WB);
+    iot_fs_file_t fd = zlzbbb_fs_open(output_path, IOT_FS_WB);
     if (!fd) {
-        zlib_free(buf);
+        iot_free(buf);
         return TAR_ERR_FILE;
     }
     
-    int32_t written = zlib_fs_write(fd, buf, entry->size);
-    zlib_fs_close(fd);
-    zlib_free(buf);
+    int32_t written = iot_fs_write(fd, buf, entry->size);
+    iot_fs_close(fd);
+    iot_free(buf);
     
     if (written != (int32_t)entry->size) {
         return TAR_ERR_FILE;
@@ -430,7 +430,7 @@ int tar_create(const char *tar_path, const char **files, int file_count) {
         return TAR_ERR_FORMAT;
     }
     
-    zlib_fs_t fd = zlib_fs_open(tar_path, ZLIB_FS_WB);
+    iot_fs_file_t fd = zlzbbb_fs_open(tar_path, IOT_FS_WB);
     if (!fd) {
         return TAR_ERR_FILE;
     }
@@ -444,13 +444,13 @@ int tar_create(const char *tar_path, const char **files, int file_count) {
         memset(&hdr, 0, sizeof(hdr));
         snprintf(hdr.name, sizeof(hdr.name), "%s", basename);
         
-        zlib_fs_t src_fd = zlib_fs_open(file, ZLIB_FS_RB);
+        iot_fs_file_t src_fd = iot_fs_open(file, IOT_FS_RBPLUS);
         if (!src_fd) {
-            zlib_fs_close(fd);
+            iot_fs_close(fd);
             return TAR_ERR_FILE;
         }
         
-        int32_t file_size = zlib_fs_filesize(file);
+        int32_t file_size = iot_fs_filesize(file);
         tar_num_to_str(hdr.size, file_size, 12);
         
         tar_num_to_str(hdr.mode, 0644, 8);
@@ -467,32 +467,32 @@ int tar_create(const char *tar_path, const char **files, int file_count) {
         uint32_t chksum = tar_checksum(&hdr);
         tar_num_to_str(hdr.chksum, chksum, 8);
         
-        if (zlib_fs_write(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
-            zlib_fs_close(src_fd);
-            zlib_fs_close(fd);
+        if (iot_fs_write(fd, &hdr, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+            iot_fs_close(src_fd);
+            iot_fs_close(fd);
             return TAR_ERR_FILE;
         }
         
         uint8_t buf[TAR_BLOCK_SIZE];
         int32_t bytes_read;
-        while ((bytes_read = zlib_fs_read(src_fd, buf, TAR_BLOCK_SIZE)) > 0) {
+        while ((bytes_read = iot_fs_read(src_fd, buf, TAR_BLOCK_SIZE)) > 0) {
             if (bytes_read < TAR_BLOCK_SIZE) {
                 memset(buf + bytes_read, 0, TAR_BLOCK_SIZE - bytes_read);
             }
-            if (zlib_fs_write(fd, buf, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
-                zlib_fs_close(src_fd);
-                zlib_fs_close(fd);
+            if (iot_fs_write(fd, buf, TAR_BLOCK_SIZE) != TAR_BLOCK_SIZE) {
+                iot_fs_close(src_fd);
+                iot_fs_close(fd);
                 return TAR_ERR_FILE;
             }
         }
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
     }
     
     uint8_t zero_block[TAR_BLOCK_SIZE] = {0};
-    zlib_fs_write(fd, zero_block, TAR_BLOCK_SIZE);
-    zlib_fs_write(fd, zero_block, TAR_BLOCK_SIZE);
+    iot_fs_write(fd, zero_block, TAR_BLOCK_SIZE);
+    iot_fs_write(fd, zero_block, TAR_BLOCK_SIZE);
     
-    zlib_fs_close(fd);
+    iot_fs_close(fd);
     return TAR_OK;
 }
 
@@ -511,60 +511,60 @@ int tar_decompress_file(const char *src_path, const char *dst_dir) {
     }
     
     if (tar_has_suffix(src_path, ".tar.gz") || tar_has_suffix(src_path, ".tgz")) {
-        zlib_fs_t src_fd = zlib_fs_open(src_path, ZLIB_FS_RB);
+        iot_fs_file_t src_fd = iot_fs_open(src_path, IOT_FS_RBPLUS);
         if (!src_fd) {
             return TAR_ERR_FILE;
         }
         
-        int32_t file_size = zlib_fs_filesize(src_path);
+        int32_t file_size = iot_fs_filesize(src_path);
         if (file_size <= 0) {
-            zlib_fs_close(src_fd);
+            iot_fs_close(src_fd);
             return TAR_ERR_FILE;
         }
         
-        uint8_t *gz_buf = (uint8_t *)zlib_malloc(file_size);
+        uint8_t *gz_buf = (uint8_t *)iot_malloc(file_size);
         if (!gz_buf) {
-            zlib_fs_close(src_fd);
+            iot_fs_close(src_fd);
             return TAR_ERR_MEM;
         }
         
-        if (zlib_fs_read(src_fd, gz_buf, file_size) != file_size) {
-            zlib_free(gz_buf);
-            zlib_fs_close(src_fd);
+        if (iot_fs_read(src_fd, gz_buf, file_size) != file_size) {
+            iot_free(gz_buf);
+            iot_fs_close(src_fd);
             return TAR_ERR_FILE;
         }
-        zlib_fs_close(src_fd);
+        iot_fs_close(src_fd);
         
         size_t tar_size = file_size * 4;
-        uint8_t *tar_buf = (uint8_t *)zlib_malloc(tar_size);
+        uint8_t *tar_buf = (uint8_t *)iot_malloc(tar_size);
         if (!tar_buf) {
-            zlib_free(gz_buf);
+            iot_free(gz_buf);
             return TAR_ERR_MEM;
         }
         
         int ret = gzip_decompress(gz_buf, file_size, tar_buf, &tar_size);
-        zlib_free(gz_buf);
+        iot_free(gz_buf);
         if (ret != GZIP_OK) {
-            zlib_free(tar_buf);
+            iot_free(tar_buf);
             return TAR_ERR_FORMAT;
         }
         
         char tmp_path[512];
         snprintf(tmp_path, sizeof(tmp_path), "%s/.tmp.tar", dst_dir);
         
-        zlib_fs_t tmp_fd = zlib_fs_open(tmp_path, ZLIB_FS_WB);
+        iot_fs_file_t tmp_fd = zlzbbb_fs_open(tmp_path, IOT_FS_WB);
         if (!tmp_fd) {
-            zlib_free(tar_buf);
+            iot_free(tar_buf);
             return TAR_ERR_FILE;
         }
         
-        if (zlib_fs_write(tmp_fd, tar_buf, tar_size) != (int32_t)tar_size) {
-            zlib_fs_close(tmp_fd);
-            zlib_free(tar_buf);
+        if (iot_fs_write(tmp_fd, tar_buf, tar_size) != (int32_t)tar_size) {
+            iot_fs_close(tmp_fd);
+            iot_free(tar_buf);
             return TAR_ERR_FILE;
         }
-        zlib_fs_close(tmp_fd);
-        zlib_free(tar_buf);
+        iot_fs_close(tmp_fd);
+        iot_free(tar_buf);
         
         tar_t tar;
         ret = tar_open(&tar, tmp_path);
@@ -613,18 +613,18 @@ int tar_compress_file(const char *src_dir, const char **files, int file_count, c
         char tmp_path[512];
         snprintf(tmp_path, sizeof(tmp_path), "%s/.tmp.tar", src_dir);
         
-        char **full_paths = (char **)zlib_malloc(file_count * sizeof(char *));
+        char **full_paths = (char **)iot_malloc(file_count * sizeof(char *));
         if (!full_paths) {
             return TAR_ERR_MEM;
         }
         
         for (int i = 0; i < file_count; i++) {
-            full_paths[i] = (char *)zlib_malloc(512);
+            full_paths[i] = (char *)iot_malloc(512);
             if (!full_paths[i]) {
                 for (int j = 0; j < i; j++) {
-                    zlib_free(full_paths[j]);
+                    iot_free(full_paths[j]);
                 }
-                zlib_free(full_paths);
+                iot_free(full_paths);
                 return TAR_ERR_MEM;
             }
             snprintf(full_paths[i], 512, "%s/%s", src_dir, files[i]);
@@ -633,81 +633,81 @@ int tar_compress_file(const char *src_dir, const char **files, int file_count, c
         int ret = tar_create(tmp_path, (const char **)full_paths, file_count);
         
         for (int i = 0; i < file_count; i++) {
-            zlib_free(full_paths[i]);
+            iot_free(full_paths[i]);
         }
-        zlib_free(full_paths);
+        iot_free(full_paths);
         
         if (ret != TAR_OK) {
             return ret;
         }
         
-        zlib_fs_t tar_fd = zlib_fs_open(tmp_path, ZLIB_FS_RB);
+        iot_fs_file_t tar_fd = iot_fs_open(tmp_path, IOT_FS_RBPLUS);
         if (!tar_fd) {
             return TAR_ERR_FILE;
         }
         
-        int32_t tar_size = zlib_fs_filesize(tmp_path);
+        int32_t tar_size = iot_fs_filesize(tmp_path);
         if (tar_size <= 0) {
-            zlib_fs_close(tar_fd);
+            iot_fs_close(tar_fd);
             return TAR_ERR_FILE;
         }
         
-        uint8_t *tar_buf = (uint8_t *)zlib_malloc(tar_size);
+        uint8_t *tar_buf = (uint8_t *)iot_malloc(tar_size);
         if (!tar_buf) {
-            zlib_fs_close(tar_fd);
+            iot_fs_close(tar_fd);
             return TAR_ERR_MEM;
         }
         
-        if (zlib_fs_read(tar_fd, tar_buf, tar_size) != tar_size) {
-            zlib_free(tar_buf);
-            zlib_fs_close(tar_fd);
+        if (iot_fs_read(tar_fd, tar_buf, tar_size) != tar_size) {
+            iot_free(tar_buf);
+            iot_fs_close(tar_fd);
             return TAR_ERR_FILE;
         }
-        zlib_fs_close(tar_fd);
+        iot_fs_close(tar_fd);
         
         size_t gz_size = tar_size + (tar_size >> 12) + (tar_size >> 14) + (tar_size >> 25) + 21;
-        uint8_t *gz_buf = (uint8_t *)zlib_malloc(gz_size);
+        uint8_t *gz_buf = (uint8_t *)iot_malloc(gz_size);
         if (!gz_buf) {
-            zlib_free(tar_buf);
+            iot_free(tar_buf);
             return TAR_ERR_MEM;
         }
         
         ret = gzip_compress(tar_buf, tar_size, gz_buf, &gz_size, level);
-        zlib_free(tar_buf);
+        iot_free(tar_buf);
         if (ret != GZIP_OK) {
-            zlib_free(gz_buf);
+            iot_free(gz_buf);
             return ret;
         }
         
-        zlib_fs_t dst_fd = zlib_fs_open(dst_path, ZLIB_FS_WB);
+        iot_fs_file_t dst_fd = zlzbbb_fs_open(dst_path, IOT_FS_WB);
         if (!dst_fd) {
-            zlib_free(gz_buf);
+            iot_free(gz_buf);
             return TAR_ERR_FILE;
         }
         
-        if (zlib_fs_write(dst_fd, gz_buf, gz_size) != (int32_t)gz_size) {
-            zlib_fs_close(dst_fd);
-            zlib_free(gz_buf);
+        if (iot_fs_write(dst_fd, gz_buf, gz_size) != (int32_t)gz_size) {
+            iot_fs_close(dst_fd);
+            iot_free(gz_buf);
             return TAR_ERR_FILE;
         }
         
-        zlib_fs_close(dst_fd);
-        zlib_free(gz_buf);
+        iot_fs_close(dst_fd);
+        iot_free(gz_buf);
         
         return TAR_OK;
     } else if (tar_has_suffix(dst_path, ".tar")) {
-        char **full_paths = (char **)zlib_malloc(file_count * sizeof(char *));
+        char **full_paths = (char **)iot_malloc(file_count * sizeof(char *));
         if (!full_paths) {
             return TAR_ERR_MEM;
         }
         
         for (int i = 0; i < file_count; i++) {
-            full_paths[i] = (char *)zlib_malloc(512);
+            full_paths[i] = (char *)iot_malloc(512);
             if (!full_paths[i]) {
                 for (int j = 0; j < i; j++) {
-                    zlib_free(full_paths[j]);
+                    iot_free(full_paths[j]);
                 }
-                zlib_free(full_paths);
+                iot_free(full_paths);
                 return TAR_ERR_MEM;
             }
             snprintf(full_paths[i], 512, "%s/%s", src_dir, files[i]);
@@ -716,9 +716,9 @@ int tar_compress_file(const char *src_dir, const char **files, int file_count, c
         int ret = tar_create(dst_path, (const char **)full_paths, file_count);
         
         for (int i = 0; i < file_count; i++) {
-            zlib_free(full_paths[i]);
+            iot_free(full_paths[i]);
         }
-        zlib_free(full_paths);
+        iot_free(full_paths);
         
         return ret;
     }
