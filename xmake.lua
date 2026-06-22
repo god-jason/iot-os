@@ -16,7 +16,7 @@ set_toolchains("gcc")
 --===========================================================
 -- 包含子目录
 --===========================================================
-includes("iot", "drivers", "modules", "platforms", "vendor")
+includes("iot", "modules", "drivers", "platforms", "vendor")
 
 --===========================================================
 -- 平台配置
@@ -69,4 +69,4 @@ end
 --===========================================================
 -- 默认目标
 --===========================================================
-set_default("iot_core", "drivers", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "cjson")
+set_default("iot", "iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "drivers", "cjson", "lua", "lua-cjson")

@@ -214,6 +214,9 @@
 #include "yopen_fs.h"
 #include "yopen_type.h"
 
+/* 文件系统路径最大长度 */
+#define IOT_FS_MAX_PATH          255
+
 #define iot_fs_file_t            QFILE
 #define iot_fs_dir_t             QDIR*
 #define iot_fs_dirent_t          qdirent
@@ -287,7 +290,7 @@
 #define iot_fs_closedir(dir) \
     ((int)-1)
 
-#define iot_fs_tell(fp) \
+#define iot_fs_file_tell(fp) \
     yopen_ftell((fp))
 
 #define iot_fs_size(fp) \

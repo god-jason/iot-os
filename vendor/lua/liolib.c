@@ -4,7 +4,7 @@
 ** See Copyright Notice in lua.h
 ** @author  杰神 & TRAE & ChatGPT
 ** @date    2026.06.10
-** @brief   IO库适配到cm_fs文件系统接口
+** @brief   IO库适配到iot_fs文件系统接口
 */
 
 #define liolib_c
@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <locale.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,8 +25,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "cm_mem.h"
-#include "cm_fs.h"
+#include "platform.h"
 
 
 
@@ -178,9 +178,9 @@ static int f_tostring (lua_State *L) {
 
 /*
 ** @brief 获取文件句柄
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static cm_fs_t tofile (lua_State *L) {
+static iot_fs_file_t tofile (lua_State *L) {
   LStream *p = tolstream(L);
   if (isclosed(p))
     luaL_error(L, "attempt to use a closed file");
@@ -238,12 +238,12 @@ static int f_gc (lua_State *L) {
 
 /*
 ** function to close regular files
-** @brief 关闭cm_fs文件
+** @brief 关闭iot_fs文件
 */
 static int io_fclose (lua_State *L) {
   LStream *p = tolstream(L);
-  /* 适配cm_fs_close接口 */
-  int res = cm_fs_close(p->f);
+  /* 适配iot_fs_close接口 */
+  int res = iot_fs_close(p->f);
   return luaL_fileresult(L, (res == 0), NULL);
 }
 
@@ -258,21 +258,21 @@ static LStream *newfile (lua_State *L) {
 
 /*
 ** @brief 打开并检查文件
-** @note 适配cm_fs_open接口
+** @note 适配iot_fs_open接口
 */
 static void opencheck (lua_State *L, const char *fname, const char *mode) {
   LStream *p = newfile(L);
-  /* 适配cm_fs_open接口，需要将模式字符串转换为flag */
+  /* 适配iot_fs_open接口，需要将模式字符串转换为flag */
   int flag = 0;
-  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = CM_FS_RB;
-  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = CM_FS_WB;
-  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = CM_FS_AB;
-  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = CM_FS_RBPLUS;
-  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = CM_FS_WBPLUS;
-  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = CM_FS_ABPLUS;
-  else flag = CM_FS_RB;
+  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = IOT_FS_RB;
+  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = IOT_FS_WB;
+  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = IOT_FS_AB;
+  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = IOT_FS_RBPLUS;
+  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = IOT_FS_WBPLUS;
+  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = IOT_FS_ABPLUS;
+  else flag = IOT_FS_RB;
 
-  p->f = cm_fs_open(fname, flag);
+  p->f = iot_fs_open(fname, flag);
   if (p->f == NULL)
     luaL_error(L, "cannot open file '%s' (%s)", fname, strerror(errno));
 }
@@ -280,7 +280,7 @@ static void opencheck (lua_State *L, const char *fname, const char *mode) {
 
 /*
 ** @brief 打开文件
-** @note 适配cm_fs_open接口
+** @note 适配iot_fs_open接口
 */
 static int io_open (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
@@ -288,17 +288,17 @@ static int io_open (lua_State *L) {
   LStream *p = newfile(L);
   const char *md = mode;  /* to traverse/check mode */
   luaL_argcheck(L, l_checkmode(md), 2, "invalid mode");
-  /* 适配cm_fs_open接口 */
+  /* 适配iot_fs_open接口 */
   int flag = 0;
-  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = CM_FS_RB;
-  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = CM_FS_WB;
-  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = CM_FS_AB;
-  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = CM_FS_RBPLUS;
-  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = CM_FS_WBPLUS;
-  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = CM_FS_ABPLUS;
-  else flag = CM_FS_RB;
+  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = IOT_FS_RB;
+  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = IOT_FS_WB;
+  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = IOT_FS_AB;
+  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = IOT_FS_RBPLUS;
+  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = IOT_FS_WBPLUS;
+  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = IOT_FS_ABPLUS;
+  else flag = IOT_FS_RB;
 
-  p->f = cm_fs_open(filename, flag);
+  p->f = iot_fs_open(filename, flag);
   return (p->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
 }
 
@@ -326,21 +326,21 @@ static int io_popen (lua_State *L) {
 
 /*
 ** @brief 创建临时文件
-** @note cm_fs不支持临时文件，返回错误
+** @note iot_fs不支持临时文件，返回错误
 */
 static int io_tmpfile (lua_State *L) {
-  /* cm_fs没有tmpfile接口，返回nil错误 */
+  /* iot_fs没有tmpfile接口，返回nil错误 */
   lua_pushnil(L);
-  lua_pushstring(L, "tmpfile not supported in cm_fs");
+  lua_pushstring(L, "tmpfile not supported in iot_fs");
   return 2;  /* return nil and error message */
 }
 
 
 /*
 ** @brief 获取标准IO文件句柄
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static cm_fs_t getiofile (lua_State *L, const char *findex) {
+static iot_fs_file_t getiofile (lua_State *L, const char *findex) {
   LStream *p;
   lua_getfield(L, LUA_REGISTRYINDEX, findex);
   p = (LStream *)lua_touserdata(L, -1);
@@ -438,7 +438,7 @@ static int io_lines (lua_State *L) {
 
 /* auxiliary structure used by 'read_number' */
 typedef struct {
-  cm_fs_t f;  /* file being read */
+  iot_fs_file_t f;  /* file being read */
   int c;  /* current character (look ahead) */
   int n;  /* number of elements in buffer 'buff' */
   char buff[L_MAXLENNUM + 1];  /* +1 for ending '\0' */
@@ -447,7 +447,7 @@ typedef struct {
 
 /*
 ** Add current char to buffer (if not out of space) and read next one
-** @note 适配cm_fs_read接口
+** @note 适配iot_fs_read接口
 */
 static int nextc (RN *rn) {
   if (rn->n >= L_MAXLENNUM) {  /* buffer overflow? */
@@ -456,9 +456,9 @@ static int nextc (RN *rn) {
   }
   else {
     rn->buff[rn->n++] = rn->c;  /* save current char */
-    /* 使用cm_fs_read读取下一个字节 */
+    /* 使用iot_fs_read读取下一个字节 */
     uint8_t c;
-    if (cm_fs_read(rn->f, &c, 1) == 1)
+    if (iot_fs_read(rn->f, &c, 1) == 1)
       rn->c = c;
     else
       rn->c = EOF;
@@ -529,14 +529,14 @@ static int read_number (lua_State *L, FILE *f) {
 
 /*
 ** @brief 测试是否到达文件末尾
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static int test_eof (lua_State *L, cm_fs_t f) {
+static int test_eof (lua_State *L, iot_fs_file_t f) {
   uint8_t c;
-  int32_t ret = cm_fs_read(f, &c, 1);
+  int32_t ret = iot_fs_read(f, &c, 1);
   if (ret == 1) {
     /* 读取成功，需要回退一个字节 */
-    cm_fs_seek(f, -1, CM_FS_SEEK_CUR);
+    iot_fs_seek(f, -1, IOT_FS_SEEK_CUR);
     lua_pushliteral(L, "");
     return 1;
   }
@@ -547,19 +547,19 @@ static int test_eof (lua_State *L, cm_fs_t f) {
 
 /*
 ** @brief 读取一行
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static int read_line (lua_State *L, cm_fs_t f, int chop) {
+static int read_line (lua_State *L, iot_fs_file_t f, int chop) {
   luaL_Buffer b;
   int c = '\0';
   luaL_buffinit(L, &b);
   while (c != EOF && c != '\n') {  /* repeat until end of line */
     char *buff = luaL_prepbuffer(&b);  /* preallocate buffer */
     int i = 0;
-    /* 使用cm_fs_read读取数据 */
+    /* 使用iot_fs_read读取数据 */
     while (i < LUAL_BUFFERSIZE) {
       uint8_t byte;
-      int32_t ret = cm_fs_read(f, &byte, 1);
+      int32_t ret = iot_fs_read(f, &byte, 1);
       if (ret != 1) {
         c = EOF;
         break;
@@ -582,15 +582,15 @@ static int read_line (lua_State *L, cm_fs_t f, int chop) {
 
 /*
 ** @brief 读取整个文件
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static void read_all (lua_State *L, cm_fs_t f) {
+static void read_all (lua_State *L, iot_fs_file_t f) {
   int32_t nr;
   luaL_Buffer b;
   luaL_buffinit(L, &b);
   do {  /* read file in chunks of LUAL_BUFFERSIZE bytes */
     char *p = luaL_prepbuffer(&b);
-    nr = cm_fs_read(f, p, LUAL_BUFFERSIZE);
+    nr = iot_fs_read(f, p, LUAL_BUFFERSIZE);
     if (nr > 0)
       luaL_addsize(&b, nr);
   } while (nr == LUAL_BUFFERSIZE);
@@ -600,15 +600,15 @@ static void read_all (lua_State *L, cm_fs_t f) {
 
 /*
 ** @brief 读取指定数量的字符
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static int read_chars (lua_State *L, cm_fs_t f, size_t n) {
+static int read_chars (lua_State *L, iot_fs_file_t f, size_t n) {
   int32_t nr;  /* number of chars actually read */
   char *p;
   luaL_Buffer b;
   luaL_buffinit(L, &b);
   p = luaL_prepbuffsize(&b, n);  /* prepare buffer to read whole block */
-  nr = cm_fs_read(f, p, n);  /* try to read 'n' chars */
+  nr = iot_fs_read(f, p, n);  /* try to read 'n' chars */
   luaL_addsize(&b, nr);
   luaL_pushresult(&b);  /* close buffer */
   return (nr > 0);  /* true iff read something */
@@ -617,13 +617,13 @@ static int read_chars (lua_State *L, cm_fs_t f, size_t n) {
 
 /*
 ** @brief 通用读取函数
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
-static int g_read (lua_State *L, cm_fs_t f, int first) {
+static int g_read (lua_State *L, iot_fs_file_t f, int first) {
   int nargs = lua_gettop(L) - 1;
   int success;
   int n;
-  /* cm_fs不需要clearerr，但保留接口兼容性 */
+  /* iot_fs不需要clearerr，但保留接口兼容性 */
   if (nargs == 0) {  /* no arguments? */
     success = read_line(L, f, 1);
     n = first+1;  /* to return 1 result */
@@ -659,7 +659,7 @@ static int g_read (lua_State *L, cm_fs_t f, int first) {
       }
     }
   }
-  /* cm_fs没有ferror，简化处理 */
+  /* iot_fs没有ferror，简化处理 */
   if (!success) {
     lua_pop(L, 1);  /* remove last result */
     lua_pushnil(L);  /* push nil instead */
@@ -711,9 +711,9 @@ static int io_readline (lua_State *L) {
 
 /*
 ** @brief 通用写入函数
-** @note 适配cm_fs_write接口
+** @note 适配iot_fs_write接口
 */
-static int g_write (lua_State *L, cm_fs_t f, int arg) {
+static int g_write (lua_State *L, iot_fs_file_t f, int arg) {
   int nargs = lua_gettop(L) - arg;
   int status = 1;
   for (; nargs--; arg++) {
@@ -728,12 +728,12 @@ static int g_write (lua_State *L, cm_fs_t f, int arg) {
         len = snprintf(buff, sizeof(buff), LUA_NUMBER_FMT,
                        (LUAI_UACNUMBER)lua_tonumber(L, arg));
       }
-      status = status && (cm_fs_write(f, buff, len) == len);
+      status = status && (iot_fs_write(f, buff, len) == len);
     }
     else {
       size_t l;
       const char *s = luaL_checklstring(L, arg, &l);
-      status = status && (cm_fs_write(f, s, l) == l);
+      status = status && (iot_fs_write(f, s, l) == l);
     }
   }
   if (status) return 1;  /* file handle already on stack top */
@@ -748,10 +748,10 @@ static int io_write (lua_State *L) {
 
 /*
 ** @brief 文件写入方法
-** @note 适配cm_fs接口
+** @note 适配iot_fs接口
 */
 static int f_write (lua_State *L) {
-  cm_fs_t f = tofile(L);
+  iot_fs_file_t f = tofile(L);
   lua_pushvalue(L, 1);  /* push file at the stack top (to be returned) */
   return g_write(L, f, 2);
 }
@@ -759,22 +759,22 @@ static int f_write (lua_State *L) {
 
 /*
 ** @brief 文件指针定位
-** @note 适配cm_fs_seek接口
+** @note 适配iot_fs_seek接口
 */
 static int f_seek (lua_State *L) {
-  static const int cmode[] = {CM_FS_SEEK_SET, CM_FS_SEEK_CUR, CM_FS_SEEK_END};
+  static const int cmode[] = {IOT_FS_SEEK_SET, IOT_FS_SEEK_CUR, IOT_FS_SEEK_END};
   static const char *const modenames[] = {"set", "cur", "end", NULL};
-  cm_fs_t f = tofile(L);
+  iot_fs_file_t f = tofile(L);
   int op = luaL_checkoption(L, 2, "cur", modenames);
   lua_Integer p3 = luaL_optinteger(L, 3, 0);
   luaL_argcheck(L, (lua_Integer)p3 == p3, 3,
                   "not an integer in proper range");
-  /* 使用cm_fs_seek进行定位 */
-  int32_t ret = cm_fs_seek(f, (int32_t)p3, cmode[op]);
+  /* 使用iot_fs_seek进行定位 */
+  int32_t ret = iot_fs_seek(f, (int32_t)p3, cmode[op]);
   if (ret < 0)
     return luaL_fileresult(L, 0, NULL);  /* error */
   else {
-    /* cm_fs没有直接获取当前位置的函数，使用tell模拟 */
+    /* iot_fs没有直接获取当前位置的函数，使用tell模拟 */
     lua_pushinteger(L, (lua_Integer)ret);
     return 1;
   }
@@ -783,12 +783,12 @@ static int f_seek (lua_State *L) {
 
 /*
 ** @brief 设置缓冲模式
-** @note cm_fs不支持setvbuf，禁用此功能
+** @note iot_fs不支持setvbuf，禁用此功能
 */
 static int f_setvbuf (lua_State *L) {
-  /* cm_fs没有setvbuf接口，返回错误 */
+  /* iot_fs没有setvbuf接口，返回错误 */
   lua_pushnil(L);
-  lua_pushstring(L, "setvbuf not supported in cm_fs");
+  lua_pushstring(L, "setvbuf not supported in iot_fs");
   return 2;
 }
 
@@ -796,19 +796,19 @@ static int f_setvbuf (lua_State *L) {
 
 /*
 ** @brief 刷新标准输出缓冲区
-** @note 适配cm_fs_sync接口
+** @note 适配iot_fs_sync接口
 */
 static int io_flush (lua_State *L) {
-  return luaL_fileresult(L, cm_fs_sync(getiofile(L, IO_OUTPUT)) == 0, NULL);
+  return luaL_fileresult(L, iot_fs_sync(getiofile(L, IO_OUTPUT)) == 0, NULL);
 }
 
 
 /*
 ** @brief 刷新文件缓冲区
-** @note 适配cm_fs_sync接口
+** @note 适配iot_fs_sync接口
 */
 static int f_flush (lua_State *L) {
-  return luaL_fileresult(L, cm_fs_sync(tofile(L)) == 0, NULL);
+  return luaL_fileresult(L, iot_fs_sync(tofile(L)) == 0, NULL);
 }
 
 

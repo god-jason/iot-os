@@ -22,7 +22,8 @@ target("lua")
     add_headerfiles("lualib.h", "lundump.h", "lvm.h", "lzio.h")
     
     -- 包含目录
-    add_includedirs(".")
+    add_deps("platform")
+    add_includedirs("../../platforms/"..(get_config("platform") or "windows"))
     
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")

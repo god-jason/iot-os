@@ -26,7 +26,7 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "cm_mem.h"
+#include "platform.h"
 
 
 /*
@@ -1010,11 +1010,11 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
 static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   (void)ud; (void)osize;  /* not used */
   if (nsize == 0) {
-    cm_free(ptr);
+    iot_free(ptr);
     return NULL;
   }
   else {  /* cannot fail when shrinking a block */
-    void *newptr = cm_realloc(ptr, nsize);
+    void *newptr = iot_realloc(ptr, nsize);
     if (newptr == NULL && ptr != NULL && nsize <= osize)
       return ptr;  /* keep the original block */
     else  /* no fail or not shrinking */

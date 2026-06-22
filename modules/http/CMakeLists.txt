@@ -26,7 +26,7 @@ target_include_directories(iot_http PUBLIC
 
 target_link_libraries(iot_http
     PUBLIC
-        iot_core
+        iot
     PRIVATE
         iot_net
         iot_url

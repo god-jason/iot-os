@@ -270,7 +270,7 @@ static int iot_file_seek(lua_State* L) {
 
     int ret = iot_fs_seek(ctx->fp, offset, whence);
     if (ret == 0) {
-        lua_pushinteger(L, iot_fs_tell(ctx->fp));
+        lua_pushinteger(L, iot_fs_file_tell(ctx->fp));
     } else {
         lua_pushinteger(L, -1);
     }
@@ -329,9 +329,9 @@ static int iot_file_size(lua_State* L) {
         return 1;
     }
 
-    long current = iot_fs_tell(ctx->fp);
+    long current = iot_fs_file_tell(ctx->fp);
     iot_fs_seek(ctx->fp, 0, IOT_FS_SEEK_END);
-    long size = iot_fs_tell(ctx->fp);
+    long size = iot_fs_file_tell(ctx->fp);
     iot_fs_seek(ctx->fp, current, IOT_FS_SEEK_SET);
 
     lua_pushinteger(L, size);

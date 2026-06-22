@@ -10,7 +10,7 @@ target_include_directories(iot_fs PUBLIC
 
 target_link_libraries(iot_fs
     PUBLIC
-        iot_core
+        iot
 )
 
 target_compile_options(iot_fs PRIVATE

@@ -174,7 +174,7 @@ typedef void (*)(void*)         iot_timer_callback_t; // ESP32/Linux/Windows
 | `iot_fs_write(fp, buf, size)` | `cm_fs_write(fp, buf, size)` | `yopen_fwrite(buf, 1, size, fp)` | `fwrite(buf, 1, size, fp)` | `fwrite(buf, 1, size, fp)` |
 | `iot_fs_seek(fp, off, whence)` | `cm_fs_seek(fp, off, whence)` | `yopen_fseek(fp, off, whence)` | `fseek(fp, off, whence)` | `fseek(fp, off, whence)` |
 | `iot_fs_sync(fp)` | `cm_fs_sync(fp)` | `yopen_fflush(fp)` | `fflush(fp)` | `fflush(fp)` |
-| `iot_fs_tell(fp)` | 不支持 | `yopen_ftell(fp)` | `ftell(fp)` | `ftell(fp)` |
+| `iot_fs_file_tell(fp)` | 不支持 | `yopen_ftell(fp)` | `ftell(fp)` | `ftell(fp)` |
 | `iot_fs_rewind(fp)` | `cm_fs_seek(fp, 0, SET)` | `yopen_frewind(fp)` | `rewind(fp)` | `rewind(fp)` |
 | `iot_fs_size(fp)` | 不支持 | `yopen_fsize(fp)` | 计算实现 | 计算实现 |
 
@@ -475,7 +475,7 @@ iot_spi_transfer(IOT_SPI_BUS_0, tx_buf, rx_buf, 4);
 | **YOPEN** | 目录操作（`iot_fs_opendir`/`readdir`/`closedir`）暂不支持 |
 | **YOPEN** | 文件查找接口（`iot_fs_find_*`）暂不支持 |
 | **ML307N** | `iot_fs_ftruncate` 和 `iot_fs_rmdir_recursive` 暂不支持 |
-| **ML307N** | `iot_fs_tell` 和 `iot_fs_size` 暂不支持 |
+| **ML307N** | `iot_fs_file_tell` 和 `iot_fs_size` 暂不支持 |
 | **ML307N** | 文件查找接口（`iot_fs_find_*`）为 cm_fs 封装，与标准接口不同 |
 | **ESP32/Linux** | `iot_fs_getinfo` 暂不支持 |
 

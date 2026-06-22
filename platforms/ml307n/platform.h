@@ -197,6 +197,9 @@
 #include <stdint.h>
 #include "cm_fs.h"
 
+/* 文件系统路径最大长度 */
+#define IOT_FS_MAX_PATH          255
+
 #define iot_fs_file_t            cm_fs_t
 #define iot_fs_dir_t             uint32_t
 #define iot_fs_dirent_t          cm_fs_file_data_t
@@ -270,7 +273,7 @@
 #define iot_fs_closedir(dir) \
     cm_fs_find_close((dir))
 
-#define iot_fs_tell(fp) \
+#define iot_fs_file_tell(fp) \
     ((long)0)
 
 #define iot_fs_size(fp) \

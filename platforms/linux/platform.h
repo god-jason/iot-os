@@ -200,6 +200,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+/* 文件系统路径最大长度 */
+#define IOT_FS_MAX_PATH          255
+
 #define iot_fs_file_t            FILE*
 #define iot_fs_dir_t             DIR*
 #define iot_fs_dirent_t          struct dirent
@@ -273,7 +276,7 @@
 #define iot_fs_closedir(dir) \
     closedir((dir))
 
-#define iot_fs_tell(fp) \
+#define iot_fs_file_tell(fp) \
     ftell((fp))
 
 #define iot_fs_size(fp) \

@@ -13,7 +13,7 @@ target_include_directories(iot_net PUBLIC
 
 target_link_libraries(iot_net
     PUBLIC
-        iot_core
+        iot
     PRIVATE
         lwip
         gmssl

@@ -3,8 +3,8 @@
 target("gmssl")
     set_kind("static")
     
-    -- 添加源文件
-    add_files("src/*.c")
+    -- 添加源文件（排除 tools 目录）
+    add_files("src/*.c", {exclude = "tools/*.c"})
     add_files("src/sdf/*.c")
     add_files("src/skf/*.c")
     
@@ -18,6 +18,3 @@ target("gmssl")
     
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
-    
-    -- 排除工具文件（tools 目录下的是命令行工具）
-    add_files("tools/*.c", {remove = true})

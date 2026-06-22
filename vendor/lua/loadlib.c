@@ -17,14 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "lua.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
 
-#include "cm_fs.h"
-#include "cm_mem.h"
+#include "platform.h"
 
 /*
 ** 默认的Lua模块搜索路径前缀
@@ -522,12 +522,12 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 
 
 /*
-** 检查文件是否存在且可读（适配cm_fs接口）
+** 检查文件是否存在且可读（适配iot_fs接口）
 */
 static int file_readable (const char *filename) {
-  cm_fs_t f = cm_fs_open(filename, CM_FS_RB);
+  iot_fs_file_t f = iot_fs_open(filename, IOT_FS_RB);
   if (f != NULL) {
-    cm_fs_close(f);
+    iot_fs_close(f);
     return 1;
   }
   return 0;
@@ -552,17 +552,17 @@ static int searcher_Lua (lua_State *L) {
 ** 搜索策略：
 ** 1. 优先查找 /app/<modname>.luac
 ** 2. 如果不存在，查找 /app/<modname>.lua
-** 3. 使用cm_fs接口读取文件内容
+** 3. 使用iot_fs接口读取文件内容
 */
 static int searcher_app (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   size_t name_len = strlen(name);
-  char luac_path[CM_FS_MAX_PATH];
-  char lua_path[CM_FS_MAX_PATH];
+  char luac_path[IOT_FS_MAX_PATH];
+  char lua_path[IOT_FS_MAX_PATH];
   const char *filename = NULL;
 
   /* 构建路径: /app/<name>.luac 和 /app/<name>.lua */
-  if (name_len + sizeof("/app/.luac") > CM_FS_MAX_PATH) {
+  if (name_len + sizeof("/app/.luac") > IOT_FS_MAX_PATH) {
     lua_pushfstring(L, "module name too long: %s", name);
     return 1;
   }
@@ -591,35 +591,35 @@ static int searcher_app (lua_State *L) {
     return 1;
   }
 
-  /* 使用cm_fs接口读取文件内容 */
-  cm_fs_t f = cm_fs_open(filename, CM_FS_RB);
+  /* 使用iot_fs接口读取文件内容 */
+  iot_fs_file_t f = iot_fs_open(filename, IOT_FS_RB);
   if (f == NULL) {
     lua_pushfstring(L, "cannot open file '%s'", filename);
     return 1;
   }
 
   /* 获取文件大小 */
-  int32_t fsize = cm_fs_seek(f, 0, CM_FS_SEEK_END);
+  int32_t fsize = iot_fs_seek(f, 0, IOT_FS_SEEK_END);
   if (fsize < 0) {
-    cm_fs_close(f);
+    iot_fs_close(f);
     lua_pushfstring(L, "cannot seek file '%s'", filename);
     return 1;
   }
-  cm_fs_seek(f, 0, CM_FS_SEEK_SET);
+  iot_fs_seek(f, 0, IOT_FS_SEEK_SET);
 
   /* 分配缓冲区并读取文件内容 */
-  char *buffer = (char*)cm_malloc(fsize + 1);
+  char *buffer = (char*)iot_malloc(fsize + 1);
   if (buffer == NULL) {
-    cm_fs_close(f);
+    iot_fs_close(f);
     lua_pushliteral(L, "out of memory");
     return 1;
   }
 
-  int32_t bytes_read = cm_fs_read(f, buffer, fsize);
-  cm_fs_close(f);
+  int32_t bytes_read = iot_fs_read(f, buffer, fsize);
+  iot_fs_close(f);
 
   if (bytes_read != fsize) {
-    cm_free(buffer);
+    iot_free(buffer);
     lua_pushfstring(L, "error reading file '%s'", filename);
     return 1;
   }
@@ -627,7 +627,7 @@ static int searcher_app (lua_State *L) {
 
   /* 使用luaL_loadbufferx加载模块 */
   int status = luaL_loadbuffer(L, buffer, fsize, filename);
-  cm_free(buffer);
+  iot_free(buffer);
 
   if (status != LUA_OK) {
     lua_pushfstring(L, "error loading module '%s' from file '%s':\n\t%s",

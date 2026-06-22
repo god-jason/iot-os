@@ -5,6 +5,8 @@
 @date    2026.06.19
 */
 
+#include "module.h"
+
 extern int luaopen_log(lua_State* L);
 extern int luaopen_socket(lua_State* L);
 extern int luaopen_http(lua_State* L);

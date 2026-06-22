@@ -11,7 +11,7 @@ target_include_directories(iot_mqtt PUBLIC
 
 target_link_libraries(iot_mqtt
     PUBLIC
-        iot_core
+        iot
     PRIVATE
         iot_net
 )

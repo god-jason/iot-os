@@ -17,8 +17,7 @@
 #include <string.h>
 
 #include "lua.h"
-#include "cm_mem.h"
-#include "cm_fs.h"
+#include "platform.h"
 
 /* Lua输出函数映射到系统接口 */
 extern void osPuts(const char *s);
@@ -197,14 +196,14 @@ LUALIB_API char *(luaL_buffinitsize) (lua_State *L, luaL_Buffer *B, size_t sz);
 ** after that initial structure).
 ** @author  杰神 & TRAE & ChatGPT
 ** @date    2026.06.10
-** @brief   文件句柄结构适配cm_fs接口
+** @brief   文件句柄结构适配iot_fs接口
 */
 
 #define LUA_FILEHANDLE          "FILE*"
 
 
 typedef struct luaL_Stream {
-  cm_fs_t f;  /* cm_fs文件句柄 (NULL for incompletely created streams) */
+  iot_fs_file_t f;  /* iot_fs文件句柄 (NULL for incompletely created streams) */
   lua_CFunction closef;  /* to close stream (NULL for closed streams) */
 } luaL_Stream;
 
@@ -236,12 +235,12 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 /* Lua输出字符串到系统日志 */
 static inline void lua_puts(const char *s, int len) {
     if (s && len > 0) {
-        char *buf = (char*)cm_malloc(len + 1);
+        char *buf = (char*)iot_malloc(len + 1);
         if (buf) {
             memcpy(buf, s, len);
             buf[len] = '\0';
             osPuts(buf);
-            cm_free(buf);
+            iot_free(buf);
         }
     }
 }

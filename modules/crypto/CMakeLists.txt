@@ -13,7 +13,7 @@ target_include_directories(iot_crypto PUBLIC
 # 链接 GmSSL 库
 target_link_libraries(iot_crypto
     PUBLIC
-        iot_core
+        iot
     PRIVATE
         gmssl
 )
