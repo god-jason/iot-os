@@ -29,40 +29,17 @@
 typedef struct file_lua_ctx {
     iot_fs_file_t fp;           /* 文件句柄 */
     int closed;                  /* 是否已关闭 */
-
-    /* 链表节点 */
-    struct file_lua_ctx* next;
 } file_lua_ctx_t;
-
-/* 目录 Lua 上下文 */
-typedef struct dir_lua_ctx {
-    iot_fs_dir_t dir;           /* 目录句柄 */
-    int closed;                  /* 是否已关闭 */
-
-    /* 链表节点 */
-    struct dir_lua_ctx* next;
-} dir_lua_ctx_t;
 
 /*===========================================================
  * 全局变量
  *===========================================================*/
 
-static file_lua_ctx_t* g_file_list = NULL;
-static dir_lua_ctx_t* g_dir_list = NULL;
-static iot_mutex_t g_fs_mutex = NULL;
 static int g_lua_module_inited = 0;
 
 /*===========================================================
  * 内部函数
  *===========================================================*/
-
-/* 初始化模块 */
-static void lua_module_init(void) {
-    if (!g_lua_module_inited) {
-        g_fs_mutex = iot_mutex_create();
-        g_lua_module_inited = 1;
-    }
-}
 
 /* 获取文件上下文 */
 static file_lua_ctx_t* file_get_ctx_from_userdata(lua_State* L, int idx) {
@@ -72,21 +49,6 @@ static file_lua_ctx_t* file_get_ctx_from_userdata(lua_State* L, int idx) {
     }
 
     file_lua_ctx_t** ctx_ptr = (file_lua_ctx_t**)lua_touserdata(L, idx);
-    if (!ctx_ptr || !*ctx_ptr) {
-        LOG("ERR: null context");
-        return NULL;
-    }
-    return *ctx_ptr;
-}
-
-/* 获取目录上下文 */
-static dir_lua_ctx_t* dir_get_ctx_from_userdata(lua_State* L, int idx) {
-    if (lua_type(L, idx) != LUA_TUSERDATA) {
-        LOG("ERR: not userdata");
-        return NULL;
-    }
-
-    dir_lua_ctx_t** ctx_ptr = (dir_lua_ctx_t**)lua_touserdata(L, idx);
     if (!ctx_ptr || !*ctx_ptr) {
         LOG("ERR: null context");
         return NULL;
@@ -107,19 +69,6 @@ static file_lua_ctx_t* file_ctx_create(void) {
     return ctx;
 }
 
-/* 创建目录上下文 */
-static dir_lua_ctx_t* dir_ctx_create(void) {
-    dir_lua_ctx_t* ctx = (dir_lua_ctx_t*)iot_malloc(sizeof(dir_lua_ctx_t));
-    if (!ctx) {
-        LOG("ERR: malloc dir ctx failed");
-        return NULL;
-    }
-    memset(ctx, 0, sizeof(dir_lua_ctx_t));
-    ctx->dir = NULL;
-    ctx->closed = 0;
-    return ctx;
-}
-
 /* 销毁文件上下文 */
 static void file_ctx_destroy(file_lua_ctx_t* ctx) {
     if (!ctx) return;
@@ -130,72 +79,6 @@ static void file_ctx_destroy(file_lua_ctx_t* ctx) {
     }
 
     iot_free(ctx);
-}
-
-/* 销毁目录上下文 */
-static void dir_ctx_destroy(dir_lua_ctx_t* ctx) {
-    if (!ctx) return;
-
-    /* 关闭目录 */
-    if (ctx->dir && !ctx->closed) {
-        iot_fs_closedir(ctx->dir);
-    }
-
-    iot_free(ctx);
-}
-
-/* 添加文件到全局链表 */
-static void file_add_to_list(file_lua_ctx_t* ctx) {
-    iot_mutex_lock(g_fs_mutex, -1);
-    ctx->next = g_file_list;
-    g_file_list = ctx;
-    iot_mutex_unlock(g_fs_mutex);
-}
-
-/* 从全局链表移除文件 */
-static void file_remove_from_list(file_lua_ctx_t* ctx) {
-    iot_mutex_lock(g_fs_mutex, -1);
-
-    if (g_file_list == ctx) {
-        g_file_list = ctx->next;
-    } else {
-        file_lua_ctx_t* prev = g_file_list;
-        while (prev && prev->next != ctx) {
-            prev = prev->next;
-        }
-        if (prev) {
-            prev->next = ctx->next;
-        }
-    }
-
-    iot_mutex_unlock(g_fs_mutex);
-}
-
-/* 添加目录到全局链表 */
-static void dir_add_to_list(dir_lua_ctx_t* ctx) {
-    iot_mutex_lock(g_fs_mutex, -1);
-    ctx->next = g_dir_list;
-    g_dir_list = ctx;
-    iot_mutex_unlock(g_fs_mutex);
-}
-
-/* 从全局链表移除目录 */
-static void dir_remove_from_list(dir_lua_ctx_t* ctx) {
-    iot_mutex_lock(g_fs_mutex, -1);
-
-    if (g_dir_list == ctx) {
-        g_dir_list = ctx->next;
-    } else {
-        dir_lua_ctx_t* prev = g_dir_list;
-        while (prev && prev->next != ctx) {
-            prev = prev->next;
-        }
-        if (prev) {
-            prev->next = ctx->next;
-        }
-    }
-
-    iot_mutex_unlock(g_fs_mutex);
 }
 
 /*===========================================================
@@ -216,7 +99,6 @@ static void dir_remove_from_list(dir_lua_ctx_t* ctx) {
  * end
  */
 static int iot_fs_open(lua_State* L) {
-    lua_module_init();
 
     const char* path = luaL_checkstring(L, 1);
     const char* mode = luaL_optstring(L, 2, "r");
@@ -237,9 +119,6 @@ static int iot_fs_open(lua_State* L) {
         lua_pushstring(L, "failed to open file");
         return 2;
     }
-
-    /* 添加到链表 */
-    file_add_to_list(ctx);
 
     /* 创建 userdata 对象 */
     file_lua_ctx_t** ctx_ptr = (file_lua_ctx_t**)lua_newuserdata(L, sizeof(file_lua_ctx_t*));
@@ -430,9 +309,6 @@ static int iot_file_close(lua_State* L) {
         return 0;
     }
 
-    /* 从链表中移除 */
-    file_remove_from_list(ctx);
-
     /* 销毁上下文 */
     file_ctx_destroy(ctx);
 
@@ -460,104 +336,6 @@ static int iot_file_size(lua_State* L) {
 
     lua_pushinteger(L, size);
     return 1;
-}
-
-/*===========================================================
- * Lua 方法实现 - 目录操作
- *===========================================================*/
-
-/**
- * @brief 打开目录
- * @api fs.opendir(path)
- * @string path 目录路径
- * @return dir 目录对象，失败返回 nil
- * @usage
- * local d = fs.opendir("/tmp")
- * if d then
- *     local name = d:read()
- *     while name do
- *         print(name)
- *         name = d:read()
- *     end
- *     d:close()
- * end
- */
-static int iot_fs_opendir(lua_State* L) {
-    lua_module_init();
-
-    const char* path = luaL_checkstring(L, 1);
-
-    /* 创建上下文 */
-    dir_lua_ctx_t* ctx = dir_ctx_create();
-    if (!ctx) {
-        lua_pushnil(L);
-        lua_pushstring(L, "failed to create dir context");
-        return 2;
-    }
-
-    /* 打开目录 */
-    ctx->dir = iot_fs_opendir(path);
-    if (!ctx->dir) {
-        iot_free(ctx);
-        lua_pushnil(L);
-        lua_pushstring(L, "failed to open directory");
-        return 2;
-    }
-
-    /* 添加到链表 */
-    dir_add_to_list(ctx);
-
-    /* 创建 userdata 对象 */
-    dir_lua_ctx_t** ctx_ptr = (dir_lua_ctx_t**)lua_newuserdata(L, sizeof(dir_lua_ctx_t*));
-    *ctx_ptr = ctx;
-
-    /* 设置元表 */
-    luaL_getmetatable(L, "fs.dir");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
-/**
- * @brief 读取目录项
- * @api dir:read()
- * @return string 目录项名称，失败返回 nil
- * @usage
- * local name = dir:read()
- */
-static int iot_dir_read(lua_State* L) {
-    dir_lua_ctx_t* ctx = dir_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->dir || ctx->closed) {
-        lua_pushnil(L);
-        return 1;
-    }
-
-    iot_fs_dirent_t entry;
-    iot_fs_readdir(ctx->dir, &entry);
-    lua_pushstring(L, ((struct dirent*)&entry)->d_name);
-
-    return 1;
-}
-
-/**
- * @brief 关闭目录
- * @api dir:close()
- * @usage
- * dir:close()
- */
-static int iot_dir_close(lua_State* L) {
-    dir_lua_ctx_t* ctx = dir_get_ctx_from_userdata(L, 1);
-    if (!ctx) {
-        return 0;
-    }
-
-    /* 从链表中移除 */
-    dir_remove_from_list(ctx);
-
-    /* 销毁上下文 */
-    dir_ctx_destroy(ctx);
-
-    return 0;
 }
 
 /*===========================================================
@@ -856,15 +634,6 @@ static const luaL_Reg file_methods[] = {
     { NULL,       NULL }
 };
 
-/* dir 方法表 */
-static const luaL_Reg dir_methods[] = {
-    { "read",  iot_dir_read },   /* 读取目录项 */
-    { "close", iot_dir_close },  /* 关闭目录 */
-    { "__gc",  iot_dir_close },  /* 垃圾回收 */
-    { "__tostring", iot_dir_close }, /* 字符串转换 */
-    { NULL,    NULL }
-};
-
 /* fs 模块方法表 */
 static const luaL_Reg fs_methods[] = {
     { "open",          iot_fs_open },          /* 打开文件 */
@@ -911,13 +680,6 @@ int luaopen_fs(lua_State* L) {
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, file_methods, 0);
-    lua_pop(L, 1);
-
-    /* 创建 dir 元表 */
-    luaL_newmetatable(L, "fs.dir");
-    lua_pushvalue(L, -1);
-    lua_setfield(L, -2, "__index");
-    luaL_setfuncs(L, dir_methods, 0);
     lua_pop(L, 1);
 
     /* 创建 fs 模块 */
