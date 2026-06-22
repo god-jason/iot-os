@@ -3,10 +3,12 @@
  * @brief MQTT 客户端实现
  *
  * 基于 net_socket 实现的 MQTT 3.1.1 客户端，支持完整的 QoS 0/1/2、自动重连等
+ * 支持 SSL/TLS 安全连接（基于 GmSSL）
  */
 
 #include "mqtt_client.h"
 #include "platform.h"
+#include "net.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -14,10 +16,13 @@
 #define MQTT_DEFAULT_KEEPALIVE      60
 #define MQTT_DEFAULT_PORT           1883
 #define MQTT_DEFAULT_TIMEOUT        30000
+#define MQTT_DEFAULT_SSL_PORT       8883
 
 struct mqtt_client {
     sock_t sock;
     net_socket_t* socket;
+    
+    net_ssl_socket_t* ssl_socket;
     
     mqtt_state_t state;
     mqtt_error_t last_error;
@@ -64,6 +69,7 @@ mqtt_client_t* mqtt_client_create(void) {
     client->options.port = MQTT_DEFAULT_PORT;
     client->options.clean_session = true;
     client->options.timeout_ms = MQTT_DEFAULT_TIMEOUT;
+    client->options.use_ssl = false;
     
     client->recv_capacity = MQTT_MAX_PACKET_SIZE;
     client->recv_buf = (uint8_t*)iot_malloc(client->recv_capacity);
@@ -83,9 +89,7 @@ mqtt_client_t* mqtt_client_create(void) {
 void mqtt_client_destroy(mqtt_client_t* client) {
     if (!client) return;
     
-    if (client->sock) {
-        mqtt_client_disconnect(client);
-    }
+    mqtt_client_disconnect(client);
     
     if (client->recv_buf) {
         iot_free(client->recv_buf);
@@ -102,15 +106,12 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
         return MQTT_ERR_PARAM;
     }
     
-    if (client->sock) {
-        net_socket_close(client->sock);
-        client->sock = 0;
-    }
+    mqtt_client_disconnect(client);
     
     memcpy(&client->options, options, sizeof(mqtt_connect_options_t));
     
     if (client->options.port == 0) {
-        client->options.port = MQTT_DEFAULT_PORT;
+        client->options.port = client->options.use_ssl ? MQTT_DEFAULT_SSL_PORT : MQTT_DEFAULT_PORT;
     }
     
     if (client->options.keepalive == 0) {
@@ -120,19 +121,43 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
     mqtt_keepalive_configure(&client->keepalive, client->options.keepalive, client->options.timeout_ms);
     
     client->state = MQTT_STATE_CONNECTING;
-    client->socket = net_socket_create(SOCK_TYPE_STREAM, mqtt_client_socket_callback, client);
-    if (!client->socket) {
-        client->state = MQTT_STATE_ERROR;
-        client->last_error = MQTT_ERR_CONNECT;
-        return MQTT_ERR_CONNECT;
-    }
-    client->sock = (sock_t)client->socket;
     
-    int ret = net_socket_connect(client->sock, options->host, options->port);
-    if (ret < 0) {
-        client->state = MQTT_STATE_ERROR;
-        client->last_error = MQTT_ERR_CONNECT;
-        return MQTT_ERR_CONNECT;
+    if (client->options.use_ssl) {
+        client->ssl_socket = net_ssl_socket_create(SOCK_TYPE_STREAM,
+                                                   (net_ssl_config_t*)client->options.ssl_config,
+                                                   mqtt_client_socket_callback, client);
+        if (!client->ssl_socket) {
+            client->state = MQTT_STATE_ERROR;
+            client->last_error = MQTT_ERR_CONNECT;
+            return MQTT_ERR_CONNECT;
+        }
+        
+        int ret = net_ssl_connect(client->ssl_socket, options->host, options->port);
+        if (ret < 0) {
+            client->state = MQTT_STATE_ERROR;
+            client->last_error = MQTT_ERR_CONNECT;
+            net_ssl_socket_destroy(client->ssl_socket);
+            client->ssl_socket = NULL;
+            return MQTT_ERR_CONNECT;
+        }
+    } else {
+        client->socket = net_socket_create(SOCK_TYPE_STREAM, mqtt_client_socket_callback, client);
+        if (!client->socket) {
+            client->state = MQTT_STATE_ERROR;
+            client->last_error = MQTT_ERR_CONNECT;
+            return MQTT_ERR_CONNECT;
+        }
+        client->sock = (sock_t)client->socket;
+        
+        int ret = net_socket_connect(client->sock, options->host, options->port);
+        if (ret < 0) {
+            client->state = MQTT_STATE_ERROR;
+            client->last_error = MQTT_ERR_CONNECT;
+            net_socket_close(client->sock);
+            client->sock = 0;
+            client->socket = NULL;
+            return MQTT_ERR_CONNECT;
+        }
     }
     
     mqtt_reconnect_mark_attempt(&client->reconnect);
@@ -143,18 +168,24 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
 int mqtt_client_disconnect(mqtt_client_t* client) {
     if (!client) return MQTT_ERR_PARAM;
     
-    if (client->sock) {
-        uint8_t buf[4];
-        int len = mqtt_packet_encode_disconnect(buf, sizeof(buf));
-        if (len > 0) {
-            net_socket_send(client->sock, buf, len);
-        }
-        
-        net_socket_close(client->sock);
+    uint8_t buf[4];
+    int len = mqtt_packet_encode_disconnect(buf, sizeof(buf));
+    if (len > 0) {
+        mqtt_client_send_raw(client, buf, len);
     }
     
-    client->sock = 0;
-    client->socket = NULL;
+    if (client->ssl_socket) {
+        net_ssl_close(client->ssl_socket);
+        net_ssl_socket_destroy(client->ssl_socket);
+        client->ssl_socket = NULL;
+    }
+    
+    if (client->sock) {
+        net_socket_close(client->sock);
+        client->sock = 0;
+        client->socket = NULL;
+    }
+    
     client->state = MQTT_STATE_DISCONNECTED;
     
     mqtt_publisher_clear_retry_count(&client->publisher);
@@ -163,14 +194,24 @@ int mqtt_client_disconnect(mqtt_client_t* client) {
 }
 
 static int mqtt_client_send_raw(mqtt_client_t* client, const uint8_t* buf, size_t len) {
-    if (!client || !client->sock) return -1;
+    if (!client) return -1;
+    
+    if (client->ssl_socket) {
+        return net_ssl_send(client->ssl_socket, buf, len);
+    }
+    
+    if (!client->sock) return -1;
     return net_socket_send(client->sock, buf, len);
 }
 
 int mqtt_client_publish(mqtt_client_t* client, const char* topic,
                         const uint8_t* payload, size_t payload_len,
                         mqtt_qos_t qos, bool retain) {
-    if (!client || !client->sock || !topic || client->state != MQTT_STATE_CONNECTED) {
+    if (!client || !topic || client->state != MQTT_STATE_CONNECTED) {
+        return MQTT_ERR_PARAM;
+    }
+    
+    if (!client->ssl_socket && !client->sock) {
         return MQTT_ERR_PARAM;
     }
     
@@ -190,7 +231,7 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
         return MQTT_ERR_SEND;
     }
     
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = mqtt_client_send_raw(client, buf, len);
     if (ret < 0) {
         return MQTT_ERR_SEND;
     }
@@ -205,7 +246,11 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
 
 int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
                           mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data) {
-    if (!client || !client->sock || !topic_filter || !callback || client->state != MQTT_STATE_CONNECTED) {
+    if (!client || !topic_filter || !callback || client->state != MQTT_STATE_CONNECTED) {
+        return MQTT_ERR_PARAM;
+    }
+    
+    if (!client->ssl_socket && !client->sock) {
         return MQTT_ERR_PARAM;
     }
     
@@ -233,7 +278,7 @@ int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
         return MQTT_ERR_SEND;
     }
     
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = mqtt_client_send_raw(client, buf, len);
     if (ret < 0) {
         mqtt_client_subscribe_remove(client, topic_filter);
         return MQTT_ERR_SEND;
@@ -243,7 +288,11 @@ int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
 }
 
 int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
-    if (!client || !client->sock || !topic_filter || client->state != MQTT_STATE_CONNECTED) {
+    if (!client || !topic_filter || client->state != MQTT_STATE_CONNECTED) {
+        return MQTT_ERR_PARAM;
+    }
+    
+    if (!client->ssl_socket && !client->sock) {
         return MQTT_ERR_PARAM;
     }
     
@@ -259,7 +308,7 @@ int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
         return MQTT_ERR_SEND;
     }
     
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = mqtt_client_send_raw(client, buf, len);
     if (ret < 0) {
         return MQTT_ERR_SEND;
     }
@@ -272,8 +321,12 @@ int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
 int mqtt_client_subscribe_multiple(mqtt_client_t* client, const char** topic_filters,
                                    const mqtt_qos_t* qos, mqtt_message_callback_t* callbacks,
                                    void** user_data, size_t topic_count) {
-    if (!client || !client->sock || !topic_filters || !qos || !callbacks ||
+    if (!client || !topic_filters || !qos || !callbacks ||
         client->state != MQTT_STATE_CONNECTED || topic_count == 0) {
+        return MQTT_ERR_PARAM;
+    }
+    
+    if (!client->ssl_socket && !client->sock) {
         return MQTT_ERR_PARAM;
     }
     
@@ -314,7 +367,7 @@ int mqtt_client_subscribe_multiple(mqtt_client_t* client, const char** topic_fil
         return MQTT_ERR_SEND;
     }
     
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = mqtt_client_send_raw(client, buf, len);
     if (ret < 0) {
         for (size_t i = 0; i < topic_count; i++) {
             mqtt_client_subscribe_remove(client, topic_filters[i]);
@@ -339,7 +392,13 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
             uint8_t buf[4096];
             int len;
             
-            while ((len = net_socket_recv(sock, buf, sizeof(buf))) > 0) {
+            if (client->ssl_socket) {
+                len = net_ssl_recv(client->ssl_socket, buf, sizeof(buf));
+            } else {
+                len = net_socket_recv(sock, buf, sizeof(buf));
+            }
+            
+            while (len > 0) {
                 if (client->recv_len + len > client->recv_capacity) {
                     size_t new_cap = client->recv_capacity + MQTT_MAX_PACKET_SIZE;
                     uint8_t* new_buf = (uint8_t*)iot_realloc(client->recv_buf, new_cap);
@@ -356,11 +415,21 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
                     if (ret < 0) break;
                     if (ret == 0) break;
                 }
+                
+                if (client->ssl_socket) {
+                    len = net_ssl_recv(client->ssl_socket, buf, sizeof(buf));
+                } else {
+                    len = net_socket_recv(sock, buf, sizeof(buf));
+                }
             }
             break;
         }
         
         case NET_EVENT_DISCONNECTED: {
+            if (client->ssl_socket) {
+                net_ssl_socket_destroy(client->ssl_socket);
+                client->ssl_socket = NULL;
+            }
             client->sock = 0;
             client->socket = NULL;
             client->state = MQTT_STATE_DISCONNECTED;
@@ -370,6 +439,10 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
         }
         
         case NET_EVENT_ERROR: {
+            if (client->ssl_socket) {
+                net_ssl_socket_destroy(client->ssl_socket);
+                client->ssl_socket = NULL;
+            }
             client->sock = 0;
             client->socket = NULL;
             client->state = MQTT_STATE_ERROR;
@@ -410,7 +483,7 @@ static int mqtt_client_send_connect(mqtt_client_t* client) {
         return -1;
     }
     
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = mqtt_client_send_raw(client, buf, len);
     return (ret > 0) ? 0 : -1;
 }
 
@@ -443,8 +516,8 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
                     mqtt_keepalive_reset(&client->keepalive);
                     
                     mqtt_publisher_resend_all(&client->publisher,
-                                              (int(*)(const uint8_t*,size_t,void*))net_socket_send,
-                                              (void*)client->sock);
+                                              (int(*)(const uint8_t*,size_t,void*))mqtt_client_send_raw,
+                                              (void*)client);
                     
                     if (!client->options.clean_session) {
                         mqtt_subscribe_entry_t* entry = client->subscribe_head;
@@ -459,7 +532,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
                             
                             int len = mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
                             if (len > 0) {
-                                net_socket_send(client->sock, buf, len);
+                                mqtt_client_send_raw(client, buf, len);
                             }
                             entry = entry->next;
                         }
@@ -498,7 +571,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
                 uint8_t buf[8];
                 int len = mqtt_packet_encode_pubrel(pubrec.packet_id, buf, sizeof(buf));
                 if (len > 0) {
-                    net_socket_send(client->sock, buf, len);
+                    mqtt_client_send_raw(client, buf, len);
                 }
             }
             break;
@@ -510,7 +583,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
                 uint8_t buf[8];
                 int len = mqtt_packet_encode_pubcomp(pubrel.packet_id, buf, sizeof(buf));
                 if (len > 0) {
-                    net_socket_send(client->sock, buf, len);
+                    mqtt_client_send_raw(client, buf, len);
                 }
             }
             break;
@@ -561,13 +634,13 @@ static void mqtt_client_handle_publish(mqtt_client_t* client, const mqtt_packet_
         uint8_t buf[8];
         int len = mqtt_packet_encode_puback(publish->packet_id, buf, sizeof(buf));
         if (len > 0) {
-            net_socket_send(client->sock, buf, len);
+            mqtt_client_send_raw(client, buf, len);
         }
     } else if (publish->qos == MQTT_QOS_2) {
         uint8_t buf[8];
         int len = mqtt_packet_encode_pubrec(publish->packet_id, buf, sizeof(buf));
         if (len > 0) {
-            net_socket_send(client->sock, buf, len);
+            mqtt_client_send_raw(client, buf, len);
         }
     }
     
@@ -601,15 +674,15 @@ void mqtt_client_poll(mqtt_client_t* client, int timeout_ms) {
         uint8_t buf[4];
         int len = mqtt_packet_encode_pingreq(buf, sizeof(buf));
         if (len > 0) {
-            net_socket_send(client->sock, buf, len);
+            mqtt_client_send_raw(client, buf, len);
         }
         mqtt_keepalive_mark_ping(&client->keepalive);
     }
     
     /* 重发消息 */
     mqtt_publisher_resend_messages(&client->publisher,
-                                    (int(*)(const uint8_t*,size_t,void*))net_socket_send,
-                                    (void*)client->sock);
+                                    (int(*)(const uint8_t*,size_t,void*))mqtt_client_send_raw,
+                                    (void*)client);
     
     /* 自动重连 */
     if (mqtt_reconnect_needs_retry(&client->reconnect)) {

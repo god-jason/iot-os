@@ -3,6 +3,7 @@
  * @brief 基于 lwip 的 socket 异步接口封装
  *
  * 提供类似 BSD socket 的异步接口，底层基于 lwip TCP/IP 协议栈
+ * 支持 SSL/TLS 安全连接（基于 GmSSL）
  */
 #ifndef IOT_NET_H
 #define IOT_NET_H
@@ -69,11 +70,13 @@ typedef void (*net_socket_callback_t)(net_socket_t* sock, net_event_type_t event
 /**
  * @brief 创建 socket
  * @param type socket 类型 SOCK_TYPE_STREAM 或 SOCK_TYPE_DGRAM
+ * @param ssl_config SSL 配置（可选，为 NULL 表示普通 socket）
  * @param callback 事件回调函数
  * @param user_data 用户数据
  * @return socket 句柄，失败返回 INVALID_SOCKET
  */
-sock_t net_socket_create(net_sock_type_t type, net_socket_callback_t callback, void* user_data);
+sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_config,
+                        net_socket_callback_t callback, void* user_data);
 
 /**
  * @brief 绑定地址
@@ -171,6 +174,27 @@ int net_socket_get_local_addr(sock_t sock, char* ip, size_t ip_len, uint16_t* po
  */
 int net_socket_get_remote_addr(sock_t sock, char* ip, size_t ip_len, uint16_t* port);
 
+/**
+ * @brief 检查 socket 是否为 SSL/TLS
+ * @param sock socket 句柄
+ * @return true 是 SSL，false 否
+ */
+bool net_socket_is_ssl(sock_t sock);
+
+/**
+ * @brief 检查 SSL 握手是否完成
+ * @param sock socket 句柄（必须为 SSL socket）
+ * @return true 已完成，false 未完成
+ */
+bool net_socket_ssl_handshake_done(sock_t sock);
+
+/**
+ * @brief 获取 SSL 错误信息
+ * @param sock socket 句柄（必须为 SSL socket）
+ * @return 错误信息字符串
+ */
+const char* net_socket_ssl_get_error(sock_t sock);
+
 /*===========================================================
  * DNS 解析接口
  *===========================================================*/
@@ -199,17 +223,6 @@ int net_dns_resolve(const char* name, net_dns_callback_t callback, void* user_da
  */
 int net_init(void);
 
-/**
- * @brief 反初始化网络子系统
- */
-void net_deinit(void);
-
-/**
- * @brief 网络轮询（需要在主循环中调用）
- * @param timeout_ms 超时时间（毫秒）
- */
-void net_poll(int timeout_ms);
-
 /*===========================================================
  * 辅助接口
  *===========================================================*/
@@ -237,6 +250,61 @@ const char* net_inet_ntoa(uint32_t addr, char* buf, size_t len);
  * @return 0 成功，-1 失败
  */
 int net_gethostbyname(const char* hostname, char* ip);
+
+/*===========================================================
+ * SSL/TLS 接口
+ *===========================================================*/
+
+/* SSL 配置选项 */
+typedef enum {
+    NET_SSL_VERIFY_NONE      = 0,    /* 不验证证书 */
+    NET_SSL_VERIFY_OPTIONAL  = 1,    /* 可选验证 */
+    NET_SSL_VERIFY_REQUIRED  = 2,    /* 必须验证 */
+} net_ssl_verify_mode_t;
+
+typedef enum {
+    NET_SSL_PROTOCOL_TLS1    = 0,    /* TLS 1.0 */
+    NET_SSL_PROTOCOL_TLS11   = 1,    /* TLS 1.1 */
+    NET_SSL_PROTOCOL_TLS12   = 2,    /* TLS 1.2 */
+    NET_SSL_PROTOCOL_TLS13   = 3,    /* TLS 1.3 */
+    NET_SSL_PROTOCOL_TLCP    = 4,    /* TLCP（国密） */
+    NET_SSL_PROTOCOL_AUTO    = 5,    /* 自动选择 */
+} net_ssl_protocol_t;
+
+typedef enum {
+    NET_SSL_CIPHER_AUTO      = 0,    /* 自动选择 */
+    NET_SSL_CIPHER_SM4       = 1,    /* SM4 系列 */
+    NET_SSL_CIPHER_AES       = 2,    /* AES 系列 */
+} net_ssl_cipher_t;
+
+/* SSL 配置结构 */
+typedef struct {
+    /* 协议和加密套件 */
+    net_ssl_protocol_t protocol;     /* 协议版本 */
+    net_ssl_cipher_t cipher;         /* 加密套件类型 */
+    
+    /* 证书验证 */
+    net_ssl_verify_mode_t verify_mode; /* 验证模式 */
+    const char* ca_file;             /* CA 证书文件路径 */
+    const char* ca_dir;              /* CA 证书目录路径 */
+    
+    /* 客户端证书（双向认证） */
+    const char* cert_file;           /* 客户端证书文件路径 */
+    const char* key_file;            /* 客户端私钥文件路径 */
+    const char* key_password;        /* 私钥密码 */
+    
+    /* SNI（Server Name Indication） */
+    const char* hostname;            /* 服务器主机名 */
+    
+    /* 超时设置 */
+    int handshake_timeout_ms;        /* 握手超时时间（毫秒） */
+} net_ssl_config_t;
+
+/**
+ * @brief 初始化 SSL 配置
+ * @param config 配置结构
+ */
+void net_ssl_config_init(net_ssl_config_t* config);
 
 #ifdef __cplusplus
 }

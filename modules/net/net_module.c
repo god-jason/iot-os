@@ -2,11 +2,12 @@
  * @file lua_module.c
  * @brief 基于 net 的 Lua 面向对象封装
  *
- * 提供面向对象的 socket 接口，支持事件回调
+ * 提供面向对象的 socket 接口，支持事件回调和 SSL/TLS
  */
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* Lua 头文件 */
 #include "lua.h"
@@ -25,6 +26,11 @@
  * 类型定义
  *===========================================================*/
 
+typedef enum {
+    SOCKET_TYPE_NORMAL = 0,
+    SOCKET_TYPE_SSL    = 1,
+} socket_lua_type_t;
+
 /* 事件回调结构 */
 typedef struct {
     void* callback_ud;      /* Lua回调函数userdata */
@@ -34,7 +40,9 @@ typedef struct {
 
 /* Socket Lua 上下文 */
 typedef struct socket_lua_ctx {
-    net_socket_t* sock;               /* socket 句柄 */
+    net_socket_t* sock;               /* socket 句柄（统一） */
+    
+    socket_lua_type_t sock_type;     /* socket 类型 */
     int domain;                      /* 协议族 */
     int type;                        /* 类型 */
     int protocol;                    /* 协议 */
@@ -102,7 +110,7 @@ static void socket_ctx_destroy(socket_lua_ctx_t* ctx) {
         }
     }
     
-    /* 关闭 socket */
+    /* 关闭 socket（统一接口，自动处理 SSL） */
     if (ctx->sock) {
         net_socket_close((sock_t)ctx->sock);
     }
@@ -186,14 +194,15 @@ static void socket_event_callback(net_socket_t* sock, net_event_type_t event, vo
             
         case NET_EVENT_RECV: {
             event_name = "recv";
-            /* 读取所有可用数据 */
             char buf[4096];
             int len;
+            
+            /* 统一使用 net_socket_recv，自动处理 SSL */
             while ((len = net_socket_recv((sock_t)sock, buf, sizeof(buf) - 1)) > 0) {
                 buf[len] = '\0';
                 socket_send_event(ctx, event_name, len, buf, len);
             }
-            return;  /* 事件已处理 */
+            return;
         }
             
         case NET_EVENT_SEND:
@@ -272,9 +281,9 @@ static int iot_net_socket_create(lua_State* L) {
         return 2;
     }
     
-    /* 创建 socket */
+    /* 创建 socket（不带 SSL） */
     net_sock_type_t sock_type = (type == 1) ? SOCK_TYPE_STREAM : SOCK_TYPE_DGRAM;
-    ctx->sock = (net_socket_t*)net_socket_create(sock_type, socket_event_callback, ctx);
+    ctx->sock = (net_socket_t*)net_socket_create(sock_type, NULL, socket_event_callback, ctx);
     if (!ctx->sock) {
         iot_free(ctx);
         lua_pushnil(L);
@@ -282,6 +291,7 @@ static int iot_net_socket_create(lua_State* L) {
         return 2;
     }
     
+    ctx->sock_type = SOCKET_TYPE_NORMAL;
     ctx->domain = domain;
     ctx->type = type;
     ctx->protocol = protocol;
@@ -294,6 +304,119 @@ static int iot_net_socket_create(lua_State* L) {
     *ctx_ptr = ctx;
     
     /* 设置元表 */
+    luaL_getmetatable(L, "net.socket");
+    lua_setmetatable(L, -2);
+    
+    return 1;
+}
+
+/**
+ * @brief 创建 SSL socket
+ * @api net.ssl_socket(config)
+ * @table config SSL 配置表（可选）
+ * @return socket 对象，失败返回 nil
+ * @usage
+ * local sock = net.ssl_socket()
+ * local sock = net.ssl_socket({
+ *     protocol = net.SSL_PROTOCOL_TLS12,
+ *     verify_mode = net.SSL_VERIFY_OPTIONAL,
+ *     hostname = "example.com"
+ * })
+ */
+static int iot_net_ssl_socket_create(lua_State* L) {
+    lua_module_init();
+    
+    socket_lua_ctx_t* ctx = socket_ctx_create();
+    if (!ctx) {
+        lua_pushnil(L);
+        lua_pushstring(L, "failed to create socket context");
+        return 2;
+    }
+    
+    net_ssl_config_t ssl_config;
+    net_ssl_config_init(&ssl_config);
+    
+    if (lua_istable(L, 1)) {
+        lua_getfield(L, 1, "protocol");
+        if (lua_isnumber(L, -1)) {
+            ssl_config.protocol = (net_ssl_protocol_t)(int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "cipher");
+        if (lua_isnumber(L, -1)) {
+            ssl_config.cipher = (net_ssl_cipher_t)(int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "verify_mode");
+        if (lua_isnumber(L, -1)) {
+            ssl_config.verify_mode = (net_ssl_verify_mode_t)(int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "hostname");
+        if (lua_isstring(L, -1)) {
+            ssl_config.hostname = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "ca_file");
+        if (lua_isstring(L, -1)) {
+            ssl_config.ca_file = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "ca_dir");
+        if (lua_isstring(L, -1)) {
+            ssl_config.ca_dir = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "cert_file");
+        if (lua_isstring(L, -1)) {
+            ssl_config.cert_file = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "key_file");
+        if (lua_isstring(L, -1)) {
+            ssl_config.key_file = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "key_password");
+        if (lua_isstring(L, -1)) {
+            ssl_config.key_password = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 1, "handshake_timeout_ms");
+        if (lua_isnumber(L, -1)) {
+            ssl_config.handshake_timeout_ms = (int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+    
+    /* 使用统一的 socket API 创建 SSL socket */
+    ctx->sock = (net_socket_t*)net_socket_create(SOCK_TYPE_STREAM, &ssl_config, socket_event_callback, ctx);
+    if (!ctx->sock) {
+        iot_free(ctx);
+        lua_pushnil(L);
+        lua_pushstring(L, "failed to create SSL socket");
+        return 2;
+    }
+    
+    ctx->sock_type = SOCKET_TYPE_SSL;
+    ctx->domain = 2;
+    ctx->type = 1;
+    ctx->protocol = 6;
+    
+    socket_add_to_list(ctx);
+    
+    socket_lua_ctx_t** ctx_ptr = (socket_lua_ctx_t**)lua_newuserdata(L, sizeof(socket_lua_ctx_t*));
+    *ctx_ptr = ctx;
+    
     luaL_getmetatable(L, "net.socket");
     lua_setmetatable(L, -2);
     
@@ -382,7 +505,7 @@ static int iot_socket_on(lua_State* L) {
  */
 static int iot_socket_connect(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "invalid socket");
         return 2;
@@ -391,7 +514,15 @@ static int iot_socket_connect(lua_State* L) {
     const char* host = luaL_checkstring(L, 2);
     int port = (int)luaL_checkinteger(L, 3);
     
-    int ret = net_socket_connect((sock_t)ctx->sock, host, port);
+    int ret = -1;
+    
+    if (!ctx->sock) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid socket");
+        return 2;
+    }
+    ret = net_socket_connect((sock_t)ctx->sock, host, port);
+    
     if (ret < 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "connect failed");
@@ -412,7 +543,7 @@ static int iot_socket_connect(lua_State* L) {
  */
 static int iot_socket_send(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
         lua_pushinteger(L, -1);
         return 1;
     }
@@ -420,7 +551,14 @@ static int iot_socket_send(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 2, &len);
     
-    int sent = net_socket_send((sock_t)ctx->sock, data, len);
+    int sent = -1;
+    
+    if (!ctx->sock) {
+        lua_pushinteger(L, -1);
+        return 1;
+    }
+    sent = net_socket_send((sock_t)ctx->sock, data, len);
+    
     lua_pushinteger(L, sent);
     return 1;
 }
@@ -435,7 +573,7 @@ static int iot_socket_send(lua_State* L) {
  */
 static int iot_socket_recv(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
         lua_pushnil(L);
         return 1;
     }
@@ -448,7 +586,15 @@ static int iot_socket_recv(lua_State* L) {
         return 1;
     }
     
-    int len = net_socket_recv((sock_t)ctx->sock, buf, buf_len);
+    int len = -1;
+    
+    if (!ctx->sock) {
+        iot_free(buf);
+        lua_pushnil(L);
+        return 1;
+    }
+    len = net_socket_recv((sock_t)ctx->sock, buf, buf_len);
+    
     if (len > 0) {
         lua_pushlstring(L, buf, len);
     } else {
@@ -494,7 +640,19 @@ static int iot_socket_read(lua_State* L) {
  */
 static int iot_socket_bind(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid socket");
+        return 2;
+    }
+    
+    if (ctx->sock_type == SOCKET_TYPE_SSL) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "SSL socket does not support bind");
+        return 2;
+    }
+    
+    if (!ctx->sock) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "invalid socket");
         return 2;
@@ -524,7 +682,19 @@ static int iot_socket_bind(lua_State* L) {
  */
 static int iot_socket_listen(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid socket");
+        return 2;
+    }
+    
+    if (ctx->sock_type == SOCKET_TYPE_SSL) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "SSL socket does not support listen");
+        return 2;
+    }
+    
+    if (!ctx->sock) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "invalid socket");
         return 2;
@@ -557,7 +727,19 @@ static int iot_socket_listen(lua_State* L) {
  */
 static int iot_socket_accept(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid socket");
+        return 2;
+    }
+    
+    if (ctx->sock_type == SOCKET_TYPE_SSL) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "SSL socket does not support accept");
+        return 2;
+    }
+    
+    if (!ctx->sock) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "invalid socket");
         return 2;
@@ -569,7 +751,6 @@ static int iot_socket_accept(lua_State* L) {
         return 2;
     }
     
-    /* 创建客户端 socket */
     socket_lua_ctx_t* client_ctx = socket_ctx_create();
     if (!client_ctx) {
         lua_pushboolean(L, 0);
@@ -585,7 +766,8 @@ static int iot_socket_accept(lua_State* L) {
         return 2;
     }
     
-    /* 保存回调 */
+    client_ctx->sock_type = SOCKET_TYPE_NORMAL;
+    
     void* cb_ud = iot_callback_save(L, 2);
     if (!cb_ud) {
         net_socket_close((sock_t)client_ctx->sock);
@@ -599,16 +781,13 @@ static int iot_socket_accept(lua_State* L) {
     client_ctx->event_cbs[0].event[0] = '\0';
     client_ctx->event_cbs[0].inited = 1;
     
-    /* 添加到链表 */
     socket_add_to_list(client_ctx);
     
-    /* 创建 userdata */
     socket_lua_ctx_t** ctx_ptr = (socket_lua_ctx_t**)lua_newuserdata(L, sizeof(socket_lua_ctx_t*));
     *ctx_ptr = client_ctx;
     luaL_getmetatable(L, "net.socket");
     lua_setmetatable(L, -2);
     
-    /* 调用回调 */
     lua_pushvalue(L, -1);
     iot_callback_call(cb_ud, NULL);
     
@@ -646,12 +825,17 @@ static int iot_socket_close(lua_State* L) {
  */
 static int iot_socket_state(lua_State* L) {
     socket_lua_ctx_t* ctx = socket_get_ctx_from_userdata(L, 1);
-    if (!ctx || !ctx->sock) {
+    if (!ctx) {
         lua_pushinteger(L, NET_SOCK_STATE_CLOSED);
         return 1;
     }
     
-    net_sock_state_t state = net_socket_get_state((sock_t)ctx->sock);
+    net_sock_state_t state = NET_SOCK_STATE_CLOSED;
+    
+    if (ctx->sock) {
+        state = net_socket_get_state((sock_t)ctx->sock);
+    }
+    
     lua_pushinteger(L, state);
     return 1;
 }
@@ -717,9 +901,10 @@ static const luaL_Reg socket_methods[] = {
 
 /* net 模块方法表 */
 static const luaL_Reg net_methods[] = {
-    { "socket", iot_net_socket_create }, /* 创建 socket */
-    { "lookup", iot_net_lookup },        /* DNS 解析 */
-    { NULL,     NULL }
+    { "socket",     iot_net_socket_create },
+    { "ssl_socket", iot_net_ssl_socket_create },
+    { "lookup",     iot_net_lookup },
+    { NULL,         NULL }
 };
 
 /* 常量定义 */
@@ -746,6 +931,24 @@ static const luaL_Const net_constants[] = {
     { "EVENT_RECV",        NET_EVENT_RECV },
     { "EVENT_SEND",        NET_EVENT_SEND },
     { "EVENT_ERROR",       NET_EVENT_ERROR },
+    
+    /* SSL 协议版本 */
+    { "SSL_PROTOCOL_TLS1",   NET_SSL_PROTOCOL_TLS1 },
+    { "SSL_PROTOCOL_TLS11",  NET_SSL_PROTOCOL_TLS11 },
+    { "SSL_PROTOCOL_TLS12",  NET_SSL_PROTOCOL_TLS12 },
+    { "SSL_PROTOCOL_TLS13",  NET_SSL_PROTOCOL_TLS13 },
+    { "SSL_PROTOCOL_TLCP",   NET_SSL_PROTOCOL_TLCP },
+    { "SSL_PROTOCOL_AUTO",   NET_SSL_PROTOCOL_AUTO },
+    
+    /* SSL 加密套件 */
+    { "SSL_CIPHER_AUTO",     NET_SSL_CIPHER_AUTO },
+    { "SSL_CIPHER_SM4",      NET_SSL_CIPHER_SM4 },
+    { "SSL_CIPHER_AES",      NET_SSL_CIPHER_AES },
+    
+    /* SSL 验证模式 */
+    { "SSL_VERIFY_NONE",     NET_SSL_VERIFY_NONE },
+    { "SSL_VERIFY_OPTIONAL", NET_SSL_VERIFY_OPTIONAL },
+    { "SSL_VERIFY_REQUIRED", NET_SSL_VERIFY_REQUIRED },
     
     { NULL, 0 }
 };

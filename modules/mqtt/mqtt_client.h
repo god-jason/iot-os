@@ -56,6 +56,10 @@ typedef struct {
     bool will_retain;
     
     int timeout_ms;
+    
+    /* SSL/TLS 配置 */
+    bool use_ssl;
+    void* ssl_config;
 } mqtt_connect_options_t;
 
 typedef struct mqtt_subscribe_entry mqtt_subscribe_entry_t;

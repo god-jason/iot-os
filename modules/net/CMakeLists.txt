@@ -1,5 +1,6 @@
 # components/net CMakeLists.txt
 # 基于 lwip 的 socket 异步封装
+# 支持 SSL/TLS（基于 GmSSL）
 
 add_library(iot_net STATIC
     net.c
@@ -15,6 +16,7 @@ target_link_libraries(iot_net
         iot_core
     PRIVATE
         lwip
+        gmssl
 )
 
 # 添加编译选项
