@@ -35,7 +35,7 @@
  * @api sqlite3.version_number()
  * @return 版本号数字
  */
-static int sqlite3_version_number(lua_State* L) {
+static int luaopen_sqlite3_version_number(lua_State* L) {
     lua_pushinteger(L, SQLITE_VERSION_NUMBER);
     return 1;
 }
@@ -45,7 +45,7 @@ static int sqlite3_version_number(lua_State* L) {
  * @api sqlite3.version()
  * @return 版本字符串 "X.Y.Z"
  */
-static int sqlite3_version(lua_State* L) {
+static int luaopen_sqlite3_version(lua_State* L) {
     lua_pushstring(L, SQLITE_VERSION);
     return 1;
 }
@@ -55,7 +55,7 @@ static int sqlite3_version(lua_State* L) {
  * @api sqlite3.source_id()
  * @return 源码标识字符串
  */
-static int sqlite3_source_id(lua_State* L) {
+static int luaopen_sqlite3_source_id(lua_State* L) {
     lua_pushstring(L, SQLITE_SOURCE_ID);
     return 1;
 }
@@ -65,7 +65,7 @@ static int sqlite3_source_id(lua_State* L) {
  * @api sqlite3.libversion()
  * @return 库版本字符串
  */
-static int sqlite3_libversion(lua_State* L) {
+static int luaopen_sqlite3_libversion(lua_State* L) {
     lua_pushstring(L, sqlite3_libversion());
     return 1;
 }
@@ -80,7 +80,7 @@ static int sqlite3_libversion(lua_State* L) {
  * @string filename 数据库文件路径，":memory:" 表示内存数据库
  * @return 数据库连接对象，失败返回 nil 和错误信息
  */
-static int sqlite3_open(lua_State* L) {
+static int luaopen_sqlite3_open(lua_State* L) {
     const char* filename = luaL_checkstring(L, 1);
 
     sqlite3* db = NULL;
@@ -111,7 +111,7 @@ static int sqlite3_open(lua_State* L) {
  * @int flags 打开标志（SQLITE_OPEN_READONLY, SQLITE_OPEN_READWRITE, SQLITE_OPEN_CREATE）
  * @return 数据库连接对象，失败返回 nil 和错误信息
  */
-static int sqlite3_open_v2(lua_State* L) {
+static int luaopen_sqlite3_open_v2(lua_State* L) {
     const char* filename = luaL_checkstring(L, 1);
     int flags = (int)luaL_checkinteger(L, 2);
 
@@ -141,7 +141,7 @@ static int sqlite3_open_v2(lua_State* L) {
  * @api db:close()
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
-static int db_close(lua_State* L) {
+static int luaopen_sqlite3_db_close(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -168,7 +168,7 @@ static int db_close(lua_State* L) {
  * @string sql SQL 语句
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
-static int db_exec(lua_State* L) {
+static int luaopen_sqlite3_db_exec(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
     const char* sql = luaL_checkstring(L, 2);
 
@@ -195,7 +195,7 @@ static int db_exec(lua_State* L) {
  * @api db:last_insert_rowid()
  * @return 最后插入的行 ID
  */
-static int db_last_insert_rowid(lua_State* L) {
+static int luaopen_sqlite3_db_last_insert_rowid(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -212,7 +212,7 @@ static int db_last_insert_rowid(lua_State* L) {
  * @api db:changes()
  * @return 受影响的行数
  */
-static int db_changes(lua_State* L) {
+static int luaopen_sqlite3_db_changes(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -229,7 +229,7 @@ static int db_changes(lua_State* L) {
  * @api db:errmsg()
  * @return 错误信息字符串
  */
-static int db_errmsg(lua_State* L) {
+static int luaopen_sqlite3_db_errmsg(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -246,7 +246,7 @@ static int db_errmsg(lua_State* L) {
  * @api db:errcode()
  * @return 错误码
  */
-static int db_errcode(lua_State* L) {
+static int luaopen_sqlite3_db_errcode(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -268,7 +268,7 @@ static int db_errcode(lua_State* L) {
  * @string sql SQL 语句
  * @return 预编译语句对象，失败返回 nil 和错误信息
  */
-static int db_prepare(lua_State* L) {
+static int luaopen_sqlite3_db_prepare(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
     const char* sql = luaL_checkstring(L, 2);
 
@@ -301,7 +301,7 @@ static int db_prepare(lua_State* L) {
  * @param ... 参数值
  * @return 成功返回 true
  */
-static int stmt_bind(lua_State* L) {
+static int luaopen_sqlite3_stmt_bind(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -361,7 +361,7 @@ static int stmt_bind(lua_State* L) {
  * @api stmt:reset()
  * @return 成功返回 true
  */
-static int stmt_reset(lua_State* L) {
+static int luaopen_sqlite3_stmt_reset(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -385,7 +385,7 @@ static int stmt_reset(lua_State* L) {
  * @api stmt:step()
  * @return 有行返回 true，完成返回 false，失败返回 nil 和错误信息
  */
-static int stmt_step(lua_State* L) {
+static int luaopen_sqlite3_stmt_step(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -414,7 +414,7 @@ static int stmt_step(lua_State* L) {
  * @api stmt:column_count()
  * @return 列数
  */
-static int stmt_column_count(lua_State* L) {
+static int luaopen_sqlite3_stmt_column_count(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -432,7 +432,7 @@ static int stmt_column_count(lua_State* L) {
  * @int index 列索引（从 0 开始）
  * @return 列名
  */
-static int stmt_column_name(lua_State* L) {
+static int luaopen_sqlite3_stmt_column_name(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
     int index = (int)luaL_checkinteger(L, 2);
 
@@ -451,7 +451,7 @@ static int stmt_column_name(lua_State* L) {
  * @int index 列索引（从 0 开始）
  * @return 列值
  */
-static int stmt_column_value(lua_State* L) {
+static int luaopen_sqlite3_stmt_column_value(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
     int index = (int)luaL_checkinteger(L, 2);
 
@@ -495,7 +495,7 @@ static int stmt_column_value(lua_State* L) {
  * @api stmt:get_row()
  * @return 包含所有列值的数组
  */
-static int stmt_get_row(lua_State* L) {
+static int luaopen_sqlite3_stmt_get_row(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -546,7 +546,7 @@ static int stmt_get_row(lua_State* L) {
  * @api stmt:get_row_dict()
  * @return 包含所有列名和值的字典
  */
-static int stmt_get_row_dict(lua_State* L) {
+static int luaopen_sqlite3_stmt_get_row_dict(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -600,7 +600,7 @@ static int stmt_get_row_dict(lua_State* L) {
  * @api stmt:finalize()
  * @return 成功返回 true
  */
-static int stmt_finalize(lua_State* L) {
+static int luaopen_sqlite3_stmt_finalize(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -624,7 +624,7 @@ static int stmt_finalize(lua_State* L) {
 /**
  * @brief 数据库连接垃圾回收
  */
-static int db_gc(lua_State* L) {
+static int luaopen_sqlite3_db_gc(lua_State* L) {
     sqlite3** ptr = (sqlite3**)luaL_checkudata(L, 1, SQLITE3_DB_METATABLE);
     if (ptr && *ptr) {
         sqlite3_close(*ptr);
@@ -636,7 +636,7 @@ static int db_gc(lua_State* L) {
 /**
  * @brief 预编译语句垃圾回收
  */
-static int stmt_gc(lua_State* L) {
+static int luaopen_sqlite3_stmt_gc(lua_State* L) {
     sqlite3_stmt** ptr = (sqlite3_stmt**)luaL_checkudata(L, 1, SQLITE3_STMT_METATABLE);
     if (ptr && *ptr) {
         sqlite3_finalize(*ptr);
@@ -651,49 +651,49 @@ static int stmt_gc(lua_State* L) {
 
 /* 数据库连接方法表 */
 static const luaL_Reg db_methods[] = {
-    { "close",              db_close },
-    { "exec",               db_exec },
-    { "prepare",            db_prepare },
-    { "last_insert_rowid",  db_last_insert_rowid },
-    { "changes",            db_changes },
-    { "errmsg",             db_errmsg },
-    { "errcode",            db_errcode },
-    { "__gc",               db_gc },
+    { "close",              luaopen_sqlite3_db_close },
+    { "exec",               luaopen_sqlite3_db_exec },
+    { "prepare",            luaopen_sqlite3_db_prepare },
+    { "last_insert_rowid",  luaopen_sqlite3_db_last_insert_rowid },
+    { "changes",            luaopen_sqlite3_db_changes },
+    { "errmsg",             luaopen_sqlite3_db_errmsg },
+    { "errcode",            luaopen_sqlite3_db_errcode },
+    { "__gc",               luaopen_sqlite3_db_gc },
     { NULL,                 NULL }
 };
 
 /* 预编译语句方法表 */
 static const luaL_Reg stmt_methods[] = {
-    { "bind",             stmt_bind },
-    { "reset",            stmt_reset },
-    { "step",             stmt_step },
-    { "column_count",     stmt_column_count },
-    { "column_name",      stmt_column_name },
-    { "column_value",     stmt_column_value },
-    { "get_row",          stmt_get_row },
-    { "get_row_dict",     stmt_get_row_dict },
-    { "finalize",         stmt_finalize },
-    { "__gc",             stmt_gc },
+    { "bind",             luaopen_sqlite3_stmt_bind },
+    { "reset",            luaopen_sqlite3_stmt_reset },
+    { "step",             luaopen_sqlite3_stmt_step },
+    { "column_count",     luaopen_sqlite3_stmt_column_count },
+    { "column_name",      luaopen_sqlite3_stmt_column_name },
+    { "column_value",     luaopen_sqlite3_stmt_column_value },
+    { "get_row",          luaopen_sqlite3_stmt_get_row },
+    { "get_row_dict",     luaopen_sqlite3_stmt_get_row_dict },
+    { "finalize",         luaopen_sqlite3_stmt_finalize },
+    { "__gc",             luaopen_sqlite3_stmt_gc },
     { NULL,               NULL }
 };
 
 /* sqlite3 模块方法表 */
 static const luaL_Reg sqlite3_module_methods[] = {
     /* 版本信息 */
-    { "version_number", sqlite3_version_number },
-    { "version",        sqlite3_version },
-    { "source_id",      sqlite3_source_id },
-    { "libversion",     sqlite3_libversion },
+    { "version_number", luaopen_sqlite3_version_number },
+    { "version",        luaopen_sqlite3_version },
+    { "source_id",      luaopen_sqlite3_source_id },
+    { "libversion",     luaopen_sqlite3_libversion },
 
     /* 数据库连接 */
-    { "open",           sqlite3_open },
-    { "open_v2",        sqlite3_open_v2 },
+    { "open",           luaopen_sqlite3_open },
+    { "open_v2",        luaopen_sqlite3_open_v2 },
 
     { NULL,             NULL }
 };
 
 /* 模块初始化 */
-LUAMOD_API int luaopen_sqlite3(lua_State* L) {
+LUAMOD_API int luaopen_sqlite3_register(lua_State* L) {
     /* 创建模块 */
     luaL_newlib(L, sqlite3_module_methods);
 

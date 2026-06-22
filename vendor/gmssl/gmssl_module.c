@@ -71,7 +71,7 @@ static int hex_to_bin(const char* hex, uint8_t* bin, size_t max_len) {
  * @string data 待哈希的数据
  * @return 十六进制哈希值字符串
  */
-static int gmssl_sm3(lua_State* L) {
+static int luaopen_gmssl_sm3(lua_State* L) {
     size_t data_len;
     const uint8_t* data = (const uint8_t*)luaL_checklstring(L, 1, &data_len);
 
@@ -97,7 +97,7 @@ static int gmssl_sm3(lua_State* L) {
  * @api gmssl.sm3_new()
  * @return SM3 上下文对象
  */
-static int gmssl_sm3_new(lua_State* L) {
+static int luaopen_gmssl_sm3_new(lua_State* L) {
     SM3_CTX* ctx = (SM3_CTX*)lua_newuserdata(L, sizeof(SM3_CTX));
     sm3_init(ctx);
 
@@ -112,7 +112,7 @@ static int gmssl_sm3_new(lua_State* L) {
  * @api ctx:update(data)
  * @string data 数据
  */
-static int sm3_ctx_update(lua_State* L) {
+static int luaopen_gmssl_sm3_ctx_update(lua_State* L) {
     SM3_CTX* ctx = (SM3_CTX*)luaL_checkudata(L, 1, SM3_CTX_METATABLE);
     size_t data_len;
     const uint8_t* data = (const uint8_t*)luaL_checklstring(L, 2, &data_len);
@@ -127,7 +127,7 @@ static int sm3_ctx_update(lua_State* L) {
  * @api ctx:finish()
  * @return 十六进制哈希值字符串
  */
-static int sm3_ctx_finish(lua_State* L) {
+static int luaopen_gmssl_sm3_ctx_finish(lua_State* L) {
     SM3_CTX* ctx = (SM3_CTX*)luaL_checkudata(L, 1, SM3_CTX_METATABLE);
 
     uint8_t digest[SM3_DIGEST_SIZE];
@@ -151,7 +151,7 @@ static int sm3_ctx_finish(lua_State* L) {
  * @string data 数据
  * @return 十六进制 HMAC 值字符串
  */
-static int gmssl_sm3_hmac(lua_State* L) {
+static int luaopen_gmssl_sm3_hmac(lua_State* L) {
     size_t key_len, data_len;
     const uint8_t* key = (const uint8_t*)luaL_checklstring(L, 1, &key_len);
     const uint8_t* data = (const uint8_t*)luaL_checklstring(L, 2, &data_len);
@@ -185,7 +185,7 @@ static int gmssl_sm3_hmac(lua_State* L) {
  * @string data 待加密数据
  * @return 加密后的数据（十六进制）
  */
-static int gmssl_sm4_cbc_encrypt(lua_State* L) {
+static int luaopen_gmssl_sm4_cbc_encrypt(lua_State* L) {
     const char* key_hex = luaL_checkstring(L, 1);
     const char* iv_hex = luaL_checkstring(L, 2);
     size_t data_len;
@@ -240,7 +240,7 @@ static int gmssl_sm4_cbc_encrypt(lua_State* L) {
  * @string data 待解密数据（十六进制）
  * @return 解密后的数据
  */
-static int gmssl_sm4_cbc_decrypt(lua_State* L) {
+static int luaopen_gmssl_sm4_cbc_decrypt(lua_State* L) {
     const char* key_hex = luaL_checkstring(L, 1);
     const char* iv_hex = luaL_checkstring(L, 2);
     const char* data_hex = luaL_checkstring(L, 3);
@@ -298,7 +298,7 @@ static int gmssl_sm4_cbc_decrypt(lua_State* L) {
  * @string data 16字节数据（十六进制）
  * @return 加密后的数据（十六进制）
  */
-static int gmssl_sm4_ecb_encrypt(lua_State* L) {
+static int luaopen_gmssl_sm4_ecb_encrypt(lua_State* L) {
     const char* key_hex = luaL_checkstring(L, 1);
     const char* data_hex = luaL_checkstring(L, 2);
 
@@ -331,7 +331,7 @@ static int gmssl_sm4_ecb_encrypt(lua_State* L) {
  * @string data 16字节数据（十六进制）
  * @return 解密后的数据（十六进制）
  */
-static int gmssl_sm4_ecb_decrypt(lua_State* L) {
+static int luaopen_gmssl_sm4_ecb_decrypt(lua_State* L) {
     const char* key_hex = luaL_checkstring(L, 1);
     const char* data_hex = luaL_checkstring(L, 2);
 
@@ -369,7 +369,7 @@ static int gmssl_sm4_ecb_decrypt(lua_State* L) {
  * @api gmssl.sm2_key_generate()
  * @return SM2 密钥对象
  */
-static int gmssl_sm2_key_generate(lua_State* L) {
+static int luaopen_gmssl_sm2_key_generate(lua_State* L) {
     SM2_KEY* key = (SM2_KEY*)lua_newuserdata(L, sizeof(SM2_KEY));
 
     if (sm2_key_generate(key) != 1) {
@@ -387,7 +387,7 @@ static int gmssl_sm2_key_generate(lua_State* L) {
  * @api key:get_public_key()
  * @return 十六进制公钥字符串
  */
-static int sm2_key_get_public_key(lua_State* L) {
+static int luaopen_gmssl_sm2_key_get_public_key(lua_State* L) {
     SM2_KEY* key = (SM2_KEY*)luaL_checkudata(L, 1, SM2_KEY_METATABLE);
 
     uint8_t pub_key[SM2_PUBLIC_KEY_SIZE];
@@ -410,7 +410,7 @@ static int sm2_key_get_public_key(lua_State* L) {
  * @api key:get_private_key()
  * @return 十六进制私钥字符串
  */
-static int sm2_key_get_private_key(lua_State* L) {
+static int luaopen_gmssl_sm2_key_get_private_key(lua_State* L) {
     SM2_KEY* key = (SM2_KEY*)luaL_checkudata(L, 1, SM2_KEY_METATABLE);
 
     uint8_t priv_key[SM2_PRIVATE_KEY_DEFAULT_SIZE];
@@ -436,7 +436,7 @@ static int sm2_key_get_private_key(lua_State* L) {
 /**
  * @brief SM2 垃圾回收
  */
-static int sm2_key_gc(lua_State* L) {
+static int luaopen_gmssl_sm2_key_gc(lua_State* L) {
     /* SM2_KEY 结构体没有需要特别释放的资源 */
     return 0;
 }
@@ -451,7 +451,7 @@ static int sm2_key_gc(lua_State* L) {
  * @int len 字节数
  * @return 十六进制随机字节字符串
  */
-static int gmssl_rand_bytes(lua_State* L) {
+static int luaopen_gmssl_rand_bytes(lua_State* L) {
     int len = (int)luaL_checkinteger(L, 1);
     if (len <= 0 || len > 1024) {
         luaL_error(L, "invalid length");
@@ -488,43 +488,43 @@ static int gmssl_rand_bytes(lua_State* L) {
 
 /* SM3 上下文方法表 */
 static const luaL_Reg sm3_ctx_methods[] = {
-    { "update",  sm3_ctx_update },
-    { "finish",  sm3_ctx_finish },
+    { "update",  luaopen_gmssl_sm3_ctx_update },
+    { "finish",  luaopen_gmssl_sm3_ctx_finish },
     { NULL,      NULL }
 };
 
 /* SM2 密钥方法表 */
 static const luaL_Reg sm2_key_methods[] = {
-    { "get_public_key",  sm2_key_get_public_key },
-    { "get_private_key", sm2_key_get_private_key },
-    { "__gc",            sm2_key_gc },
+    { "get_public_key",  luaopen_gmssl_sm2_key_get_public_key },
+    { "get_private_key", luaopen_gmssl_sm2_key_get_private_key },
+    { "__gc",            luaopen_gmssl_sm2_key_gc },
     { NULL,              NULL }
 };
 
 /* gmssl 模块方法表 */
 static const luaL_Reg gmssl_module_methods[] = {
     /* SM3 哈希 */
-    { "sm3",           gmssl_sm3 },
-    { "sm3_new",       gmssl_sm3_new },
-    { "sm3_hmac",      gmssl_sm3_hmac },
+    { "sm3",           luaopen_gmssl_sm3 },
+    { "sm3_new",       luaopen_gmssl_sm3_new },
+    { "sm3_hmac",      luaopen_gmssl_sm3_hmac },
 
     /* SM4 对称加密 */
-    { "sm4_cbc_encrypt", gmssl_sm4_cbc_encrypt },
-    { "sm4_cbc_decrypt", gmssl_sm4_cbc_decrypt },
-    { "sm4_ecb_encrypt", gmssl_sm4_ecb_encrypt },
-    { "sm4_ecb_decrypt", gmssl_sm4_ecb_decrypt },
+    { "sm4_cbc_encrypt", luaopen_gmssl_sm4_cbc_encrypt },
+    { "sm4_cbc_decrypt", luaopen_gmssl_sm4_cbc_decrypt },
+    { "sm4_ecb_encrypt", luaopen_gmssl_sm4_ecb_encrypt },
+    { "sm4_ecb_decrypt", luaopen_gmssl_sm4_ecb_decrypt },
 
     /* SM2 非对称加密 */
-    { "sm2_key_generate", gmssl_sm2_key_generate },
+    { "sm2_key_generate", luaopen_gmssl_sm2_key_generate },
 
     /* 随机数 */
-    { "rand_bytes",    gmssl_rand_bytes },
+    { "rand_bytes",    luaopen_gmssl_rand_bytes },
 
     { NULL,            NULL }
 };
 
 /* 模块初始化 */
-LUAMOD_API int luaopen_gmssl(lua_State* L) {
+LUAMOD_API int luaopen_gmssl_register(lua_State* L) {
     /* 创建模块 */
     luaL_newlib(L, gmssl_module_methods);
 

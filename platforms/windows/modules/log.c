@@ -22,7 +22,7 @@ static const char* log_level_prefix[] = {
     "[E]"
 };
 
-static void iot_log_output(lua_State* L, int level) {
+static int luaopen_log_output(lua_State* L, int level) {
     printf("%s ", log_level_prefix[level]);
 
     int n = lua_gettop(L);
@@ -63,41 +63,41 @@ static void iot_log_output(lua_State* L, int level) {
     printf("%s", "\n");
 }
 
-static int iot_log_debug(lua_State* L) {
-    iot_log_output(L, LOG_LEVEL_DEBUG);
+static int luaopen_log_debug(lua_State* L) {
+    luaopen_log_output(L, LOG_LEVEL_DEBUG);
     return 0;
 }
 
-static int iot_log_trace(lua_State* L) {
-    iot_log_output(L, LOG_LEVEL_TRACE);
+static int luaopen_log_trace(lua_State* L) {
+    luaopen_log_output(L, LOG_LEVEL_TRACE);
     return 0;
 }
 
-static int iot_log_info(lua_State* L) {
-    iot_log_output(L, LOG_LEVEL_INFO);
+static int luaopen_log_info(lua_State* L) {
+    luaopen_log_output(L, LOG_LEVEL_INFO);
     return 0;
 }
 
-static int iot_log_warn(lua_State* L) {
-    iot_log_output(L, LOG_LEVEL_WARN);
+static int luaopen_log_warn(lua_State* L) {
+    luaopen_log_output(L, LOG_LEVEL_WARN);
     return 0;
 }
 
-static int iot_log_error(lua_State* L) {
-    iot_log_output(L, LOG_LEVEL_ERROR);
+static int luaopen_log_error(lua_State* L) {
+    luaopen_log_output(L, LOG_LEVEL_ERROR);
     return 0;
 }
 
-static const luaL_Reg log_lib[] = {
-    { "trace",  iot_log_trace },
-    { "info",   iot_log_info },
-    { "warn",   iot_log_warn },
-    { "error",  iot_log_error },
+static const luaL_Reg luaopen_log_lib[] = {
+    { "trace",  luaopen_log_trace },
+    { "info",   luaopen_log_info },
+    { "warn",   luaopen_log_warn },
+    { "error",  luaopen_log_error },
     { NULL, NULL }
 };
 
-LUAMOD_API int luaopen_log(lua_State* L) {
-    luaL_newlibtable(L, log_lib);
-    luaL_setfuncs(L, log_lib, 0);
+LUAMOD_API int luaopen_log_register(lua_State* L) {
+    luaL_newlibtable(L, luaopen_log_lib);
+    luaL_setfuncs(L, luaopen_log_lib, 0);
     return 1;
 }

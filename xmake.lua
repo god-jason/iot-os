@@ -36,23 +36,6 @@ add_includedirs("modules/zlib")
 add_includedirs("iot")
 add_includedirs("script")
 
--- 添加平台相关配置
-if is_config("platform", "linux") then
-    add_defines("IOT_PLATFORM_LINUX")
-elseif is_config("platform", "windows") then
-    add_defines("IOT_PLATFORM_WINDOWS")
-elseif is_config("platform", "esp32") then
-    add_defines("IOT_PLATFORM_ESP32")
-elseif is_config("platform", "ml307n") then
-    add_defines("IOT_PLATFORM_ML307N")
-elseif is_config("platform", "yopen") then
-    add_defines("IOT_PLATFORM_YOPEN")
-end
-
-if is_config("freertos") then
-    add_defines("IOT_FREERTOS")
-end
-
 --===========================================================
 -- 默认目标
 --===========================================================

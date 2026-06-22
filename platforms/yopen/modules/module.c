@@ -10,7 +10,7 @@
 extern int luaopen_os(lua_State* L);
 extern int luaopen_pm(lua_State* L);
 extern int luaopen_at(lua_State* L);
-extern int luaopen_log(lua_State* L);
+extern int luaopen_log_register(lua_State* L);
 extern int luaopen_mem(lua_State* L);
 extern int luaopen_fs(lua_State* L);
 extern int luaopen_gpio(lua_State* L);
@@ -33,7 +33,7 @@ static const luaL_Reg platform_modules[] = {
     {"os",     luaopen_os},           /* 操作系统接口 */
     {"pm",     luaopen_pm},           /* 电源管理 */
     {"at",     luaopen_at},           /* AT命令接口 */
-    {"log",    luaopen_log},          /* 日志系统 */
+    {"log",    luaopen_log_register},          /* 日志系统 */
     {"mem",    luaopen_mem},          /* 内存管理 */
 
     /* ================ 文件系统模块 ================ */

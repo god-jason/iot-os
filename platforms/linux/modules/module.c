@@ -5,16 +5,16 @@
 @date    2026.06.19
 */
 
-extern int luaopen_log(lua_State* L);
-extern int luaopen_socket(lua_State* L);
-extern int luaopen_http(lua_State* L);
-extern int luaopen_uart(lua_State* L);
+extern int luaopen_log_register(lua_State* L);
+extern int luaopen_socket_register(lua_State* L);
+extern int luaopen_http_register(lua_State* L);
+extern int luaopen_uart_register(lua_State* L);
 
 static const luaL_Reg platform_modules[] = {
-    {"log",    luaopen_log},
-    {"socket", luaopen_socket},
-    {"http",   luaopen_http},
-    {"uart",   luaopen_uart},
+    {"log",    luaopen_log_register},
+    {"socket", luaopen_socket_register},
+    {"http",   luaopen_http_register},
+    {"uart",   luaopen_uart_register},
     {NULL, NULL}
 };
 

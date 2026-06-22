@@ -70,7 +70,7 @@ static void bt_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
     }
 }
 
-static int iot_bt_init(lua_State* L) {
+static int luaopen_bt_init(lua_State* L) {
     esp_err_t ret;
     
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -108,7 +108,7 @@ static int iot_bt_init(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_deinit(lua_State* L) {
+static int luaopen_bt_deinit(lua_State* L) {
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     
@@ -119,7 +119,7 @@ static int iot_bt_deinit(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_set_device_name(lua_State* L) {
+static int luaopen_bt_set_device_name(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     
     esp_err_t ret = esp_ble_gap_set_device_name(name);
@@ -133,14 +133,14 @@ static int iot_bt_set_device_name(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_get_device_name(lua_State* L) {
+static int luaopen_bt_get_device_name(lua_State* L) {
     char name[32];
     esp_ble_gap_get_device_name(name, sizeof(name));
     lua_pushstring(L, name);
     return 1;
 }
 
-static int iot_bt_get_mac(lua_State* L) {
+static int luaopen_bt_get_mac(lua_State* L) {
     uint8_t* mac = esp_bt_dev_get_address();
     char mac_str[18];
     snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -149,7 +149,7 @@ static int iot_bt_get_mac(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_start_advertising(lua_State* L) {
+static int luaopen_bt_start_advertising(lua_State* L) {
     const char* name = luaL_optstring(L, 1, NULL);
     int interval_min = luaL_optinteger(L, 2, 0x20);
     int interval_max = luaL_optinteger(L, 3, 0x40);
@@ -182,7 +182,7 @@ static int iot_bt_start_advertising(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_stop_advertising(lua_State* L) {
+static int luaopen_bt_stop_advertising(lua_State* L) {
     esp_err_t ret = esp_ble_gap_stop_advertising();
     if (ret != ESP_OK) {
         lua_pushboolean(L, 0);
@@ -194,7 +194,7 @@ static int iot_bt_stop_advertising(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_start_scan(lua_State* L) {
+static int luaopen_bt_start_scan(lua_State* L) {
     int duration = luaL_optinteger(L, 1, 10);
     int interval = luaL_optinteger(L, 2, 0x50);
     int window = luaL_optinteger(L, 3, 0x30);
@@ -228,7 +228,7 @@ static int iot_bt_start_scan(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_stop_scan(lua_State* L) {
+static int luaopen_bt_stop_scan(lua_State* L) {
     esp_err_t ret = esp_ble_gap_stop_scanning();
     if (ret != ESP_OK) {
         lua_pushboolean(L, 0);
@@ -240,7 +240,7 @@ static int iot_bt_stop_scan(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_get_scan_results(lua_State* L) {
+static int luaopen_bt_get_scan_results(lua_State* L) {
     lua_newtable(L);
     
     for (int i = 0; i < g_scan_result_count; i++) {
@@ -270,12 +270,12 @@ static int iot_bt_get_scan_results(lua_State* L) {
     return 1;
 }
 
-static int iot_bt_set_scan_callback(lua_State* L) {
+static int luaopen_bt_set_scan_callback(lua_State* L) {
     luaL_checktype(L, 1, LUA_TFUNCTION);
     return 0;
 }
 
-static int iot_bt_get_adapter_state(lua_State* L) {
+static int luaopen_bt_get_adapter_state(lua_State* L) {
     bt_state_t state = esp_bluedroid_get_status();
     
     const char* state_str = "unknown";
@@ -290,23 +290,23 @@ static int iot_bt_get_adapter_state(lua_State* L) {
     return 1;
 }
 
-static const luaL_Reg bt_lib[] = {
-    { "init",               iot_bt_init },
-    { "deinit",             iot_bt_deinit },
-    { "set_device_name",    iot_bt_set_device_name },
-    { "get_device_name",    iot_bt_get_device_name },
-    { "get_mac",            iot_bt_get_mac },
-    { "start_advertising",  iot_bt_start_advertising },
-    { "stop_advertising",   iot_bt_stop_advertising },
-    { "start_scan",         iot_bt_start_scan },
-    { "stop_scan",          iot_bt_stop_scan },
-    { "get_scan_results",   iot_bt_get_scan_results },
-    { "get_adapter_state",  iot_bt_get_adapter_state },
+static const luaL_Reg luaopen_bt_lib[] = {
+    { "init",               luaopen_bt_init },
+    { "deinit",             luaopen_bt_deinit },
+    { "set_device_name",    luaopen_bt_set_device_name },
+    { "get_device_name",    luaopen_bt_get_device_name },
+    { "get_mac",            luaopen_bt_get_mac },
+    { "start_advertising",  luaopen_bt_start_advertising },
+    { "stop_advertising",   luaopen_bt_stop_advertising },
+    { "start_scan",         luaopen_bt_start_scan },
+    { "stop_scan",          luaopen_bt_stop_scan },
+    { "get_scan_results",   luaopen_bt_get_scan_results },
+    { "get_adapter_state",  luaopen_bt_get_adapter_state },
     { NULL, NULL }
 };
 
-LUAMOD_API int luaopen_bt(lua_State* L) {
-    luaL_newlib(L, bt_lib);
+LUAMOD_API int luaopen_bt_register(lua_State* L) {
+    luaL_newlib(L, luaopen_bt_lib);
     
     lua_pushinteger(L, ADV_TYPE_IND);
     lua_setfield(L, -2, "ADV_TYPE_IND");

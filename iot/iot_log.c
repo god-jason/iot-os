@@ -169,7 +169,7 @@ static void iot_log_output(lua_State* L, int level) {
 log.debug("debug message")
 log.debug("key", "=", "value", 123)
 */
-static int iot_log_debug(lua_State* L) {
+static int luaopen_log_debug(lua_State* L) {
     iot_log_output(L, LOG_LEVEL_DEBUG);
     return 0;
 }
@@ -182,7 +182,7 @@ static int iot_log_debug(lua_State* L) {
  * @usage
 log.trace("trace message")
 */
-static int iot_log_trace(lua_State* L) {
+static int luaopen_log_trace(lua_State* L) {
     iot_log_output(L, LOG_LEVEL_TRACE);
     return 0;
 }
@@ -195,7 +195,7 @@ static int iot_log_trace(lua_State* L) {
  * @usage
 log.info("info message")
 */
-static int iot_log_info(lua_State* L) {
+static int luaopen_log_info(lua_State* L) {
     iot_log_output(L, LOG_LEVEL_INFO);
     return 0;
 }
@@ -208,7 +208,7 @@ static int iot_log_info(lua_State* L) {
  * @usage
 log.warn("warn message")
 */
-static int iot_log_warn(lua_State* L) {
+static int luaopen_log_warn(lua_State* L) {
     iot_log_output(L, LOG_LEVEL_WARN);
     return 0;
 }
@@ -221,7 +221,7 @@ static int iot_log_warn(lua_State* L) {
  * @usage
 log.error("error message")
 */
-static int iot_log_error(lua_State* L) {
+static int luaopen_log_error(lua_State* L) {
     iot_log_output(L, LOG_LEVEL_ERROR);
     return 0;
 }
@@ -234,7 +234,7 @@ static int iot_log_error(lua_State* L) {
  * @usage
 log.level(log.INFO)
 */
-static int iot_log_level(lua_State* L) {
+static int luaopen_log_level(lua_State* L) {
     int level = (int)luaL_optinteger(L, 1, LOG_LEVEL_INFO);
     iot_log_set_level((iot_log_level_t)level);
     return 0;
@@ -242,12 +242,12 @@ static int iot_log_level(lua_State* L) {
 
 /* Lua模块方法列表 */
 static const luaL_Reg log_lib[] = {
-    { "debug",  iot_log_debug },
-    { "trace",  iot_log_trace },
-    { "info",   iot_log_info },
-    { "warn",   iot_log_warn },
-    { "error",  iot_log_error },
-    { "level",  iot_log_level },
+    { "debug",  luaopen_log_debug },
+    { "trace",  luaopen_log_trace },
+    { "info",   luaopen_log_info },
+    { "warn",   luaopen_log_warn },
+    { "error",  luaopen_log_error },
+    { "level",  luaopen_log_level },
     { NULL, NULL }
 };
 
@@ -267,7 +267,7 @@ static const luaL_Reg log_level_constants[] = {
 /**
  * @brief 注册log模块到Lua
  */
-LUAMOD_API int luaopen_log(lua_State* L) {
+LUAMOD_API int luaopen_log_register(lua_State* L) {
     luaL_newlibtable(L, log_lib);
     luaL_setfuncs(L, log_lib, 0);
     

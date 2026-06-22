@@ -163,7 +163,7 @@ static void doswap(int swap, void *p, size_t n)
  * @usage
 local _,a = pack.unpack(x,">h") --解包成short (2字节)
 */
-static int iot_pack_unpack(lua_State *L) 
+static int luaopen_pack_unpack(lua_State *L) 
 {
     size_t len;
     const char *s = luaL_checklstring(L, 1, &len);
@@ -303,7 +303,7 @@ done:
 local data = pack.pack('<h', crypto.crc16("MODBUS", val))
 log.info("data", data, data:toHex())
 */
-static int iot_pack_pack(lua_State *L)
+static int luaopen_pack_pack(lua_State *L)
 {
     int i = 2;
     const unsigned char *f = (const unsigned char*)luaL_checkstring(L, 1);
@@ -407,12 +407,12 @@ static int iot_pack_pack(lua_State *L)
 
 static const luaL_Reg reg_pack[] =
 {
-	{"pack",     iot_pack_pack},
-	{"unpack",	iot_pack_unpack},
+	{"pack",     luaopen_pack_pack},
+	{"unpack",	luaopen_pack_unpack},
 	{NULL, NULL}
 };
 
-LUAMOD_API int luaopen_pack(lua_State *L) {
+LUAMOD_API int luaopen_pack_register(lua_State *L) {
 	luaL_newlibtable(L, reg_pack);
     luaL_setfuncs(L, reg_pack, 0);
 	return 1;

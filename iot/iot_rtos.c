@@ -209,7 +209,7 @@ void iot_rtos_msg_destroy(rtos_msg_t* msg)
  * @brief Lua接口: 创建定时器
  * @api rtos.timer_create(timeout_ms, periodic)
  */
-static int iot_rtos_timer_create(lua_State* L)
+static int luaopen_rtos_timer_create(lua_State* L)
 {
     uint32_t timeout_ms = luaL_checkinteger(L, 1);
     uint32_t periodic = luaL_optinteger(L, 2, 0);
@@ -264,7 +264,7 @@ static int iot_rtos_timer_create(lua_State* L)
  * @brief Lua接口: 停止定时器
  * @api rtos.timer_stop(timer_id)
  */
-static int iot_rtos_timer_stop(lua_State* L)
+static int luaopen_rtos_timer_stop(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -292,7 +292,7 @@ static int iot_rtos_timer_stop(lua_State* L)
  * @brief Lua接口: 检查定时器是否运行
  * @api rtos.timer_is_running(timer_id)
  */
-static int iot_rtos_timer_is_running(lua_State* L)
+static int luaopen_rtos_timer_is_running(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -320,7 +320,7 @@ static int iot_rtos_timer_is_running(lua_State* L)
  * @brief Lua接口: 删除定时器
  * @api rtos.timer_delete(timer_id)
  */
-static int iot_rtos_timer_delete(lua_State* L)
+static int luaopen_rtos_timer_delete(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -353,7 +353,7 @@ static int iot_rtos_timer_delete(lua_State* L)
  * @brief Lua接口: 接收系统消息
  * @api rtos.recv(timeout)
  */
-static int iot_rtos_recv(lua_State* L)
+static int luaopen_rtos_recv(lua_State* L)
 {
     uint32_t timeout = (uint32_t)luaL_optinteger(L, 1, 0);
     rtos_msg_t* msg = NULL;
@@ -408,18 +408,18 @@ static int iot_rtos_recv(lua_State* L)
 
 /* Lua模块注册 */
 static const luaL_Reg rtos_lib[] = {
-    { "recv",          iot_rtos_recv },
-    { "timer_create",      iot_rtos_timer_create },
-    { "timer_stop",        iot_rtos_timer_stop },
-    { "timer_is_running",  iot_rtos_timer_is_running },
-    { "timer_delete",      iot_rtos_timer_delete },
+    { "recv",          luaopen_rtos_recv },
+    { "timer_create",      luaopen_rtos_timer_create },
+    { "timer_stop",        luaopen_rtos_timer_stop },
+    { "timer_is_running",  luaopen_rtos_timer_is_running },
+    { "timer_delete",      luaopen_rtos_timer_delete },
     { NULL, NULL }
 };
 
 /**
  * @brief 注册rtos模块到Lua
  */
-LUAMOD_API int luaopen_rtos(lua_State* L)
+LUAMOD_API int luaopen_rtos_register(lua_State* L)
 {
     luaL_newlibtable(L, rtos_lib);
     luaL_setfuncs(L, rtos_lib, 0);

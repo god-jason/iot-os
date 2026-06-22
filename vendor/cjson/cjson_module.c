@@ -24,7 +24,7 @@
 #define CJSON_METATABLE "cjson.object"
 
 /* 将 cJSON 对象转换为 Lua 值 */
-static void cjson_to_lua(lua_State* L, cJSON* item);
+static void luaopen_cjson_to_lua(lua_State* L, cJSON* item);
 
 /* 将 Lua 值转换为 cJSON 对象 */
 static cJSON* lua_to_cjson(lua_State* L, int idx);
@@ -33,7 +33,7 @@ static cJSON* lua_to_cjson(lua_State* L, int idx);
  * cJSON 转 Lua
  *===========================================================*/
 
-static void cjson_to_lua(lua_State* L, cJSON* item) {
+static void luaopen_cjson_to_lua(lua_State* L, cJSON* item) {
     if (!item) {
         lua_pushnil(L);
         return;
@@ -69,7 +69,7 @@ static void cjson_to_lua(lua_State* L, cJSON* item) {
             int arr_idx = 1;
             cJSON* arr_item = item->child;
             while (arr_item) {
-                cjson_to_lua(L, arr_item);
+                luaopen_cjson_to_lua(L, arr_item);
                 lua_rawseti(L, -2, arr_idx);
                 arr_idx++;
                 arr_item = arr_item->next;
@@ -81,7 +81,7 @@ static void cjson_to_lua(lua_State* L, cJSON* item) {
             cJSON* obj_item = item->child;
             while (obj_item) {
                 lua_pushstring(L, obj_item->string);
-                cjson_to_lua(L, obj_item);
+                luaopen_cjson_to_lua(L, obj_item);
                 lua_rawset(L, -3);
                 obj_item = obj_item->next;
             }
@@ -168,7 +168,7 @@ static cJSON* lua_to_cjson(lua_State* L, int idx) {
  * @string str JSON 字符串
  * @return Lua 表，失败返回 nil 和错误信息
  */
-static int cjson_parse(lua_State* L) {
+static int luaopen_cjson_parse(lua_State* L) {
     const char* str = luaL_checkstring(L, 1);
 
     cJSON* root = cJSON_Parse(str);
@@ -179,7 +179,7 @@ static int cjson_parse(lua_State* L) {
         return 2;
     }
 
-    cjson_to_lua(L, root);
+    luaopen_cjson_to_lua(L, root);
     cJSON_Delete(root);
 
     return 1;
@@ -192,7 +192,7 @@ static int cjson_parse(lua_State* L) {
  * @bool formatted 是否格式化输出，默认 false
  * @return JSON 字符串
  */
-static int cjson_encode(lua_State* L) {
+static int luaopen_cjson_encode(lua_State* L) {
     cJSON* root = lua_to_cjson(L, 1);
     if (!root) {
         lua_pushnil(L);
@@ -228,7 +228,7 @@ static int cjson_encode(lua_State* L) {
  * @api cjson.create_object()
  * @return cJSON 对象
  */
-static int cjson_create_object(lua_State* L) {
+static int luaopen_cjson_create_object(lua_State* L) {
     cJSON* obj = cJSON_CreateObject();
     if (!obj) {
         lua_pushnil(L);
@@ -249,7 +249,7 @@ static int cjson_create_object(lua_State* L) {
  * @api cjson.create_array()
  * @return cJSON 数组
  */
-static int cjson_create_array(lua_State* L) {
+static int luaopen_cjson_create_array(lua_State* L) {
     cJSON* arr = cJSON_CreateArray();
     if (!arr) {
         lua_pushnil(L);
@@ -271,7 +271,7 @@ static int cjson_create_array(lua_State* L) {
  * @string key 字段名
  * @return 字段值
  */
-static int cjson_object_get(lua_State* L) {
+static int luaopen_cjson_object_get(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
     const char* key = luaL_checkstring(L, 2);
 
@@ -281,7 +281,7 @@ static int cjson_object_get(lua_State* L) {
     }
 
     cJSON* item = cJSON_GetObjectItem(*ptr, key);
-    cjson_to_lua(L, item);
+    luaopen_cjson_to_lua(L, item);
 
     return 1;
 }
@@ -292,7 +292,7 @@ static int cjson_object_get(lua_State* L) {
  * @string key 字段名
  * @param value 字段值
  */
-static int cjson_object_set(lua_State* L) {
+static int luaopen_cjson_object_set(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
     const char* key = luaL_checkstring(L, 2);
 
@@ -312,7 +312,7 @@ static int cjson_object_set(lua_State* L) {
  * @int index 索引 (从 0 开始)
  * @return 元素值
  */
-static int cjson_array_get(lua_State* L) {
+static int luaopen_cjson_array_get(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
     int index = (int)luaL_checkinteger(L, 2);
 
@@ -322,7 +322,7 @@ static int cjson_array_get(lua_State* L) {
     }
 
     cJSON* item = cJSON_GetArrayItem(*ptr, index);
-    cjson_to_lua(L, item);
+    luaopen_cjson_to_lua(L, item);
 
     return 1;
 }
@@ -332,7 +332,7 @@ static int cjson_array_get(lua_State* L) {
  * @api arr:add(value)
  * @param value 元素值
  */
-static int cjson_array_add(lua_State* L) {
+static int luaopen_cjson_array_add(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -350,7 +350,7 @@ static int cjson_array_add(lua_State* L) {
  * @api arr:size()
  * @return 数组长度
  */
-static int cjson_array_size(lua_State* L) {
+static int luaopen_cjson_array_size(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
 
     if (!ptr || !*ptr) {
@@ -370,7 +370,7 @@ static int cjson_array_size(lua_State* L) {
  * @bool formatted 是否格式化
  * @return JSON 字符串
  */
-static int cjson_tostring(lua_State* L) {
+static int luaopen_cjson_tostring(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
     int formatted = lua_isnoneornil(L, 2) ? 0 : lua_toboolean(L, 2);
 
@@ -400,7 +400,7 @@ static int cjson_tostring(lua_State* L) {
 /**
  * @brief 垃圾回收
  */
-static int cjson_gc(lua_State* L) {
+static int luaopen_cjson_gc(lua_State* L) {
     cJSON** ptr = (cJSON**)luaL_checkudata(L, 1, CJSON_METATABLE);
     if (ptr && *ptr) {
         cJSON_Delete(*ptr);
@@ -414,36 +414,36 @@ static int cjson_gc(lua_State* L) {
  *===========================================================*/
 
 /* cJSON 对象方法表 */
-static const luaL_Reg cjson_object_methods[] = {
-    { "get",      cjson_object_get },
-    { "set",      cjson_object_set },
-    { "add",      cjson_array_add },
-    { "size",     cjson_array_size },
-    { "tostring", cjson_tostring },
-    { "__gc",     cjson_gc },
-    { "__tostring", cjson_tostring },
+static const luaL_Reg luaopen_cjson_object_methods[] = {
+    { "get",      luaopen_cjson_object_get },
+    { "set",      luaopen_cjson_object_set },
+    { "add",      luaopen_cjson_array_add },
+    { "size",     luaopen_cjson_array_size },
+    { "tostring", luaopen_cjson_tostring },
+    { "__gc",     luaopen_cjson_gc },
+    { "__tostring", luaopen_cjson_tostring },
     { NULL,       NULL }
 };
 
 /* cjson 模块方法表 */
-static const luaL_Reg cjson_module_methods[] = {
-    { "parse",          cjson_parse },
-    { "encode",         cjson_encode },
-    { "create_object",  cjson_create_object },
-    { "create_array",   cjson_create_array },
+static const luaL_Reg luaopen_cjson_module_methods[] = {
+    { "parse",          luaopen_cjson_parse },
+    { "encode",         luaopen_cjson_encode },
+    { "create_object",  luaopen_cjson_create_object },
+    { "create_array",   luaopen_cjson_create_array },
     { NULL,             NULL }
 };
 
 /* 模块初始化 */
-LUAMOD_API int luaopen_cjson(lua_State* L) {
+LUAMOD_API int luaopen_cjson_register(lua_State* L) {
     /* 创建模块 */
-    luaL_newlib(L, cjson_module_methods);
+    luaL_newlib(L, luaopen_cjson_module_methods);
 
     /* 创建对象元表 */
     luaL_newmetatable(L, CJSON_METATABLE);
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
-    luaL_setfuncs(L, cjson_object_methods, 0);
+    luaL_setfuncs(L, luaopen_cjson_object_methods, 0);
     lua_pop(L, 1);
 
     /* 注册版本信息 */

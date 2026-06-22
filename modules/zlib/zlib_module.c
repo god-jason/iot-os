@@ -62,7 +62,7 @@ static const char* zlib_error_str(int err) {
  * @int level 压缩级别（1-9），默认6
  * @return string 压缩后的数据，失败返回 nil
  */
-static int l_deflate_compress(lua_State* L) {
+static int luaopen_zlib_deflate_compress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     int level = (int)luaL_optinteger(L, 2, ZLIB_DEFLATE_LEVEL_DEFAULT);
@@ -99,7 +99,7 @@ static int l_deflate_compress(lua_State* L) {
  * @string data 压缩的数据
  * @return string 解压后的数据，失败返回 nil
  */
-static int l_deflate_decompress(lua_State* L) {
+static int luaopen_zlib_deflate_decompress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     
@@ -134,7 +134,7 @@ static int l_deflate_decompress(lua_State* L) {
  * @int adler 初始值（可选），默认1
  * @return int ADLER32 校验码
  */
-static int l_deflate_adler32(lua_State* L) {
+static int luaopen_zlib_deflate_adler32(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t adler = (uint32_t)luaL_optinteger(L, 2, 1);
@@ -150,7 +150,7 @@ static int l_deflate_adler32(lua_State* L) {
  * @int crc 初始值（可选），默认0
  * @return int CRC32 校验码
  */
-static int l_deflate_crc32(lua_State* L) {
+static int luaopen_zlib_deflate_crc32(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t crc = (uint32_t)luaL_optinteger(L, 2, 0);
@@ -162,10 +162,10 @@ static int l_deflate_crc32(lua_State* L) {
 
 /* deflate 模块方法表 */
 static const luaL_Reg deflate_lib[] = {
-    { "compress",  l_deflate_compress },
-    { "decompress", l_deflate_decompress },
-    { "adler32",   l_deflate_adler32 },
-    { "crc32",     l_deflate_crc32 },
+    { "compress",  luaopen_zlib_deflate_compress },
+    { "decompress", luaopen_zlib_deflate_decompress },
+    { "adler32",   luaopen_zlib_deflate_adler32 },
+    { "crc32",     luaopen_zlib_deflate_crc32 },
     { NULL, NULL }
 };
 
@@ -179,7 +179,7 @@ static const luaL_Reg deflate_lib[] = {
  * @int level 压缩级别（1-9），默认6
  * @return string 压缩后的数据，失败返回 nil
  */
-static int l_gzip_compress(lua_State* L) {
+static int luaopen_zlib_gzip_compress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     int level = (int)luaL_optinteger(L, 2, GZIP_COMPRESS_DEFAULT);
@@ -216,7 +216,7 @@ static int l_gzip_compress(lua_State* L) {
  * @string data 压缩的数据
  * @return string 解压后的数据，失败返回 nil
  */
-static int l_gzip_decompress(lua_State* L) {
+static int luaopen_zlib_gzip_decompress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     
@@ -253,7 +253,7 @@ static int l_gzip_decompress(lua_State* L) {
  * @int level 压缩级别（可选）
  * @return bool 成功返回 true
  */
-static int l_gzip_compress_file(lua_State* L) {
+static int luaopen_zlib_gzip_compress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_path = luaL_checkstring(L, 2);
     int level = (int)luaL_optinteger(L, 3, GZIP_COMPRESS_DEFAULT);
@@ -275,7 +275,7 @@ static int l_gzip_compress_file(lua_State* L) {
  * @string dst_path 目标文件路径
  * @return bool 成功返回 true
  */
-static int l_gzip_decompress_file(lua_State* L) {
+static int luaopen_zlib_gzip_decompress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_path = luaL_checkstring(L, 2);
     
@@ -292,10 +292,10 @@ static int l_gzip_decompress_file(lua_State* L) {
 
 /* gzip 模块方法表 */
 static const luaL_Reg gzip_lib[] = {
-    { "compress",      l_gzip_compress },
-    { "decompress",    l_gzip_decompress },
-    { "compress_file", l_gzip_compress_file },
-    { "decompress_file", l_gzip_decompress_file },
+    { "compress",      luaopen_zlib_gzip_compress },
+    { "decompress",    luaopen_zlib_gzip_decompress },
+    { "compress_file", luaopen_zlib_gzip_compress_file },
+    { "decompress_file", luaopen_zlib_gzip_decompress_file },
     { NULL, NULL }
 };
 
@@ -309,7 +309,7 @@ static const luaL_Reg gzip_lib[] = {
  * @string dest_dir 目标解压目录
  * @return bool 成功返回 true
  */
-static int l_zip_decompress_file(lua_State* L) {
+static int luaopen_zlib_zip_decompress_file(lua_State* L) {
     const char* zip_path = luaL_checkstring(L, 1);
     const char* dest_dir = luaL_checkstring(L, 2);
     
@@ -331,7 +331,7 @@ static int l_zip_decompress_file(lua_State* L) {
  * @int level 压缩级别（可选）
  * @return bool 成功返回 true
  */
-static int l_zip_compress_file(lua_State* L) {
+static int luaopen_zlib_zip_compress_file(lua_State* L) {
     const char* zip_path = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     int level = (int)luaL_optinteger(L, 3, 6);
@@ -372,8 +372,8 @@ static int l_zip_compress_file(lua_State* L) {
 
 /* zip 模块方法表 */
 static const luaL_Reg zip_lib[] = {
-    { "decompress_file", l_zip_decompress_file },
-    { "compress_file",   l_zip_compress_file },
+    { "decompress_file", luaopen_zlib_zip_decompress_file },
+    { "compress_file",   luaopen_zlib_zip_compress_file },
     { NULL, NULL }
 };
 
@@ -387,7 +387,7 @@ static const luaL_Reg zip_lib[] = {
  * @string dst_dir 目标解压目录
  * @return bool 成功返回 true
  */
-static int l_tar_decompress_file(lua_State* L) {
+static int luaopen_zlib_tar_decompress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_dir = luaL_checkstring(L, 2);
     
@@ -410,7 +410,7 @@ static int l_tar_decompress_file(lua_State* L) {
  * @int level 压缩级别（可选，仅对 .tar.gz 有效）
  * @return bool 成功返回 true
  */
-static int l_tar_compress_file(lua_State* L) {
+static int luaopen_zlib_tar_compress_file(lua_State* L) {
     const char* src_dir = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     const char* dst_path = luaL_checkstring(L, 3);
@@ -452,8 +452,8 @@ static int l_tar_compress_file(lua_State* L) {
 
 /* tar 模块方法表 */
 static const luaL_Reg tar_lib[] = {
-    { "decompress_file", l_tar_decompress_file },
-    { "compress_file",   l_tar_compress_file },
+    { "decompress_file", luaopen_zlib_tar_decompress_file },
+    { "compress_file",   luaopen_zlib_tar_compress_file },
     { NULL, NULL }
 };
 
@@ -488,7 +488,7 @@ static const luaL_Reg tar_lib[] = {
  * zlib.tar.decompress_file("test.tar.gz", "./output")
  * zlib.tar.compress_file("./input", {"file1.txt"}, "output.tar.gz")
  */
-LUAMOD_API int luaopen_zlib(lua_State* L) {
+LUAMOD_API int luaopen_zlib_register(lua_State* L) {
     /* 创建 zlib 模块表 */
     lua_newtable(L);
     

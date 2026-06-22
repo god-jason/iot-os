@@ -99,7 +99,7 @@ static const luaL_Reg luaopen_log_funcs[] = {
     {NULL, NULL}
 };
 
-int luaopen_log(lua_State* L) {
+LUAMOD_API int luaopen_log_register(lua_State* L) {
     luaL_newlib(L, luaopen_log_funcs);
     return 1;
 }

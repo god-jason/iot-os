@@ -83,7 +83,7 @@ static void uart_start_read_thread(void) {
     g_uart_thread = iot_task_create("uart_read", uart_read_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
 }
 
-static int iot_uart_setup(lua_State* L) {
+static int luaopen_uart_setup(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     int baudrate = luaL_checkinteger(L, 2);
     int databits = luaL_optinteger(L, 3, 8);
@@ -172,7 +172,7 @@ static int iot_uart_setup(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_close(lua_State* L) {
+static int luaopen_uart_close(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     
     if (id < 0 || id >= IOT_UART_MAX) {
@@ -197,7 +197,7 @@ static int iot_uart_close(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_write(lua_State* L) {
+static int luaopen_uart_write(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     size_t len = 0;
     const char* data = luaL_checklstring(L, 2, &len);
@@ -221,7 +221,7 @@ static int iot_uart_write(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_read(lua_State* L) {
+static int luaopen_uart_read(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     int len = luaL_checkinteger(L, 2);
     
@@ -264,7 +264,7 @@ static int iot_uart_read(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_get_rxrb_data_len(lua_State* L) {
+static int luaopen_uart_get_rxrb_data_len(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     
     if (id < 0 || id >= IOT_UART_MAX) {
@@ -307,7 +307,7 @@ static int iot_uart_clean(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_on(lua_State* L) {
+static int luaopen_uart_on(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
     
@@ -332,19 +332,19 @@ static int iot_uart_on(lua_State* L) {
     return 1;
 }
 
-static const luaL_Reg uart_lib[] = {
-    { "setup",   iot_uart_setup },
-    { "close",   iot_uart_close },
-    { "write",   iot_uart_write },
-    { "read",    iot_uart_read },
-    { "on",      iot_uart_on },
-    { "get_rxrb_data_len", iot_uart_get_rxrb_data_len },
-    { "clean",   iot_uart_clean },
+static const luaL_Reg luaopen_uart_lib[] = {
+    { "setup",   luaopen_uart_setup },
+    { "close",   luaopen_uart_close },
+    { "write",   luaopen_uart_write },
+    { "read",    luaopen_uart_read },
+    { "on",      luaopen_uart_on },
+    { "get_rxrb_data_len", luaopen_uart_get_rxrb_data_len },
+    { "clean",   luaopen_uart_clean },
     {NULL, NULL}
 };
 
-LUAMOD_API int luaopen_uart(lua_State* L) {
-    luaL_newlibtable(L, uart_lib);
-    luaL_setfuncs(L, uart_lib, 0);
+LUAMOD_API int luaopen_uart_register(lua_State* L) {
+    luaL_newlibtable(L, luaopen_uart_lib);
+    luaL_setfuncs(L, luaopen_uart_lib, 0);
     return 1;
 }

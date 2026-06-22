@@ -177,7 +177,7 @@ static void mqtt_message_callback(const char* topic, const uint8_t* payload,
     }
 }
 
-static int iot_mqtt_new(lua_State* L) {
+static int luaopen_mqtt_new(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_ctx_create();
     if (!ctx) {
         lua_pushnil(L);
@@ -194,7 +194,7 @@ static int iot_mqtt_new(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_connect(lua_State* L) {
+static int luaopen_mqtt_connect(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -296,7 +296,7 @@ static int iot_mqtt_connect(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_disconnect(lua_State* L) {
+static int luaopen_mqtt_disconnect(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -310,7 +310,7 @@ static int iot_mqtt_disconnect(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_close(lua_State* L) {
+static int luaopen_mqtt_close(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (ctx) {
         mqtt_ctx_destroy(ctx);
@@ -318,7 +318,7 @@ static int iot_mqtt_close(lua_State* L) {
     return 0;
 }
 
-static int iot_mqtt_publish(lua_State* L) {
+static int luaopen_mqtt_publish(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -345,7 +345,7 @@ static int iot_mqtt_publish(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_subscribe(lua_State* L) {
+static int luaopen_mqtt_subscribe(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -392,7 +392,7 @@ static int iot_mqtt_subscribe(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_unsubscribe(lua_State* L) {
+static int luaopen_mqtt_unsubscribe(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -415,7 +415,7 @@ static int iot_mqtt_unsubscribe(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_on(lua_State* L) {
+static int luaopen_mqtt_on(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -446,7 +446,7 @@ static int iot_mqtt_on(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_state(lua_State* L) {
+static int luaopen_mqtt_state(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushinteger(L, MQTT_STATE_DISCONNECTED);
@@ -458,7 +458,7 @@ static int iot_mqtt_state(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_enable_auto_reconnect(lua_State* L) {
+static int luaopen_mqtt_enable_auto_reconnect(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -474,7 +474,7 @@ static int iot_mqtt_enable_auto_reconnect(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_disable_auto_reconnect(lua_State* L) {
+static int luaopen_mqtt_disable_auto_reconnect(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -488,7 +488,7 @@ static int iot_mqtt_disable_auto_reconnect(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_is_connected(lua_State* L) {
+static int luaopen_mqtt_is_connected(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
         lua_pushboolean(L, 0);
@@ -499,7 +499,7 @@ static int iot_mqtt_is_connected(lua_State* L) {
     return 1;
 }
 
-static int iot_mqtt_tostring(lua_State* L) {
+static int luaopen_mqtt_tostring(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx) {
         lua_pushstring(L, "mqtt.client (invalid)");
@@ -510,24 +510,24 @@ static int iot_mqtt_tostring(lua_State* L) {
 }
 
 static const luaL_Reg mqtt_client_methods[] = {
-    { "connect",               iot_mqtt_connect },
-    { "disconnect",            iot_mqtt_disconnect },
-    { "close",                 iot_mqtt_close },
-    { "publish",               iot_mqtt_publish },
-    { "subscribe",             iot_mqtt_subscribe },
-    { "unsubscribe",           iot_mqtt_unsubscribe },
-    { "on",                    iot_mqtt_on },
-    { "state",                 iot_mqtt_state },
-    { "enable_auto_reconnect", iot_mqtt_enable_auto_reconnect },
-    { "disable_auto_reconnect",iot_mqtt_disable_auto_reconnect },
-    { "is_connected",          iot_mqtt_is_connected },
-    { "__gc",                  iot_mqtt_close },
-    { "__tostring",            iot_mqtt_tostring },
+    { "connect",               luaopen_mqtt_connect },
+    { "disconnect",            luaopen_mqtt_disconnect },
+    { "close",                 luaopen_mqtt_close },
+    { "publish",               luaopen_mqtt_publish },
+    { "subscribe",             luaopen_mqtt_subscribe },
+    { "unsubscribe",           luaopen_mqtt_unsubscribe },
+    { "on",                    luaopen_mqtt_on },
+    { "state",                 luaopen_mqtt_state },
+    { "enable_auto_reconnect", luaopen_mqtt_enable_auto_reconnect },
+    { "disable_auto_reconnect",luaopen_mqtt_disable_auto_reconnect },
+    { "is_connected",          luaopen_mqtt_is_connected },
+    { "__gc",                  luaopen_mqtt_close },
+    { "__tostring",            luaopen_mqtt_tostring },
     { NULL,                    NULL }
 };
 
 static const luaL_Reg mqtt_module_methods[] = {
-    { "new",                      iot_mqtt_new },
+    { "new",                      luaopen_mqtt_new },
     { NULL,                       NULL }
 };
 
@@ -562,7 +562,7 @@ static const luaL_Const mqtt_constants[] = {
     { NULL, 0 }
 };
 
-LUAMOD_API int luaopen_mqtt(lua_State* L) {
+LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
     luaL_newlib(L, mqtt_module_methods);
     
     const luaL_Const* constant = mqtt_constants;

@@ -41,7 +41,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t e
     }
 }
 
-static int iot_wifi_init(lua_State* L) {
+static int luaopen_wifi_init(lua_State* L) {
     esp_netif_init();
     esp_event_loop_create_default();
     esp_netif_create_default_wifi_sta();
@@ -56,7 +56,7 @@ static int iot_wifi_init(lua_State* L) {
     return 1;
 }
 
-static int iot_wifi_deinit(lua_State* L) {
+static int luaopen_wifi_deinit(lua_State* L) {
     esp_wifi_stop();
     esp_wifi_deinit();
     
@@ -64,7 +64,7 @@ static int iot_wifi_deinit(lua_State* L) {
     return 1;
 }
 
-static int iot_wifi_connect(lua_State* L) {
+static int luaopen_wifi_connect(lua_State* L) {
     const char* ssid = luaL_checkstring(L, 1);
     const char* password = luaL_checkstring(L, 2);
     
@@ -80,14 +80,14 @@ static int iot_wifi_connect(lua_State* L) {
     return 1;
 }
 
-static int iot_wifi_disconnect(lua_State* L) {
+static int luaopen_wifi_disconnect(lua_State* L) {
     esp_wifi_disconnect();
     
     lua_pushboolean(L, 1);
     return 1;
 }
 
-static int iot_wifi_get_status(lua_State* L) {
+static int luaopen_wifi_get_status(lua_State* L) {
     wifi_ap_record_t ap_info;
     esp_wifi_sta_get_ap_info(&ap_info);
     
@@ -102,7 +102,7 @@ static int iot_wifi_get_status(lua_State* L) {
     return 1;
 }
 
-static int iot_wifi_scan(lua_State* L) {
+static int luaopen_wifi_scan(lua_State* L) {
     wifi_scan_config_t scan_config = {
         .ssid = NULL,
         .bssid = NULL,
@@ -143,7 +143,7 @@ static int iot_wifi_scan(lua_State* L) {
     return 1;
 }
 
-static int iot_wifi_get_ip(lua_State* L) {
+static int luaopen_wifi_get_ip(lua_State* L) {
     esp_netif_ip_info_t ip_info;
     esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info);
     
@@ -155,18 +155,18 @@ static int iot_wifi_get_ip(lua_State* L) {
     return 1;
 }
 
-static const luaL_Reg wifi_lib[] = {
-    { "init",          iot_wifi_init },
-    { "deinit",        iot_wifi_deinit },
-    { "connect",       iot_wifi_connect },
-    { "disconnect",    iot_wifi_disconnect },
-    { "get_status",    iot_wifi_get_status },
-    { "scan",          iot_wifi_scan },
-    { "get_ip",        iot_wifi_get_ip },
+static const luaL_Reg luaopen_wifi_lib[] = {
+    { "init",          luaopen_wifi_init },
+    { "deinit",        luaopen_wifi_deinit },
+    { "connect",       luaopen_wifi_connect },
+    { "disconnect",    luaopen_wifi_disconnect },
+    { "get_status",    luaopen_wifi_get_status },
+    { "scan",          luaopen_wifi_scan },
+    { "get_ip",        luaopen_wifi_get_ip },
     { NULL, NULL }
 };
 
-LUAMOD_API int luaopen_wifi(lua_State* L) {
-    luaL_newlib(L, wifi_lib);
+LUAMOD_API int luaopen_wifi_register(lua_State* L) {
+    luaL_newlib(L, luaopen_wifi_lib);
     return 1;
 }

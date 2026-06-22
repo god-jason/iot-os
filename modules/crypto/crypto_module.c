@@ -101,7 +101,7 @@ static int bin_to_hex(lua_State* L, const uint8_t* bin, size_t binlen, char** ou
  * @bool is_hex 输入是否为十六进制，默认为 false
  * @return 哈希值的十六进制字符串，失败返回 nil
  */
-static int crypto_hash(lua_State* L) {
+static int luaopen_crypto_hash(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
     size_t datalen;
     const char* data = luaL_checklstring(L, 2, &datalen);
@@ -176,7 +176,7 @@ static int crypto_hash(lua_State* L) {
  * @bool is_hex 密钥和数据是否为十六进制，默认为 false
  * @return HMAC 值的十六进制字符串，失败返回 nil
  */
-static int crypto_hmac(lua_State* L) {
+static int luaopen_crypto_hmac(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
     size_t keylen;
     const char* key = luaL_checklstring(L, 2, &keylen);
@@ -261,7 +261,7 @@ static int crypto_hmac(lua_State* L) {
  * @bool is_hex 密钥和明文是否为十六进制，默认为 false
  * @return 密文(十六进制)，失败返回 nil
  */
-static int crypto_encrypt(lua_State* L) {
+static int luaopen_crypto_encrypt(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
     size_t keylen;
     const char* key = luaL_checklstring(L, 2, &keylen);
@@ -386,7 +386,7 @@ static int crypto_encrypt(lua_State* L) {
  * @bool is_hex 密钥和密文是否为十六进制，默认为 true
  * @return 明文字符串，失败返回 nil
  */
-static int crypto_decrypt(lua_State* L) {
+static int luaopen_crypto_decrypt(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
     size_t keylen;
     const char* key = luaL_checklstring(L, 2, &keylen);
@@ -506,7 +506,7 @@ static int crypto_decrypt(lua_State* L) {
  * @int len 需要的随机字节数
  * @return 随机字节的十六进制字符串，失败返回 nil
  */
-static int crypto_rand(lua_State* L) {
+static int luaopen_crypto_rand(lua_State* L) {
     int len = (int)luaL_checkinteger(L, 1);
     if (len <= 0 || len > 256) {
         lua_pushnil(L);
@@ -547,7 +547,7 @@ static int crypto_rand(lua_State* L) {
  * @string hex 十六进制字符串
  * @return 二进制数据的十六进制表示(不变)，用于验证
  */
-static int crypto_hex2bin(lua_State* L) {
+static int luaopen_crypto_hex2bin(lua_State* L) {
     size_t hexlen;
     const char* hex = luaL_checklstring(L, 1, &hexlen);
 
@@ -570,7 +570,7 @@ static int crypto_hex2bin(lua_State* L) {
  * @string bin 二进制数据
  * @return 十六进制字符串
  */
-static int crypto_bin2hex(lua_State* L) {
+static int luaopen_crypto_bin2hex(lua_State* L) {
     size_t binlen;
     const char* bin = luaL_checklstring(L, 1, &binlen);
 
@@ -596,7 +596,7 @@ static int crypto_bin2hex(lua_State* L) {
  * @string data 输入数据
  * @return 校验值的十六进制字符串
  */
-static int crypto_checksum(lua_State* L) {
+static int luaopen_crypto_checksum(lua_State* L) {
     const char* type = luaL_checkstring(L, 1);
     size_t datalen;
     const char* data = luaL_checklstring(L, 2, &datalen);
@@ -636,7 +636,7 @@ static int crypto_checksum(lua_State* L) {
  * @int xorout 输出异或值，默认为 0x0000
  * @return CRC16 值
  */
-static int crypto_crc16(lua_State* L) {
+static int luaopen_crypto_crc16(lua_State* L) {
     size_t datalen;
     const char* data = luaL_checklstring(L, 1, &datalen);
     uint16_t init = (uint16_t)luaL_optinteger(L, 2, 0xFFFF);
@@ -655,7 +655,7 @@ static int crypto_crc16(lua_State* L) {
  * @int xorout 输出异或值，默认为 0x00000000
  * @return CRC32 值
  */
-static int crypto_crc32(lua_State* L) {
+static int luaopen_crypto_crc32(lua_State* L) {
     size_t datalen;
     const char* data = luaL_checklstring(L, 1, &datalen);
     uint32_t init = (uint32_t)luaL_optinteger(L, 2, 0xFFFFFFFF);
@@ -676,7 +676,7 @@ static int crypto_crc32(lua_State* L) {
  * @string data 输入数据
  * @return Base64 编码字符串
  */
-static int crypto_base64_encode(lua_State* L) {
+static int luaopen_crypto_base64_encode(lua_State* L) {
     size_t datalen;
     const char* data = luaL_checklstring(L, 1, &datalen);
 
@@ -710,7 +710,7 @@ static int crypto_base64_encode(lua_State* L) {
  * @string str Base64 编码字符串
  * @return 解码后的二进制数据
  */
-static int crypto_base64_decode(lua_State* L) {
+static int luaopen_crypto_base64_decode(lua_State* L) {
     size_t datalen;
     const char* data = luaL_checklstring(L, 1, &datalen);
 
@@ -745,7 +745,7 @@ static int crypto_base64_decode(lua_State* L) {
 /* X509 证书 userdata 元表 */
 #define X509_CERT_METATABLE "crypto.x509_cert"
 
-static int x509_cert_gc(lua_State* L) {
+static int luaopen_crypto_x509_cert_gc(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (cert && *cert) {
         crypto_x509_free(*cert);
@@ -754,7 +754,7 @@ static int x509_cert_gc(lua_State* L) {
     return 0;
 }
 
-static int x509_cert_tostring(lua_State* L) {
+static int luaopen_crypto_x509_cert_tostring(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (!cert || !*cert) {
         lua_pushstring(L, "x509_cert: invalid");
@@ -771,7 +771,7 @@ static int x509_cert_tostring(lua_State* L) {
  * @string pem PEM 格式证书
  * @return X509 证书对象，失败返回 nil
  */
-static int crypto_x509_parse_pem(lua_State* L) {
+static int luaopen_crypto_x509_parse_pem(lua_State* L) {
     size_t pemlen;
     const char* pem = luaL_checklstring(L, 1, &pemlen);
 
@@ -786,9 +786,9 @@ static int crypto_x509_parse_pem(lua_State* L) {
     *udata = cert;
 
     if (luaL_newmetatable(L, X509_CERT_METATABLE)) {
-        lua_pushcfunction(L, x509_cert_gc);
+        lua_pushcfunction(L, luaopen_crypto_x509_cert_gc);
         lua_setfield(L, -2, "__gc");
-        lua_pushcfunction(L, x509_cert_tostring);
+        lua_pushcfunction(L, luaopen_crypto_x509_cert_tostring);
         lua_setfield(L, -2, "__tostring");
         lua_pushvalue(L, -1);
         lua_setfield(L, -2, "__index");
@@ -803,7 +803,7 @@ static int crypto_x509_parse_pem(lua_State* L) {
  * @api cert:get_subject()
  * @return 主题字符串
  */
-static int x509_cert_get_subject(lua_State* L) {
+static int luaopen_crypto_x509_cert_get_subject(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (!cert || !*cert) {
         lua_pushnil(L);
@@ -825,7 +825,7 @@ static int x509_cert_get_subject(lua_State* L) {
  * @api cert:get_issuer()
  * @return 颁发者字符串
  */
-static int x509_cert_get_issuer(lua_State* L) {
+static int luaopen_crypto_x509_cert_get_issuer(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (!cert || !*cert) {
         lua_pushnil(L);
@@ -847,7 +847,7 @@ static int x509_cert_get_issuer(lua_State* L) {
  * @api cert:get_serial_number()
  * @return 序列号字符串
  */
-static int x509_cert_get_serial_number(lua_State* L) {
+static int luaopen_crypto_x509_cert_get_serial_number(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (!cert || !*cert) {
         lua_pushnil(L);
@@ -869,7 +869,7 @@ static int x509_cert_get_serial_number(lua_State* L) {
  * @api cert:get_common_name()
  * @return 通用名称字符串
  */
-static int x509_cert_get_common_name(lua_State* L) {
+static int luaopen_crypto_x509_cert_get_common_name(lua_State* L) {
     crypto_x509_cert_t** cert = (crypto_x509_cert_t**)luaL_checkudata(L, 1, X509_CERT_METATABLE);
     if (!cert || !*cert) {
         lua_pushnil(L);
@@ -888,10 +888,10 @@ static int x509_cert_get_common_name(lua_State* L) {
 
 /* X509 证书方法表 */
 static const luaL_Reg x509_cert_methods[] = {
-    { "get_subject",      x509_cert_get_subject },
-    { "get_issuer",       x509_cert_get_issuer },
-    { "get_serial_number",x509_cert_get_serial_number },
-    { "get_common_name",  x509_cert_get_common_name },
+    { "get_subject",      luaopen_crypto_x509_cert_get_subject },
+    { "get_issuer",       luaopen_crypto_x509_cert_get_issuer },
+    { "get_serial_number",luaopen_crypto_x509_cert_get_serial_number },
+    { "get_common_name",  luaopen_crypto_x509_cert_get_common_name },
     { NULL,               NULL }
 };
 
@@ -908,7 +908,7 @@ static const luaL_Reg x509_cert_methods[] = {
  * @int keylen 派生密钥长度
  * @return 派生的密钥(十六进制字符串)
  */
-static int crypto_pbkdf2_sha256(lua_State* L) {
+static int luaopen_crypto_pbkdf2_sha256(lua_State* L) {
     size_t passwordlen;
     const char* password = luaL_checklstring(L, 1, &passwordlen);
     size_t saltlen;
@@ -959,25 +959,24 @@ static int crypto_pbkdf2_sha256(lua_State* L) {
 
 /* crypto 模块方法表 */
 static const luaL_Reg crypto_methods[] = {
-    { "hash",         crypto_hash },
-    { "hmac",         crypto_hmac },
-    { "encrypt",      crypto_encrypt },
-    { "decrypt",      crypto_decrypt },
-    { "rand",         crypto_rand },
-    { "hex2bin",      crypto_hex2bin },
-    { "bin2hex",      crypto_bin2hex },
-    { "checksum",     crypto_checksum },
-    { "crc16",        crypto_crc16 },
-    { "crc32",        crypto_crc32 },
-    { "base64_encode",crypto_base64_encode },
-    { "base64_decode",crypto_base64_decode },
-    { "x509_parse_pem",crypto_x509_parse_pem },
-    { "pbkdf2_sha256",crypto_pbkdf2_sha256 },
+    { "hash",         luaopen_crypto_hash },
+    { "hmac",         luaopen_crypto_hmac },
+    { "encrypt",      luaopen_crypto_encrypt },
+    { "decrypt",      luaopen_crypto_decrypt },
+    { "rand",         luaopen_crypto_rand },
+    { "hex2bin",      luaopen_crypto_hex2bin },
+    { "bin2hex",      luaopen_crypto_bin2hex },
+    { "checksum",     luaopen_crypto_checksum },
+    { "crc16",        luaopen_crypto_crc16 },
+    { "crc32",        luaopen_crypto_crc32 },
+    { "base64_encode",luaopen_crypto_base64_encode },
+    { "base64_decode",luaopen_crypto_base64_decode },
+    { "x509_parse_pem",luaopen_crypto_x509_parse_pem },
+    { "pbkdf2_sha256",luaopen_crypto_pbkdf2_sha256 },
     { NULL,           NULL }
 };
 
-/* 模块初始化 */
-LUAMOD_API int luaopen_crypto(lua_State* L) {
+LUAMOD_API int luaopen_crypto_register(lua_State* L) {
     luaL_newlib(L, crypto_methods);
 
     /* 注册算法名称常量 */
