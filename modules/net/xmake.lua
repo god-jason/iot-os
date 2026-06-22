@@ -5,16 +5,9 @@ target("iot_net")
     add_files("*.c")
     add_headerfiles("*.h")
     add_includedirs(".", "..")
+    add_includedirs("../../vendor/lwip")
+    add_includedirs("../../vendor/lwip/src/include")
     add_deps("iot")
-
-    -- 平台相关定义
-    if is_config("freertos") and is_config("platform", "linux") then
-        add_defines("IOT_NET_FREERTOS=1")
-    elseif is_config("platform", "linux") then
-        add_defines("IOT_NET_LINUX=1")
-    elseif is_config("platform", "windows") then
-        add_defines("IOT_NET_WINDOWS=1")
-    end
 
     -- 链接第三方库（需要根据实际情况配置）
     -- add_syslinks("lwip")
