@@ -10,7 +10,7 @@ target("lua")
     add_files("lgc.c", "linit.c", "liolib.c", "llex.c")
     add_files("lmathlib.c", "lmem.c", "loadlib.c", "lobject.c")
     add_files("lopcodes.c", "lparser.c", "lstate.c", "lstring.c")
-    add_files("lstrlib.c", "ltablib.c", "ltm.c", "lua.c")
+    add_files("lstrlib.c", "ltablib.c", "ltm.c")
     add_files("lundump.c", "lvm.c", "lzio.c")
     
     -- 添加头文件
@@ -18,7 +18,7 @@ target("lua")
     add_headerfiles("ldebug.h", "ldo.h", "lfunc.h", "lgc.h")
     add_headerfiles("llex.h", "llimits.h", "lmem.h", "lobject.h")
     add_headerfiles("lopcodes.h", "lparser.h", "lstate.h", "lstring.h")
-    add_headerfiles("ltable.h", "ltm.h", "lua.h", "lua.hpp")
+    add_headerfiles("ltable.h", "ltm.h")
     add_headerfiles("lualib.h", "lundump.h", "lvm.h", "lzio.h")
     
     -- 包含目录

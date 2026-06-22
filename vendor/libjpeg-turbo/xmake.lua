@@ -19,8 +19,9 @@ target("libjpeg-turbo")
     add_files("src/jdtrans.c", "src/jerror.c", "src/jfdctflt.c", "src/jfdctfst.c")
     add_files("src/jfdctint.c", "src/jidctflt.c", "src/jidctfst.c", "src/jidctint.c")
     add_files("src/jidctred.c", "src/jmemmgr.c", "src/jmemnobs.c", "src/jquant1.c")
-    add_files("src/jquant2.c", "src/jstdhuff.c", "src/jutils.c", "src/jmorecfg.c")
-    add_files("src/transupp.c", "src/cdjpeg.c", "src/jpegint.h")
+    add_files("src/jquant2.c", "src/jstdhuff.c", "src/jutils.c")
+    add_files("src/transupp.c", "src/cdjpeg.c")
+    add_headerfiles("src/jpegint.h", "src/jmorecfg.h")
     
     -- MD5 支持
     add_files("src/md5/md5.c", "src/md5/md5hl.c")
