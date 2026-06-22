@@ -22,8 +22,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "cm_mem.h"
-#include "cm_fs.h"
+#include "platform.h"
 
 
 /*
@@ -166,16 +165,16 @@ static int os_execute (lua_State *L) {
 
 static int os_remove (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
-  /* 适配到cm_fs_delete接口 */
-  return luaL_fileresult(L, cm_fs_delete(filename) == 0, filename);
+  /* 适配到iot_fs_delete接口 */
+  return luaL_fileresult(L, iot_fs_delete(filename) == 0, filename);
 }
 
 
 static int os_rename (lua_State *L) {
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
-  /* 适配到cm_fs_move接口 */
-  return luaL_fileresult(L, cm_fs_move(fromname, toname) == 0, NULL);
+  /* 适配到iot_fs_move接口 */
+  return luaL_fileresult(L, iot_fs_move(fromname, toname) == 0, NULL);
 }
 
 

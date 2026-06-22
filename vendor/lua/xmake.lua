@@ -10,16 +10,16 @@ target("lua")
     add_files("lgc.c", "linit.c", "liolib.c", "llex.c")
     add_files("lmathlib.c", "lmem.c", "loadlib.c", "lobject.c")
     add_files("lopcodes.c", "lparser.c", "lstate.c", "lstring.c")
-    add_files("lstrlib.c", "ltablib.c", "ltm.c")
+    add_files("lstrlib.c", "ltablib.c", "ltm.c", "lutf8lib.c", "loslib.c")
     add_files("lundump.c", "lvm.c", "lzio.c")
     
     -- 添加头文件
-    add_headerfiles("lapi.h", "lauxlib.h", "lcode.h", "lctype.h")
-    add_headerfiles("ldebug.h", "ldo.h", "lfunc.h", "lgc.h")
-    add_headerfiles("llex.h", "llimits.h", "lmem.h", "lobject.h")
-    add_headerfiles("lopcodes.h", "lparser.h", "lstate.h", "lstring.h")
-    add_headerfiles("ltable.h", "ltm.h")
-    add_headerfiles("lualib.h", "lundump.h", "lvm.h", "lzio.h")
+    add_headerfiles("lua.h", "luaconf.h", "lualib.h", "lauxlib.h")
+    add_headerfiles("lapi.h", "lcode.h", "lctype.h", "ldebug.h")
+    add_headerfiles("ldo.h", "lfunc.h", "lgc.h", "llex.h")
+    add_headerfiles("llimits.h", "lmem.h", "lobject.h", "lopcodes.h")
+    add_headerfiles("lparser.h", "lstate.h", "lstring.h", "ltable.h")
+    add_headerfiles("ltm.h", "lundump.h", "lvm.h", "lzio.h")
     
     -- 包含目录
     add_deps("platform")
