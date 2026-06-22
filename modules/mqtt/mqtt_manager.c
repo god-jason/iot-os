@@ -3,11 +3,12 @@
 
 #include "platform.h"
 #include "net.h"
+#include "iot_list.h"
 
 #include <string.h>
 #include <stdlib.h>
 
-static mqtt_client_t* s_mqtt_clients = NULL;
+static LIST_HEAD(s_mqtt_clients);
 static iot_mutex_t s_mqtt_mutex;
 static iot_task_t s_mqtt_manager_task;
 static bool s_mqtt_running = false;
@@ -45,9 +46,10 @@ void mqtt_manager_deinit(void) {
     s_mqtt_running = false;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
-    while (s_mqtt_clients) {
-        mqtt_client_t* client = s_mqtt_clients;
-        s_mqtt_clients = client->next;
+    mqtt_client_t* client;
+    mqtt_client_t* tmp;
+    list_for_each_entry_safe(client, tmp, &s_mqtt_clients, list_node, mqtt_client_t) {
+        list_del(&client->list_node);
         mqtt_client_disconnect(client);
     }
     iot_mutex_unlock(s_mqtt_mutex);
@@ -67,8 +69,7 @@ int mqtt_manager_add_client(mqtt_client_t* client) {
     if (!client) return -1;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
-    client->next = s_mqtt_clients;
-    s_mqtt_clients = client;
+    list_add_tail(&client->list_node, &s_mqtt_clients);
     iot_mutex_unlock(s_mqtt_mutex);
 
     return 0;
@@ -78,18 +79,7 @@ int mqtt_manager_remove_client(mqtt_client_t* client) {
     if (!client) return -1;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
-    if (s_mqtt_clients == client) {
-        s_mqtt_clients = client->next;
-    } else {
-        mqtt_client_t* prev = s_mqtt_clients;
-        while (prev && prev->next != client) {
-            prev = prev->next;
-        }
-        if (prev) {
-            prev->next = client->next;
-        }
-    }
-    client->next = NULL;
+    list_del(&client->list_node);
     iot_mutex_unlock(s_mqtt_mutex);
 
     return 0;
@@ -434,10 +424,8 @@ static void mqtt_manager_thread(void* arg) {
     while (s_mqtt_running) {
         iot_mutex_lock(s_mqtt_mutex, -1);
 
-        mqtt_client_t* client = s_mqtt_clients;
-        while (client) {
-            mqtt_client_t* next = client->next;
-
+        mqtt_client_t* client;
+        list_for_each_entry(client, &s_mqtt_clients, list_node, mqtt_client_t) {
             if (client->state == MQTT_STATE_CONNECTED) {
                 mqtt_manager_check_keepalive(client);
                 mqtt_manager_resend_messages(client);
@@ -448,8 +436,6 @@ static void mqtt_manager_thread(void* arg) {
             }
 
             mqtt_manager_check_reconnect(client);
-
-            client = next;
         }
 
         iot_mutex_unlock(s_mqtt_mutex);

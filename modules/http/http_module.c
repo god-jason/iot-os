@@ -1,22 +1,36 @@
 /**
  * @file http_module.c
- * @brief HTTP 客户端 Lua 模块封装
+ * @brief HTTP 模块 Lua 接口封装
  *
- * 提供面向对象的 HTTP 客户端接口，支持 GET、POST、文件下载等功能。
+ * 提供 HTTP 客户端和服务器的 Lua 接口。
+ *
  * Lua 使用示例：
  *
- *   -- 创建客户端并发送 GET 请求
- *   local client = http.new()
- *   local res = client:get("http://httpbin.org/get")
+ *   -- HTTP 请求
+ *   local res = http.get("http://example.com/api")
  *   print(res.status_code, res.body)
- *   client:close()
  *
- *   -- 或者使用简单接口
- *   local res = http.get("http://httpbin.org/get")
- *   print(res.status_code, res.body)
+ *   -- 带选项的请求
+ *   local res = http.post("http://example.com/api", {
+ *       body = "name=test",
+ *       content_type = "application/x-www-form-urlencoded",
+ *       headers = {
+ *           ["Authorization"] = "Bearer token",
+ *           ["X-Custom"] = "value"
+ *       },
+ *       timeout = 30000
+ *   })
  *
  *   -- 文件下载
- *   client:download("http://example.com/file.zip", "file.zip")
+ *   http.download("http://example.com/file.zip", "file.zip")
+ *
+ *   -- 创建 HTTP 服务器
+ *   local server = http.createServer(8080)
+ *   server:on("request", function(req, res)
+ *       res:writeHead(200, {["Content-Type"] = "text/plain"})
+ *       res:end("Hello World")
+ *   end)
+ *   server:listen()
  */
 #include <stddef.h>
 #include <stdint.h>
@@ -28,37 +42,25 @@
 #include "lauxlib.h"
 
 #include "platform.h"
-#include "iot_callback.h"
-#include "iot_params.h"
 
-#include "http.h"
+#include "http_client.h"
+#include "http_server.h"
 
-/*===========================================================
- * 类型定义
- *===========================================================*/
-
-/**
- * @brief HTTP Lua 上下文
- *
- * 每个 HTTP 客户端实例的 Lua 层上下文，包含底层客户端句柄。
- */
 typedef struct {
-    http_client_t* client;        /* 底层 HTTP 客户端句柄 */
-    int inited;                   /* 初始化标志 */
+    http_client_t* client;
+    int inited;
 } http_lua_ctx_t;
 
-#define HTTP_CTX_METATABLE "http.client"  /* Lua 用户数据元表名称 */
+typedef struct {
+    http_server_t* server;
+    int inited;
+    lua_State* L;
+    int handler_ref;
+} http_server_lua_ctx_t;
 
-/*===========================================================
- * 内部函数
- *===========================================================*/
+#define HTTP_CTX_METATABLE "http.client"
+#define HTTP_SERVER_METATABLE "http.server"
 
-/**
- * @brief 从 Lua 栈获取 HTTP 上下文
- * @param L Lua 状态机
- * @param idx 栈索引
- * @return HTTP 上下文指针，失败返回 NULL
- */
 static http_lua_ctx_t* http_get_ctx(lua_State* L, int idx) {
     if (lua_type(L, idx) != LUA_TUSERDATA) {
         return NULL;
@@ -71,16 +73,24 @@ static http_lua_ctx_t* http_get_ctx(lua_State* L, int idx) {
     return *ctx_ptr;
 }
 
-/**
- * @brief 创建 HTTP Lua 上下文
- * @return 新创建的上下文，失败返回 NULL
- */
-static http_lua_ctx_t* http_ctx_create(void) {
+static http_server_lua_ctx_t* http_get_server_ctx(lua_State* L, int idx) {
+    if (lua_type(L, idx) != LUA_TUSERDATA) {
+        return NULL;
+    }
+    
+    http_server_lua_ctx_t** ctx_ptr = (http_server_lua_ctx_t**)lua_touserdata(L, idx);
+    if (!ctx_ptr || !*ctx_ptr) {
+        return NULL;
+    }
+    return *ctx_ptr;
+}
+
+static http_lua_ctx_t* http_ctx_create(const http_client_options_t* options) {
     http_lua_ctx_t* ctx = (http_lua_ctx_t*)iot_malloc(sizeof(http_lua_ctx_t));
     if (!ctx) return NULL;
     
     memset(ctx, 0, sizeof(http_lua_ctx_t));
-    ctx->client = http_client_create();
+    ctx->client = http_client_create(options);
     if (!ctx->client) {
         iot_free(ctx);
         return NULL;
@@ -90,10 +100,6 @@ static http_lua_ctx_t* http_ctx_create(void) {
     return ctx;
 }
 
-/**
- * @brief 销毁 HTTP Lua 上下文
- * @param ctx HTTP 上下文
- */
 static void http_ctx_destroy(http_lua_ctx_t* ctx) {
     if (!ctx) return;
     if (ctx->client) {
@@ -102,23 +108,187 @@ static void http_ctx_destroy(http_lua_ctx_t* ctx) {
     iot_free(ctx);
 }
 
-/*===========================================================
- * Lua 方法实现
- *===========================================================*/
+static http_method_t http_string_to_method(const char* method) {
+    if (!method) return HTTP_METHOD_GET;
+    if (strcmp(method, "POST") == 0) return HTTP_METHOD_POST;
+    if (strcmp(method, "PUT") == 0) return HTTP_METHOD_PUT;
+    if (strcmp(method, "DELETE") == 0) return HTTP_METHOD_DELETE;
+    if (strcmp(method, "HEAD") == 0) return HTTP_METHOD_HEAD;
+    if (strcmp(method, "OPTIONS") == 0) return HTTP_METHOD_OPTIONS;
+    return HTTP_METHOD_GET;
+}
 
-/**
- * @brief 创建 HTTP 客户端实例
- *
- * Lua 调用方式：client = http.new()
- *
- * @param L Lua 状态机
- * @return 1 返回 HTTP 客户端 userdata，失败返回 nil 和错误信息
- */
-static int iot_http_new(lua_State* L) {
-    http_lua_ctx_t* ctx = http_ctx_create();
+static char* http_build_headers_from_table(lua_State* L, int idx) {
+    if (!lua_istable(L, idx)) {
+        return NULL;
+    }
+    
+    char* headers = (char*)iot_malloc(1024);
+    if (!headers) return NULL;
+    
+    headers[0] = '\0';
+    size_t len = 0;
+    
+    lua_pushnil(L);
+    while (lua_next(L, idx) != 0) {
+        const char* key = lua_tostring(L, -2);
+        const char* value = lua_tostring(L, -1);
+        
+        if (key && value) {
+            len += snprintf(headers + len, 1024 - len, "%s: %s\r\n", key, value);
+        }
+        
+        lua_pop(L, 1);
+    }
+    
+    if (len == 0) {
+        iot_free(headers);
+        return NULL;
+    }
+    
+    return headers;
+}
+
+static int http_push_response(lua_State* L, http_response_t* response) {
+    if (!response) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    lua_newtable(L);
+    
+    lua_pushinteger(L, response->status_code);
+    lua_setfield(L, -2, "status_code");
+    
+    if (response->body) {
+        lua_pushlstring(L, response->body, response->body_len);
+    } else {
+        lua_pushnil(L);
+    }
+    lua_setfield(L, -2, "body");
+    
+    if (response->header) {
+        lua_newtable(L);
+        
+        const char* p = response->header;
+        while (*p) {
+            const char* line_start = p;
+            while (*p && *p != '\r') p++;
+            
+            if (*p == '\r') {
+                p += 2;
+                
+                const char* colon = strchr(line_start, ':');
+                if (colon && colon < p) {
+                    size_t key_len = colon - line_start;
+                    const char* value_start = colon + 1;
+                    while (*value_start == ' ') value_start++;
+                    
+                    lua_pushlstring(L, line_start, key_len);
+                    lua_pushstring(L, value_start);
+                    lua_settable(L, -3);
+                }
+            } else {
+                break;
+            }
+        }
+        
+        lua_setfield(L, -2, "headers");
+    } else {
+        lua_newtable(L);
+        lua_setfield(L, -2, "headers");
+    }
+    
+    if (response->error) {
+        lua_pushstring(L, response->error);
+    } else {
+        lua_pushnil(L);
+    }
+    lua_setfield(L, -2, "error");
+    
+    return 1;
+}
+
+static int iot_http_request(lua_State* L) {
+    const char* method = luaL_checkstring(L, 1);
+    const char* url = luaL_checkstring(L, 2);
+    
+    http_client_options_t options = {
+        .url = url,
+        .method = http_string_to_method(method),
+        .timeout_ms = 30000,
+        .enable_gzip = true,
+        .auto_decompress = true,
+    };
+    
+    char* headers_str = NULL;
+    
+    if (lua_istable(L, 3)) {
+        lua_getfield(L, 3, "body");
+        if (lua_isstring(L, -1)) {
+            options.body = lua_tostring(L, -1);
+            options.body_len = lua_rawlen(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 3, "content_type");
+        if (lua_isstring(L, -1)) {
+            options.content_type = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 3, "headers");
+        if (lua_istable(L, -1)) {
+            headers_str = http_build_headers_from_table(L, -1);
+            options.headers = headers_str;
+        } else if (lua_isstring(L, -1)) {
+            options.headers = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 3, "timeout");
+        if (lua_isnumber(L, -1)) {
+            options.timeout_ms = (int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 3, "download_path");
+        if (lua_isstring(L, -1)) {
+            options.download_path = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 3, "enable_gzip");
+        if (lua_isboolean(L, -1)) {
+            options.enable_gzip = lua_toboolean(L, -1);
+        }
+        lua_pop(L, 1);
+    } else {
+        const char* body = luaL_optstring(L, 3, NULL);
+        const char* content_type = luaL_optstring(L, 4, "application/x-www-form-urlencoded");
+        
+        options.body = body;
+        options.body_len = body ? strlen(body) : 0;
+        options.content_type = content_type;
+    }
+    
+    http_lua_ctx_t* ctx = http_ctx_create(&options);
     if (!ctx) {
+        if (headers_str) iot_free(headers_str);
         lua_pushnil(L);
         lua_pushstring(L, "failed to create http client");
+        return 2;
+    }
+    
+    if (headers_str) {
+        iot_free(headers_str);
+    }
+    
+    int ret = http_client_execute(ctx->client);
+    if (ret != 0) {
+        http_ctx_destroy(ctx);
+        lua_pushnil(L);
+        lua_pushstring(L, "http request failed");
         return 2;
     }
     
@@ -131,209 +301,136 @@ static int iot_http_new(lua_State* L) {
     return 1;
 }
 
-/**
- * @brief 发送 GET 请求
- *
- * Lua 调用方式：res = client:get(url)
- *
- * @param L Lua 状态机
- * @param url 请求 URL
- * @return 返回包含 status_code、header、body 的表，失败返回 nil 和错误信息
- */
 static int iot_http_get(lua_State* L) {
-    http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (!ctx || !ctx->client) {
+    const char* url = luaL_checkstring(L, 1);
+    
+    http_client_options_t options = {
+        .url = url,
+        .method = HTTP_METHOD_GET,
+        .timeout_ms = 30000,
+        .enable_gzip = true,
+        .auto_decompress = true,
+    };
+    
+    char* headers_str = NULL;
+    
+    if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "headers");
+        if (lua_istable(L, -1)) {
+            headers_str = http_build_headers_from_table(L, -1);
+            options.headers = headers_str;
+        } else if (lua_isstring(L, -1)) {
+            options.headers = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 2, "timeout");
+        if (lua_isnumber(L, -1)) {
+            options.timeout_ms = (int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+    
+    http_lua_ctx_t* ctx = http_ctx_create(&options);
+    if (!ctx) {
+        if (headers_str) iot_free(headers_str);
         lua_pushnil(L);
-        lua_pushstring(L, "invalid http client");
+        lua_pushstring(L, "failed to create http client");
         return 2;
     }
     
-    const char* url = luaL_checkstring(L, 2);
+    if (headers_str) {
+        iot_free(headers_str);
+    }
     
-    http_response_t response;
-    memset(&response, 0, sizeof(response));
-    
-    int ret = http_client_get(ctx->client, url, &response);
+    int ret = http_client_execute(ctx->client);
     if (ret != 0) {
+        http_ctx_destroy(ctx);
         lua_pushnil(L);
-        lua_pushstring(L, "http request failed");
+        lua_pushstring(L, "http get failed");
         return 2;
     }
     
-    lua_newtable(L);
+    http_response_t* response = http_client_get_response(ctx->client);
+    int result = http_push_response(L, response);
     
-    lua_pushinteger(L, response.status_code);
-    lua_setfield(L, -2, "status_code");
+    http_ctx_destroy(ctx);
     
-    if (response.header) {
-        lua_pushstring(L, response.header);
-        lua_setfield(L, -2, "header");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "header");
-    }
-    
-    if (response.body) {
-        lua_pushstring(L, response.body);
-        lua_setfield(L, -2, "body");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "body");
-    }
-    
-    http_response_free(&response);
-    
-    return 1;
+    return result;
 }
 
-/**
- * @brief 发送 POST 请求
- *
- * Lua 调用方式：res = client:post(url, body, content_type)
- *
- * @param L Lua 状态机
- * @param url 请求 URL
- * @param body 请求体
- * @param content_type Content-Type（可选，默认为 application/x-www-form-urlencoded）
- * @return 返回包含 status_code、header、body 的表，失败返回 nil 和错误信息
- */
 static int iot_http_post(lua_State* L) {
-    http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (!ctx || !ctx->client) {
+    const char* url = luaL_checkstring(L, 1);
+    const char* body = luaL_checkstring(L, 2);
+    const char* content_type = luaL_optstring(L, 3, "application/x-www-form-urlencoded");
+    
+    http_client_options_t options = {
+        .url = url,
+        .method = HTTP_METHOD_POST,
+        .body = body,
+        .body_len = strlen(body),
+        .content_type = content_type,
+        .timeout_ms = 30000,
+        .enable_gzip = true,
+        .auto_decompress = true,
+    };
+    
+    char* headers_str = NULL;
+    
+    if (lua_istable(L, 4)) {
+        lua_getfield(L, 4, "headers");
+        if (lua_istable(L, -1)) {
+            headers_str = http_build_headers_from_table(L, -1);
+            options.headers = headers_str;
+        } else if (lua_isstring(L, -1)) {
+            options.headers = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 4, "timeout");
+        if (lua_isnumber(L, -1)) {
+            options.timeout_ms = (int)lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+    
+    http_lua_ctx_t* ctx = http_ctx_create(&options);
+    if (!ctx) {
+        if (headers_str) iot_free(headers_str);
         lua_pushnil(L);
-        lua_pushstring(L, "invalid http client");
+        lua_pushstring(L, "failed to create http client");
         return 2;
     }
     
-    const char* url = luaL_checkstring(L, 2);
-    const char* body = luaL_checkstring(L, 3);
-    const char* content_type = luaL_optstring(L, 4, "application/x-www-form-urlencoded");
+    if (headers_str) {
+        iot_free(headers_str);
+    }
     
-    http_response_t response;
-    memset(&response, 0, sizeof(response));
-    
-    int ret = http_client_post(ctx->client, url, body, strlen(body), content_type, &response);
+    int ret = http_client_execute(ctx->client);
     if (ret != 0) {
+        http_ctx_destroy(ctx);
         lua_pushnil(L);
-        lua_pushstring(L, "http request failed");
+        lua_pushstring(L, "http post failed");
         return 2;
     }
     
-    lua_newtable(L);
+    http_response_t* response = http_client_get_response(ctx->client);
+    int result = http_push_response(L, response);
     
-    lua_pushinteger(L, response.status_code);
-    lua_setfield(L, -2, "status_code");
+    http_ctx_destroy(ctx);
     
-    if (response.header) {
-        lua_pushstring(L, response.header);
-        lua_setfield(L, -2, "header");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "header");
-    }
-    
-    if (response.body) {
-        lua_pushstring(L, response.body);
-        lua_setfield(L, -2, "body");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "body");
-    }
-    
-    http_response_free(&response);
-    
-    return 1;
+    return result;
 }
 
-/**
- * @brief 下载文件
- *
- * Lua 调用方式：success = client:download(url, save_path)
- *
- * @param L Lua 状态机
- * @param url 文件 URL
- * @param save_path 保存路径
- * @return true 成功，false 失败
- */
-static int iot_http_download(lua_State* L) {
+static int iot_http_client_close(lua_State* L) {
     http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (!ctx || !ctx->client) {
-        lua_pushnil(L);
-        lua_pushstring(L, "invalid http client");
-        return 2;
+    if (ctx) {
+        http_ctx_destroy(ctx);
     }
-    
-    const char* url = luaL_checkstring(L, 2);
-    const char* save_path = luaL_checkstring(L, 3);
-    
-    int ret = http_client_download(ctx->client, url, save_path, NULL, NULL);
-    if (ret != 0) {
-        lua_pushboolean(L, 0);
-        lua_pushstring(L, "download failed");
-        return 2;
-    }
-    
-    lua_pushboolean(L, 1);
-    return 1;
+    return 0;
 }
 
-/**
- * @brief 设置请求超时时间
- *
- * Lua 调用方式：client:set_timeout(timeout_ms)
- *
- * @param L Lua 状态机
- * @param timeout_ms 超时时间（毫秒）
- * @return true 成功，false 失败
- */
-static int iot_http_set_timeout(lua_State* L) {
-    http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (!ctx || !ctx->client) {
-        lua_pushboolean(L, 0);
-        lua_pushstring(L, "invalid http client");
-        return 2;
-    }
-    
-    int timeout_ms = (int)luaL_checkinteger(L, 2);
-    
-    http_client_set_timeout(ctx->client, timeout_ms);
-    
-    lua_pushboolean(L, 1);
-    return 1;
-}
-
-/**
- * @brief 设置最大重定向次数
- *
- * Lua 调用方式：client:set_max_redirects(max_redirects)
- *
- * @param L Lua 状态机
- * @param max_redirects 最大重定向次数
- * @return true 成功，false 失败
- */
-static int iot_http_set_max_redirects(lua_State* L) {
-    http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (!ctx || !ctx->client) {
-        lua_pushboolean(L, 0);
-        lua_pushstring(L, "invalid http client");
-        return 2;
-    }
-    
-    int max_redirects = (int)luaL_checkinteger(L, 2);
-    
-    http_client_set_max_redirects(ctx->client, max_redirects);
-    
-    lua_pushboolean(L, 1);
-    return 1;
-}
-
-/**
- * @brief 获取客户端字符串表示
- *
- * @param L Lua 状态机
- * @return 1 返回 "http.client" 字符串
- */
-static int iot_http_tostring(lua_State* L) {
+static int iot_http_client_tostring(lua_State* L) {
     http_lua_ctx_t* ctx = http_get_ctx(L, 1);
     if (!ctx) {
         lua_pushstring(L, "http.client (invalid)");
@@ -343,133 +440,7 @@ static int iot_http_tostring(lua_State* L) {
     return 1;
 }
 
-/**
- * @brief 关闭并销毁 HTTP 客户端实例
- *
- * Lua 调用方式：client:close()
- *
- * @param L Lua 状态机
- * @return 0 无返回值
- */
-static int iot_http_close(lua_State* L) {
-    http_lua_ctx_t* ctx = http_get_ctx(L, 1);
-    if (ctx) {
-        http_ctx_destroy(ctx);
-    }
-    return 0;
-}
-
-/**
- * @brief 简单 GET 请求（创建临时客户端）
- *
- * Lua 调用方式：res = http.get(url)
- *
- * @param L Lua 状态机
- * @param url 请求 URL
- * @return 返回包含 status_code、header、body 的表，失败返回 nil 和错误信息
- */
-static int iot_http_simple_get(lua_State* L) {
-    const char* url = luaL_checkstring(L, 1);
-    
-    http_response_t response;
-    memset(&response, 0, sizeof(response));
-    
-    int ret = http_get(url, &response);
-    if (ret != 0) {
-        lua_pushnil(L);
-        lua_pushstring(L, "http request failed");
-        return 2;
-    }
-    
-    lua_newtable(L);
-    
-    lua_pushinteger(L, response.status_code);
-    lua_setfield(L, -2, "status_code");
-    
-    if (response.header) {
-        lua_pushstring(L, response.header);
-        lua_setfield(L, -2, "header");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "header");
-    }
-    
-    if (response.body) {
-        lua_pushstring(L, response.body);
-        lua_setfield(L, -2, "body");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "body");
-    }
-    
-    http_response_free(&response);
-    
-    return 1;
-}
-
-/**
- * @brief 简单 POST 请求（创建临时客户端）
- *
- * Lua 调用方式：res = http.post(url, body, content_type)
- *
- * @param L Lua 状态机
- * @param url 请求 URL
- * @param body 请求体
- * @param content_type Content-Type（可选，默认为 application/x-www-form-urlencoded）
- * @return 返回包含 status_code、header、body 的表，失败返回 nil 和错误信息
- */
-static int iot_http_simple_post(lua_State* L) {
-    const char* url = luaL_checkstring(L, 1);
-    const char* body = luaL_checkstring(L, 2);
-    const char* content_type = luaL_optstring(L, 3, "application/x-www-form-urlencoded");
-    
-    http_response_t response;
-    memset(&response, 0, sizeof(response));
-    
-    int ret = http_post(url, body, strlen(body), content_type, &response);
-    if (ret != 0) {
-        lua_pushnil(L);
-        lua_pushstring(L, "http request failed");
-        return 2;
-    }
-    
-    lua_newtable(L);
-    
-    lua_pushinteger(L, response.status_code);
-    lua_setfield(L, -2, "status_code");
-    
-    if (response.header) {
-        lua_pushstring(L, response.header);
-        lua_setfield(L, -2, "header");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "header");
-    }
-    
-    if (response.body) {
-        lua_pushstring(L, response.body);
-        lua_setfield(L, -2, "body");
-    } else {
-        lua_pushnil(L);
-        lua_setfield(L, -2, "body");
-    }
-    
-    http_response_free(&response);
-    
-    return 1;
-}
-
-/**
- * @brief 简单文件下载（创建临时客户端）
- *
- * Lua 调用方式：success = http.download(url, save_path)
- *
- * @param L Lua 状态机
- * @param url 文件 URL
- * @param save_path 保存路径
- * @return true 成功，false 失败
- */
-static int iot_http_simple_download(lua_State* L) {
+static int iot_http_download(lua_State* L) {
     const char* url = luaL_checkstring(L, 1);
     const char* save_path = luaL_checkstring(L, 2);
     
@@ -485,46 +456,201 @@ static int iot_http_simple_download(lua_State* L) {
 }
 
 /*===========================================================
+ * HTTP 服务器 Lua 接口
+ *===========================================================*/
+
+static http_server_lua_ctx_t* http_server_ctx_create(lua_State* L) {
+    http_server_lua_ctx_t* ctx = (http_server_lua_ctx_t*)iot_malloc(sizeof(http_server_lua_ctx_t));
+    if (!ctx) return NULL;
+    
+    memset(ctx, 0, sizeof(http_server_lua_ctx_t));
+    ctx->server = http_server_create();
+    if (!ctx->server) {
+        iot_free(ctx);
+        return NULL;
+    }
+    ctx->inited = 1;
+    ctx->L = L;
+    ctx->handler_ref = LUA_NOREF;
+    
+    return ctx;
+}
+
+static void http_server_ctx_destroy(http_server_lua_ctx_t* ctx) {
+    if (!ctx) return;
+    if (ctx->server) {
+        http_server_destroy(ctx->server);
+    }
+    if (ctx->L && ctx->handler_ref != LUA_NOREF) {
+        luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->handler_ref);
+    }
+    iot_free(ctx);
+}
+
+static int iot_http_create_server(lua_State* L) {
+    int port = (int)luaL_checkinteger(L, 1);
+    
+    http_server_lua_ctx_t* ctx = http_server_ctx_create(L);
+    if (!ctx) {
+        lua_pushnil(L);
+        lua_pushstring(L, "failed to create http server");
+        return 2;
+    }
+    
+    http_server_lua_ctx_t** ctx_ptr = (http_server_lua_ctx_t**)lua_newuserdata(L, sizeof(http_server_lua_ctx_t*));
+    *ctx_ptr = ctx;
+    
+    luaL_getmetatable(L, HTTP_SERVER_METATABLE);
+    lua_setmetatable(L, -2);
+    
+    lua_pushinteger(L, port);
+    lua_setfield(L, -2, "_port");
+    
+    return 1;
+}
+
+static void http_server_request_callback(http_server_t* server, 
+                                         const http_server_request_t* req, 
+                                         http_server_response_t* resp,
+                                         void* user_data) {
+    http_server_lua_ctx_t* ctx = (http_server_lua_ctx_t*)user_data;
+    if (!ctx || !ctx->L || ctx->handler_ref == LUA_NOREF) return;
+    
+    lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->handler_ref);
+    if (!lua_isfunction(ctx->L, -1)) {
+        lua_pop(ctx->L, 1);
+        return;
+    }
+    
+    lua_newtable(ctx->L);
+    
+    lua_pushstring(ctx->L, req->method ? req->method : "GET");
+    lua_setfield(ctx->L, -2, "method");
+    
+    lua_pushstring(ctx->L, req->path ? req->path : "/");
+    lua_setfield(ctx->L, -2, "path");
+    
+    if (req->query) {
+        lua_pushstring(ctx->L, req->query);
+        lua_setfield(ctx->L, -2, "query");
+    }
+    
+    if (req->body && req->body_len > 0) {
+        lua_pushlstring(ctx->L, req->body, req->body_len);
+        lua_setfield(ctx->L, -2, "body");
+    }
+    
+    lua_newtable(ctx->L);
+    
+    lua_pushstring(ctx->L, "writeHead");
+    lua_pushlightuserdata(ctx->L, (void*)resp);
+    lua_settable(ctx->L, -3);
+    
+    lua_pushstring(ctx->L, "end");
+    lua_pushlightuserdata(ctx->L, (void*)resp);
+    lua_settable(ctx->L, -3);
+    
+    lua_call(ctx->L, 2, 0);
+}
+
+static int iot_http_server_on(lua_State* L) {
+    http_server_lua_ctx_t* ctx = http_get_server_ctx(L, 1);
+    if (!ctx || !ctx->server) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid http server");
+        return 2;
+    }
+    
+    const char* event = luaL_checkstring(L, 2);
+    
+    if (strcmp(event, "request") == 0) {
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        
+        if (ctx->handler_ref != LUA_NOREF) {
+            luaL_unref(L, LUA_REGISTRYINDEX, ctx->handler_ref);
+        }
+        
+        lua_pushvalue(L, 3);
+        ctx->handler_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+        
+        http_server_set_request_callback(ctx->server, http_server_request_callback, ctx);
+    }
+    
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int iot_http_server_listen(lua_State* L) {
+    http_server_lua_ctx_t* ctx = http_get_server_ctx(L, 1);
+    if (!ctx || !ctx->server) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "invalid http server");
+        return 2;
+    }
+    
+    lua_getfield(L, 1, "_port");
+    int port = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    
+    int ret = http_server_start(ctx->server, (uint16_t)port);
+    if (ret != 0) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "listen failed");
+        return 2;
+    }
+    
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int iot_http_server_close(lua_State* L) {
+    http_server_lua_ctx_t* ctx = http_get_server_ctx(L, 1);
+    if (ctx) {
+        http_server_ctx_destroy(ctx);
+    }
+    return 0;
+}
+
+static int iot_http_server_tostring(lua_State* L) {
+    http_server_lua_ctx_t* ctx = http_get_server_ctx(L, 1);
+    if (!ctx) {
+        lua_pushstring(L, "http.server (invalid)");
+    } else {
+        lua_pushstring(L, "http.server");
+    }
+    return 1;
+}
+
+/*===========================================================
  * 模块注册
  *===========================================================*/
 
-/**
- * @brief HTTP 客户端方法列表
- *
- * 这些方法会注册到客户端 userdata 的元表中，可通过 client:method() 调用。
- */
 static const luaL_Reg http_client_methods[] = {
-    { "get",               iot_http_get },
-    { "post",              iot_http_post },
-    { "download",          iot_http_download },
-    { "set_timeout",       iot_http_set_timeout },
-    { "set_max_redirects", iot_http_set_max_redirects },
-    { "close",             iot_http_close },
-    { "__gc",              iot_http_close },
-    { "__tostring",        iot_http_tostring },
-    { NULL,                NULL }
+    { "close",   iot_http_client_close },
+    { "__gc",    iot_http_client_close },
+    { "__tostring", iot_http_client_tostring },
+    { NULL,      NULL }
 };
 
-/**
- * @brief HTTP 模块方法列表
- *
- * 这些方法注册到 http 模块命名空间，可通过 http.method() 调用。
- */
+static const luaL_Reg http_server_methods[] = {
+    { "on",      iot_http_server_on },
+    { "listen",  iot_http_server_listen },
+    { "close",   iot_http_server_close },
+    { "__gc",    iot_http_server_close },
+    { "__tostring", iot_http_server_tostring },
+    { NULL,      NULL }
+};
+
 static const luaL_Reg http_module_methods[] = {
-    { "new",       iot_http_new },
-    { "get",       iot_http_simple_get },
-    { "post",      iot_http_simple_post },
-    { "download",  iot_http_simple_download },
-    { NULL,        NULL }
+    { "request",     iot_http_request },
+    { "get",         iot_http_get },
+    { "post",        iot_http_post },
+    { "download",    iot_http_download },
+    { "createServer", iot_http_create_server },
+    { NULL,          NULL }
 };
 
-/**
- * @brief HTTP 模块常量定义
- *
- * 包含 HTTP 方法、状态码等常量。
- */
 static const luaL_Const http_constants[] = {
-    /* HTTP 方法 */
     { "GET",     HTTP_METHOD_GET },
     { "POST",    HTTP_METHOD_POST },
     { "PUT",     HTTP_METHOD_PUT },
@@ -532,7 +658,6 @@ static const luaL_Const http_constants[] = {
     { "HEAD",    HTTP_METHOD_HEAD },
     { "OPTIONS", HTTP_METHOD_OPTIONS },
     
-    /* HTTP 状态码 */
     { "STATUS_OK",              HTTP_STATUS_OK },
     { "STATUS_CREATED",         HTTP_STATUS_CREATED },
     { "STATUS_NO_CONTENT",      HTTP_STATUS_NO_CONTENT },
@@ -549,30 +674,24 @@ static const luaL_Const http_constants[] = {
     { NULL, 0 }
 };
 
-/**
- * @brief Lua 模块入口函数
- *
- * 当 require("http") 时调用此函数，注册模块方法、常量和客户端元表。
- *
- * @param L Lua 状态机
- * @return 1 返回 http 模块表
- */
 LUAMOD_API int luaopen_http(lua_State* L) {
-    /* 创建模块表 */
     luaL_newlib(L, http_module_methods);
     
-    /* 向模块表添加常量 */
     const luaL_Const* constant = http_constants;
     for (; constant->name; constant++) {
         lua_pushinteger(L, constant->value);
         lua_setfield(L, -2, constant->name);
     }
     
-    /* 创建客户端元表 */
     luaL_newmetatable(L, HTTP_CTX_METATABLE);
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, http_client_methods, 0);
+    
+    luaL_newmetatable(L, HTTP_SERVER_METATABLE);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+    luaL_setfuncs(L, http_server_methods, 0);
     
     return 1;
 }

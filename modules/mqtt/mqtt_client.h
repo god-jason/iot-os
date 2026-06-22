@@ -14,6 +14,7 @@
 
 #include "net.h"
 #include "mqtt_packets.h"
+#include "iot_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,7 +168,7 @@ struct mqtt_client {
     uint32_t last_ping_time;          /* 最后一次心跳时间 */
     uint32_t ping_sent_time;          /* 最后一次心跳发送时间 */
     
-    mqtt_client_t* next;              /* 链表下一个节点 */
+    list_head_t list_node;            /* 链表节点 */
 };
 
 /**
