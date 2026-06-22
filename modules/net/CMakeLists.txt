@@ -4,7 +4,7 @@
 
 add_library(iot_net STATIC
     net.c
-    lua_module.c
+    net_module.c
 )
 
 target_include_directories(iot_net PUBLIC

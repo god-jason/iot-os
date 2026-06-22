@@ -1,9 +1,3 @@
-/**
- * @file mqtt_client.h
- * @brief MQTT 客户端定义
- *
- * 基于 net_socket 实现的 MQTT 3.1.1 客户端，支持完整的 QoS 0/1/2、自动重连等
- */
 #ifndef IOT_MQTT_CLIENT_H
 #define IOT_MQTT_CLIENT_H
 
@@ -13,9 +7,6 @@
 
 #include "net.h"
 #include "mqtt_packets.h"
-#include "mqtt_publisher.h"
-#include "mqtt_keepalive.h"
-#include "mqtt_event.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +32,20 @@ typedef enum {
     MQTT_STATE_ERROR         = 3,
 } mqtt_state_t;
 
+typedef enum {
+    MQTT_EVENT_CONNECTED      = 0,
+    MQTT_EVENT_DISCONNECTED   = 1,
+    MQTT_EVENT_MESSAGE        = 2,
+    MQTT_EVENT_ERROR          = 3,
+    MQTT_EVENT_SUBSCRIBED     = 4,
+    MQTT_EVENT_UNSUBSCRIBED   = 5,
+} mqtt_event_type_t;
+
+typedef void (*mqtt_message_callback_t)(const char* topic, const uint8_t* payload,
+                                       size_t payload_len, mqtt_qos_t qos, bool retain, void* user_data);
+
+typedef void (*mqtt_event_callback_t)(mqtt_client_t* client, mqtt_event_type_t event, void* user_data);
+
 typedef struct {
     const char* host;
     uint16_t port;
@@ -57,9 +62,8 @@ typedef struct {
     
     int timeout_ms;
     
-    /* SSL/TLS 配置 */
     bool use_ssl;
-    void* ssl_config;
+    net_ssl_config_t ssl_config;
 } mqtt_connect_options_t;
 
 typedef struct mqtt_subscribe_entry mqtt_subscribe_entry_t;
@@ -72,7 +76,56 @@ struct mqtt_subscribe_entry {
     mqtt_subscribe_entry_t* next;
 };
 
+typedef struct mqtt_outgoing_msg mqtt_outgoing_msg_t;
+
+struct mqtt_outgoing_msg {
+    uint16_t packet_id;
+    mqtt_qos_t qos;
+    char* topic;
+    uint8_t* payload;
+    size_t payload_len;
+    bool retain;
+    int retry_count;
+    uint32_t send_time;
+    mqtt_outgoing_msg_t* next;
+};
+
 typedef struct mqtt_client mqtt_client_t;
+
+struct mqtt_client {
+    sock_t sock;
+    mqtt_state_t state;
+    mqtt_error_t last_error;
+    
+    mqtt_connect_options_t options;
+    
+    mqtt_event_callback_t event_callback;
+    void* event_user_data;
+    
+    uint16_t next_packet_id;
+    
+    uint8_t* recv_buf;
+    size_t recv_len;
+    size_t recv_capacity;
+    
+    mqtt_outgoing_msg_t* outgoing_head;
+    mqtt_outgoing_msg_t* outgoing_tail;
+    size_t outgoing_count;
+    
+    mqtt_subscribe_entry_t* subscribe_head;
+    mqtt_subscribe_entry_t* subscribe_tail;
+    size_t subscribe_count;
+    
+    bool auto_reconnect;
+    int reconnect_interval_ms;
+    uint32_t last_connect_attempt;
+    
+    int keepalive;
+    uint32_t last_ping_time;
+    uint32_t ping_sent_time;
+    
+    mqtt_client_t* next;
+};
 
 mqtt_client_t* mqtt_client_create(void);
 void mqtt_client_destroy(mqtt_client_t* client);
@@ -87,10 +140,6 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
 int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
                           mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data);
 
-int mqtt_client_subscribe_multiple(mqtt_client_t* client, const char** topic_filters,
-                                   const mqtt_qos_t* qos, mqtt_message_callback_t* callbacks,
-                                   void** user_data, size_t topic_count);
-
 int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter);
 
 void mqtt_client_set_event_callback(mqtt_client_t* client,
@@ -102,11 +151,10 @@ mqtt_error_t mqtt_client_get_error(mqtt_client_t* client);
 void mqtt_client_enable_auto_reconnect(mqtt_client_t* client, int interval_ms);
 void mqtt_client_disable_auto_reconnect(mqtt_client_t* client);
 
-void mqtt_client_poll(mqtt_client_t* client, int timeout_ms);
 bool mqtt_client_is_connected(mqtt_client_t* client);
 
-void mqtt_client_set_socket(mqtt_client_t* client, sock_t sock);
-uint16_t mqtt_client_next_packet_id(mqtt_client_t* client);
+int mqtt_manager_start(void);
+void mqtt_manager_stop(void);
 
 #ifdef __cplusplus
 }
