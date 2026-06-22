@@ -184,6 +184,21 @@
 #define iot_free(ptr) \
     yopen_free((void *)(ptr))
 
+/** @brief 字符串复制（分配内存）
+ * @param[in] str 源字符串
+ * @return 新分配的字符串副本，NULL表示失败
+ */
+#define iot_strdup(str) ({ \
+    const char* _s = (str); \
+    if (!_s) NULL; \
+    else { \
+        size_t _len = strlen(_s) + 1; \
+        char* _d = (char*)yopen_malloc(_len); \
+        if (_d) memcpy(_d, _s, _len); \
+        _d; \
+    } \
+})
+
 /** @brief 获取内存使用信息
  * @param[out] total 总内存
  * @param[out] used 已用内存

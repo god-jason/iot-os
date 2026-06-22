@@ -11,20 +11,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-/*===========================================================
- * 常量定义
- *===========================================================*/
-
 #define MQTT_DEFAULT_KEEPALIVE      60
 #define MQTT_DEFAULT_PORT           1883
 #define MQTT_DEFAULT_TIMEOUT        30000
-#define MQTT_MAX_RETRY              3
-#define MQTT_RETRY_INTERVAL_MS      5000
-#define MQTT_MAX_OUTGOING_MSGS      256
-
-/*===========================================================
- * MQTT 客户端结构
- *===========================================================*/
 
 struct mqtt_client {
     sock_t sock;
@@ -35,8 +24,7 @@ struct mqtt_client {
     
     mqtt_connect_options_t options;
     
-    mqtt_event_callback_t event_callback;
-    void* event_user_data;
+    mqtt_event_t event;
     
     uint16_t next_packet_id;
     
@@ -44,34 +32,26 @@ struct mqtt_client {
     size_t recv_len;
     size_t recv_capacity;
     
-    mqtt_outgoing_msg_t* outgoing_head;
-    mqtt_outgoing_msg_t* outgoing_tail;
-    size_t outgoing_count;
+    mqtt_publisher_t publisher;
     
-    bool auto_reconnect;
-    int reconnect_interval_ms;
-    uint32_t last_connect_time;
+    mqtt_subscribe_entry_t* subscribe_head;
+    mqtt_subscribe_entry_t* subscribe_tail;
+    size_t subscribe_count;
     
-    uint32_t last_ping_time;
-    uint32_t ping_interval_ms;
-    
-    mqtt_message_callback_t message_callback;
-    void* message_user_data;
+    mqtt_reconnect_t reconnect;
+    mqtt_keepalive_t keepalive;
 };
 
-/*===========================================================
- * 静态函数声明
- *===========================================================*/
-
+static int mqtt_client_send_raw(mqtt_client_t* client, const uint8_t* buf, size_t len);
 static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, void* user_data);
 static int mqtt_client_send_connect(mqtt_client_t* client);
 static int mqtt_client_process_packet(mqtt_client_t* client);
 static void mqtt_client_handle_publish(mqtt_client_t* client, const mqtt_packet_publish_t* publish);
-static void mqtt_client_resend_messages(mqtt_client_t* client);
 
-/*===========================================================
- * 客户端创建/销毁
- *===========================================================*/
+static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client, const char* topic_filter);
+static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, const char* topic_filter, mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data);
+static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topic_filter);
+static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client);
 
 mqtt_client_t* mqtt_client_create(void) {
     mqtt_client_t* client = (mqtt_client_t*)iot_malloc(sizeof(mqtt_client_t));
@@ -92,6 +72,11 @@ mqtt_client_t* mqtt_client_create(void) {
         return NULL;
     }
     
+    mqtt_publisher_init(&client->publisher);
+    mqtt_event_init(&client->event);
+    mqtt_keepalive_init(&client->keepalive);
+    mqtt_reconnect_init(&client->reconnect);
+    
     return client;
 }
 
@@ -106,50 +91,34 @@ void mqtt_client_destroy(mqtt_client_t* client) {
         iot_free(client->recv_buf);
     }
     
-    mqtt_outgoing_msg_t* msg = client->outgoing_head;
-    while (msg) {
-        mqtt_outgoing_msg_t* next = msg->next;
-        if (msg->topic) iot_free(msg->topic);
-        if (msg->payload) iot_free(msg->payload);
-        iot_free(msg);
-        msg = next;
-    }
+    mqtt_publisher_deinit(&client->publisher);
+    mqtt_client_subscribe_destroy_all(client);
     
     iot_free(client);
 }
-
-/*===========================================================
- * 连接管理
- *===========================================================*/
 
 int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* options) {
     if (!client || !options || !options->host || !options->client_id) {
         return MQTT_ERR_PARAM;
     }
     
-    /* 关闭已有连接 */
     if (client->sock) {
         net_socket_close(client->sock);
         client->sock = 0;
     }
     
-    /* 保存配置 */
     memcpy(&client->options, options, sizeof(mqtt_connect_options_t));
     
-    /* 设置默认端口 */
     if (client->options.port == 0) {
         client->options.port = MQTT_DEFAULT_PORT;
     }
     
-    /* 设置默认心跳 */
     if (client->options.keepalive == 0) {
         client->options.keepalive = MQTT_DEFAULT_KEEPALIVE;
     }
     
-    /* 设置心跳间隔 */
-    client->ping_interval_ms = client->options.keepalive * 1000 / 2;
+    mqtt_keepalive_configure(&client->keepalive, client->options.keepalive, client->options.timeout_ms);
     
-    /* 创建 Socket */
     client->state = MQTT_STATE_CONNECTING;
     client->socket = net_socket_create(SOCK_TYPE_STREAM, mqtt_client_socket_callback, client);
     if (!client->socket) {
@@ -159,7 +128,6 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
     }
     client->sock = (sock_t)client->socket;
     
-    /* 连接服务器 */
     int ret = net_socket_connect(client->sock, options->host, options->port);
     if (ret < 0) {
         client->state = MQTT_STATE_ERROR;
@@ -167,7 +135,7 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
         return MQTT_ERR_CONNECT;
     }
     
-    client->last_connect_time = iot_get_tick_ms();
+    mqtt_reconnect_mark_attempt(&client->reconnect);
     
     return 0;
 }
@@ -175,7 +143,6 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
 int mqtt_client_disconnect(mqtt_client_t* client) {
     if (!client) return MQTT_ERR_PARAM;
     
-    /* 发送 DISCONNECT 报文 */
     if (client->sock) {
         uint8_t buf[4];
         int len = mqtt_packet_encode_disconnect(buf, sizeof(buf));
@@ -190,25 +157,15 @@ int mqtt_client_disconnect(mqtt_client_t* client) {
     client->socket = NULL;
     client->state = MQTT_STATE_DISCONNECTED;
     
-    /* 清理输出队列 */
-    mqtt_outgoing_msg_t* msg = client->outgoing_head;
-    while (msg) {
-        mqtt_outgoing_msg_t* next = msg->next;
-        if (msg->topic) iot_free(msg->topic);
-        if (msg->payload) iot_free(msg->payload);
-        iot_free(msg);
-        msg = next;
-    }
-    client->outgoing_head = NULL;
-    client->outgoing_tail = NULL;
-    client->outgoing_count = 0;
+    mqtt_publisher_clear_retry_count(&client->publisher);
     
     return 0;
 }
 
-/*===========================================================
- * 消息发布/订阅
- *===========================================================*/
+static int mqtt_client_send_raw(mqtt_client_t* client, const uint8_t* buf, size_t len) {
+    if (!client || !client->sock) return -1;
+    return net_socket_send(client->sock, buf, len);
+}
 
 int mqtt_client_publish(mqtt_client_t* client, const char* topic,
                         const uint8_t* payload, size_t payload_len,
@@ -238,34 +195,9 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
         return MQTT_ERR_SEND;
     }
     
-    /* QoS 1/2 需要记录消息以便重传 */
     if (qos > 0) {
-        mqtt_outgoing_msg_t* msg = (mqtt_outgoing_msg_t*)iot_malloc(sizeof(mqtt_outgoing_msg_t));
-        if (msg) {
-            memset(msg, 0, sizeof(mqtt_outgoing_msg_t));
-            msg->packet_id = publish.packet_id;
-            msg->qos = qos;
-            msg->topic = (char*)iot_strdup(topic);
-            if (payload && payload_len > 0) {
-                msg->payload = (uint8_t*)iot_malloc(payload_len);
-                if (msg->payload) {
-                    memcpy(msg->payload, payload, payload_len);
-                    msg->payload_len = payload_len;
-                }
-            }
-            msg->retain = retain;
-            msg->send_time = iot_get_tick_ms();
-            
-            /* 添加到队列 */
-            msg->next = NULL;
-            if (client->outgoing_tail) {
-                client->outgoing_tail->next = msg;
-                client->outgoing_tail = msg;
-            } else {
-                client->outgoing_head = client->outgoing_tail = msg;
-            }
-            client->outgoing_count++;
-        }
+        mqtt_publisher_add_message(&client->publisher, publish.packet_id, qos,
+                                   topic, payload, payload_len, retain);
     }
     
     return 0;
@@ -273,12 +205,20 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
 
 int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
                           mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data) {
-    if (!client || !client->sock || !topic_filter || client->state != MQTT_STATE_CONNECTED) {
+    if (!client || !client->sock || !topic_filter || !callback || client->state != MQTT_STATE_CONNECTED) {
         return MQTT_ERR_PARAM;
     }
     
-    client->message_callback = callback;
-    client->message_user_data = user_data;
+    mqtt_subscribe_entry_t* existing = mqtt_client_subscribe_find(client, topic_filter);
+    if (existing) {
+        existing->qos = qos;
+        existing->callback = callback;
+        existing->user_data = user_data;
+    } else {
+        if (!mqtt_client_subscribe_add(client, topic_filter, qos, callback, user_data)) {
+            return MQTT_ERR_MEMORY;
+        }
+    }
     
     uint8_t buf[512];
     mqtt_packet_subscribe_t subscribe = {
@@ -295,6 +235,7 @@ int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
     
     int ret = net_socket_send(client->sock, buf, len);
     if (ret < 0) {
+        mqtt_client_subscribe_remove(client, topic_filter);
         return MQTT_ERR_SEND;
     }
     
@@ -323,12 +264,66 @@ int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
         return MQTT_ERR_SEND;
     }
     
+    mqtt_client_subscribe_remove(client, topic_filter);
+    
     return 0;
 }
 
-/*===========================================================
- * Socket 回调处理
- *===========================================================*/
+int mqtt_client_subscribe_multiple(mqtt_client_t* client, const char** topic_filters,
+                                   const mqtt_qos_t* qos, mqtt_message_callback_t* callbacks,
+                                   void** user_data, size_t topic_count) {
+    if (!client || !client->sock || !topic_filters || !qos || !callbacks ||
+        client->state != MQTT_STATE_CONNECTED || topic_count == 0) {
+        return MQTT_ERR_PARAM;
+    }
+    
+    for (size_t i = 0; i < topic_count; i++) {
+        if (!topic_filters[i] || !callbacks[i]) {
+            return MQTT_ERR_PARAM;
+        }
+        
+        mqtt_subscribe_entry_t* existing = mqtt_client_subscribe_find(client, topic_filters[i]);
+        if (existing) {
+            existing->qos = qos[i];
+            existing->callback = callbacks[i];
+            existing->user_data = user_data ? user_data[i] : NULL;
+        } else {
+            if (!mqtt_client_subscribe_add(client, topic_filters[i], qos[i],
+                                           callbacks[i], user_data ? user_data[i] : NULL)) {
+                for (size_t j = 0; j < i; j++) {
+                    mqtt_client_subscribe_remove(client, topic_filters[j]);
+                }
+                return MQTT_ERR_MEMORY;
+            }
+        }
+    }
+    
+    uint8_t buf[MQTT_MAX_PACKET_SIZE];
+    mqtt_packet_subscribe_t subscribe = {
+        .packet_id = mqtt_client_next_packet_id(client),
+        .topic_filters = topic_filters,
+        .requested_qos = qos,
+        .topic_count = (uint16_t)topic_count
+    };
+    
+    int len = mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
+    if (len < 0) {
+        for (size_t i = 0; i < topic_count; i++) {
+            mqtt_client_subscribe_remove(client, topic_filters[i]);
+        }
+        return MQTT_ERR_SEND;
+    }
+    
+    int ret = net_socket_send(client->sock, buf, len);
+    if (ret < 0) {
+        for (size_t i = 0; i < topic_count; i++) {
+            mqtt_client_subscribe_remove(client, topic_filters[i]);
+        }
+        return MQTT_ERR_SEND;
+    }
+    
+    return 0;
+}
 
 static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, void* user_data) {
     mqtt_client_t* client = (mqtt_client_t*)user_data;
@@ -336,18 +331,15 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
     
     switch (event) {
         case NET_EVENT_CONNECTED: {
-            /* 发送 CONNECT 报文 */
             mqtt_client_send_connect(client);
             break;
         }
         
         case NET_EVENT_RECV: {
-            /* 接收数据 */
             uint8_t buf[4096];
             int len;
             
             while ((len = net_socket_recv(sock, buf, sizeof(buf))) > 0) {
-                /* 扩展缓冲区 */
                 if (client->recv_len + len > client->recv_capacity) {
                     size_t new_cap = client->recv_capacity + MQTT_MAX_PACKET_SIZE;
                     uint8_t* new_buf = (uint8_t*)iot_realloc(client->recv_buf, new_cap);
@@ -359,11 +351,10 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
                 memcpy(client->recv_buf + client->recv_len, buf, len);
                 client->recv_len += len;
                 
-                /* 处理数据包 */
                 while (client->recv_len > 0) {
                     int ret = mqtt_client_process_packet(client);
                     if (ret < 0) break;
-                    if (ret == 0) break;  /* 数据不完整 */
+                    if (ret == 0) break;
                 }
             }
             break;
@@ -374,9 +365,7 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
             client->socket = NULL;
             client->state = MQTT_STATE_DISCONNECTED;
             
-            if (client->event_callback) {
-                client->event_callback(client->event_user_data, MQTT_EVENT_DISCONNECTED);
-            }
+            mqtt_event_trigger(&client->event, MQTT_EVENT_DISCONNECTED);
             break;
         }
         
@@ -386,9 +375,7 @@ static void mqtt_client_socket_callback(sock_t sock, net_event_type_t event, voi
             client->state = MQTT_STATE_ERROR;
             client->last_error = MQTT_ERR_CONNECT;
             
-            if (client->event_callback) {
-                client->event_callback(client->event_user_data, MQTT_EVENT_ERROR);
-            }
+            mqtt_event_trigger(&client->event, MQTT_EVENT_ERROR);
             break;
         }
         
@@ -432,43 +419,58 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         return 0;
     }
     
-    /* 解析数据包头部 */
     mqtt_packet_t packet;
     size_t consumed = 0;
     
     int ret = mqtt_packet_decode_header(client->recv_buf, client->recv_len, &packet, &consumed);
     if (ret < 0) {
-        /* 协议错误 */
         mqtt_packet_free(&packet);
         client->last_error = MQTT_ERR_PROTOCOL;
         return -1;
     }
     
     if (ret == 1) {
-        /* 数据不完整 */
         mqtt_packet_free(&packet);
         return 0;
     }
     
-    /* 处理不同类型的报文 */
     switch (packet.type) {
         case MQTT_PACKET_CONNACK: {
             mqtt_packet_connack_t connack;
             if (mqtt_packet_decode_connack(&packet, &connack) == 0) {
                 if (connack.return_code == MQTT_CONNACK_ACCEPTED) {
                     client->state = MQTT_STATE_CONNECTED;
-                    client->last_ping_time = iot_get_tick_ms();
+                    mqtt_keepalive_reset(&client->keepalive);
                     
-                    if (client->event_callback) {
-                        client->event_callback(client->event_user_data, MQTT_EVENT_CONNECTED);
+                    mqtt_publisher_resend_all(&client->publisher,
+                                              (int(*)(const uint8_t*,size_t,void*))net_socket_send,
+                                              (void*)client->sock);
+                    
+                    if (!client->options.clean_session) {
+                        mqtt_subscribe_entry_t* entry = client->subscribe_head;
+                        while (entry) {
+                            uint8_t buf[512];
+                            mqtt_packet_subscribe_t subscribe = {
+                                .packet_id = mqtt_client_next_packet_id(client),
+                                .topic_filters = &entry->topic_filter,
+                                .requested_qos = &entry->qos,
+                                .topic_count = 1
+                            };
+                            
+                            int len = mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
+                            if (len > 0) {
+                                net_socket_send(client->sock, buf, len);
+                            }
+                            entry = entry->next;
+                        }
                     }
+                    
+                    mqtt_event_trigger(&client->event, MQTT_EVENT_CONNECTED);
                 } else {
                     client->state = MQTT_STATE_ERROR;
                     client->last_error = MQTT_ERR_CONNECT;
                     
-                    if (client->event_callback) {
-                        client->event_callback(client->event_user_data, MQTT_EVENT_ERROR);
-                    }
+                    mqtt_event_trigger(&client->event, MQTT_EVENT_ERROR);
                 }
             }
             break;
@@ -485,23 +487,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         case MQTT_PACKET_PUBACK: {
             mqtt_packet_puback_t puback;
             if (mqtt_packet_decode_puback(&packet, &puback) == 0) {
-                /* 移除 QoS 1 消息 */
-                mqtt_outgoing_msg_t** pp = &client->outgoing_head;
-                while (*pp) {
-                    if ((*pp)->packet_id == puback.packet_id && (*pp)->qos == MQTT_QOS_1) {
-                        mqtt_outgoing_msg_t* temp = *pp;
-                        *pp = temp->next;
-                        if (temp == client->outgoing_tail) {
-                            client->outgoing_tail = *pp;
-                        }
-                        client->outgoing_count--;
-                        if (temp->topic) iot_free(temp->topic);
-                        if (temp->payload) iot_free(temp->payload);
-                        iot_free(temp);
-                        break;
-                    }
-                    pp = &(*pp)->next;
-                }
+                mqtt_publisher_remove_message(&client->publisher, puback.packet_id, MQTT_QOS_1);
             }
             break;
         }
@@ -509,7 +495,6 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         case MQTT_PACKET_PUBREC: {
             mqtt_packet_pubrec_t pubrec;
             if (mqtt_packet_decode_pubrec(&packet, &pubrec) == 0) {
-                /* 发送 PUBREL */
                 uint8_t buf[8];
                 int len = mqtt_packet_encode_pubrel(pubrec.packet_id, buf, sizeof(buf));
                 if (len > 0) {
@@ -522,29 +507,10 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         case MQTT_PACKET_PUBREL: {
             mqtt_packet_pubrel_t pubrel;
             if (mqtt_packet_decode_pubrel(&packet, &pubrel) == 0) {
-                /* 发送 PUBCOMP */
                 uint8_t buf[8];
                 int len = mqtt_packet_encode_pubcomp(pubrel.packet_id, buf, sizeof(buf));
                 if (len > 0) {
                     net_socket_send(client->sock, buf, len);
-                }
-                
-                /* 移除 QoS 2 消息（完成） */
-                mqtt_outgoing_msg_t** pp = &client->outgoing_head;
-                while (*pp) {
-                    if ((*pp)->packet_id == pubrel.packet_id && (*pp)->qos == MQTT_QOS_2) {
-                        mqtt_outgoing_msg_t* temp = *pp;
-                        *pp = temp->next;
-                        if (temp == client->outgoing_tail) {
-                            client->outgoing_tail = *pp;
-                        }
-                        client->outgoing_count--;
-                        if (temp->topic) iot_free(temp->topic);
-                        if (temp->payload) iot_free(temp->payload);
-                        iot_free(temp);
-                        break;
-                    }
-                    pp = &(*pp)->next;
                 }
             }
             break;
@@ -553,23 +519,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         case MQTT_PACKET_PUBCOMP: {
             mqtt_packet_pubcomp_t pubcomp;
             if (mqtt_packet_decode_pubcomp(&packet, &pubcomp) == 0) {
-                /* 移除 QoS 2 消息（完成） */
-                mqtt_outgoing_msg_t** pp = &client->outgoing_head;
-                while (*pp) {
-                    if ((*pp)->packet_id == pubcomp.packet_id) {
-                        mqtt_outgoing_msg_t* temp = *pp;
-                        *pp = temp->next;
-                        if (temp == client->outgoing_tail) {
-                            client->outgoing_tail = *pp;
-                        }
-                        client->outgoing_count--;
-                        if (temp->topic) iot_free(temp->topic);
-                        if (temp->payload) iot_free(temp->payload);
-                        iot_free(temp);
-                        break;
-                    }
-                    pp = &(*pp)->next;
-                }
+                mqtt_publisher_remove_message(&client->publisher, pubcomp.packet_id, MQTT_QOS_2);
             }
             break;
         }
@@ -583,7 +533,7 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
         }
         
         case MQTT_PACKET_PINGRESP: {
-            client->last_ping_time = iot_get_tick_ms();
+            mqtt_keepalive_mark_pong(&client->keepalive);
             break;
         }
         
@@ -598,7 +548,6 @@ static int mqtt_client_process_packet(mqtt_client_t* client) {
     
     mqtt_packet_free(&packet);
     
-    /* 移动缓冲区 */
     memmove(client->recv_buf, client->recv_buf + consumed, client->recv_len - consumed);
     client->recv_len -= consumed;
     
@@ -622,93 +571,49 @@ static void mqtt_client_handle_publish(mqtt_client_t* client, const mqtt_packet_
         }
     }
     
-    if (client->message_callback) {
-        client->message_callback(client->message_user_data, publish->topic,
-                                publish->payload, publish->payload_len,
-                                publish->qos, publish->retain);
-    }
-}
-
-static void mqtt_client_resend_messages(mqtt_client_t* client) {
-    if (!client || !client->sock || client->state != MQTT_STATE_CONNECTED) {
-        return;
-    }
-    
-    uint32_t now = iot_get_tick_ms();
-    mqtt_outgoing_msg_t** pp = &client->outgoing_head;
-    
-    while (*pp) {
-        mqtt_outgoing_msg_t* msg = *pp;
-        
-        /* 检查是否需要重传 */
-        if (now - msg->send_time > MQTT_RETRY_INTERVAL_MS && msg->retry_count < MQTT_MAX_RETRY) {
-            /* 重发消息 */
-            uint8_t buf[MQTT_MAX_PACKET_SIZE];
-            mqtt_packet_publish_t publish = {
-                .dup = true,
-                .qos = msg->qos,
-                .retain = msg->retain,
-                .packet_id = msg->packet_id,
-                .topic = msg->topic,
-                .payload = msg->payload,
-                .payload_len = msg->payload_len
-            };
-            
-            int len = mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
-            if (len > 0) {
-                int ret = net_socket_send(client->sock, buf, len);
-                if (ret > 0) {
-                    msg->send_time = now;
-                    msg->retry_count++;
-                }
+    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    while (entry) {
+        if (mqtt_topic_match(entry->topic_filter, publish->topic)) {
+            if (entry->callback) {
+                entry->callback(entry->user_data, publish->topic,
+                               publish->payload, publish->payload_len,
+                               publish->qos, publish->retain);
             }
         }
-        
-        /* 移除超过最大重试次数的消息 */
-        if (msg->retry_count >= MQTT_MAX_RETRY) {
-            *pp = msg->next;
-            if (msg == client->outgoing_tail) {
-                client->outgoing_tail = *pp;
-            }
-            client->outgoing_count--;
-            if (msg->topic) iot_free(msg->topic);
-            if (msg->payload) iot_free(msg->payload);
-            iot_free(msg);
-        } else {
-            pp = &(*pp)->next;
-        }
+        entry = entry->next;
     }
 }
-
-/*===========================================================
- * 客户端轮询和状态管理
- *===========================================================*/
 
 void mqtt_client_poll(mqtt_client_t* client, int timeout_ms) {
     if (!client) return;
     
-    uint32_t now = iot_get_tick_ms();
+    /* 心跳超时检测 */
+    if (client->state == MQTT_STATE_CONNECTED && mqtt_keepalive_check_timeout(&client->keepalive)) {
+        client->last_error = MQTT_ERR_CONNECT;
+        mqtt_client_disconnect(client);
+        
+        mqtt_event_trigger(&client->event, MQTT_EVENT_ERROR);
+        return;
+    }
     
     /* 心跳 */
-    if (client->state == MQTT_STATE_CONNECTED && client->options.keepalive > 0) {
-        if (now - client->last_ping_time >= client->ping_interval_ms) {
-            uint8_t buf[4];
-            int len = mqtt_packet_encode_pingreq(buf, sizeof(buf));
-            if (len > 0) {
-                net_socket_send(client->sock, buf, len);
-            }
-            client->last_ping_time = now;
+    if (client->state == MQTT_STATE_CONNECTED && mqtt_keepalive_needs_ping(&client->keepalive)) {
+        uint8_t buf[4];
+        int len = mqtt_packet_encode_pingreq(buf, sizeof(buf));
+        if (len > 0) {
+            net_socket_send(client->sock, buf, len);
         }
+        mqtt_keepalive_mark_ping(&client->keepalive);
     }
     
     /* 重发消息 */
-    mqtt_client_resend_messages(client);
+    mqtt_publisher_resend_messages(&client->publisher,
+                                    (int(*)(const uint8_t*,size_t,void*))net_socket_send,
+                                    (void*)client->sock);
     
     /* 自动重连 */
-    if (client->auto_reconnect && client->state == MQTT_STATE_DISCONNECTED) {
-        if (now - client->last_connect_time >= (uint32_t)client->reconnect_interval_ms) {
-            mqtt_client_connect(client, &client->options);
-        }
+    if (mqtt_reconnect_needs_retry(&client->reconnect)) {
+        mqtt_client_connect(client, &client->options);
     }
     
     /* 处理接收缓冲区中的数据 */
@@ -733,21 +638,19 @@ bool mqtt_client_is_connected(mqtt_client_t* client) {
 void mqtt_client_set_event_callback(mqtt_client_t* client,
                                     mqtt_event_callback_t callback, void* user_data) {
     if (client) {
-        client->event_callback = callback;
-        client->event_user_data = user_data;
+        mqtt_event_set_callback(&client->event, callback, user_data);
     }
 }
 
 void mqtt_client_enable_auto_reconnect(mqtt_client_t* client, int interval_ms) {
     if (client) {
-        client->auto_reconnect = true;
-        client->reconnect_interval_ms = interval_ms;
+        mqtt_reconnect_enable(&client->reconnect, interval_ms);
     }
 }
 
 void mqtt_client_disable_auto_reconnect(mqtt_client_t* client) {
     if (client) {
-        client->auto_reconnect = false;
+        mqtt_reconnect_disable(&client->reconnect);
     }
 }
 
@@ -764,4 +667,80 @@ uint16_t mqtt_client_next_packet_id(mqtt_client_t* client) {
         client->next_packet_id = 1;
     }
     return id;
+}
+
+static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client, const char* topic_filter) {
+    if (!client || !topic_filter) return NULL;
+    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    while (entry) {
+        if (strcmp(entry->topic_filter, topic_filter) == 0) {
+            return entry;
+        }
+        entry = entry->next;
+    }
+    return NULL;
+}
+
+static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, const char* topic_filter,
+                                                          mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data) {
+    if (!client || !topic_filter || !callback) return NULL;
+    
+    mqtt_subscribe_entry_t* entry = (mqtt_subscribe_entry_t*)iot_malloc(sizeof(mqtt_subscribe_entry_t));
+    if (!entry) return NULL;
+    
+    memset(entry, 0, sizeof(mqtt_subscribe_entry_t));
+    entry->topic_filter = (char*)iot_strdup(topic_filter);
+    if (!entry->topic_filter) {
+        iot_free(entry);
+        return NULL;
+    }
+    entry->qos = qos;
+    entry->callback = callback;
+    entry->user_data = user_data;
+    
+    if (!client->subscribe_head) {
+        client->subscribe_head = entry;
+        client->subscribe_tail = entry;
+    } else {
+        client->subscribe_tail->next = entry;
+        client->subscribe_tail = entry;
+    }
+    client->subscribe_count++;
+    
+    return entry;
+}
+
+static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topic_filter) {
+    if (!client || !topic_filter) return;
+    
+    mqtt_subscribe_entry_t** pp = &client->subscribe_head;
+    while (*pp) {
+        mqtt_subscribe_entry_t* entry = *pp;
+        if (strcmp(entry->topic_filter, topic_filter) == 0) {
+            *pp = entry->next;
+            if (entry == client->subscribe_tail) {
+                client->subscribe_tail = *pp;
+            }
+            client->subscribe_count--;
+            iot_free(entry->topic_filter);
+            iot_free(entry);
+            break;
+        }
+        pp = &(*pp)->next;
+    }
+}
+
+static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client) {
+    if (!client) return;
+    
+    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    while (entry) {
+        mqtt_subscribe_entry_t* next = entry->next;
+        iot_free(entry->topic_filter);
+        iot_free(entry);
+        entry = next;
+    }
+    client->subscribe_head = NULL;
+    client->subscribe_tail = NULL;
+    client->subscribe_count = 0;
 }

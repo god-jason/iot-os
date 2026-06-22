@@ -175,6 +175,21 @@
 #define iot_free(ptr) \
     cm_free((void *)(ptr))
 
+/** @brief 字符串复制（分配内存）
+ * @param[in] str 源字符串
+ * @return 新分配的字符串副本，NULL表示失败
+ */
+#define iot_strdup(str) ({ \
+    const char* _s = (str); \
+    if (!_s) NULL; \
+    else { \
+        size_t _len = strlen(_s) + 1; \
+        char* _d = (char*)cm_malloc(_len); \
+        if (_d) memcpy(_d, _s, _len); \
+        _d; \
+    } \
+})
+
 /*===========================================================
  * 文件系统适配层
  *===========================================================*/
