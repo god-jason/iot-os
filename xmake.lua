@@ -28,26 +28,13 @@ option("platform")
     set_values("linux", "windows", "esp32", "ml307n", "yopen")
 option_end()
 
--- FreeRTOS 支持
-option("freertos")
-    set_default(false)
-    set_showmenu(true)
-    set_description("启用 FreeRTOS")
-option_end()
 
--- I2C 支持
-option("use_i2c")
-    set_default(false)
-    set_showmenu(true)
-    set_description("启用 I2C 驱动")
-option_end()
-
--- SPI 支持
-option("use_spi")
-    set_default(false)
-    set_showmenu(true)
-    set_description("启用 SPI 驱动")
-option_end()
+-- 公共头文件目录
+add_includedirs("platforms/"..(get_config("platform") or "windows"))
+add_includedirs("vendor/lua")
+add_includedirs("modules/zlib")
+add_includedirs("iot")
+add_includedirs("script")
 
 -- 添加平台相关配置
 if is_config("platform", "linux") then

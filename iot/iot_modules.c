@@ -9,36 +9,12 @@
 #include "iot_modules.h"
 #include "iot_log.h"
 
-/* 核心基础模块 */
 #include "iot_rtos.h"
 #include "iot_task.h"
-#include "iot_callback.h"  /* 回调函数管理 - 不作为Lua模块注册 */
-#include "iot_event.h"
+#include "iot_callback.h" 
 #include "iot_params.h"
-
-/* 数据处理模块 */
-#include "iot_json.h"
 #include "iot_pack.h"
-#include "iot_base64.h"
-#include "iot_zlib.h"
-#include "iot_yaml.h"
 
-#ifdef ENABLE_SQLITE3
-#include "iot_sqlite3.h"
-#endif
-
-#ifdef ENABLE_FONTS
-#include "iot_font.h"
-#include "iot_u8g2.h"
-#endif
-
-#ifdef ENABLE_GMSSL
-#include "iot_gmssl.h"
-#endif
-
-#ifdef ENABLE_JPEG
-#include "iot_jpeg.h"
-#endif
 
 /* 核心模块列表 */
 static const luaL_Reg core_modules[] = {

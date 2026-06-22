@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "iot_task.h"
-#include "iot_event.h"
 #include "iot_base.h"
 #include "platform.h"
 #include "iot_rtos.h"
