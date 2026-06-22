@@ -113,11 +113,11 @@ static int tar_mkdir_recursive(const char *path) {
     for (p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            tots_mkdir(tmp);
+            iot_fs_mkdir(tmp, 0);
             *p = '/';
         }
     }
-    return tots_mkdir(tmp);
+    return iot_fs_mkdir(tmp, 0);
 }
 
 /**
@@ -373,7 +373,7 @@ int tar_extract_entry_to_file(tar_t *tar, int index, const char *output_path) {
         return ret;
     }
     
-    iot_fs_file_t fd = zlzbbb_fs_open(output_path, IOT_FS_WB);
+    iot_fs_file_t fd = iot_fs_open(output_path, IOT_FS_WB);
     if (!fd) {
         iot_free(buf);
         return TAR_ERR_FILE;
@@ -430,7 +430,7 @@ int tar_create(const char *tar_path, const char **files, int file_count) {
         return TAR_ERR_FORMAT;
     }
     
-    iot_fs_file_t fd = zlzbbb_fs_open(tar_path, IOT_FS_WB);
+    iot_fs_file_t fd = iot_fs_open(tar_path, IOT_FS_WB);
     if (!fd) {
         return TAR_ERR_FILE;
     }
@@ -552,7 +552,7 @@ int tar_decompress_file(const char *src_path, const char *dst_dir) {
         char tmp_path[512];
         snprintf(tmp_path, sizeof(tmp_path), "%s/.tmp.tar", dst_dir);
         
-        iot_fs_file_t tmp_fd = zlzbbb_fs_open(tmp_path, IOT_FS_WB);
+        iot_fs_file_t tmp_fd = iot_fs_open(tmp_path, IOT_FS_WB);
         if (!tmp_fd) {
             iot_free(tar_buf);
             return TAR_ERR_FILE;
@@ -679,7 +679,7 @@ int tar_compress_file(const char *src_dir, const char **files, int file_count, c
             return ret;
         }
         
-        iot_fs_file_t dst_fd = zlzbbb_fs_open(dst_path, IOT_FS_WB);
+        iot_fs_file_t dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
         if (!dst_fd) {
             iot_free(gz_buf);
             return TAR_ERR_FILE;

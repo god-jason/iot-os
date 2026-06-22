@@ -122,9 +122,10 @@ static int zlib_deflate_init(void** strm, int level) {
     return 0;
 }
 
-static int zlib_deflate_compress(void* strm, const uint8_t* src, size_t src_len,
+static int http_zlib_deflate_compress(void* strm, const uint8_t* src, size_t src_len,
                                   uint8_t* dst, size_t dst_cap, int level, size_t* produced) {
     size_t dst_len = dst_cap;
+    (void)strm;
     int ret = zlib_deflate_compress(src, src_len, dst, &dst_len, level);
     
     if (ret == 0) {

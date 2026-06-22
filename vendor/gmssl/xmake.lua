@@ -3,8 +3,8 @@
 target("gmssl")
     set_kind("static")
 
-    -- 添加源文件（排除 tools 目录）
-    add_files("src/*.c", {exclude = "tools/*.c"})
+    -- 添加源文件（排除 tools 目录和 ARM 特定文件）
+    add_files("src/*.c|tools/**|gf128_arm64.c|sm2_z256_arm64.c|sm3_arm64.c|sm4_arm64.c|sm4_ce.c|sm9_z256_arm64.c|rand_apple.c|rand_unix.c")
     add_files("src/sdf/*.c")
     add_files("src/skf/*.c")
     add_files("gmssl_module.c")
