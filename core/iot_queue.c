@@ -18,15 +18,17 @@ typedef struct {
 
 iot_queue_t iot_queue_create(int msg_num, int msg_size)
 {
+    LOG_DEBUG("queue create: msg_num=%d, msg_size=%d", msg_num, msg_size);
+    
     iot_queue_internal_t* q = (iot_queue_internal_t*)iot_malloc(sizeof(iot_queue_internal_t));
     if (q == NULL) {
-        LOG("ERR queue malloc failed");
+        LOG_ERROR("queue create failed: malloc error");
         return NULL;
     }
     
     q->buffer = iot_malloc(msg_num * msg_size);
     if (q->buffer == NULL) {
-        LOG("ERR queue buffer malloc failed");
+        LOG_ERROR("queue create failed: buffer malloc error");
         iot_free(q);
         return NULL;
     }
@@ -39,7 +41,7 @@ iot_queue_t iot_queue_create(int msg_num, int msg_size)
     
     q->mutex = iot_mutex_create();
     if (q->mutex == NULL) {
-        LOG("ERR mutex create failed");
+        LOG_ERROR("queue create failed: mutex create error");
         iot_free(q->buffer);
         iot_free(q);
         return NULL;
@@ -47,7 +49,7 @@ iot_queue_t iot_queue_create(int msg_num, int msg_size)
     
     q->sem_empty = iot_sem_create(msg_num, msg_num);
     if (q->sem_empty == NULL) {
-        LOG("ERR sem_empty create failed");
+        LOG_ERROR("queue create failed: sem_empty create error");
         iot_mutex_delete(q->mutex);
         iot_free(q->buffer);
         iot_free(q);
@@ -56,7 +58,7 @@ iot_queue_t iot_queue_create(int msg_num, int msg_size)
     
     q->sem_full = iot_sem_create(msg_num, 0);
     if (q->sem_full == NULL) {
-        LOG("ERR sem_full create failed");
+        LOG_ERROR("queue create failed: sem_full create error");
         iot_sem_delete(q->sem_empty);
         iot_mutex_delete(q->mutex);
         iot_free(q->buffer);
@@ -64,22 +66,26 @@ iot_queue_t iot_queue_create(int msg_num, int msg_size)
         return NULL;
     }
     
+    LOG_INFO("queue created successfully");
     return (iot_queue_t)q;
 }
 
 bool iot_queue_send(iot_queue_t queue, const void* data, uint32_t timeout_ms)
 {
     if (queue == NULL || data == NULL) {
-        LOG("ERR invalid param");
+        LOG_ERROR("queue send: invalid param");
         return false;
     }
     
     iot_queue_internal_t* q = (iot_queue_internal_t*)queue;
     
+    LOG_TRACE("queue send: timeout=%u", timeout_ms);
+    
     if (timeout_ms == IOT_WAIT_FOREVER) {
         iot_sem_wait(q->sem_empty);
     } else {
         if (!iot_sem_wait_timeout(q->sem_empty, timeout_ms)) {
+            LOG_WARN("queue send: timeout");
             return false;
         }
     }
@@ -101,16 +107,19 @@ bool iot_queue_send(iot_queue_t queue, const void* data, uint32_t timeout_ms)
 bool iot_queue_recv(iot_queue_t queue, void* data, uint32_t timeout_ms)
 {
     if (queue == NULL || data == NULL) {
-        LOG("ERR invalid param");
+        LOG_ERROR("queue recv: invalid param");
         return false;
     }
     
     iot_queue_internal_t* q = (iot_queue_internal_t*)queue;
     
+    LOG_TRACE("queue recv: timeout=%u", timeout_ms);
+    
     if (timeout_ms == IOT_WAIT_FOREVER) {
         iot_sem_wait(q->sem_full);
     } else {
         if (!iot_sem_wait_timeout(q->sem_full, timeout_ms)) {
+            LOG_TRACE("queue recv: timeout");
             return false;
         }
     }
@@ -132,16 +141,21 @@ bool iot_queue_recv(iot_queue_t queue, void* data, uint32_t timeout_ms)
 void iot_queue_delete(iot_queue_t queue)
 {
     if (queue == NULL) {
+        LOG_WARN("queue delete: null pointer");
         return;
     }
     
     iot_queue_internal_t* q = (iot_queue_internal_t*)queue;
+    
+    LOG_DEBUG("queue delete: count=%d", q->count);
     
     iot_sem_delete(q->sem_full);
     iot_sem_delete(q->sem_empty);
     iot_mutex_delete(q->mutex);
     iot_free(q->buffer);
     iot_free(q);
+    
+    LOG_INFO("queue deleted");
 }
 
 bool iot_queue_is_empty(iot_queue_t queue)

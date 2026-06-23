@@ -88,7 +88,7 @@ static void audio_play_callback(cm_audio_play_event_e event, void *param) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_init(lua_State* L) {
-    LOG("init");
+    LOG_INFO("init");
     cm_audio_init();
     lua_pushboolean(L, 1);
     return 1;
@@ -100,7 +100,7 @@ static int iot_audio_init(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_deinit(lua_State* L) {
-    LOG("deinit");
+    LOG_INFO("deinit");
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -121,11 +121,11 @@ static int iot_audio_play(lua_State* L) {
         return 1;
     }
 
-    LOG("play path=%s", path);
+    LOG_INFO("play path=%s", path);
     cm_audio_play_format_e format = parse_file_format(path);
     int32_t ret = cm_audio_play_file(path, format, NULL, audio_play_callback, NULL);
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -152,7 +152,7 @@ static int iot_audio_play_pcm(lua_State* L) {
     int bits = lua_isnumber(L, 3) ? (int)lua_tointeger(L, 3) : 16;
     int channels = lua_isnumber(L, 4) ? (int)lua_tointeger(L, 4) : 1;
 
-    LOG("play_pcm len=%u rate=%d bits=%d channels=%d", len, rate, bits, channels);
+    LOG_INFO("play_pcm len=%u rate=%d bits=%d channels=%d", len, rate, bits, channels);
 
     cm_audio_sample_param_t sample_param = {
         .sample_format = (bits == 8) ? CM_AUDIO_SAMPLE_FORMAT_8BIT : CM_AUDIO_SAMPLE_FORMAT_16BIT,
@@ -162,14 +162,14 @@ static int iot_audio_play_pcm(lua_State* L) {
 
     int32_t ret = cm_audio_player_stream_open(CM_AUDIO_PLAY_FORMAT_PCM, &sample_param);
     if (ret != 0) {
-        LOG("ERR open ret=%d", ret);
+        LOG_INFO("ERR open ret=%d", ret);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     ret = cm_audio_player_stream_push((uint8_t*)data, (uint32_t)len);
     if (ret < 0) {
-        LOG("ERR push ret=%d", ret);
+        LOG_INFO("ERR push ret=%d", ret);
     }
     lua_pushboolean(L, ret >= 0);
     return 1;
@@ -181,10 +181,10 @@ static int iot_audio_play_pcm(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_pause(lua_State* L) {
-    LOG("pause");
+    LOG_INFO("pause");
     int32_t ret = cm_audio_player_pause();
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -196,10 +196,10 @@ static int iot_audio_pause(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_resume(lua_State* L) {
-    LOG("resume");
+    LOG_INFO("resume");
     int32_t ret = cm_audio_player_resume();
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -211,10 +211,10 @@ static int iot_audio_resume(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_stop(lua_State* L) {
-    LOG("stop");
+    LOG_INFO("stop");
     int32_t ret = cm_audio_player_stop();
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -231,10 +231,10 @@ static int iot_audio_set_volume(lua_State* L) {
     if (vol < 0) vol = 0;
     if (vol > 100) vol = 100;
 
-    LOG("set_volume vol=%d", vol);
+    LOG_INFO("set_volume vol=%d", vol);
     int ret = cm_audio_player_set_volume(vol);
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -260,7 +260,7 @@ static void audio_record_callback(cm_audio_record_event_e event, void *param) {
 
     params_t* params = params_create(2);
     if (!params) {
-        LOG("ERR params_create failed");
+        LOG_INFO("ERR params_create failed");
         return;
     }
 
@@ -325,13 +325,13 @@ static int iot_audio_record_start(lua_State* L) {
         lua_pop(L, 1);
     }
 
-    LOG("record_start rate=%d", sample_param.rate);
+    LOG_INFO("record_start rate=%d", sample_param.rate);
 
     /* 处理回调 */
     if (lua_isfunction(L, 2)) {
         g_record_ctx = (audio_record_ctx_t*)malloc(sizeof(audio_record_ctx_t));
         if (!g_record_ctx) {
-            LOG("ERR malloc failed");
+            LOG_INFO("ERR malloc failed");
             lua_pushboolean(L, 0);
             return 1;
         }
@@ -352,7 +352,7 @@ static int iot_audio_record_start(lua_State* L) {
         g_record_ctx ? audio_record_callback : NULL, NULL);
 
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
         if (g_record_ctx) {
             lua_pushlightuserdata(L, g_record_ctx->callback_ud);
             lua_pushnil(L);
@@ -372,7 +372,7 @@ static int iot_audio_record_start(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_audio_record_stop(lua_State* L) {
-    LOG("record_stop");
+    LOG_INFO("record_stop");
     cm_audio_recorder_stop();
 
     if (g_record_ctx) {

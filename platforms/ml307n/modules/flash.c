@@ -44,15 +44,15 @@ static int iot_flash_find(lua_State* L) {
     size_t len;
     const char* name = luaL_checklstring(L, 1, &len);
     
-    LOG("find name=%s", name);
+    LOG_INFO("find name=%s", name);
     PART_Handle* part = PART_Find(name);
     if (part) {
         g_current_part = part;
-        LOG("OK");
+        LOG_INFO("OK");
         lua_pushlightuserdata(L, part);
         return 1;
     }
-    LOG("ERR not found");
+    LOG_INFO("ERR not found");
     lua_pushnil(L);
     return 1;
 }
@@ -94,10 +94,10 @@ static int iot_flash_read(lua_State* L) {
         return 1;
     }
     
-    LOG("read offset=%u size=%u", offset, size);
+    LOG_INFO("read offset=%u size=%u", offset, size);
     uint8_t* buf = (uint8_t*)lua_newuserdata(L, size);
     if (buf == NULL) {
-        LOG("ERR malloc failed");
+        LOG_INFO("ERR malloc failed");
         lua_pushnil(L);
         return 1;
     }
@@ -108,7 +108,7 @@ static int iot_flash_read(lua_State* L) {
         return 1;
     }
     
-    LOG("ERR read len=%d", len);
+    LOG_INFO("ERR read len=%d", len);
     lua_pushnil(L);
     return 1;
 }
@@ -149,10 +149,10 @@ static int iot_flash_write(lua_State* L) {
         return 1;
     }
     
-    LOG("write offset=%u len=%u", offset, len);
+    LOG_INFO("write offset=%u len=%u", offset, len);
     int32_t written = PART_Write(part, offset, (const uint8_t*)data, len);
     if (written < 0) {
-        LOG("ERR written=%d", written);
+        LOG_INFO("ERR written=%d", written);
     }
     lua_pushinteger(L, written);
     return 1;
@@ -195,10 +195,10 @@ static int iot_flash_erase(lua_State* L) {
         return 1;
     }
     
-    LOG("erase offset=%u size=%u", offset, size);
+    LOG_INFO("erase offset=%u size=%u", offset, size);
     int32_t ret = PART_Erase(part, offset, size);
     if (ret != DRV_OK) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret == DRV_OK ? 0 : -1);
     return 1;
@@ -229,10 +229,10 @@ static int iot_flash_eraseAll(lua_State* L) {
         return 1;
     }
     
-    LOG("eraseAll");
+    LOG_INFO("eraseAll");
     int32_t ret = PART_EraseAll(part);
     if (ret != DRV_OK) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret == DRV_OK ? 0 : -1);
     return 1;
@@ -290,10 +290,10 @@ static int iot_flash_lock(lua_State* L) {
         return 1;
     }
     
-    LOG("lock");
+    LOG_INFO("lock");
     int32_t ret = PART_Lock(part);
     if (ret != DRV_OK) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret == DRV_OK ? 0 : -1);
     return 1;
@@ -324,10 +324,10 @@ static int iot_flash_unlock(lua_State* L) {
         return 1;
     }
     
-    LOG("unlock");
+    LOG_INFO("unlock");
     int32_t ret = PART_UnLock(part);
     if (ret != DRV_OK) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret == DRV_OK ? 0 : -1);
     return 1;

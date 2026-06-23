@@ -6,12 +6,19 @@
 #include "iot.h"
 #include "iot_task.h"
 #include "iot_wdt.h"
+#include "iot_log.h"
 #include <malloc.h>
 
 int net_port_set_nonblocking(int fd)
 {
     u_long mode = 1;
-    return ioctlsocket((iot_socket_t)fd, FIONBIO, &mode);
+    int ret = ioctlsocket((iot_socket_t)fd, FIONBIO, &mode);
+    if (ret != 0) {
+        LOG_WARN("set nonblocking failed: fd=%d, ret=%d", fd, ret);
+    } else {
+        LOG_DEBUG("set nonblocking: fd=%d", fd);
+    }
+    return ret;
 }
 
 /*===========================================================
@@ -29,6 +36,7 @@ static void __stdcall timer_proxy(void* param, unsigned char flags)
     InterlockedExchange(&ctx->executed, 1);
     (void)flags;
     if (ctx->user_cb) {
+        LOG_TRACE("timer callback: ptr=%p", ctx);
         ctx->user_cb(ctx->user_arg);
     }
 }
@@ -38,8 +46,11 @@ static void __stdcall timer_proxy(void* param, unsigned char flags)
  */
 iot_timer_t iot_timer_create(iot_timer_callback_t cb, void* arg, int period_ms, int type)
 {
+    LOG_DEBUG("timer create: period=%dms, type=%d", period_ms, type);
+    
     iot_timer_t ctx = (iot_timer_t)malloc(sizeof(struct iot_timer_ctx));
     if (!ctx) {
+        LOG_ERROR("timer create failed: malloc error");
         return NULL;
     }
 
@@ -53,11 +64,13 @@ iot_timer_t iot_timer_create(iot_timer_callback_t cb, void* arg, int period_ms, 
     BOOL ret = CreateTimerQueueTimer(&timer, NULL, timer_proxy, ctx,
                                      (DWORD)period_ms, period, WT_EXECUTEDEFAULT);
     if (!ret) {
+        LOG_ERROR("timer create failed: CreateTimerQueueTimer error");
         free(ctx);
         return NULL;
     }
 
     ctx->timer = timer;
+    LOG_TRACE("timer created: ptr=%p", ctx);
     return ctx;
 }
 
@@ -68,6 +81,7 @@ int iot_timer_start(iot_timer_t timer, int period_ms)
 {
     (void)timer;
     (void)period_ms;
+    LOG_TRACE("timer start: already running on Windows");
     return 0;
 }
 
@@ -77,13 +91,16 @@ int iot_timer_start(iot_timer_t timer, int period_ms)
 int iot_timer_stop(iot_timer_t timer)
 {
     if (!timer || !timer->timer) {
+        LOG_WARN("timer stop: invalid timer");
         return -1;
     }
     if (timer->executed) {
+        LOG_DEBUG("timer stop: already executed, skip");
         return 0;  /* 回调已执行，跳过 */
     }
     DeleteTimerQueueTimer(NULL, timer->timer, NULL);
     timer->timer = NULL;
+    LOG_TRACE("timer stopped: ptr=%p", timer);
     return 0;
 }
 
@@ -93,10 +110,11 @@ int iot_timer_stop(iot_timer_t timer)
 void iot_timer_delete(iot_timer_t timer)
 {
     if (!timer) {
+        LOG_WARN("timer delete: null pointer");
         return;
     }
     if (timer->executed) {
-        /* 回调已执行，定时器已自动删除，只需释放上下文 */
+        LOG_DEBUG("timer delete: already executed, free only");
         free(timer);
         return;
     }
@@ -104,6 +122,7 @@ void iot_timer_delete(iot_timer_t timer)
         DeleteTimerQueueTimer(NULL, timer->timer, NULL);
         timer->timer = NULL;
     }
+    LOG_TRACE("timer deleted: ptr=%p", timer);
     free(timer);
 }
 
@@ -115,7 +134,9 @@ int iot_timer_is_running(iot_timer_t timer)
     if (!timer || !timer->timer) {
         return 0;
     }
-    return timer->executed == 0 ? 1 : 0;
+    int running = timer->executed == 0 ? 1 : 0;
+    LOG_TRACE("timer is running: ptr=%p, running=%d", timer, running);
+    return running;
 }
 
 /*===========================================================

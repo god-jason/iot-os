@@ -278,7 +278,7 @@ static void http_socket_callback(net_socket_t* sock, net_event_type_t event, voi
 http_client_t* http_client_create(const http_client_options_t* options) {
     http_client_t* client = (http_client_t*)iot_malloc(sizeof(http_client_t));
     if (!client) {
-        LOG("[HTTP] Client create failed: out of memory");
+        LOG_ERROR("http client create failed: out of memory");
         return NULL;
     }
     
@@ -308,7 +308,7 @@ http_client_t* http_client_create(const http_client_options_t* options) {
     
     list_init(&client->list_node);
     
-    LOG("[HTTP] Client created");
+    LOG_INFO("http client created");
     return client;
 }
 

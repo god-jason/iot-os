@@ -14,7 +14,7 @@ static driver_t* driver_list = NULL;
 
 int driver_i2c_init(driver_i2c_t* i2c, int bus, int speed) {
     if (!i2c) {
-        LOG("[DRV] I2C init failed: invalid parameter");
+        LOG_INFO("[DRV] I2C init failed: invalid parameter");
         return DRIVER_ERR_INVALID;
     }
 
@@ -23,10 +23,10 @@ int driver_i2c_init(driver_i2c_t* i2c, int bus, int speed) {
     i2c->fd = iot_i2c_init(bus, speed);
 
     if (i2c->fd >= 0) {
-        LOG("[DRV] I2C bus %d initialized", bus);
+        LOG_INFO("[DRV] I2C bus %d initialized", bus);
         return DRIVER_OK;
     }
-    LOG("[DRV] I2C bus %d init failed", bus);
+    LOG_INFO("[DRV] I2C bus %d init failed", bus);
     return DRIVER_ERR_I2C;
 }
 
@@ -77,7 +77,7 @@ int driver_i2c_read_bytes(driver_i2c_t* i2c, uint8_t addr, uint8_t* data, size_t
 
 int driver_spi_init(driver_spi_t* spi, int bus, int cs, int speed, int mode) {
     if (!spi) {
-        LOG("[DRV] SPI init failed: invalid parameter");
+        LOG_INFO("[DRV] SPI init failed: invalid parameter");
         return DRIVER_ERR_INVALID;
     }
 
@@ -89,10 +89,10 @@ int driver_spi_init(driver_spi_t* spi, int bus, int cs, int speed, int mode) {
     spi->fd = iot_spi_init(bus, cs, mode, speed);
 
     if (spi->fd >= 0) {
-        LOG("[DRV] SPI bus %d cs %d initialized", bus, cs);
+        LOG_INFO("[DRV] SPI bus %d cs %d initialized", bus, cs);
         return DRIVER_OK;
     }
-    LOG("[DRV] SPI bus %d cs %d init failed", bus, cs);
+    LOG_INFO("[DRV] SPI bus %d cs %d init failed", bus, cs);
     return DRIVER_ERR_SPI;
 }
 
@@ -146,7 +146,7 @@ void driver_delay_us(uint32_t us) {
 
 int driver_register(driver_t* drv) {
     if (!drv || !drv->name) {
-        LOG("[DRV] Register failed: invalid parameter");
+        LOG_INFO("[DRV] Register failed: invalid parameter");
         return DRIVER_ERR_INVALID;
     }
 
@@ -154,7 +154,7 @@ int driver_register(driver_t* drv) {
     driver_list = drv;
     drv->status = DRIVER_STATUS_UNINIT;
 
-    LOG("[DRV] Driver '%s' registered", drv->name);
+    LOG_INFO("[DRV] Driver '%s' registered", drv->name);
     return DRIVER_OK;
 }
 

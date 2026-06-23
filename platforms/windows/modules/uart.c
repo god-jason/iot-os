@@ -9,6 +9,7 @@
 #include "module.h"
 #include "iot_callback.h"
 #include "iot_params.h"
+#include "iot_log.h"
 #include <windows.h>
 
 #define IOT_UART_MAX   4
@@ -28,6 +29,8 @@ static iot_task_t g_uart_thread = NULL;
 static void uart_event_cb(int id) {
     if (id < 0 || id >= IOT_UART_MAX) return;
     
+    LOG_TRACE("uart event: id=%d", id);
+    
     if (g_uart_ctx[id].callback_ud) {
         iot_callback_call(g_uart_ctx[id].callback_ud, NULL);
     }
@@ -36,6 +39,8 @@ static void uart_event_cb(int id) {
 static DWORD WINAPI uart_read_thread(LPVOID arg) {
     HANDLE events[IOT_UART_MAX + 1];
     int event_count;
+    
+    LOG_DEBUG("uart read thread started");
     
     while (g_uart_thread_running) {
         iot_mutex_lock(g_uart_mutex, -1);
@@ -69,11 +74,14 @@ static DWORD WINAPI uart_read_thread(LPVOID arg) {
         }
     }
     
+    LOG_DEBUG("uart read thread stopped");
     return 0;
 }
 
 static void uart_start_read_thread(void) {
     if (g_uart_thread_running) return;
+    
+    LOG_DEBUG("uart start read thread");
     
     if (!g_uart_mutex) {
         g_uart_mutex = iot_mutex_create();
@@ -91,12 +99,16 @@ static int luaopen_uart_setup(lua_State* L) {
     int stopbits = luaL_optinteger(L, 5, 0);
     int flowctl = luaL_optinteger(L, 6, 0);
     
+    LOG_DEBUG("uart setup: id=%d, baudrate=%d", id, baudrate);
+    
     if (id < 0 || id >= IOT_UART_MAX) {
+        LOG_ERROR("uart setup failed: invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
     
     if (g_uart_ctx[id].inited) {
+        LOG_WARN("uart setup: closing existing port id=%d", id);
         CloseHandle(g_uart_ctx[id].hCom);
         g_uart_ctx[id].inited = 0;
     }
@@ -112,6 +124,7 @@ static int luaopen_uart_setup(lua_State* L) {
                              NULL);
     
     if (hCom == INVALID_HANDLE_VALUE) {
+        LOG_ERROR("uart setup failed: cannot open %s", g_uart_ctx[id].device);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -121,6 +134,7 @@ static int luaopen_uart_setup(lua_State* L) {
     dcb.DCBlength = sizeof(dcb);
     
     if (!GetCommState(hCom, &dcb)) {
+        LOG_ERROR("uart setup failed: GetCommState error");
         CloseHandle(hCom);
         lua_pushboolean(L, 0);
         return 1;
@@ -146,6 +160,7 @@ static int luaopen_uart_setup(lua_State* L) {
     dcb.fInX = FALSE;
     
     if (!SetCommState(hCom, &dcb)) {
+        LOG_ERROR("uart setup failed: SetCommState error");
         CloseHandle(hCom);
         lua_pushboolean(L, 0);
         return 1;
@@ -168,6 +183,7 @@ static int luaopen_uart_setup(lua_State* L) {
     
     uart_start_read_thread();
     
+    LOG_INFO("uart setup success: %s at %d bps", g_uart_ctx[id].device, baudrate);
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -175,12 +191,16 @@ static int luaopen_uart_setup(lua_State* L) {
 static int luaopen_uart_close(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     
+    LOG_DEBUG("uart close: id=%d", id);
+    
     if (id < 0 || id >= IOT_UART_MAX) {
+        LOG_ERROR("uart close failed: invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
     
     if (!g_uart_ctx[id].inited) {
+        LOG_WARN("uart close: port not initialized id=%d", id);
         lua_pushboolean(L, 1);
         return 1;
     }
@@ -193,6 +213,7 @@ static int luaopen_uart_close(lua_State* L) {
     CloseHandle(g_uart_ctx[id].hCom);
     g_uart_ctx[id].inited = 0;
     
+    LOG_INFO("uart closed: id=%d", id);
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -202,20 +223,26 @@ static int luaopen_uart_write(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 2, &len);
     
+    LOG_TRACE("uart write: id=%d, len=%zu", id, len);
+    
     if (id < 0 || id >= IOT_UART_MAX) {
+        LOG_ERROR("uart write failed: invalid id=%d", id);
         lua_pushnil(L);
         return 1;
     }
     
     if (!g_uart_ctx[id].inited) {
+        LOG_ERROR("uart write failed: port not initialized id=%d", id);
         lua_pushnil(L);
         return 1;
     }
     
     DWORD written;
     if (!WriteFile(g_uart_ctx[id].hCom, data, (DWORD)len, &written, NULL)) {
+        LOG_ERROR("uart write failed: WriteFile error id=%d", id);
         lua_pushnil(L);
     } else {
+        LOG_DEBUG("uart write success: id=%d, written=%lu", id, written);
         lua_pushinteger(L, written);
     }
     return 1;
@@ -225,40 +252,49 @@ static int luaopen_uart_read(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
     int len = luaL_checkinteger(L, 2);
     
+    LOG_TRACE("uart read: id=%d, len=%d", id, len);
+    
     if (id < 0 || id >= IOT_UART_MAX) {
+        LOG_ERROR("uart read failed: invalid id=%d", id);
         lua_pushnil(L);
         return 1;
     }
     
     if (!g_uart_ctx[id].inited) {
+        LOG_ERROR("uart read failed: port not initialized id=%d", id);
         lua_pushnil(L);
         return 1;
     }
     
     if (len <= 0) {
+        LOG_WARN("uart read: invalid len=%d", len);
         lua_pushnil(L);
         return 1;
     }
     
     char* buff = (char*)iot_malloc(len);
     if (!buff) {
+        LOG_ERROR("uart read failed: malloc error len=%d", len);
         lua_pushnil(L);
         return 1;
     }
     
     DWORD read;
     if (!ReadFile(g_uart_ctx[id].hCom, buff, (DWORD)len, &read, NULL)) {
+        LOG_ERROR("uart read failed: ReadFile error id=%d", id);
         iot_free(buff);
         lua_pushnil(L);
         return 1;
     }
     
     if (read == 0) {
+        LOG_DEBUG("uart read: no data id=%d", id);
         iot_free(buff);
         lua_pushnil(L);
         return 1;
     }
     
+    LOG_DEBUG("uart read success: id=%d, read=%lu", id, read);
     lua_pushlstring(L, buff, read);
     iot_free(buff);
     return 1;

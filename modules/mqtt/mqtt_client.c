@@ -24,7 +24,7 @@ static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client);
 mqtt_client_t* mqtt_client_create(void) {
     mqtt_client_t* client = (mqtt_client_t*)iot_malloc(sizeof(mqtt_client_t));
     if (!client) {
-        LOG("[MQTT] Client create failed: out of memory");
+        LOG_ERROR("mqtt client create failed: out of memory");
         return NULL;
     }
 
@@ -40,12 +40,12 @@ mqtt_client_t* mqtt_client_create(void) {
     client->recv_capacity = MQTT_MAX_PACKET_SIZE;
     client->recv_buf = (uint8_t*)iot_malloc(client->recv_capacity);
     if (!client->recv_buf) {
-        LOG("[MQTT] Client create failed: recv buffer alloc failed");
+        LOG_ERROR("mqtt client create failed: recv buffer alloc error");
         iot_free(client);
         return NULL;
     }
 
-    LOG("[MQTT] Client created");
+    LOG_INFO("mqtt client created");
     return client;
 }
 

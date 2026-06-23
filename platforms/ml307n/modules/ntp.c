@@ -142,7 +142,7 @@ static int iot_ntp_set(lua_State *L) {
     }
     lua_pop(L, 1);
 
-    LOG("set server=%s port=%d", server ? server : "default", port);
+    LOG_INFO("set server=%s port=%d", server ? server : "default", port);
 
     lua_pushboolean(L, 1);
     return 1;
@@ -174,10 +174,10 @@ static int iot_ntp_sync(lua_State *L) {
         cm_ntp_set_cfg(CM_NTP_CFG_CB_PARAM, NULL);
     }
 
-    LOG("sync");
+    LOG_INFO("sync");
     int ret = cm_ntp_sync();
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;

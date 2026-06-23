@@ -41,18 +41,19 @@ iot_log_level_t iot_log_get_level(void);
 /**
  * @brief 日志输出函数（内部使用）
  * @param level 日志级别
- * @param tag 模块标签
  * @param fmt 格式字符串
  * @param ... 可变参数
  */
-void iot_log_printf(iot_log_level_t level, const char* tag, const char* fmt, ...);
+void iot_log_printf(iot_log_level_t level, const char* fmt, ...);
 
 /**
- * @brief 日志宏定义 - 输出带函数名和行号的日志
- * @param fmt 格式字符串
- * @param ... 可变参数
+ * @brief 分级别日志宏定义
  */
-#define LOG(fmt, ...) iot_printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_TRACE(fmt, ...) iot_log_printf(LOG_LEVEL_TRACE, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) iot_log_printf(LOG_LEVEL_DEBUG, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...)  iot_log_printf(LOG_LEVEL_INFO,  "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  iot_log_printf(LOG_LEVEL_WARN,  "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) iot_log_printf(LOG_LEVEL_ERROR, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /**
  * @brief 注册log模块到Lua

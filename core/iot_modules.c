@@ -89,7 +89,7 @@ static const luaL_Reg vendor_list[] = {
 static int register_module(lua_State* L, const char* name, lua_CFunction func)
 {
     if (!L || !name || !func) {
-        LOG("ERR register_module: invalid parameter");
+        LOG_INFO("ERR register_module: invalid parameter");
         return -1;
     }
 
@@ -98,7 +98,7 @@ static int register_module(lua_State* L, const char* name, lua_CFunction func)
 
     /* 检查是否成功创建了模块 */
     if (lua_isnil(L, -1)) {
-        LOG("ERR register_module: %s returned nil", name);
+        LOG_INFO("ERR register_module: %s returned nil", name);
         lua_pop(L, 1);
         return -1;
     }
@@ -125,7 +125,7 @@ void modules_register(lua_State* L)
             success_count++;
         } else {
             fail_count++;
-            LOG("WARN module %s register failed", lib->name);
+            LOG_INFO("WARN module %s register failed", lib->name);
         }
     }
 
@@ -135,7 +135,7 @@ void modules_register(lua_State* L)
             success_count++;
         } else {
             fail_count++;
-            LOG("WARN module %s register failed", lib->name);
+            LOG_INFO("WARN module %s register failed", lib->name);
         }
     }
 
@@ -145,12 +145,12 @@ void modules_register(lua_State* L)
             success_count++;
         } else {
             fail_count++;
-            LOG("WARN module %s register failed", lib->name);
+            LOG_INFO("WARN module %s register failed", lib->name);
         }
     }
 
     // 注册平台模块
     platform_modules_register(L);
 
-    LOG("modules register: success=%d, failed=%d", success_count, fail_count);
+    LOG_INFO("modules register: success=%d, failed=%d", success_count, fail_count);
 }

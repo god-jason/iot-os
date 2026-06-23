@@ -36,7 +36,7 @@ typedef enum
     CLK_HWLOCK  = 1,/* Clock */
     REGLOCK_HWLOCK  = 2,/* Reg */
     SOFTLOCK_HWLOCK = 3,/* Software */
-    LOG_HWLOCK = 4,/* LOG */
+    LOG_HWLOCK = 4,/* LOG_INFO */
     ADC_HWLOCK = 5,/* ADC */
     FLASH_HWLOCK = 6,/* ADC */
     MODEM_SHARE_BUF_HWLOCK = 7,/* Modem Share Buf */

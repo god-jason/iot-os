@@ -42,29 +42,29 @@ static bool iot_load_lua_file(lua_State* L, const char* lua_path)
     
     /* 1. 优先尝试加载 .luac 文件 */
     if (iot_fs_access(luac_path, 0)) {
-        LOG("%s", luac_path);
+        LOG_INFO("%s", luac_path);
         if (luaL_dofile(L, luac_path) == LUA_OK) {
-            LOG("OK %s", luac_path);
+            LOG_INFO("OK %s", luac_path);
             return true;
         } else {
-            LOG("ERR %s", lua_tostring(L, -1));
+            LOG_INFO("ERR %s", lua_tostring(L, -1));
             lua_pop(L, 1);
         }
     }
     
     /* 2. 如果 .luac 加载失败，尝试加载原来的 .lua 文件 */
     if (iot_fs_access(lua_path, 0)) {
-        LOG("%s", lua_path);
+        LOG_INFO("%s", lua_path);
         if (luaL_dofile(L, lua_path) == LUA_OK) {
-            LOG("OK %s", lua_path);
+            LOG_INFO("OK %s", lua_path);
             return true;
         } else {
-            LOG("ERR %s", lua_tostring(L, -1));
+            LOG_INFO("ERR %s", lua_tostring(L, -1));
             lua_pop(L, 1);
         }
     }
     
-    //LOG("ERR both failed");
+    //LOG_INFO("ERR both failed");
     return false;
 }
 
@@ -139,22 +139,22 @@ static void check_and_extract_app_zip(void)
 {
     /* 检查app.zip 是否存在 */
     if (iot_fs_access(APP_ZIP_PATH, 0)) {
-        LOG("app.zip exists, clear app dir and extract");
+        LOG_INFO("app.zip exists, clear app dir and extract");
         clear_app_dir();
         int ret = zip_decompress_file(APP_ZIP_PATH, APP_DIR);
         if (ret == ZIP_OK) {
-            LOG("zip decompress success");
+            LOG_INFO("zip decompress success");
         } else {
-            LOG("zip decompress failed ret=%d", ret);
+            LOG_INFO("zip decompress failed ret=%d", ret);
         }
     } else if (iot_fs_access(APP_TAR_PATH, 0)) {
-        LOG("app.tar.gz exists, clear app dir and extract");
+        LOG_INFO("app.tar.gz exists, clear app dir and extract");
         clear_app_dir();
         int ret = tar_decompress_file(APP_TAR_PATH, APP_DIR);
         if (ret == TAR_OK) {
-            LOG("tar decompress success");
+            LOG_INFO("tar decompress success");
         } else {
-            LOG("tar decompress failed ret=%d", ret);
+            LOG_INFO("tar decompress failed ret=%d", ret);
         }
     }
 }
@@ -166,51 +166,51 @@ static void iot_lua_task(void* argument)
 {
     (void)argument;
 
-    LOG("starting");
+    LOG_INFO("starting");
 
     /* 检查并解压升级包 */
     check_and_extract_app_zip();
 
     /* 初始化消息队列 */
     if (!iot_rtos_msg_init()) {
-        LOG("ERR msg queue init");
+        LOG_INFO("ERR msg queue init");
         return;
     }
-    LOG("msg queue OK");
+    LOG_INFO("msg queue OK");
 
     /* 创建 Lua 虚拟机 */
     g_lua_state = luaL_newstate();
     if (g_lua_state == NULL) {
-        LOG("ERR lua state create");
+        LOG_INFO("ERR lua state create");
         return;
     }
-    LOG("lua state OK");
+    LOG_INFO("lua state OK");
 
     /* 打开标准库 */
     luaL_openlibs(g_lua_state);
-    LOG("libs OK");
+    LOG_INFO("libs OK");
 
     /* 设置 Lua 状态机，用于闭包调用和消息发布 */
     iot_set_lua_state(g_lua_state);
 
     /* 注册所有模块 */
     modules_register(g_lua_state);
-    LOG("modules OK");
+    LOG_INFO("modules OK");
 
     /* 优先从文件系统加载iot.lua/iot.luac，否则使用默认版本 */
-    LOG("load iot.lua");
+    LOG_INFO("load iot.lua");
     if (!iot_load_lua_file(g_lua_state, IOT_LUA_PATH)) {
-        LOG("use default iot.luac");
+        LOG_INFO("use default iot.luac");
         /* 尝试加载默认的iot.luac */
         if (luaL_loadbuffer(g_lua_state, (const char*)iot_luac, iot_luac_len, "iot.luac") != LUA_OK) {
-            LOG("ERR load default: %s", lua_tostring(g_lua_state, -1));
+            LOG_INFO("ERR load default: %s", lua_tostring(g_lua_state, -1));
             lua_pop(g_lua_state, 1);
         } else {
             if (lua_pcall(g_lua_state, 0, 0, 0) != LUA_OK) {
-                LOG("ERR exec default: %s", lua_tostring(g_lua_state, -1));
+                LOG_INFO("ERR exec default: %s", lua_tostring(g_lua_state, -1));
                 lua_pop(g_lua_state, 1);
             } else {
-                LOG("default OK");
+                LOG_INFO("default OK");
             }
         }
     }
@@ -218,23 +218,23 @@ static void iot_lua_task(void* argument)
     /* 加载 main.lua/main.luac */
     if(!iot_load_lua_file(g_lua_state, MAIN_LUA_PATH))
     {
-        LOG("ERR load main");
+        LOG_INFO("ERR load main");
     }
 
     /* 运行 iot.run() */
-    LOG("run iot.run()");
+    LOG_INFO("run iot.run()");
     if (luaL_loadstring(g_lua_state, "iot.run()") != LUA_OK) {
-        LOG("ERR load iot.run(): %s", lua_tostring(g_lua_state, -1));
+        LOG_INFO("ERR load iot.run(): %s", lua_tostring(g_lua_state, -1));
         return;
     }
     
     /* 执行 iot.run() */
     if (lua_pcall(g_lua_state, 0, 0, 0) != LUA_OK) {
-        LOG("ERR exec iot.run(): %s", lua_tostring(g_lua_state, -1));
+        LOG_INFO("ERR exec iot.run(): %s", lua_tostring(g_lua_state, -1));
         return;
     }
 
-    LOG("exiting");
+    LOG_INFO("exiting");
     lua_close(g_lua_state);
     g_lua_state = NULL;
 
@@ -246,7 +246,7 @@ static void iot_lua_task(void* argument)
  */
 bool iot_start(void)
 {
-    LOG("start");
+    LOG_INFO("start");
 
     iot_task_t tid = iot_task_create("lua", iot_lua_task, NULL, LUA_STACK_SIZE, IOT_OS_PRIO_NORMAL);
     return (tid != NULL);

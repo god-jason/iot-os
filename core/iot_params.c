@@ -20,13 +20,13 @@ params_t* params_create(int initial_capacity)
 
     params_t* list = (params_t*)iot_malloc(sizeof(params_t));
     if (!list) {
-        LOG("ERR malloc params_t");
+        LOG_ERROR("params create failed: malloc error");
         return NULL;
     }
 
     list->items = (param_t*)iot_malloc(initial_capacity * sizeof(param_t));
     if (!list->items) {
-        LOG("ERR malloc items");
+        LOG_ERROR("params create failed: items malloc error");
         iot_free(list);
         return NULL;
     }
@@ -35,7 +35,7 @@ params_t* params_create(int initial_capacity)
     list->count = 0;
     list->capacity = initial_capacity;
 
-    //LOG("create OK capacity=%d", initial_capacity);
+    LOG_DEBUG("params created: capacity=%d", initial_capacity);
     return list;
 }
 
@@ -43,8 +43,11 @@ params_t* params_create(int initial_capacity)
 void params_destroy(params_t* list)
 {
     if (!list) {
+        LOG_WARN("params destroy: null pointer");
         return;
     }
+    
+    LOG_DEBUG("params destroy: count=%d", list->count);
 
     /* 先释放每个参数中的字符串 */
     for (int i = 0; i < list->count; i++) {
@@ -63,6 +66,7 @@ void params_destroy(params_t* list)
 int params_ensure_capacity(params_t* list, int additional)
 {
     if (!list) {
+        LOG_ERROR("params ensure capacity: null pointer");
         return -1;
     }
 
@@ -77,11 +81,11 @@ int params_ensure_capacity(params_t* list, int additional)
         new_capacity *= 2;
     }
 
-    LOG("resize %d -> %d", list->capacity, new_capacity);
+    LOG_DEBUG("params resize: %d -> %d", list->capacity, new_capacity);
 
     param_t* new_items = (param_t*)iot_realloc(list->items, new_capacity * sizeof(param_t));
     if (!new_items) {
-        LOG("ERR realloc");
+        LOG_ERROR("params resize failed: realloc error");
         return -1;
     }
 

@@ -63,20 +63,20 @@ static int iot_tts_say(lua_State* L) {
     };
 
     if (!g_tts_initialized) {
-        LOG("auto init");
+        LOG_INFO("auto init");
         int32_t ret = cm_local_tts_init(&cfg);
         if (ret != 0) {
-            LOG("ERR init ret=%d", ret);
+            LOG_INFO("ERR init ret=%d", ret);
             lua_pushboolean(L, 0);
             return 1;
         }
         g_tts_initialized = 1;
     }
 
-    LOG("say len=%u", len);
+    LOG_INFO("say len=%u", len);
     int32_t ret = cm_local_tts_play(text, -1, NULL, NULL);
     if (ret != 0) {
-        LOG("ERR play ret=%d", ret);
+        LOG_INFO("ERR play ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -88,7 +88,7 @@ static int iot_tts_say(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_tts_stop(lua_State* L) {
-    LOG("stop");
+    LOG_INFO("stop");
     int32_t ret = cm_local_tts_play_stop();
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -126,7 +126,7 @@ static int iot_tts_init(lua_State* L) {
         .effect = CM_LOCAL_TTS_EFFECT_NORMAL
     };
 
-    LOG("init speed=%d volume=%d", cfg.speed, cfg.volume);
+    LOG_INFO("init speed=%d volume=%d", cfg.speed, cfg.volume);
     
     if (g_tts_initialized) {
         cm_local_tts_deinit();
@@ -135,9 +135,9 @@ static int iot_tts_init(lua_State* L) {
     int32_t ret = cm_local_tts_init(&cfg);
     if (ret == 0) {
         g_tts_initialized = 1;
-        LOG("OK");
+        LOG_INFO("OK");
     } else {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -149,7 +149,7 @@ static int iot_tts_init(lua_State* L) {
  * @return bool 成功返回true，失败返回false
  */
 static int iot_tts_deinit(lua_State* L) {
-    LOG("deinit");
+    LOG_INFO("deinit");
     if (g_tts_initialized) {
         cm_local_tts_deinit();
         g_tts_initialized = 0;

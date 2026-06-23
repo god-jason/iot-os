@@ -104,12 +104,12 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
 
     size_t expected_len = crypto_hash_digest_size_internal(type);
     if (expected_len == 0) {
-        LOG("ERR: unsupported hash type %d", type);
+        LOG_INFO("ERR: unsupported hash type %d", type);
         return -1;
     }
 
     if (*digestlen < expected_len) {
-        LOG("ERR: digest buffer too small");
+        LOG_INFO("ERR: digest buffer too small");
         *digestlen = expected_len;
         return -1;
     }
@@ -127,7 +127,7 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
     /* 其他哈希使用通用 DIGEST 接口 */
     const DIGEST* digest_alg = crypto_hash_to_gmssl_digest(type);
     if (!digest_alg) {
-        LOG("ERR: digest algorithm not available");
+        LOG_INFO("ERR: digest algorithm not available");
         return -1;
     }
 
@@ -176,7 +176,7 @@ int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
     /* 其他 HMAC 使用通用接口 */
     const DIGEST* digest_alg = crypto_hash_to_gmssl_digest(type);
     if (!digest_alg) {
-        LOG("ERR: digest algorithm not available for HMAC");
+        LOG_INFO("ERR: digest algorithm not available for HMAC");
         return -1;
     }
 
@@ -341,12 +341,12 @@ int crypto_encrypt(crypto_cipher_type_t type,
     size_t expected_ivlen = crypto_cipher_iv_size(type);
 
     if (expected_keylen == 0 || keylen != expected_keylen) {
-        LOG("ERR: invalid key length %d, expected %d", (int)keylen, (int)expected_keylen);
+        LOG_INFO("ERR: invalid key length %d, expected %d", (int)keylen, (int)expected_keylen);
         return -1;
     }
 
     if (expected_ivlen > 0 && ivlen != expected_ivlen) {
-        LOG("ERR: invalid IV length %d, expected %d", (int)ivlen, (int)expected_ivlen);
+        LOG_INFO("ERR: invalid IV length %d, expected %d", (int)ivlen, (int)expected_ivlen);
         return -1;
     }
 
@@ -354,7 +354,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
     if (cipher_is_gcm(type)) {
         if (cipher_is_sm4(type)) {
             /* SM4-GCM */
-            LOG("ERR: SM4-GCM not implemented");
+            LOG_INFO("ERR: SM4-GCM not implemented");
             return -1;
         } else {
             /* AES-GCM */
@@ -462,7 +462,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
         return 0;
     }
 
-    LOG("ERR: unsupported cipher type %d", type);
+    LOG_INFO("ERR: unsupported cipher type %d", type);
     return -1;
 }
 
@@ -480,19 +480,19 @@ int crypto_decrypt(crypto_cipher_type_t type,
     size_t expected_ivlen = crypto_cipher_iv_size(type);
 
     if (expected_keylen == 0 || keylen != expected_keylen) {
-        LOG("ERR: invalid key length");
+        LOG_INFO("ERR: invalid key length");
         return -1;
     }
 
     if (expected_ivlen > 0 && ivlen != expected_ivlen) {
-        LOG("ERR: invalid IV length");
+        LOG_INFO("ERR: invalid IV length");
         return -1;
     }
 
     /* GCM 模式 */
     if (cipher_is_gcm(type)) {
         if (cipher_is_sm4(type)) {
-            LOG("ERR: SM4-GCM not implemented");
+            LOG_INFO("ERR: SM4-GCM not implemented");
             return -1;
         } else {
             /* AES-GCM */
@@ -507,7 +507,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
             size_t ciphertext_len = inlen - taglen;
             if (aes_gcm_decrypt(&aes_key, iv, ivlen, aad, aadlen, in, ciphertext_len,
                                 (uint8_t*)in + ciphertext_len, taglen, out) != 1) {
-                LOG("ERR: GCM authentication failed");
+                LOG_INFO("ERR: GCM authentication failed");
                 return -1;
             }
             *outlen = ciphertext_len;
@@ -520,7 +520,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
     /* ECB 模式 */
     if (cipher_is_ecb(type)) {
         if (inlen % block_size != 0) {
-            LOG("ERR: invalid ciphertext length");
+            LOG_INFO("ERR: invalid ciphertext length");
             return -1;
         }
         if (*outlen < inlen) {
@@ -547,7 +547,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
         /* 去除 PKCS7 填充 */
         uint8_t pad = out[inlen - 1];
         if (pad == 0 || pad > block_size) {
-            LOG("ERR: invalid padding");
+            LOG_INFO("ERR: invalid padding");
             return -1;
         }
         *outlen = inlen - pad;
@@ -598,7 +598,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
         return 0;
     }
 
-    LOG("ERR: unsupported cipher type %d", type);
+    LOG_INFO("ERR: unsupported cipher type %d", type);
     return -1;
 }
 

@@ -48,7 +48,7 @@ static int iot_wdt_start(lua_State* L) {
     timeout_ms = (timeout_ms / 100) * 100;
     feed_period_ms = (feed_period_ms / 100) * 100;
     
-    LOG("WDT start: timeout=%ums, feed_period=%ums", timeout_ms, feed_period_ms);
+    LOG_INFO("WDT start: timeout=%ums, feed_period=%ums", timeout_ms, feed_period_ms);
     uint8_t ret = HardWDT_Initlize(timeout_ms, feed_period_ms);
     lua_pushinteger(L, (lua_Integer)ret);
     return 1;
@@ -74,7 +74,7 @@ static int iot_wdt_stop(lua_State* L) {
 wdt.feed()
 */
 static int iot_wdt_feed(lua_State* L) {
-    LOG("WDT feed");
+    LOG_INFO("WDT feed");
     HardWDT_FeedDog();
     return 0;
 }

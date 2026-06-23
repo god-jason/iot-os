@@ -73,12 +73,12 @@ static void* g_gpio_callback_ud[IOT_GPIO_MAX] = {NULL};
 /**
  * @brief GPIO中断回调函数（中断上下文） */
 static void iot_gpio_interrupt_callback(cm_gpio_num_e pin, cm_gpio_level_e level) {
-    LOG("GPIO%d interrupt, level=%d", pin, level);
+    LOG_INFO("GPIO%d interrupt, level=%d", pin, level);
 
     /* 创建参数列表 */
     params_t* params = params_create(1);
     if (!params) {
-        LOG("ERR params_create failed");
+        LOG_INFO("ERR params_create failed");
         return;
     }
 
@@ -111,22 +111,22 @@ static int iot_gpio_setup(lua_State* L) {
     int pull = luaL_optinteger(L, 3, IOT_GPIO_PULL_NONE);
     int cb_idx = 4;
 
-    LOG("setup pin=%d dir=%d pull=%d", pin, direction, pull);
+    LOG_INFO("setup pin=%d dir=%d pull=%d", pin, direction, pull);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushnil(L);
         return 1;
     }
 
     if (direction != IOT_GPIO_INPUT && direction != IOT_GPIO_OUTPUT) {
-        LOG("ERR invalid direction %d", direction);
+        LOG_INFO("ERR invalid direction %d", direction);
         lua_pushnil(L);
         return 1;
     }
 
     if (pull < IOT_GPIO_PULL_NONE || pull > IOT_GPIO_PULL_UP) {
-        LOG("ERR invalid pull %d", pull);
+        LOG_INFO("ERR invalid pull %d", pull);
         lua_pushnil(L);
         return 1;
     }
@@ -153,7 +153,7 @@ static int iot_gpio_setup(lua_State* L) {
 
     int ret = cm_gpio_init((cm_gpio_num_e)pin, &cfg);
     if (ret != 0) {
-        LOG("ERR init failed ret=%d", ret);
+        LOG_INFO("ERR init failed ret=%d", ret);
         lua_pushnil(L);
         return 1;
     }
@@ -178,7 +178,7 @@ static int iot_gpio_setup(lua_State* L) {
         g_gpio_int_mode[pin] = CM_GPIO_IT_EDGE_FALLING;
         ret = cm_gpio_interrupt_register((cm_gpio_num_e)pin, iot_gpio_interrupt_callback);
         if (ret != 0) {
-            LOG("ERR register interrupt failed ret=%d", ret);
+            LOG_INFO("ERR register interrupt failed ret=%d", ret);
             lua_pushlightuserdata(L, ud);
             lua_pushnil(L);
             lua_settable(L, LUA_REGISTRYINDEX);
@@ -190,7 +190,7 @@ static int iot_gpio_setup(lua_State* L) {
         }
 
         cm_gpio_interrupt_enable((cm_gpio_num_e)pin, CM_GPIO_IT_EDGE_FALLING);
-        LOG("GPIO%d interrupt enabled", pin);
+        LOG_INFO("GPIO%d interrupt enabled", pin);
     }
 
     lua_pushboolean(L, 1);
@@ -212,25 +212,25 @@ static int iot_gpio_set(lua_State* L) {
     int level = luaL_checkinteger(L, 2);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (level != IOT_GPIO_LOW && level != IOT_GPIO_HIGH) {
-        LOG("ERR invalid level %d", level);
+        LOG_INFO("ERR invalid level %d", level);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     int ret = cm_gpio_set_level((cm_gpio_num_e)pin, (cm_gpio_level_e)level);
-    LOG("set pin=%d level=%d ret=%d", pin, level, ret);
+    LOG_INFO("set pin=%d level=%d ret=%d", pin, level, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -249,23 +249,23 @@ static int iot_gpio_get(lua_State* L) {
     cm_gpio_level_e level = CM_GPIO_LEVEL_LOW;
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushinteger(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushinteger(L, 0);
         return 1;
     }
 
     int ret = cm_gpio_get_level((cm_gpio_num_e)pin, &level);
     if (ret != 0) {
-        LOG("ERR get level failed ret=%d", ret);
+        LOG_INFO("ERR get level failed ret=%d", ret);
         lua_pushinteger(L, 0);
     } else {
-        LOG("get pin=%d level=%d", pin, level);
+        LOG_INFO("get pin=%d level=%d", pin, level);
         lua_pushinteger(L, level);
     }
     return 1;
@@ -283,7 +283,7 @@ static int iot_gpio_close(lua_State* L) {
     int pin = luaL_checkinteger(L, 1);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -308,7 +308,7 @@ static int iot_gpio_close(lua_State* L) {
     int ret = cm_gpio_deinit((cm_gpio_num_e)pin);
     g_gpio_inited[pin] = 0;
 
-    LOG("close pin=%d ret=%d", pin, ret);
+    LOG_INFO("close pin=%d ret=%d", pin, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -327,19 +327,19 @@ static int iot_gpio_pull(lua_State* L) {
     int pull = luaL_checkinteger(L, 2);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (pull < IOT_GPIO_PULL_NONE || pull > IOT_GPIO_PULL_UP) {
-        LOG("ERR invalid pull %d", pull);
+        LOG_INFO("ERR invalid pull %d", pull);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -349,7 +349,7 @@ static int iot_gpio_pull(lua_State* L) {
         g_gpio_cfg[pin].pull = (cm_gpio_pull_e)pull;
     }
 
-    LOG("pull pin=%d pull=%d ret=%d", pin, pull, ret);
+    LOG_INFO("pull pin=%d pull=%d ret=%d", pin, pull, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -367,19 +367,19 @@ static int iot_gpio_direction(lua_State* L) {
     int dir = luaL_checkinteger(L, 2);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (dir != IOT_GPIO_INPUT && dir != IOT_GPIO_OUTPUT) {
-        LOG("ERR invalid direction %d", dir);
+        LOG_INFO("ERR invalid direction %d", dir);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -389,7 +389,7 @@ static int iot_gpio_direction(lua_State* L) {
         g_gpio_cfg[pin].direction = (cm_gpio_direction_e)dir;
     }
 
-    LOG("direction pin=%d dir=%d ret=%d", pin, dir, ret);
+    LOG_INFO("direction pin=%d dir=%d ret=%d", pin, dir, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -408,13 +408,13 @@ static int iot_gpio_int_enable(lua_State* L) {
     int mode = luaL_optinteger(L, 2, IOT_GPIO_INT_FALLING);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -427,14 +427,14 @@ static int iot_gpio_int_enable(lua_State* L) {
         case IOT_GPIO_INT_HIGH:    intr_mode = CM_GPIO_IT_LEVEL_HIGH; break;
         case IOT_GPIO_INT_LOW:     intr_mode = CM_GPIO_IT_LEVEL_LOW; break;
         default:
-            LOG("ERR invalid mode %d, using default", mode);
+            LOG_INFO("ERR invalid mode %d, using default", mode);
             intr_mode = CM_GPIO_IT_EDGE_FALLING;
             break;
     }
 
     g_gpio_int_mode[pin] = intr_mode;
     int ret = cm_gpio_interrupt_enable((cm_gpio_num_e)pin, intr_mode);
-    LOG("int_enable pin=%d mode=%d ret=%d", pin, mode, ret);
+    LOG_INFO("int_enable pin=%d mode=%d ret=%d", pin, mode, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -451,19 +451,19 @@ static int iot_gpio_int_disable(lua_State* L) {
     int pin = luaL_checkinteger(L, 1);
 
     if (pin < 0 || pin >= IOT_GPIO_MAX) {
-        LOG("ERR invalid pin %d", pin);
+        LOG_INFO("ERR invalid pin %d", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     if (!g_gpio_inited[pin]) {
-        LOG("ERR pin %d not inited", pin);
+        LOG_INFO("ERR pin %d not inited", pin);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     int ret = cm_gpio_interrupt_disable((cm_gpio_num_e)pin);
-    LOG("int_disable pin=%d ret=%d", pin, ret);
+    LOG_INFO("int_disable pin=%d ret=%d", pin, ret);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -482,7 +482,7 @@ static const luaL_Reg gpio_lib[] = {
 };
 
 LUAMOD_API int luaopen_gpio(lua_State* L) {
-    LOG("luaopen gpio");
+    LOG_INFO("luaopen gpio");
     luaL_newlibtable(L, gpio_lib);
     luaL_setfuncs(L, gpio_lib, 0);
 

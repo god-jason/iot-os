@@ -73,10 +73,10 @@ fota.set_url("http://example.com/firmware.bin")
 */
 static int iot_fota_set_url(lua_State* L) {
     const char* url = luaL_checkstring(L, 1);
-    LOG("set_url url=%s", url);
+    LOG_INFO("set_url url=%s", url);
     int ret = cm_fota_set_url((char*)url);
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret);
     return 1;
@@ -128,10 +128,10 @@ static int iot_fota_set_reboot_time(lua_State* L) {
         lua_pop(L, 1);
     }
 
-    LOG("set_reboot_time first=%d second=%d third=%d", time.first_timeout, time.second_timeout, time.third_timeout);
+    LOG_INFO("set_reboot_time first=%d second=%d third=%d", time.first_timeout, time.second_timeout, time.third_timeout);
     int ret = cm_fota_set_reboot_time(&time);
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret);
     return 1;
@@ -198,10 +198,10 @@ static int iot_fota_on_result(lua_State* L) {
 local ret = fota.upgrade()
 */
 static int iot_fota_upgrade(lua_State* L) {
-    LOG("upgrade");
+    LOG_INFO("upgrade");
     int ret = cm_fota_exec_upgrade();
     if (ret != 0) {
-        LOG("ERR ret=%d", ret);
+        LOG_INFO("ERR ret=%d", ret);
     }
     lua_pushinteger(L, ret);
     return 1;

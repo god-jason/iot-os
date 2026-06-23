@@ -9,6 +9,7 @@
 #include "iot_base.h"
 #include "iot_callback.h"
 #include "iot_rtos.h"
+#include "iot_log.h"
 
 /**
  * @brief 保存Lua回调函数到注册表
@@ -22,6 +23,7 @@ void* iot_callback_save(lua_State* L, int idx) {
     /* 创建userdata存储回调函数 */
     void* ud = lua_newuserdata(L, sizeof(void*));
     if (!ud) {
+        LOG_ERROR("callback save failed: userdata allocation error");
         return NULL;
     }
     
@@ -37,6 +39,7 @@ void* iot_callback_save(lua_State* L, int idx) {
     /* 移除栈上的userdata（已在注册表中保存引用） */
     lua_pop(L, 1);
     
+    LOG_DEBUG("callback saved: ptr=%p", ud);
     return ud;
 }
 
@@ -48,11 +51,13 @@ void* iot_callback_save(lua_State* L, int idx) {
  */
 void iot_callback_free(void* ud) {
     if (!ud) {
+        LOG_WARN("callback free: null pointer");
         return;
     }
     
     lua_State* L = iot_get_lua_state();
     if (!L) {
+        LOG_ERROR("callback free: lua state not available");
         return;
     }
     
@@ -60,6 +65,8 @@ void iot_callback_free(void* ud) {
     lua_pushlightuserdata(L, ud);
     lua_pushnil(L);
     lua_settable(L, LUA_REGISTRYINDEX);
+    
+    LOG_DEBUG("callback freed: ptr=%p", ud);
 }
 
 /**
@@ -69,12 +76,14 @@ void iot_callback_free(void* ud) {
  */
 void iot_callback_call(void* ud, params_t* params) {
     if (!ud) {
+        LOG_WARN("callback call: null pointer");
         if (params) {
             params_destroy(params);
         }
         return;
     }
     
+    LOG_TRACE("callback call: ptr=%p", ud);
     iot_rtos_call(ud, params);
 }
 

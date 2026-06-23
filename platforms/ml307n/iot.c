@@ -43,13 +43,13 @@ static void net_status_callback(uint8_t cid, uint8_t status)
 {
     (void)cid;
     
-    LOG("net status=%u, last=%u", status, g_last_net_state);
+    LOG_INFO("net status=%u, last=%u", status, g_last_net_state);
     
     switch (status) {
         case NETDEVCTL_URC_STATE_ACT:
             /* 网络激活成功 */
             if (g_last_net_state != NETDEVCTL_URC_STATE_ACT) {
-                LOG("publish %s", EVENT_IP_READY);
+                LOG_INFO("publish %s", EVENT_IP_READY);
                 iot_rtos_publish(EVENT_IP_READY, NULL);
                 g_last_net_state = NETDEVCTL_URC_STATE_ACT;
             }
@@ -60,7 +60,7 @@ static void net_status_callback(uint8_t cid, uint8_t status)
         case NETDEVCTL_URC_STATE_PDP_DIS:
             /* 网络断开 */
             if (g_last_net_state == NETDEVCTL_URC_STATE_ACT) {
-                LOG("publish %s", EVENT_IP_LOSE);
+                LOG_INFO("publish %s", EVENT_IP_LOSE);
                 iot_rtos_publish(EVENT_IP_LOSE, NULL);
                 g_last_net_state = status;
             }
@@ -83,7 +83,7 @@ static void sim_urc_callback(const char *cmd, uint32_t cmdLen)
 {
     (void)cmdLen;
     
-    LOG("URC: %.*s", (int)cmdLen, cmd);
+    LOG_INFO("URC: %.*s", (int)cmdLen, cmd);
     
     /* 解析 +CPIN: READY / SIM PIN / SIM PUK */
     if (strncmp(cmd, "+CPIN:", 6) == 0) {
@@ -91,19 +91,19 @@ static void sim_urc_callback(const char *cmd, uint32_t cmdLen)
         
         if (strstr(status, "READY") != NULL) {
             if (g_last_sim_state != 1) {
-                LOG("publish %s", EVENT_SIM_READY);
+                LOG_INFO("publish %s", EVENT_SIM_READY);
                 iot_rtos_publish(EVENT_SIM_READY, NULL);
                 g_last_sim_state = 1;
             }
         } else if (strstr(status, "SIM PIN") != NULL) {
             if (g_last_sim_state != 2) {
-                LOG("publish %s", EVENT_SIM_PIN_REQUIRED);
+                LOG_INFO("publish %s", EVENT_SIM_PIN_REQUIRED);
                 iot_rtos_publish(EVENT_SIM_PIN_REQUIRED, NULL);
                 g_last_sim_state = 2;
             }
         } else if (strstr(status, "SIM PUK") != NULL) {
             if (g_last_sim_state != 3) {
-                LOG("publish %s", EVENT_SIM_PUK_REQUIRED);
+                LOG_INFO("publish %s", EVENT_SIM_PUK_REQUIRED);
                 iot_rtos_publish(EVENT_SIM_PUK_REQUIRED, NULL);
                 g_last_sim_state = 3;
             }
@@ -115,11 +115,11 @@ static void sim_urc_callback(const char *cmd, uint32_t cmdLen)
         int slot = 0, state = 0;
         if (sscanf(cmd + 9, "%d,%d", &slot, &state) == 2) {
             if (state == 0) {
-                LOG("publish %s", EVENT_SIM_REMOVED);
+                LOG_INFO("publish %s", EVENT_SIM_REMOVED);
                 iot_rtos_publish(EVENT_SIM_REMOVED, NULL);
                 g_last_sim_state = 0;
             } else if (state == 1) {
-                LOG("publish %s", EVENT_SIM_INSERTED);
+                LOG_INFO("publish %s", EVENT_SIM_INSERTED);
                 iot_rtos_publish(EVENT_SIM_INSERTED, NULL);
             }
         }
@@ -130,7 +130,7 @@ static void sim_urc_callback(const char *cmd, uint32_t cmdLen)
         int result = 0;
         if (sscanf(cmd + 9, "%d", &result) == 1) {
             if (result == 1 && g_last_sim_state != 1) {
-                LOG("publish %s", EVENT_SIM_READY);
+                LOG_INFO("publish %s", EVENT_SIM_READY);
                 iot_rtos_publish(EVENT_SIM_READY, NULL);
                 g_last_sim_state = 1;
             }
@@ -148,17 +148,17 @@ static volatile uint8_t g_fota_state = 0;  /* 0: idle, 1: downloading, 2: upgrad
  */
 static void fota_sdk_result_callback(cm_fota_error_e error)
 {
-    LOG("FOTA result error=%d", error);
+    LOG_INFO("FOTA result error=%d", error);
     
     if (error == 0) {
         /* FOTA成功 */
         g_fota_state = 0;
-        LOG("publish %s", EVENT_FOTA_SUCCESS);
+        LOG_INFO("publish %s", EVENT_FOTA_SUCCESS);
         iot_rtos_publish(EVENT_FOTA_SUCCESS, NULL);
     } else {
         /* FOTA失败 */
         g_fota_state = 0;
-        LOG("publish %s", EVENT_FOTA_FAILED);
+        LOG_INFO("publish %s", EVENT_FOTA_FAILED);
         iot_rtos_publish(EVENT_FOTA_FAILED, NULL);
     }
 }
@@ -170,7 +170,7 @@ static void fota_sdk_result_callback(cm_fota_error_e error)
  */
 void iot_event_init(void)
 {
-    LOG("init event");
+    LOG_INFO("init event");
     
     /* 注册网络状态回调 */
     NET_MgrNetDevCtlStatusCbRegister(net_status_callback);
@@ -181,7 +181,7 @@ void iot_event_init(void)
     /* 注册FOTA结果回调 */
     cm_fota_res_callback_register(fota_sdk_result_callback);
     
-    LOG("init OK");
+    LOG_INFO("init OK");
 }
 
 /**

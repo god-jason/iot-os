@@ -50,7 +50,7 @@ static void uart_event_cb(void *param, uint32_t evt) {
     int id = (int)(uintptr_t)param;
     if (id < 0 || id >= IOT_UART_MAX) return;
     
-    LOG("evt id=%d evt=%u", id, evt);
+    LOG_INFO("evt id=%d evt=%u", id, evt);
     
     if (g_uart_ctx[id].callback_ud) {
         iot_rtos_call(g_uart_ctx[id].callback_ud, NULL);
@@ -79,14 +79,14 @@ static int iot_uart_setup(lua_State* L) {
     int flowctl = luaL_optinteger(L, 6, 0);
 
     if (id < 0 || id >= IOT_UART_MAX) {
-        LOG("ERR invalid id=%d", id);
+        LOG_INFO("ERR invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     /* 如果已经初始化,先关闭 */
     if (g_uart_ctx[id].inited) {
-        LOG("reopen id=%d", id);
+        LOG_INFO("reopen id=%d", id);
         cm_uart_close(g_uart_ctx[id].dev);
         g_uart_ctx[id].inited = 0;
     }
@@ -126,16 +126,16 @@ static int iot_uart_setup(lua_State* L) {
     event.event_entry = (void*)uart_event_cb;
     event.event_param = (void*)(uintptr_t)id;
     if (cm_uart_register_event((cm_uart_dev_e)id, &event) != 0) {
-        LOG("ERR register event id=%d", id);
+        LOG_INFO("ERR register event id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     /* 打开串口 */
-    LOG("open id=%d baud=%d", id, baudrate);
+    LOG_INFO("open id=%d baud=%d", id, baudrate);
     int ret = cm_uart_open((cm_uart_dev_e)id, &cfg);
     if (ret != 0) {
-        LOG("ERR open ret=%d", ret);
+        LOG_INFO("ERR open ret=%d", ret);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -145,7 +145,7 @@ static int iot_uart_setup(lua_State* L) {
     g_uart_ctx[id].dev = (cm_uart_dev_e)id;
     g_uart_ctx[id].cfg = cfg;
 
-    LOG("OK id=%d", id);
+    LOG_INFO("OK id=%d", id);
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -162,7 +162,7 @@ static int iot_uart_close(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
 
     if (id < 0 || id >= IOT_UART_MAX) {
-        LOG("ERR invalid id=%d", id);
+        LOG_INFO("ERR invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -180,7 +180,7 @@ static int iot_uart_close(lua_State* L) {
         g_uart_ctx[id].callback_ud = NULL;
     }
 
-    LOG("close id=%d", id);
+    LOG_INFO("close id=%d", id);
     int ret = cm_uart_close((cm_uart_dev_e)id);
     g_uart_ctx[id].inited = 0;
 
@@ -204,20 +204,20 @@ static int iot_uart_write(lua_State* L) {
     const char* data = luaL_checklstring(L, 2, &len);
 
     if (id < 0 || id >= IOT_UART_MAX) {
-        LOG("ERR invalid id=%d", id);
+        LOG_INFO("ERR invalid id=%d", id);
         lua_pushnil(L);
         return 1;
     }
 
     if (!g_uart_ctx[id].inited) {
-        LOG("ERR not open id=%d", id);
+        LOG_INFO("ERR not open id=%d", id);
         lua_pushnil(L);
         return 1;
     }
 
     int ret = cm_uart_write((cm_uart_dev_e)id, data, len, 0);
     if (ret < 0) {
-        LOG("ERR write ret=%d", ret);
+        LOG_INFO("ERR write ret=%d", ret);
         lua_pushnil(L);
     } else {
         lua_pushinteger(L, ret);
@@ -242,13 +242,13 @@ static int iot_uart_read(lua_State* L) {
     int len = luaL_checkinteger(L, 2);
 
     if (id < 0 || id >= IOT_UART_MAX) {
-        LOG("ERR invalid id=%d", id);
+        LOG_INFO("ERR invalid id=%d", id);
         lua_pushnil(L);
         return 1;
     }
 
     if (!g_uart_ctx[id].inited) {
-        LOG("ERR not open id=%d", id);
+        LOG_INFO("ERR not open id=%d", id);
         lua_pushnil(L);
         return 1;
     }

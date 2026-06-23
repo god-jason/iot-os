@@ -29,11 +29,11 @@ static int s_log_level = LOG_LEVEL_INFO;
 /* 日志级别前缀 */
 static const char* log_level_prefix[] = {
     "[-]",
-    "[D]",
-    "[T]",
-    "[I]",
+    "[E]",
     "[W]",
-    "[E]"
+    "[I]",
+    "[D]",
+    "[T]"
 };
 
 /**
@@ -57,14 +57,18 @@ iot_log_level_t iot_log_get_level(void) {
 /**
  * @brief 内部日志输出函数
  * @param level 日志级别
- * @param tag 模块标签
  * @param fmt 格式字符串
  * @param ... 可变参数
  */
-void iot_log_printf(iot_log_level_t level, const char* tag, const char* fmt, ...) {
+void iot_log_printf(iot_log_level_t level, const char* fmt, ...) {
     if (level > s_log_level) {
-        return;
+        return; 
     }
+    
+    /* 输出日志级别前缀 */
+    const char* prefix = log_level_prefix[level];
+    iot_puts(prefix);
+    iot_puts(" ");
     
     char buffer[256];
     va_list args;
@@ -75,6 +79,8 @@ void iot_log_printf(iot_log_level_t level, const char* tag, const char* fmt, ...
     if (len > 0 && len < (int)sizeof(buffer)) {
         iot_puts(buffer);
     }
+    
+    iot_puts("\r\n");
 }
 
 /**
@@ -144,7 +150,7 @@ static void iot_log_output(lua_State* L, int level) {
     
     /* 输出日志级别前缀 */
     iot_puts(log_level_prefix[level]);
-    iot_puts(" ");
+    iot_puts("[lua] ");
     
     int n = lua_gettop(L);
     int first = 1;

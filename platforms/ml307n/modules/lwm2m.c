@@ -126,7 +126,7 @@ static void lwm2m_event_callback(int32_t event, cm_lwm2m_cb_param_t param) {
     lua_pushlightuserdata(L, client);
     
     if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
-        LOG("lwm2m event callback error: %s", lua_tostring(L, -1));
+        LOG_INFO("lwm2m event callback error: %s", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -149,7 +149,7 @@ static void lwm2m_read_callback(int32_t mid, int32_t objid, int32_t insid, int32
     lua_pushlightuserdata(L, client);
     
     if (lua_pcall(L, 5, 0, 0) != LUA_OK) {
-        LOG("lwm2m read callback error: %s", lua_tostring(L, -1));
+        LOG_INFO("lwm2m read callback error: %s", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -175,7 +175,7 @@ static void lwm2m_write_callback(int32_t mid, int32_t objid, int32_t insid, int3
     lua_pushlightuserdata(L, client);
     
     if (lua_pcall(L, 8, 0, 0) != LUA_OK) {
-        LOG("lwm2m write callback error: %s", lua_tostring(L, -1));
+        LOG_INFO("lwm2m write callback error: %s", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -199,7 +199,7 @@ static void lwm2m_execute_callback(int32_t mid, int32_t objid, int32_t insid, in
     lua_pushlightuserdata(L, client);
     
     if (lua_pcall(L, 6, 0, 0) != LUA_OK) {
-        LOG("lwm2m execute callback error: %s", lua_tostring(L, -1));
+        LOG_INFO("lwm2m execute callback error: %s", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -223,7 +223,7 @@ static void lwm2m_observe_callback(int32_t mid, int32_t observe, int32_t objid, 
     lua_pushlightuserdata(L, client);
     
     if (lua_pcall(L, 6, 0, 0) != LUA_OK) {
-        LOG("lwm2m observe callback error: %s", lua_tostring(L, -1));
+        LOG_INFO("lwm2m observe callback error: %s", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }

@@ -45,7 +45,7 @@ static void at_urc_callback(uint8_t* urc, int32_t urc_len) {
             if (at_urc_table[i].callback_ud) {
                 params_t* params = params_create(1);
                 if (!params) {
-                    LOG("ERR params_create failed");
+                    LOG_INFO("ERR params_create failed");
                     continue;
                 }
                 params_push_string(params, (const char*)urc, urc_len);
@@ -61,7 +61,7 @@ static void at_async_callback(cm_virt_at_param_t* param) {
     void* ud = (void*)param->user_param;
     params_t* params = params_create(1);
     if (!params) {
-        LOG("ERR params_create failed");
+        LOG_INFO("ERR params_create failed");
         return;
     }
     

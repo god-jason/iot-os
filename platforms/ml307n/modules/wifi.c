@@ -49,7 +49,7 @@ static void wifi_scan_cb(cm_wifi_scan_info_t* param, void* user_param) {
 
     params_t* params = params_create(1);
     if (!params) {
-        LOG("ERR params_create failed");
+        LOG_INFO("ERR params_create failed");
         wifi_scan_in_progress = 0;
         return;
     }
@@ -102,7 +102,7 @@ static int iot_wifi_config(lua_State* L) {
     const char* key = luaL_checkstring(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     
-    LOG("WiFi config: %s=%d", key, value);
+    LOG_INFO("WiFi config: %s=%d", key, value);
     if (strcmp(key, "maxCount") == 0) {
         uint8_t max_count = (uint8_t)value;
         if (cm_wifiscan_cfg(CM_WIFI_SCAN_CFG_MAX_COUNT, &max_count) == 0) {
@@ -176,7 +176,7 @@ static int iot_wifi_scan(lua_State* L) {
 wifi.stop()
 */
 static int iot_wifi_stop(lua_State* L) {
-    LOG("WiFi scan stop");
+    LOG_INFO("WiFi scan stop");
     if (cm_wifiscan_stop() == 0) {
         if (wifi_scan_callback_ud) {
             lua_pushlightuserdata(L, wifi_scan_callback_ud);

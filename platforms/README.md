@@ -352,7 +352,7 @@ typedef void (*)(void*)         iot_timer_callback_t; // ESP32/Linux/Windows
 ### 日志宏 (定义在 iot_log.h)
 
 ```c
-#define LOG(fmt, ...) iot_printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) iot_printf("[iot] %s():%d " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
 ```
 
 ---
@@ -415,7 +415,7 @@ iot_task_t task = iot_task_create("my_task", my_task_func, arg, 4096, IOT_OS_PRI
 
 ```c
 void timer_callback(void* arg) {
-    LOG("Timer triggered!");
+    LOG_INFO("Timer triggered!");
 }
 
 iot_timer_t timer = iot_timer_create(timer_callback, NULL, 1000, IOT_TIMER_PERIODIC);
