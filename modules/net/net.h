@@ -18,7 +18,10 @@ extern "C" {
 #endif
 
 typedef void* sock_t;
-#define INVALID_SOCKET  NULL
+#define NET_INVALID_SOCK  ((sock_t)NULL)
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET    NET_INVALID_SOCK
+#endif
 
 /**
  * @brief socket 类型

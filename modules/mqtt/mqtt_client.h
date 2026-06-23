@@ -70,6 +70,8 @@ typedef enum {
 typedef void (*mqtt_message_callback_t)(const char* topic, const uint8_t* payload,
                                        size_t payload_len, mqtt_qos_t qos, bool retain, void* user_data);
 
+typedef struct mqtt_client mqtt_client_t;
+
 /**
  * @brief MQTT 事件回调函数
  * @param client 客户端指针
@@ -134,8 +136,6 @@ struct mqtt_outgoing_msg {
 /**
  * @brief MQTT 客户端结构
  */
-typedef struct mqtt_client mqtt_client_t;
-
 struct mqtt_client {
     sock_t sock;                      /* socket 句柄 */
     mqtt_state_t state;               /* 客户端状态 */

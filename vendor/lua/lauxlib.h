@@ -145,6 +145,14 @@ LUALIB_API void (luaL_requiref) (lua_State *L, const char *modname,
 
 #define luaL_opt(L,f,n,d)	(lua_isnoneornil(L,(n)) ? (d) : f(L,(n)))
 
+#define luaL_optboolean(L,n,d)  (lua_isnoneornil(L,(n)) ? (d) : lua_toboolean(L,(n)))
+
+#define luaL_checklightuserdata(L,i) \
+	(luaL_checktype(L, (i), LUA_TLIGHTUSERDATA), lua_touserdata(L, (i)))
+
+#define luaL_optlightuserdata(L,n,d) \
+	(lua_isnoneornil(L,(n)) ? (d) : luaL_checklightuserdata(L, (n)))
+
 #define luaL_loadbuffer(L,s,sz,n)	luaL_loadbufferx(L,s,sz,n,NULL)
 
 

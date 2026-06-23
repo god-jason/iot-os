@@ -1,41 +1,41 @@
 /*
 @module  lvgl.arc
-@summary LVGL弧形控件
+@summary LVGLå¼§å½¢æ§ä»¶
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  æ°ç¥ & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Luaç¤ºä¾(OOé£æ ¼)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建弧形控件
+-- åå»ºå¼§å½¢æ§ä»¶
 local arc = lvgl.arc.create(scr)
 arc:set_size(150, 150)
 arc:set_pos(75, 75)
 
--- 设置角度范围
+-- è®¾ç½®è§åº¦èå´
 arc:set_bg_angles(0, 270)
 arc:set_angles(0, 135)
 
--- 设置值
+-- è®¾ç½®å?
 arc:set_value(75)
 
--- 获取值
+-- è·åå?
 local value = arc:get_value()
 
--- 链式调用
+-- é¾å¼è°ç¨
 local arc2 = lvgl.arc.create(scr):set_size(100, 100):set_pos(200, 100):set_bg_angles(0, 180):set_value(50)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* arc组件的metatable引用 */
+/* arcç»ä»¶çmetatableå¼ç¨ */
 static int arc_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_arc_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -44,12 +44,12 @@ static int lvgl_arc_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 弧形OO方法 ==================== */
+/* ==================== å¼§å½¢OOæ¹æ³ ==================== */
 
 /*
-创建弧形控件(OO风格)
-@param self 父对象(可选)
-@return userdata 带metatable的弧形实例
+åå»ºå¼§å½¢æ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçå¼§å½¢å®ä¾?
 @usage local arc = lvgl.arc.create(scr)
 */
 static int lvgl_arc_create(lua_State* L) {
@@ -57,10 +57,10 @@ static int lvgl_arc_create(lua_State* L) {
 }
 
 /*
-设置弧形值
-@param self 弧形实例或指针
-@param value 值
-@param anim 动画使能(可选,默认0=无动画)
+è®¾ç½®å¼§å½¢å?
+@param self å¼§å½¢å®ä¾ææé?
+@param value å?
+@param anim å¨ç»ä½¿è½(å¯é?é»è®¤0=æ å¨ç?
 @return self
 @usage arc:set_value(75)
 */
@@ -68,16 +68,17 @@ static int lvgl_arc_set_value(lua_State* L) {
     lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
-    lv_arc_set_value(arc, value, anim);
+    (void)anim;
+    lv_arc_set_value(arc, (int16_t)value);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-设置弧形范围
-@param self 弧形实例或指针
-@param min 最小值
-@param max 最大值
+è®¾ç½®å¼§å½¢èå´
+@param self å¼§å½¢å®ä¾ææé?
+@param min æå°å?
+@param max æå¤§å?
 @return self
 @usage arc:set_range(0, 100)
 */
@@ -91,10 +92,10 @@ static int lvgl_arc_set_range(lua_State* L) {
 }
 
 /*
-设置背景角度范围
-@param self 弧形实例或指针
-@param start 起始角度(0-360)
-@param end_angle 结束角度(0-360)
+è®¾ç½®èæ¯è§åº¦èå´
+@param self å¼§å½¢å®ä¾ææé?
+@param start èµ·å§è§åº¦(0-360)
+@param end_angle ç»æè§åº¦(0-360)
 @return self
 @usage arc:set_bg_angles(0, 270)
 */
@@ -108,10 +109,10 @@ static int lvgl_arc_set_bg_angles(lua_State* L) {
 }
 
 /*
-设置前景角度范围
-@param self 弧形实例或指针
-@param start 起始角度(0-360)
-@param end_angle 结束角度(0-360)
+è®¾ç½®åæ¯è§åº¦èå´
+@param self å¼§å½¢å®ä¾ææé?
+@param start èµ·å§è§åº¦(0-360)
+@param end_angle ç»æè§åº¦(0-360)
 @return self
 @usage arc:set_angles(0, 135)
 */
@@ -125,9 +126,9 @@ static int lvgl_arc_set_angles(lua_State* L) {
 }
 
 /*
-获取弧形值
-@param self 弧形实例或指针
-@return integer 当前值
+è·åå¼§å½¢å?
+@param self å¼§å½¢å®ä¾ææé?
+@return integer å½åå?
 @usage local value = arc:get_value()
 */
 static int lvgl_arc_get_value(lua_State* L) {
@@ -138,9 +139,9 @@ static int lvgl_arc_get_value(lua_State* L) {
 }
 
 /*
-获取起始角度
-@param self 弧形实例或指针
-@return integer 起始角度
+è·åèµ·å§è§åº¦
+@param self å¼§å½¢å®ä¾ææé?
+@return integer èµ·å§è§åº¦
 @usage local angle = arc:get_angle_start()
 */
 static int lvgl_arc_get_angle_start(lua_State* L) {
@@ -151,9 +152,9 @@ static int lvgl_arc_get_angle_start(lua_State* L) {
 }
 
 /*
-获取结束角度
-@param self 弧形实例或指针
-@return integer 结束角度
+è·åç»æè§åº¦
+@param self å¼§å½¢å®ä¾ææé?
+@return integer ç»æè§åº¦
 @usage local angle = arc:get_angle_end()
 */
 static int lvgl_arc_get_angle_end(lua_State* L) {
@@ -163,7 +164,7 @@ static int lvgl_arc_get_angle_end(lua_State* L) {
     return 1;
 }
 
-/* 注册 arc 子模块 */
+/* æ³¨å arc å­æ¨¡å?*/
 void lvgl_register_arc(lua_State* L) {
     lua_newtable(L);
 
@@ -187,7 +188,7 @@ void lvgl_register_arc(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.arc) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.arc) */
     REG_METHOD(L, "create", lvgl_arc_create);
 }
   

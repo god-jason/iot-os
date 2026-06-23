@@ -1,50 +1,62 @@
 /*
 @module  lvgl.menu
-@summary LVGL菜单控件
+@summary LVGL????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Lua??(OO??)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建菜单
+-- ????
 local menu = lvgl.menu.create(scr)
 menu:set_size(320, 240)
 menu:set_pos(0, 0)
 
--- 创建主页面
+-- ??????
 local main_page = menu:page_create(nil)
 menu:set_page(main_page)
 
--- 添加主菜单项
-local item1 = main_page:add_item(nil, "设置")
-local item2 = main_page:add_item(nil, "关于")
+-- ??????
+local item1 = main_page:add_item(nil, "??")
+local item2 = main_page:add_item(nil, "??")
 
--- 创建子页面
-local settings_page = menu:page_create("设置")
+-- ??????
+local settings_page = menu:page_create("??")
 settings_page:add_item(nil, "WiFi")
-settings_page:add_item(nil, "蓝牙")
+settings_page:add_item(nil, "??")
 
--- 设置主菜单项的子页面
+-- ??????????
 item1:set_page(settings_page)
 
--- 获取当前页面
+-- ??????
 local cur_page = menu:get_cur_page()
 
--- 链式调用
-local m = lvgl.menu.create(scr):set_size(240, 320):set_pos(40, 10):set_title("主菜单")
+-- ????
+local m = lvgl.menu.create(scr):set_size(240, 320):set_pos(40, 10):set_title("????)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* menu组件的metatable引用 */
+/* menu???metatable?? */
 static int menu_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+static lv_obj_t* lvgl_menu_find_menu(lv_obj_t* obj)
+{
+    lv_obj_t* cur = obj;
+    while (cur) {
+        if (lv_obj_check_type(cur, &lv_menu_class)) {
+            return cur;
+        }
+        cur = lv_obj_get_parent(cur);
+    }
+    return NULL;
+}
+
+/* ==================== ?????? ==================== */
 
 static int lvgl_menu_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -53,12 +65,12 @@ static int lvgl_menu_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 菜单OO方法 ==================== */
+/* ==================== ??OO?? ==================== */
 
 /*
-创建菜单控件(OO风格)
-@param self 父对象(可选)
-@return userdata 带metatable的菜单实例
+??????(OO??)
+@param self ???????
+@return userdata ?metatable??????
 @usage local menu = lvgl.menu.create(scr)
 */
 static int lvgl_menu_create(lua_State* L) {
@@ -66,41 +78,46 @@ static int lvgl_menu_create(lua_State* L) {
 }
 
 /*
-创建菜单页面
-@param self 菜单实例或指针
-@param title 页面标题(可选)
-@return userdata 页面对象
-@usage local page = menu:page_create("设置")
+??????
+@param self ????????
+@param title ????(???
+@return userdata ????
+@usage local page = menu:page_create("??")
 */
 static int lvgl_menu_page_create(lua_State* L) {
     lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
-    const char* title = (const char*)luaL_optlightuserdata(L, 2, NULL);
-    lv_obj_t* page = lv_menu_page_create(menu, title);
+    const char* title = lua_isnoneornil(L, 2) ? NULL : luaL_checkstring(L, 2);
+    lv_obj_t* page = lv_menu_page_create(menu, title ? (char*)title : NULL);
     lua_pushlightuserdata(L, page);
     return 1;
 }
 
 /*
-添加菜单项
-@param self 页面实例或指针
-@param icon 图标(可选)
-@param text 文本内容
-@return userdata 菜单项对象
-@usage local item = page:add_item(nil, "设置")
+??????
+@param self ????????
+@param icon ??(???
+@param text ????
+@return userdata ??????
+@usage local item = page:add_item(nil, "??")
 */
 static int lvgl_menu_add_item(lua_State* L) {
     lv_obj_t* page = lvgl_get_obj_ptr(L, 1);
     lv_obj_t* icon = (lv_obj_t*)luaL_optlightuserdata(L, 2, NULL);
     const char* text = luaL_checkstring(L, 3);
-    lv_obj_t* item = lv_menu_add_item(page, icon, text);
-    lua_pushlightuserdata(L, item);
+    lv_obj_t* cont = lv_menu_cont_create(page);
+    if (icon) {
+        lv_obj_set_parent(icon, cont);
+    }
+    lv_obj_t* label = lv_label_create(cont);
+    lv_label_set_text(label, text);
+    lua_pushlightuserdata(L, cont);
     return 1;
 }
 
 /*
-设置当前页面
-@param self 菜单实例或指针
-@param page 页面对象
+??????
+@param self ????????
+@param page ????
 @return self
 @usage menu:set_page(main_page)
 */
@@ -113,82 +130,96 @@ static int lvgl_menu_set_page(lua_State* L) {
 }
 
 /*
-设置菜单项的子页面
-@param self 菜单项实例或指针
-@param page 子页面对象
+??????????
+@param self ????????
+@param page ??????
 @return self
 @usage item:set_page(settings_page)
 */
 static int lvgl_menu_set_item_page(lua_State* L) {
     lv_obj_t* item = lvgl_get_obj_ptr(L, 1);
     lv_obj_t* page = (lv_obj_t*)luaL_checklightuserdata(L, 2);
-    lv_menu_set_item_page(item, page);
+    lv_obj_t* menu = lvgl_menu_find_menu(item);
+    if (menu) {
+        lv_menu_set_load_page_event(menu, item, page);
+    }
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-获取当前页面
-@param self 菜单实例或指针
-@return userdata 页面对象
+??????
+@param self ????????
+@return userdata ????
 @usage local cur = menu:get_cur_page()
 */
 static int lvgl_menu_get_cur_page(lua_State* L) {
     lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* page = lv_menu_get_cur_page(menu);
+    lv_obj_t* page = lv_menu_get_cur_main_page(menu);
     lua_pushlightuserdata(L, page);
     return 1;
 }
 
 /*
-设置菜单宽度
-@param self 菜单实例或指针
-@param width 宽度值
+??????
+@param self ????????
+@param width ????
 @return self
 @usage menu:set_width(200)
 */
 static int lvgl_menu_set_width(lua_State* L) {
     lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
-    uint16_t width = (uint16_t)luaL_checkinteger(L, 2);
-    lv_menu_set_width(menu, width);
+    lv_coord_t width = (lv_coord_t)luaL_checkinteger(L, 2);
+    lv_obj_set_width(menu, width);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-设置菜单标题
-@param self 菜单实例或指针
-@param title 标题文本
+??????
+@param self ????????
+@param title ????
 @return self
-@usage menu:set_title("主菜单")
+@usage menu:set_title("????)
 */
 static int lvgl_menu_set_title(lua_State* L) {
     lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
     const char* title = luaL_checkstring(L, 2);
-    lv_menu_set_title(menu, title);
+    lv_obj_t* page = lv_menu_get_cur_main_page(menu);
+    if (page) {
+        lv_menu_page_t* menu_page = (lv_menu_page_t*)page;
+        if (menu_page->title) {
+            lv_mem_free(menu_page->title);
+        }
+        menu_page->title = lv_mem_alloc(strlen(title) + 1);
+        if (menu_page->title) {
+            strcpy(menu_page->title, title);
+        }
+        lv_event_send(menu, LV_EVENT_VALUE_CHANGED, NULL);
+    }
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-清除菜单内容
-@param self 菜单实例或指针
+??????
+@param self ????????
 @return self
 @usage menu:clear()
 */
 static int lvgl_menu_clear(lua_State* L) {
     lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
-    lv_menu_clear(menu);
+    lv_menu_set_page(menu, NULL);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-/* 注册 menu 子模块 */
+/* ?? menu ????*/
 void lvgl_register_menu(lua_State* L) {
-    /* 创建组件方法表(用于metatable继承) */
+    /* ??????????metatable??) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* ??OO???? */
     REG_METHOD(L, "page_create", lvgl_menu_page_create);
     REG_METHOD(L, "add_item", lvgl_menu_add_item);
     REG_METHOD(L, "set_page", lvgl_menu_set_page);
@@ -198,10 +229,10 @@ void lvgl_register_menu(lua_State* L) {
     REG_METHOD(L, "set_title", lvgl_menu_set_title);
     REG_METHOD(L, "clear", lvgl_menu_clear);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ????metatable??(????) */
     menu_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.menu.add_item(menu, ...) 调用) */
+    /* ??????????(?? lvgl.menu.add_item(menu, ...) ??) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, menu_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -212,6 +243,6 @@ void lvgl_register_menu(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.menu) */
+    /* ??create??????lvgl.menu) */
     REG_METHOD(L, "create", lvgl_menu_create);
 }

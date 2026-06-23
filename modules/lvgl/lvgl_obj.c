@@ -1,47 +1,47 @@
 /*
 @module  lvgl.obj
-@summary LVGL对象系统(OO风格)
+@summary LVGL????(OO??)
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Lua??(OO??)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建按钮(返回实例对象)
+-- ????(??????)
 local btn = lvgl.btn.create(scr)
 
--- 使用OO风格的方法调用
+-- ??OO????????
 btn:set_size(100, 40)
 btn:set_pos(50, 50)
 btn:set_text("Click Me")
 btn:set_click(true)
 btn:center()
 
--- 链式调用示例
+-- ??????
 local label = lvgl.label.create(scr)
 label:set_size(200, 30)
 label:set_pos(50, 120)
 label:set_text("Hello World")
 label:set_align(lvgl.TEXT_ALIGN_CENTER)
 
--- 获取对象指针
+-- ??????
 local ptr = btn:get_ptr()
 
--- 添加样式
+-- ????
 local style = lvgl.style.create()
 style:set_radius(10)
 style:set_bg_color(0x3366FF)
 btn:add_style(style)
 
--- 模块方式调用(直接操作)
+-- ??????(????)
 lvgl.obj.set_x(btn, 10)
 lvgl.obj.set_y(btn, 20)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 #include "iot_callback.h"
 
@@ -180,7 +180,7 @@ int lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metata
 
 int lvgl_obj_delete(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    lv_obj_delete(obj);
+    lv_obj_del(obj);
     return 0;
 }
 
@@ -286,7 +286,11 @@ int lvgl_obj_center(lua_State* L) {
 int lvgl_obj_set_click(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
-    lv_obj_set_click(obj, en);
+    if (en) {
+        lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    } else {
+        lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    }
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -294,7 +298,11 @@ int lvgl_obj_set_click(lua_State* L) {
 int lvgl_obj_set_hidden(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
-    lv_obj_set_hidden(obj, en);
+    if (en) {
+        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    }
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -384,18 +392,49 @@ int lvgl_obj_is_visible(lua_State* L) {
 
 int lvgl_obj_is_clickable(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    lua_pushboolean(L, lv_obj_is_clickable(obj));
+    lua_pushboolean(L, lv_obj_has_flag(obj, LV_OBJ_FLAG_CLICKABLE));
     return 1;
+}
+
+static const char* lvgl_obj_type_name(lv_obj_t* obj)
+{
+#define LVGL_IF_TYPE(cls, name) \
+    if (lv_obj_check_type(obj, &cls)) return name;
+
+    LVGL_IF_TYPE(lv_btn_class, "btn")
+    LVGL_IF_TYPE(lv_label_class, "label")
+    LVGL_IF_TYPE(lv_img_class, "img")
+    LVGL_IF_TYPE(lv_line_class, "line")
+    LVGL_IF_TYPE(lv_arc_class, "arc")
+    LVGL_IF_TYPE(lv_bar_class, "bar")
+    LVGL_IF_TYPE(lv_slider_class, "slider")
+    LVGL_IF_TYPE(lv_switch_class, "switch")
+    LVGL_IF_TYPE(lv_dropdown_class, "dropdown")
+    LVGL_IF_TYPE(lv_roller_class, "roller")
+    LVGL_IF_TYPE(lv_textarea_class, "textarea")
+    LVGL_IF_TYPE(lv_chart_class, "chart")
+    LVGL_IF_TYPE(lv_table_class, "table")
+    LVGL_IF_TYPE(lv_meter_class, "meter")
+    LVGL_IF_TYPE(lv_checkbox_class, "checkbox")
+    LVGL_IF_TYPE(lv_canvas_class, "canvas")
+    LVGL_IF_TYPE(lv_list_class, "list")
+    LVGL_IF_TYPE(lv_keyboard_class, "keyboard")
+    LVGL_IF_TYPE(lv_calendar_class, "calendar")
+    LVGL_IF_TYPE(lv_msgbox_class, "msgbox")
+    LVGL_IF_TYPE(lv_spinner_class, "spinner")
+    LVGL_IF_TYPE(lv_obj_class, "obj")
+
+#undef LVGL_IF_TYPE
+    return "unknown";
 }
 
 int lvgl_obj_get_type(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    const char* type = lv_obj_get_type(obj)->type[0];
-    lua_pushstring(L, type);
+    lua_pushstring(L, lvgl_obj_type_name(obj));
     return 1;
 }
 
-/* ==================== 事件回调相关 ==================== */
+/* ==================== ?????? ==================== */
 
 static void lvgl_event_handler(lv_event_t* e) {
     void* ud = lv_event_get_user_data(e);
@@ -437,8 +476,12 @@ int lvgl_obj_remove_event_cb(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     void* ud = (void*)lua_touserdata(L, 2);
 
-    lv_obj_remove_event_cb(obj, lvgl_event_handler, ud);
-    iot_callback_free(ud);
+    if (ud) {
+        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, ud);
+        iot_callback_free(ud);
+    } else {
+        lv_obj_remove_event_cb(obj, lvgl_event_handler);
+    }
 
     lua_pushvalue(L, 1);
     return 1;
@@ -451,19 +494,25 @@ int lvgl_obj_set_event_cb(lua_State* L) {
         return 0;
     }
 
+    void* old_ud = lv_obj_get_event_user_data(obj, lvgl_event_handler);
+    if (old_ud) {
+        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, old_ud);
+        iot_callback_free(old_ud);
+    }
+
     void* ud = iot_callback_save(L, 2);
     if (!ud) {
         luaL_error(L, "failed to save callback");
         return 0;
     }
 
-    lv_obj_set_event_cb(obj, lvgl_event_handler, ud);
+    lv_obj_add_event_cb(obj, lvgl_event_handler, LV_EVENT_ALL, ud);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-/* ==================== 滚动操作 ==================== */
+/* ==================== ???? ==================== */
 
 int lvgl_obj_scroll_to_x(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);

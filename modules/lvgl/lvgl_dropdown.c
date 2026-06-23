@@ -1,48 +1,48 @@
 /*
 @module  lvgl.dropdown
-@summary LVGL下拉菜单控件
+@summary LVGLä¸æèåæ§ä»¶
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  æ°ç¥ & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Luaç¤ºä¾(OOé£æ ¼)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建下拉菜单
+-- åå»ºä¸æèå
 local dd = lvgl.dropdown.create(scr)
 dd:set_size(150, 40)
 dd:set_pos(50, 50)
 
--- 设置选项(用\n分隔)
+-- è®¾ç½®éé¡¹(ç¨\nåé)
 dd:set_options("Apple\nBanana\nOrange\nMango")
 
--- 设置选中项
-dd:set_selected(1)  -- 选中第二项
+-- è®¾ç½®éä¸­é¡?
+dd:set_selected(1)  -- éä¸­ç¬¬äºé¡?
 
--- 设置下拉方向
+-- è®¾ç½®ä¸ææ¹å
 dd:set_direction(lvgl.DIR_BOTTOM)
 
--- 获取选中项
+-- è·åéä¸­é¡?
 local sel = dd:get_selected()
 local sel_str = dd:get_selected_str()
 
--- 打开/关闭下拉列表
+-- æå¼/å³é­ä¸æåè¡¨
 dd:open()
 dd:close()
 
--- 链式调用
+-- é¾å¼è°ç¨
 local dd2 = lvgl.dropdown.create(scr):set_size(150, 40):set_pos(50, 120):set_options("A\nB\nC"):set_selected(0)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* dropdown组件的metatable引用 */
+/* dropdownç»ä»¶çmetatableå¼ç¨ */
 static int dropdown_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_dropdown_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -51,12 +51,12 @@ static int lvgl_dropdown_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 下拉菜单OO方法 ==================== */
+/* ==================== ä¸æèåOOæ¹æ³ ==================== */
 
 /*
-创建下拉菜单控件(OO风格)
-@param self 父对象(可选)
-@return userdata 带metatable的下拉菜单实例
+åå»ºä¸æèåæ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçä¸æèåå®ä¾?
 @usage local dd = lvgl.dropdown.create(scr)
 */
 static int lvgl_dropdown_create(lua_State* L) {
@@ -64,9 +64,9 @@ static int lvgl_dropdown_create(lua_State* L) {
 }
 
 /*
-设置下拉菜单选项
-@param self 下拉菜单实例或指针
-@param options 选项字符串(用\n分隔)
+è®¾ç½®ä¸æèåéé¡¹
+@param self ä¸æèåå®ä¾ææé?
+@param options éé¡¹å­ç¬¦ä¸?ç¨\nåé)
 @return self
 @usage dd:set_options("Apple\nBanana\nOrange")
 */
@@ -79,9 +79,9 @@ static int lvgl_dropdown_set_options(lua_State* L) {
 }
 
 /*
-设置静态选项(不复制字符串)
-@param self 下拉菜单实例或指针
-@param options 选项字符串(用\n分隔)
+è®¾ç½®éæéé¡¹(ä¸å¤å¶å­ç¬¦ä¸²)
+@param self ä¸æèåå®ä¾ææé?
+@param options éé¡¹å­ç¬¦ä¸?ç¨\nåé)
 @return self
 @usage dd:set_options_static("A\nB\nC")
 */
@@ -94,10 +94,10 @@ static int lvgl_dropdown_set_options_static(lua_State* L) {
 }
 
 /*
-添加选项
-@param self 下拉菜单实例或指针
-@param option 选项文本
-@param pos 位置(可选,默认最后)
+æ·»å éé¡¹
+@param self ä¸æèåå®ä¾ææé?
+@param option éé¡¹ææ¬
+@param pos ä½ç½®(å¯é?é»è®¤æå?
 @return self
 @usage dd:add_option("Mango", 3)
 */
@@ -111,8 +111,8 @@ static int lvgl_dropdown_add_option(lua_State* L) {
 }
 
 /*
-清除所有选项
-@param self 下拉菜单实例或指针
+æ¸é¤ææéé¡¹
+@param self ä¸æèåå®ä¾ææé?
 @return self
 @usage dd:clear_options()
 */
@@ -124,9 +124,9 @@ static int lvgl_dropdown_clear_options(lua_State* L) {
 }
 
 /*
-设置选中项
-@param self 下拉菜单实例或指针
-@param sel_opt 选中项索引
+è®¾ç½®éä¸­é¡?
+@param self ä¸æèåå®ä¾ææé?
+@param sel_opt éä¸­é¡¹ç´¢å¼?
 @return self
 @usage dd:set_selected(1)
 */
@@ -139,9 +139,9 @@ static int lvgl_dropdown_set_selected(lua_State* L) {
 }
 
 /*
-设置选中项高亮
-@param self 下拉菜单实例或指针
-@param en 是否高亮
+è®¾ç½®éä¸­é¡¹é«äº?
+@param self ä¸æèåå®ä¾ææé?
+@param en æ¯å¦é«äº®
 @return self
 @usage dd:set_selected_highlight(true)
 */
@@ -154,11 +154,11 @@ static int lvgl_dropdown_set_selected_highlight(lua_State* L) {
 }
 
 /*
-设置显示文本
-@param self 下拉菜单实例或指针
-@param txt 文本内容
+è®¾ç½®æ¾ç¤ºææ¬
+@param self ä¸æèåå®ä¾ææé?
+@param txt ææ¬åå®¹
 @return self
-@usage dd:set_text("请选择")
+@usage dd:set_text("è¯·éæ©")
 */
 static int lvgl_dropdown_set_text(lua_State* L) {
     lv_obj_t* dd = lvgl_get_obj_ptr(L, 1);
@@ -169,24 +169,24 @@ static int lvgl_dropdown_set_text(lua_State* L) {
 }
 
 /*
-设置下拉方向
-@param self 下拉菜单实例或指针
-@param dir 方向(lvgl.DIR_BOTTOM等)
+è®¾ç½®ä¸ææ¹å
+@param self ä¸æèåå®ä¾ææé?
+@param dir æ¹å(lvgl.DIR_BOTTOMç­?
 @return self
 @usage dd:set_direction(lvgl.DIR_BOTTOM)
 */
 static int lvgl_dropdown_set_direction(lua_State* L) {
     lv_obj_t* dd = lvgl_get_obj_ptr(L, 1);
     lv_dir_t dir = (lv_dir_t)luaL_checkinteger(L, 2);
-    lv_dropdown_set_direction(dd, dir);
+    lv_dropdown_set_dir(dd, dir);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-获取选中项索引
-@param self 下拉菜单实例或指针
-@return integer 选中项索引
+è·åéä¸­é¡¹ç´¢å¼?
+@param self ä¸æèåå®ä¾ææé?
+@return integer éä¸­é¡¹ç´¢å¼?
 @usage local sel = dd:get_selected()
 */
 static int lvgl_dropdown_get_selected(lua_State* L) {
@@ -197,9 +197,9 @@ static int lvgl_dropdown_get_selected(lua_State* L) {
 }
 
 /*
-获取选中项文本
-@param self 下拉菜单实例或指针
-@return string 选中项文本
+è·åéä¸­é¡¹ææ?
+@param self ä¸æèåå®ä¾ææé?
+@return string éä¸­é¡¹ææ?
 @usage local sel_str = dd:get_selected_str()
 */
 static int lvgl_dropdown_get_selected_str(lua_State* L) {
@@ -211,9 +211,9 @@ static int lvgl_dropdown_get_selected_str(lua_State* L) {
 }
 
 /*
-获取显示文本
-@param self 下拉菜单实例或指针
-@return string 显示文本
+è·åæ¾ç¤ºææ¬
+@param self ä¸æèåå®ä¾ææé?
+@return string æ¾ç¤ºææ¬
 @usage local txt = dd:get_text()
 */
 static int lvgl_dropdown_get_text(lua_State* L) {
@@ -223,12 +223,12 @@ static int lvgl_dropdown_get_text(lua_State* L) {
     return 1;
 }
 
-/* 注册 dropdown 子模块 */
+/* æ³¨å dropdown å­æ¨¡å?*/
 void lvgl_register_dropdown(lua_State* L) {
-    /* 创建组件方法表(用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "set_options", lvgl_dropdown_set_options);
     REG_METHOD(L, "set_options_static", lvgl_dropdown_set_options_static);
     REG_METHOD(L, "add_option", lvgl_dropdown_add_option);
@@ -241,10 +241,10 @@ void lvgl_register_dropdown(lua_State* L) {
     REG_METHOD(L, "get_selected_str", lvgl_dropdown_get_selected_str);
     REG_METHOD(L, "get_text", lvgl_dropdown_get_text);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     dropdown_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.dropdown.set_options(dd, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.dropdown.set_options(dd, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, dropdown_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -255,6 +255,6 @@ void lvgl_register_dropdown(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.dropdown) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.dropdown) */
     REG_METHOD(L, "create", lvgl_dropdown_create);
 }

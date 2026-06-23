@@ -1,50 +1,50 @@
 /*
 @module  lvgl.spinbox
-@summary LVGL数值框控件
+@summary LVGLæ°å¼æ¡æ§ä»¶
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  æ°ç¥ & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Luaç¤ºä¾(OOé£æ ¼)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建数值框
+-- åå»ºæ°å¼æ¡
 local spinbox = lvgl.spinbox.create(scr)
 spinbox:set_size(100, 40)
 spinbox:set_pos(110, 50)
 
--- 设置范围
+-- è®¾ç½®èå´
 spinbox:set_range(0, 100)
 
--- 设置当前值
+-- è®¾ç½®å½åå?
 spinbox:set_value(50)
 
--- 设置步进值
+-- è®¾ç½®æ­¥è¿å?
 spinbox:set_step(1)
 
--- 设置小数位数
-spinbox:set_digit_format(2, 0)  -- 2位小数,0位指数
+-- è®¾ç½®å°æ°ä½æ°
+spinbox:set_digit_format(2, 0)  -- 2ä½å°æ?0ä½ææ?
 
--- 获取当前值
+-- è·åå½åå?
 local value = spinbox:get_value()
 
--- 增量/减量
+-- å¢é/åé
 spinbox:increment()
 spinbox:decrement()
 
--- 链式调用
+-- é¾å¼è°ç¨
 local sb = lvgl.spinbox.create(scr):set_size(120, 50):set_pos(50, 100):set_range(0, 255):set_value(128)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* spinbox组件的metatable引用 */
+/* spinboxç»ä»¶çmetatableå¼ç¨ */
 static int spinbox_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_spinbox_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -53,7 +53,7 @@ static int lvgl_spinbox_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 数值框OO方法 ==================== */
+/* ==================== æ°å¼æ¡OOæ¹æ³ ==================== */
 
 static int lvgl_spinbox_create(lua_State* L) {
     return lvgl_obj_create_instance(L, lvgl_spinbox_create_internal, spinbox_metatable_ref);
@@ -102,8 +102,9 @@ static int lvgl_spinbox_set_digit_format(lua_State* L) {
 
 static int lvgl_spinbox_set_scroll_speed(lua_State* L) {
     lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
-    uint32_t scroll_count = (uint32_t)luaL_checkinteger(L, 2);
-    lv_spinbox_set_scroll_speed(spinbox, scroll_count);
+    (void)luaL_checkinteger(L, 2);
+    /* lv_spinbox_set_scroll_speed() was removed in LVGL 8 */
+    (void)spinbox;
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -122,12 +123,12 @@ static int lvgl_spinbox_decrement(lua_State* L) {
     return 1;
 }
 
-/* 注册 spinbox 子模块 */
+/* æ³¨å spinbox å­æ¨¡å?*/
 void lvgl_register_spinbox(lua_State* L) {
-    /* 创建组件方法表(用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "set_value", lvgl_spinbox_set_value);
     REG_METHOD(L, "get_value", lvgl_spinbox_get_value);
     REG_METHOD(L, "set_range", lvgl_spinbox_set_range);
@@ -137,10 +138,10 @@ void lvgl_register_spinbox(lua_State* L) {
     REG_METHOD(L, "increment", lvgl_spinbox_increment);
     REG_METHOD(L, "decrement", lvgl_spinbox_decrement);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     spinbox_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.spinbox.set_value(sb, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.spinbox.set_value(sb, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, spinbox_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -151,6 +152,6 @@ void lvgl_register_spinbox(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.spinbox) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.spinbox) */
     REG_METHOD(L, "create", lvgl_spinbox_create);
 }

@@ -293,6 +293,7 @@
 #define IOT_FS_WBPLUS            "wb+"
 #define IOT_FS_ABPLUS            "ab+"
 #define IOT_FS_RBPLUS            "rb+"
+#define IOT_FS_OPEN_USES_STRING_MODE
 
 #define IOT_FS_SEEK_SET          SEEK_SET
 #define IOT_FS_SEEK_CUR          SEEK_CUR

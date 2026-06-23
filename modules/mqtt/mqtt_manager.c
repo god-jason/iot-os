@@ -34,7 +34,7 @@ int mqtt_manager_init(void) {
     s_mqtt_running = true;
     s_mqtt_manager_task = iot_task_create("mqtt_mgr", mqtt_manager_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
     if (!s_mqtt_manager_task) {
-        iot_mutex_destroy(s_mqtt_mutex);
+        iot_mutex_delete(s_mqtt_mutex);
         s_mqtt_running = false;
         return -1;
     }
@@ -57,11 +57,11 @@ void mqtt_manager_deinit(void) {
     iot_task_delay(100);
 
     if (s_mqtt_manager_task) {
-        iot_task_destroy(s_mqtt_manager_task);
+        iot_task_delete(s_mqtt_manager_task);
     }
 
     if (s_mqtt_mutex) {
-        iot_mutex_destroy(s_mqtt_mutex);
+        iot_mutex_delete(s_mqtt_mutex);
     }
 }
 
@@ -249,10 +249,12 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
                         mqtt_subscribe_entry_t* entry = client->subscribe_head;
                         while (entry) {
                             uint8_t buf[512];
+                            const char* topic_filter = entry->topic_filter;
+                            mqtt_qos_t qos = entry->qos;
                             mqtt_packet_subscribe_t subscribe = {
                                 .packet_id = client->next_packet_id++,
-                                .topic_filters = &entry->topic_filter,
-                                .requested_qos = &entry->qos,
+                                .topic_filters = &topic_filter,
+                                .requested_qos = &qos,
                                 .topic_count = 1
                             };
 

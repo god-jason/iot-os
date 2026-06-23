@@ -1,15 +1,15 @@
 /*
 @module  lvgl.indev
-@summary LVGL输入设备操作
+@summary LVGLčžĺĽčŽžĺ¤ćä˝
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ć°çĽ & TRAE & ChatGPT
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== 输入设备操作 ==================== */
+/* ==================== čžĺĽčŽžĺ¤ćä˝ ==================== */
 
 static int lvgl_indev_get_act(lua_State* L) {
     lv_indev_t* indev = lv_indev_get_act();
@@ -27,16 +27,12 @@ static int lvgl_indev_get_type(lua_State* L) {
 static int lvgl_indev_get_point(lua_State* L) {
     lv_indev_t* indev = (lv_indev_t*)luaL_checklightuserdata(L, 1);
     lv_point_t point;
-    bool success = lv_indev_get_point(indev, &point);
-    if (success) {
-        lua_newtable(L);
-        lua_pushinteger(L, point.x);
-        lua_setfield(L, -2, "x");
-        lua_pushinteger(L, point.y);
-        lua_setfield(L, -2, "y");
-        return 1;
-    }
-    lua_pushnil(L);
+    lv_indev_get_point(indev, &point);
+    lua_newtable(L);
+    lua_pushinteger(L, point.x);
+    lua_setfield(L, -2, "x");
+    lua_pushinteger(L, point.y);
+    lua_setfield(L, -2, "y");
     return 1;
 }
 
@@ -47,7 +43,7 @@ static int lvgl_indev_get_key(lua_State* L) {
     return 1;
 }
 
-/* 注册 indev 子模块 */
+/* ćł¨ĺ indev ĺ­ć¨Ąĺ?*/
 void lvgl_register_indev(lua_State* L) {
     REG_METHOD(L, "get_act", lvgl_indev_get_act);
     REG_METHOD(L, "get_type", lvgl_indev_get_type);

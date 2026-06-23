@@ -25,6 +25,7 @@ option_end()
 
 -- 公共头文件目录
 add_includedirs("platforms/"..(get_config("platform") or "windows"))
+add_includedirs("platforms")
 add_includedirs("vendor/lua")
 add_includedirs("modules/zlib")
 add_includedirs("iot")

@@ -9,6 +9,8 @@
 
 #include "platform.h"
 #include "iot_params.h"
+#include "iot_rtos.h"
+#include "iot_callback.h"
 
 #include "mqtt_client.h"
 #include "mqtt_packets.h"

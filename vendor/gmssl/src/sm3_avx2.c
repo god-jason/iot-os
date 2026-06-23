@@ -124,7 +124,7 @@ void sm3_x8_compress_blocks(__m256i digest[8], const uint8_t *data, size_t datal
 			3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
 
 		for (j = 0; j < 16; j++) {
-			SS1 = _mm256_i32gather_epi32(data + 4*j, TT1, 1);
+			SS1 = _mm256_i32gather_epi32((const int *)(data + 4*j), TT1, 1);
 			SS1 = _mm256_shuffle_epi8(SS1, TT2);
 			_mm256_storeu_si256((__m256i *)W[j], SS1);
 		}
@@ -293,7 +293,7 @@ void sm3_x8_digest(const uint8_t *data, size_t datalen, uint8_t dgst[8][32])
 			3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12,
 			3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
 	for (i = 0; i < 8; i++) {
-		a = _mm256_i32gather_epi32((uint8_t *)&ctx + 4*i, vindex, 1);
+		a = _mm256_i32gather_epi32((int *)((uint8_t *)&ctx + 4*i), vindex, 1);
 		a = _mm256_shuffle_epi8(a, b);
 		_mm256_storeu_si256((__m256i *)dgst[i], a);
 	}
@@ -302,6 +302,7 @@ void sm3_x8_digest(const uint8_t *data, size_t datalen, uint8_t dgst[8][32])
 	gmssl_secure_clear(block, sizeof(block));
 }
 
+#if 0
 static int test_sm3_x8_avx2(void)
 {
 	uint8_t data[8][96] = {0};
@@ -322,3 +323,4 @@ static int test_sm3_x8_avx2(void)
 	printf("%s() ok\n", __FUNCTION__);
 	return 1;
 }
+#endif

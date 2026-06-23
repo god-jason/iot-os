@@ -40,8 +40,8 @@ struct http_server_client {
 struct http_server {
     net_socket_t* listen_sock;
     uint16_t port;
-    LIST_HEAD(routes);
-    LIST_HEAD(clients);
+    list_head_t routes;
+    list_head_t clients;
     char* static_dir;
     http_server_request_callback_t request_callback;
     void* request_callback_data;
@@ -333,6 +333,8 @@ http_server_t* http_server_create(void) {
     if (!server) return NULL;
     
     memset(server, 0, sizeof(*server));
+    list_init(&server->routes);
+    list_init(&server->clients);
     return server;
 }
 

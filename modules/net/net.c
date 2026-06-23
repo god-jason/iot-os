@@ -10,16 +10,15 @@
 #include <string.h>
 #include <errno.h>
 
+#include "net_port.h"
 #include "net.h"
 #include "platform.h"
-
-#include "lwip/sockets.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
-#include "lwip/inet.h"
-
 #include "gmssl/tls.h"
-#include "gmssl/x509.h"
+
+#ifdef _WIN32
+#undef INVALID_SOCKET
+#define INVALID_SOCKET NET_INVALID_SOCK
+#endif
 
 #define NET_SOCKET_RECV_BUF_SIZE 4096
 #define NET_SOCKET_SEND_BUF_SIZE 4096
@@ -37,7 +36,7 @@ struct net_socket {
 
     bool is_ssl;                     /* 是否启用 SSL/TLS */
     TLS_CTX* tls_ctx;                /* TLS 上下文 */
-    TLS* tls;                        /* TLS 连接实例 */
+    TLS_CONNECT* tls;                /* TLS 连接实例 */
     net_ssl_config_t ssl_config;     /* SSL 配置 */
     bool ssl_handshake_done;         /* SSL 握手是否完成 */
     char ssl_error[256];             /* SSL 错误信息 */
@@ -60,6 +59,7 @@ static bool s_net_running = false;               /* 网络模块运行标志 */
 static void net_socket_set_state(net_socket_t* sock, net_sock_state_t state);
 static void net_socket_trigger_event(net_socket_t* sock, net_event_type_t event);
 static int net_socket_set_nonblocking(int fd);
+static void ssl_cleanup(net_socket_t* sock);
 static int ssl_init_client(net_socket_t* sock);
 static int ssl_do_handshake(net_socket_t* sock);
 static void net_socket_add(net_socket_t* sock);
@@ -137,7 +137,9 @@ int net_socket_bind(sock_t sock, const char* ip, uint16_t port)
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
+#ifndef _WIN32
     addr.sin_len = sizeof(addr);
+#endif
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
 
@@ -193,7 +195,9 @@ int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
+#ifndef _WIN32
     addr.sin_len = sizeof(addr);
+#endif
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(ip);
@@ -293,7 +297,16 @@ int net_socket_send(sock_t sock, const void* data, size_t len)
     }
 
     if (s->is_ssl) {
-        return tls_write(s->tls, data, len);
+        size_t sentlen = 0;
+        int ret = tls_send(s->tls, (const uint8_t*)data, len, &sentlen);
+        if (ret == 1) {
+            return (int)sentlen;
+        }
+        if (ret == TLS_ERROR_RECV_AGAIN || ret == TLS_ERROR_SEND_AGAIN) {
+            errno = EWOULDBLOCK;
+            return -1;
+        }
+        return -1;
     }
 
     return lwip_send(s->fd, data, len, 0);
@@ -318,7 +331,19 @@ int net_socket_recv(sock_t sock, void* buf, size_t len)
     }
 
     if (s->is_ssl) {
-        return tls_read(s->tls, buf, len);
+        size_t recvlen = 0;
+        int ret = tls_recv(s->tls, (uint8_t*)buf, len, &recvlen);
+        if (ret == 1) {
+            return (int)recvlen;
+        }
+        if (ret == 0) {
+            return 0;
+        }
+        if (ret == TLS_ERROR_RECV_AGAIN || ret == TLS_ERROR_SEND_AGAIN) {
+            errno = EWOULDBLOCK;
+            return -1;
+        }
+        return -1;
     }
 
     return lwip_recv(s->fd, buf, len, 0);
@@ -340,11 +365,8 @@ void net_socket_close(sock_t sock)
     if (s->is_ssl) {
         if (s->tls) {
             tls_shutdown(s->tls);
-            tls_free(s->tls);
         }
-        if (s->tls_ctx) {
-            tls_ctx_free(s->tls_ctx);
-        }
+        ssl_cleanup(s);
     }
 
     if (s->fd >= 0) {
@@ -473,11 +495,9 @@ typedef struct {
 } dns_resolve_ctx_t;
 
 /**
- * @brief DNS 解析完成回调（lwip 回调）
- * @param name 主机名
- * @param ipaddr IP 地址
- * @param callback_arg 用户参数
+ * @brief DNS 解析完成回调（lwip 回调，非 Windows 平台）
  */
+#ifndef _WIN32
 static void dns_resolve_callback(const char* name, const ip_addr_t* ipaddr, void* callback_arg)
 {
     dns_resolve_ctx_t* ctx = (dns_resolve_ctx_t*)callback_arg;
@@ -487,7 +507,7 @@ static void dns_resolve_callback(const char* name, const ip_addr_t* ipaddr, void
         if (ipaddr) {
             char* ip_str = (char*)iot_malloc(16);
             if (ip_str) {
-                ip = ip4addr_ntoa_r(ipaddr, ip_str, 16);
+                ip = ip4addr_ntoa_r(ip_2_ip4(ipaddr), ip_str, 16);
                 ctx->callback(ctx->hostname, ip, ctx->user_data);
                 iot_free(ip_str);
                 iot_free(ctx);
@@ -499,6 +519,7 @@ static void dns_resolve_callback(const char* name, const ip_addr_t* ipaddr, void
 
     iot_free(ctx);
 }
+#endif
 
 /**
  * @brief 异步 DNS 解析
@@ -513,6 +534,15 @@ int net_dns_resolve(const char* name, net_dns_callback_t callback, void* user_da
         return -1;
     }
 
+#ifdef _WIN32
+    char ip_str[16];
+    if (iot_dns_resolve(name, ip_str, sizeof(ip_str)) != 0) {
+        callback(name, NULL, user_data);
+        return -1;
+    }
+    callback(name, ip_str, user_data);
+    return 0;
+#else
     dns_resolve_ctx_t* ctx = (dns_resolve_ctx_t*)iot_malloc(sizeof(dns_resolve_ctx_t));
     if (!ctx) {
         return -1;
@@ -528,7 +558,7 @@ int net_dns_resolve(const char* name, net_dns_callback_t callback, void* user_da
     if (err == ERR_OK) {
         char* ip_str = (char*)iot_malloc(16);
         if (ip_str) {
-            ctx->callback(name, ip4addr_ntoa_r(&addr, ip_str, 16), user_data);
+            ctx->callback(name, ip4addr_ntoa_r(ip_2_ip4(&addr), ip_str, 16), user_data);
             iot_free(ip_str);
         } else {
             ctx->callback(name, NULL, user_data);
@@ -543,6 +573,7 @@ int net_dns_resolve(const char* name, net_dns_callback_t callback, void* user_da
 
     iot_free(ctx);
     return -1;
+#endif
 }
 
 /**
@@ -551,6 +582,13 @@ int net_dns_resolve(const char* name, net_dns_callback_t callback, void* user_da
  */
 int net_init(void)
 {
+#ifdef _WIN32
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        return -1;
+    }
+#endif
+
     s_socket_mutex = iot_mutex_create();
     if (!s_socket_mutex) {
         return -1;
@@ -559,7 +597,7 @@ int net_init(void)
     s_net_running = true;
     s_net_task = iot_task_create("net_poll", net_poll_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
     if (!s_net_task) {
-        iot_mutex_destroy(s_socket_mutex);
+        iot_mutex_delete(s_socket_mutex);
         s_net_running = false;
         return -1;
     }
@@ -576,7 +614,7 @@ void net_deinit(void)
     iot_task_delay(100);
 
     if (s_net_task) {
-        iot_task_destroy(s_net_task);
+        iot_task_delete(s_net_task);
     }
 
     iot_mutex_lock(s_socket_mutex, -1);
@@ -586,8 +624,12 @@ void net_deinit(void)
     iot_mutex_unlock(s_socket_mutex);
 
     if (s_socket_mutex) {
-        iot_mutex_destroy(s_socket_mutex);
+        iot_mutex_delete(s_socket_mutex);
     }
+
+#ifdef _WIN32
+    WSACleanup();
+#endif
 }
 
 /**
@@ -754,10 +796,22 @@ uint32_t net_inet_addr(const char* ip)
  */
 const char* net_inet_ntoa(uint32_t addr, char* buf, size_t len)
 {
-    ip_addr_t ip_addr;
+#ifdef _WIN32
+    struct in_addr in;
+    in.s_addr = addr;
+    const char* ip = inet_ntoa(in);
+    if (!ip || !buf || len == 0) {
+        return NULL;
+    }
+    strncpy(buf, ip, len - 1);
+    buf[len - 1] = '\0';
+    return buf;
+#else
+    ip4_addr_t ip_addr;
     IP4_ADDR(&ip_addr, (addr >> 24) & 0xFF, (addr >> 16) & 0xFF,
              (addr >> 8) & 0xFF, addr & 0xFF);
     return ip4addr_ntoa_r(&ip_addr, buf, len);
+#endif
 }
 
 /**
@@ -805,11 +859,7 @@ static void net_socket_trigger_event(net_socket_t* sock, net_event_type_t event)
  */
 static int net_socket_set_nonblocking(int fd)
 {
-    int flags = lwip_fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        return -1;
-    }
-    return lwip_fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    return net_port_set_nonblocking(fd);
 }
 
 /**
@@ -847,6 +897,29 @@ static void net_socket_remove(net_socket_t* sock)
 }
 
 /**
+ * @brief 释放 SSL 资源
+ * @param sock socket 结构体
+ */
+static void ssl_cleanup(net_socket_t* sock)
+{
+    if (!sock) {
+        return;
+    }
+
+    if (sock->tls) {
+        tls_cleanup(sock->tls);
+        iot_free(sock->tls);
+        sock->tls = NULL;
+    }
+
+    if (sock->tls_ctx) {
+        tls_ctx_cleanup(sock->tls_ctx);
+        iot_free(sock->tls_ctx);
+        sock->tls_ctx = NULL;
+    }
+}
+
+/**
  * @brief 初始化 SSL 客户端
  * @param sock socket 结构体
  * @return 0 成功，-1 失败
@@ -860,60 +933,64 @@ static int ssl_init_client(net_socket_t* sock)
         protocol = TLS_protocol_tlcp;
     }
 
-    sock->tls_ctx = tls_ctx_new(TLS_client_method());
+    sock->tls_ctx = (TLS_CTX*)iot_malloc(sizeof(TLS_CTX));
     if (!sock->tls_ctx) {
         snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to create TLS context");
         return -1;
     }
 
-    tls_ctx_set_version(sock->tls_ctx, protocol);
+    if (tls_ctx_init(sock->tls_ctx, protocol, TLS_client_mode) != 1) {
+        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to init TLS context");
+        ssl_cleanup(sock);
+        return -1;
+    }
 
     if (sock->ssl_config.verify_mode != NET_SSL_VERIFY_NONE) {
         if (sock->ssl_config.ca_file) {
-            X509_CERT* ca_cert = x509_cert_from_pem_file(sock->ssl_config.ca_file);
-            if (ca_cert) {
-                tls_ctx_set_ca_cert(sock->tls_ctx, ca_cert);
-                x509_cert_free(ca_cert);
-            } else if (sock->ssl_config.verify_mode == NET_SSL_VERIFY_REQUIRED) {
+            if (tls_ctx_set_ca_certificates(sock->tls_ctx, sock->ssl_config.ca_file,
+                                            TLS_DEFAULT_VERIFY_DEPTH) != 1 &&
+                sock->ssl_config.verify_mode == NET_SSL_VERIFY_REQUIRED) {
                 snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to load CA certificate");
-                tls_ctx_free(sock->tls_ctx);
-                sock->tls_ctx = NULL;
+                ssl_cleanup(sock);
                 return -1;
             }
         } else if (sock->ssl_config.verify_mode == NET_SSL_VERIFY_REQUIRED) {
             snprintf(sock->ssl_error, sizeof(sock->ssl_error), "CA certificate file is required");
-            tls_ctx_free(sock->tls_ctx);
-            sock->tls_ctx = NULL;
+            ssl_cleanup(sock);
             return -1;
         }
     }
 
     if (sock->ssl_config.cert_file && sock->ssl_config.key_file) {
-        X509_CERT* cert = x509_cert_from_pem_file(sock->ssl_config.cert_file);
-        SM2_KEY* key = sm2_key_from_pem_file(sock->ssl_config.key_file, sock->ssl_config.key_password);
-        if (cert && key) {
-            tls_ctx_set_identity(sock->tls_ctx, cert, key);
-        }
-        if (cert) {
-            x509_cert_free(cert);
-        }
-        if (key) {
-            sm2_key_free(key);
-        }
+        tls_ctx_set_certificate_and_key(sock->tls_ctx, sock->ssl_config.cert_file,
+                                        sock->ssl_config.key_file,
+                                        sock->ssl_config.key_password);
     }
 
-    sock->tls = tls_new(sock->tls_ctx);
+    sock->tls = (TLS_CONNECT*)iot_malloc(sizeof(TLS_CONNECT));
     if (!sock->tls) {
         snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to create TLS connection");
-        tls_ctx_free(sock->tls_ctx);
-        sock->tls_ctx = NULL;
+        ssl_cleanup(sock);
         return -1;
     }
 
-    tls_set_fd(sock->tls, sock->fd);
+    if (tls_init(sock->tls, sock->tls_ctx) != 1) {
+        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to init TLS connection");
+        ssl_cleanup(sock);
+        return -1;
+    }
 
-    if (sock->ssl_config.hostname) {
-        tls_set_servername(sock->tls, sock->ssl_config.hostname);
+    if (tls_set_socket(sock->tls, (tls_socket_t)sock->fd) != 1) {
+        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to bind TLS socket");
+        ssl_cleanup(sock);
+        return -1;
+    }
+
+    if (sock->ssl_config.hostname &&
+        tls_set_hostname(sock->tls, sock->ssl_config.hostname) != 1) {
+        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to set TLS hostname");
+        ssl_cleanup(sock);
+        return -1;
     }
 
     return 0;
@@ -930,23 +1007,20 @@ static int ssl_do_handshake(net_socket_t* sock)
         return -1;
     }
 
-    int ret = tls_connect(sock->tls);
+    int ret = tls_do_handshake(sock->tls);
     if (ret == 1) {
-        /* 握手完成 */
         sock->ssl_handshake_done = true;
         net_socket_set_state(sock, NET_SOCK_STATE_CONNECTED);
         net_socket_trigger_event(sock, NET_EVENT_CONNECTED);
         return 0;
     }
 
-    if (ret < 0) {
-        /* 握手失败 */
-        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "SSL handshake failed");
-        net_socket_set_state(sock, NET_SOCK_STATE_ERROR);
-        net_socket_trigger_event(sock, NET_EVENT_ERROR);
-        return -1;
+    if (ret == TLS_ERROR_RECV_AGAIN || ret == TLS_ERROR_SEND_AGAIN) {
+        return 0;
     }
 
-    /* 握手进行中，等待下次 select 通知 */
-    return 0;
+    snprintf(sock->ssl_error, sizeof(sock->ssl_error), "SSL handshake failed");
+    net_socket_set_state(sock, NET_SOCK_STATE_ERROR);
+    net_socket_trigger_event(sock, NET_EVENT_ERROR);
+    return -1;
 }

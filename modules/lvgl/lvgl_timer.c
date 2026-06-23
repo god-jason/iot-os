@@ -1,55 +1,55 @@
 /*
 @module  lvgl.timer
-@summary LVGL定时器操作
+@summary LVGL??????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 @tag     System
 @usage
--- Lua示例
+-- Lua??
 local lvgl = require("lvgl")
 
--- 注意: LVGL定时器需要设置回调函数
--- 由于Lua回调机制的限制,当前版本仅支持基础的定时器操作
+-- ??: LVGL????????????
+-- ??Lua???????????????????????
 
--- 删除定时器
+-- ??????
 -- lvgl.timer.delete(timer)
 
--- 暂停定时器
+-- ??????
 -- lvgl.timer.pause(timer)
 
--- 恢复定时器
+-- ??????
 -- lvgl.timer.resume(timer)
 
--- 设置定时器周期
+-- ????????
 -- lvgl.timer.set_period(timer, 1000)
 
--- 重置定时器
+-- ??????
 -- lvgl.timer.reset(timer)
 
--- 使定时器立即就绪
+-- ????????
 -- lvgl.timer.ready(timer)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== 定时器操作 ==================== */
+/* ==================== ??????==================== */
 
 /*
-删除定时器
-@param timer 定时器指针
+??????
+@param timer ??????
 @usage lvgl.timer.delete(timer)
 */
 static int lvgl_timer_delete(lua_State* L) {
     lv_timer_t* timer = (lv_timer_t*)luaL_checklightuserdata(L, 1);
-    lv_timer_delete(timer);
+    lv_timer_del(timer);
     return 0;
 }
 
 /*
-暂停定时器
-@param timer 定时器指针
+??????
+@param timer ??????
 @usage lvgl.timer.pause(timer)
 */
 static int lvgl_timer_pause(lua_State* L) {
@@ -59,8 +59,8 @@ static int lvgl_timer_pause(lua_State* L) {
 }
 
 /*
-恢复定时器
-@param timer 定时器指针
+??????
+@param timer ??????
 @usage lvgl.timer.resume(timer)
 */
 static int lvgl_timer_resume(lua_State* L) {
@@ -70,9 +70,9 @@ static int lvgl_timer_resume(lua_State* L) {
 }
 
 /*
-设置定时器周期
-@param timer 定时器指针
-@param period 周期(毫秒)
+????????
+@param timer ??????
+@param period ??(??)
 @usage lvgl.timer.set_period(timer, 1000)
 */
 static int lvgl_timer_set_period(lua_State* L) {
@@ -83,21 +83,20 @@ static int lvgl_timer_set_period(lua_State* L) {
 }
 
 /*
-获取定时器周期
-@param timer 定时器指针
-@return number 周期(毫秒)
+????????
+@param timer ??????
+@return number ??(??)
 @usage local period = lvgl.timer.get_period(timer)
 */
 static int lvgl_timer_get_period(lua_State* L) {
     lv_timer_t* timer = (lv_timer_t*)luaL_checklightuserdata(L, 1);
-    uint32_t period = lv_timer_get_period(timer);
-    lua_pushinteger(L, period);
+    lua_pushinteger(L, timer->period);
     return 1;
 }
 
 /*
-重置定时器
-@param timer 定时器指针
+??????
+@param timer ??????
 @usage lvgl.timer.reset(timer)
 */
 static int lvgl_timer_reset(lua_State* L) {
@@ -107,8 +106,8 @@ static int lvgl_timer_reset(lua_State* L) {
 }
 
 /*
-使定时器立即就绪
-@param timer 定时器指针
+????????
+@param timer ??????
 @usage lvgl.timer.ready(timer)
 */
 static int lvgl_timer_ready(lua_State* L) {
@@ -118,22 +117,23 @@ static int lvgl_timer_ready(lua_State* L) {
 }
 
 /*
-获取定时器剩余时间
-@param timer 定时器指针
-@return number 剩余时间(毫秒)
+??????????
+@param timer ??????
+@return number ????(??)
 @usage local time = lvgl.timer.get_time(timer)
 */
 static int lvgl_timer_get_time(lua_State* L) {
     lv_timer_t* timer = (lv_timer_t*)luaL_checklightuserdata(L, 1);
-    uint32_t time = lv_timer_get_time(timer);
-    lua_pushinteger(L, time);
+    uint32_t elapsed = lv_tick_elaps(timer->last_run);
+    uint32_t remaining = (elapsed >= timer->period) ? 0 : (timer->period - elapsed);
+    lua_pushinteger(L, remaining);
     return 1;
 }
 
 /*
-设置定时器重复次数
-@param timer 定时器指针
-@param repeat_count 重复次数(-1表示无限循环)
+??????????
+@param timer ??????
+@param repeat_count ????(-1??????)
 @usage lvgl.timer.set_repeat_count(timer, -1)
 */
 static int lvgl_timer_set_repeat_count(lua_State* L) {
@@ -144,19 +144,18 @@ static int lvgl_timer_set_repeat_count(lua_State* L) {
 }
 
 /*
-获取定时器重复次数
-@param timer 定时器指针
-@return number 重复次数
+??????????
+@param timer ??????
+@return number ????
 @usage local count = lvgl.timer.get_repeat_count(timer)
 */
 static int lvgl_timer_get_repeat_count(lua_State* L) {
     lv_timer_t* timer = (lv_timer_t*)luaL_checklightuserdata(L, 1);
-    int32_t count = lv_timer_get_repeat_count(timer);
-    lua_pushinteger(L, count);
+    lua_pushinteger(L, timer->repeat_count);
     return 1;
 }
 
-/* 注册 timer 子模块 */
+/* ?? timer ????*/
 void lvgl_register_timer(lua_State* L) {
     REG_METHOD(L, "delete", lvgl_timer_delete);
     REG_METHOD(L, "pause", lvgl_timer_pause);

@@ -257,22 +257,39 @@ static LStream *newfile (lua_State *L) {
 
 
 /*
+** @brief 将 Lua 文件模式转换为 iot_fs_open 参数
+** @note ML307N 等平台使用整型 flag，Windows/Linux 等使用 fopen 模式字符串
+*/
+#if defined(IOT_FS_OPEN_USES_STRING_MODE)
+static const char *iot_fs_mode_from_lua (const char *mode) {
+  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) return IOT_FS_RB;
+  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) return IOT_FS_WB;
+  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) return IOT_FS_AB;
+  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) return IOT_FS_RBPLUS;
+  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) return IOT_FS_WBPLUS;
+  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) return IOT_FS_ABPLUS;
+  else return IOT_FS_RB;
+}
+#else
+static int iot_fs_mode_from_lua (const char *mode) {
+  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) return IOT_FS_RB;
+  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) return IOT_FS_WB;
+  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) return IOT_FS_AB;
+  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) return IOT_FS_RBPLUS;
+  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) return IOT_FS_WBPLUS;
+  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) return IOT_FS_ABPLUS;
+  else return IOT_FS_RB;
+}
+#endif
+
+
+/*
 ** @brief 打开并检查文件
 ** @note 适配iot_fs_open接口
 */
 static void opencheck (lua_State *L, const char *fname, const char *mode) {
   LStream *p = newfile(L);
-  /* 适配iot_fs_open接口，需要将模式字符串转换为flag */
-  int flag = 0;
-  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = IOT_FS_RB;
-  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = IOT_FS_WB;
-  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = IOT_FS_AB;
-  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = IOT_FS_RBPLUS;
-  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = IOT_FS_WBPLUS;
-  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = IOT_FS_ABPLUS;
-  else flag = IOT_FS_RB;
-
-  p->f = iot_fs_open(fname, flag);
+  p->f = iot_fs_open(fname, iot_fs_mode_from_lua(mode));
   if (p->f == NULL)
     luaL_error(L, "cannot open file '%s' (%s)", fname, strerror(errno));
 }
@@ -288,17 +305,7 @@ static int io_open (lua_State *L) {
   LStream *p = newfile(L);
   const char *md = mode;  /* to traverse/check mode */
   luaL_argcheck(L, l_checkmode(md), 2, "invalid mode");
-  /* 适配iot_fs_open接口 */
-  int flag = 0;
-  if (strcmp(mode, "r") == 0 || strcmp(mode, "rb") == 0) flag = IOT_FS_RB;
-  else if (strcmp(mode, "w") == 0 || strcmp(mode, "wb") == 0) flag = IOT_FS_WB;
-  else if (strcmp(mode, "a") == 0 || strcmp(mode, "ab") == 0) flag = IOT_FS_AB;
-  else if (strcmp(mode, "r+") == 0 || strcmp(mode, "rb+") == 0) flag = IOT_FS_RBPLUS;
-  else if (strcmp(mode, "w+") == 0 || strcmp(mode, "wb+") == 0) flag = IOT_FS_WBPLUS;
-  else if (strcmp(mode, "a+") == 0 || strcmp(mode, "ab+") == 0) flag = IOT_FS_ABPLUS;
-  else flag = IOT_FS_RB;
-
-  p->f = iot_fs_open(filename, flag);
+  p->f = iot_fs_open(filename, iot_fs_mode_from_lua(mode));
   return (p->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
 }
 

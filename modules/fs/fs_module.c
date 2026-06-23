@@ -17,6 +17,7 @@
 
 /* IoT 核心头文件 */
 #include "platform.h"
+#include "iot_log.h"
 #include "iot_callback.h"
 #include "fs_path.h"
 #include "fs_dir.h"

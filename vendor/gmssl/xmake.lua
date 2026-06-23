@@ -26,4 +26,4 @@ target("gmssl")
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter", "-mssse3", "-mpclmul", "-maes", "-mrdrnd", "-mavx2")
 
     -- 定义宏（启用 SM4 各种模式）
-    add_defines("ENABLE_SM4_ECB", "ENABLE_SM4_OFB", "ENABLE_SM4_CFB", "ENABLE_SM4_CCM", "ENABLE_SM4_XTS")
+    add_defines("ENABLE_SM4_ECB", "ENABLE_SM4_OFB", "ENABLE_SM4_CFB", "ENABLE_SM4_CCM", "ENABLE_SM4_XTS", "ENABLE_SHA1", "ENABLE_SHA2")

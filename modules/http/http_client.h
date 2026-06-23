@@ -13,6 +13,9 @@
 #include <stddef.h>
 
 #include "iot_list.h"
+#include "platform.h"
+#include "net.h"
+#include "http_gzip.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,7 +84,7 @@ typedef struct {
 } http_client_options_t;
 
 struct http_client {
-    void* sock;
+    net_socket_t* sock;
     http_client_options_t options;
     
     char host[256];
@@ -96,7 +99,7 @@ struct http_client {
     int content_length;
     int chunked;
     
-    void* fd;
+    iot_fs_file_t fd;
     size_t downloaded;
     size_t total_size;
     
@@ -104,15 +107,13 @@ struct http_client {
     int request_done;
     int request_failed;
     
-    void* mutex;
-    void* sem;
-    void* gzip_ctx;
+    iot_mutex_t mutex;
+    iot_sem_t sem;
+    http_gzip_ctx_t* gzip_ctx;
     bool response_gzip;
     
     list_head_t list_node;
 };
-
-typedef struct http_client http_client_t;
 
 /*===========================================================
  * HTTP 客户端接口

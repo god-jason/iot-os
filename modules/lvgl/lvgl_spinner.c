@@ -1,51 +1,52 @@
 /*
 @module  lvgl.spinner
-@summary LVGL旋转器控件
+@summary LVGL??????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 @tag     Graphics
 @usage
--- Lua示例(OO风格)
+-- Lua??(OO??)
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建旋转器
+-- ??????
 local spinner = lvgl.spinner.create(scr, 1000)
 spinner:set_size(50, 50)
 spinner:set_pos(135, 95)
 
--- 设置旋转角度
+-- ??????
 spinner:set_angle(60)
 
--- 设置类型
+-- ????
 spinner:set_type(lvgl.SPINNER_TYPE_SPINNING)
 
--- 暂停/恢复旋转
+-- ??/????
 spinner:pause()
 spinner:resume()
 
--- 链式调用
+-- ????
 local s = lvgl.spinner.create(scr, 1000):set_size(40, 40):set_pos(140, 100):set_angle(60)
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* spinner组件的metatable引用 */
+/* spinner???metatable?? */
 static int spinner_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== ?????? ==================== */
 
 static int lvgl_spinner_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
     uint32_t period = (uint32_t)luaL_optinteger(L, 2, 1000);
-    lv_obj_t* spinner = lv_spinner_create(parent, period);
+    uint32_t arc_length = (uint32_t)luaL_optinteger(L, 3, 60);
+    lv_obj_t* spinner = lv_spinner_create(parent, period, arc_length);
     lua_pushlightuserdata(L, spinner);
     return 1;
 }
 
-/* ==================== 旋转器OO方法 ==================== */
+/* ==================== ???OO?? ==================== */
 
 static int lvgl_spinner_create(lua_State* L) {
     return lvgl_obj_create_instance(L, lvgl_spinner_create_internal, spinner_metatable_ref);
@@ -53,49 +54,53 @@ static int lvgl_spinner_create(lua_State* L) {
 
 static int lvgl_spinner_set_angle(lua_State* L) {
     lv_obj_t* spinner = lvgl_get_obj_ptr(L, 1);
-    uint16_t angle = (uint16_t)luaL_checkinteger(L, 2);
-    lv_spinner_set_angle(spinner, angle);
+    (void)luaL_checkinteger(L, 2);
+    /* arc length is fixed at create time in LVGL 8; pass as 3rd arg to create() */
+    (void)spinner;
     lua_pushvalue(L, 1);
     return 1;
 }
 
 static int lvgl_spinner_set_type(lua_State* L) {
     lv_obj_t* spinner = lvgl_get_obj_ptr(L, 1);
-    lv_spinner_type_t type = (lv_spinner_type_t)luaL_checkinteger(L, 2);
-    lv_spinner_set_type(spinner, type);
+    (void)luaL_checkinteger(L, 2);
+    /* lv_spinner_set_type() was removed in LVGL 8 */
+    (void)spinner;
     lua_pushvalue(L, 1);
     return 1;
 }
 
 static int lvgl_spinner_pause(lua_State* L) {
     lv_obj_t* spinner = lvgl_get_obj_ptr(L, 1);
-    lv_spinner_pause(spinner);
+    /* lv_spinner_pause() was removed in LVGL 8 */
+    (void)spinner;
     lua_pushvalue(L, 1);
     return 1;
 }
 
 static int lvgl_spinner_resume(lua_State* L) {
     lv_obj_t* spinner = lvgl_get_obj_ptr(L, 1);
-    lv_spinner_resume(spinner);
+    /* lv_spinner_resume() was removed in LVGL 8 */
+    (void)spinner;
     lua_pushvalue(L, 1);
     return 1;
 }
 
-/* 注册 spinner 子模块 */
+/* ?? spinner ????*/
 void lvgl_register_spinner(lua_State* L) {
-    /* 创建组件方法表(用于metatable继承) */
+    /* ??????????metatable??) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* ??OO???? */
     REG_METHOD(L, "set_angle", lvgl_spinner_set_angle);
     REG_METHOD(L, "set_type", lvgl_spinner_set_type);
     REG_METHOD(L, "pause", lvgl_spinner_pause);
     REG_METHOD(L, "resume", lvgl_spinner_resume);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ????metatable??(????) */
     spinner_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.spinner.set_angle(sp, ...) 调用) */
+    /* ??????????(?? lvgl.spinner.set_angle(sp, ...) ??) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, spinner_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -106,6 +111,6 @@ void lvgl_register_spinner(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.spinner) */
+    /* ??create??????lvgl.spinner) */
     REG_METHOD(L, "create", lvgl_spinner_create);
 }

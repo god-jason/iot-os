@@ -33,7 +33,11 @@ static int lvgl_task_handler(lua_State* L) {
 }
 
 static int lvgl_flush_ready(lua_State* L) {
-    lv_flush_ready();
+    lv_disp_t* disp = lv_disp_get_default();
+    if (disp && disp->driver) {
+        lv_disp_flush_ready(disp->driver);
+    }
+    (void)L;
     return 0;
 }
 
@@ -43,20 +47,21 @@ static int lvgl_refr_now(lua_State* L) {
 }
 
 static int lvgl_debug_info_print(lua_State* L) {
-    lv_debug_info_print();
+    /* lv_debug_info_print() was removed in LVGL 8 */
+    (void)L;
     return 0;
 }
 
 static int lvgl_version_get(lua_State* L) {
     lua_newtable(L);
-    lua_pushinteger(L, lv_version_get_major());
+    lua_pushinteger(L, lv_version_major());
     lua_setfield(L, -2, "major");
-    lua_pushinteger(L, lv_version_get_minor());
+    lua_pushinteger(L, lv_version_minor());
     lua_setfield(L, -2, "minor");
-    lua_pushinteger(L, lv_version_get_patch());
+    lua_pushinteger(L, lv_version_patch());
     lua_setfield(L, -2, "patch");
-    lua_pushstring(L, lv_version_get_dev_date());
-    lua_setfield(L, -2, "date");
+    lua_pushstring(L, lv_version_info());
+    lua_setfield(L, -2, "info");
     return 1;
 }
 
@@ -84,6 +89,12 @@ static int lvgl_disp_load_scr(lua_State* L) {
 
 static int lvgl_indev_get_default(lua_State* L) {
     lua_pushlightuserdata(L, lv_indev_get_default());
+    return 1;
+}
+
+static int lvgl_pct(lua_State* L) {
+    int x = (int)luaL_checkinteger(L, 1);
+    lua_pushinteger(L, LV_PCT(x));
     return 1;
 }
 
@@ -268,6 +279,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
     REG_METHOD(L, "disp_get_scr_act", lvgl_disp_get_scr_act);
     REG_METHOD(L, "disp_load_scr", lvgl_disp_load_scr);
     REG_METHOD(L, "indev_get_default", lvgl_indev_get_default);
+    REG_METHOD(L, "pct", lvgl_pct);
 
     return 1;
 }

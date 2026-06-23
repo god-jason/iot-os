@@ -1,6 +1,6 @@
 /*
 @module  lvgl.switch
-@summary LVGL开关控件
+@summary LVGL开关控�?
 @version 2.0
 @date    2026.06.18
 @author  杰神 & TRAE & ChatGPT
@@ -10,16 +10,16 @@
 local lvgl = require("lvgl")
 local scr = lvgl.scr_act()
 
--- 创建开关
+-- 创建开�?
 local sw = lvgl.switch.create(scr)
 sw:set_pos(50, 50)
 
--- 开关状态
-sw:on(1)     -- 打开(有动画)
-sw:off(0)    -- 关闭(无动画)
-sw:toggle(1)  -- 切换状态
+-- 开关状�?
+sw:on(1)     -- 打开(有动�?
+sw:off(0)    -- 关闭(无动�?
+sw:toggle(1)  -- 切换状�?
 
--- 获取状态
+-- 获取状�?
 if sw:get_state() then
     print("开关已打开")
 else
@@ -30,7 +30,7 @@ end
 local sw2 = lvgl.switch.create(scr):set_pos(50, 100):on()
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
 /* switch组件的metatable引用 */
@@ -82,9 +82,9 @@ static int lvgl_switch_get_state(lua_State* L) {
     return 1;
 }
 
-/* 注册 switch 子模块 */
+/* 注册 switch 子模�?*/
 void lvgl_register_switch(lua_State* L) {
-    /* 创建组件方法表(用于metatable继承) */
+    /* 创建组件方法�?用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
@@ -107,6 +107,6 @@ void lvgl_register_switch(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表(lvgl.switch) */
+    /* 注册create函数到主�?lvgl.switch) */
     REG_METHOD(L, "create", lvgl_switch_create);
 }

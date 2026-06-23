@@ -165,16 +165,14 @@ static int os_execute (lua_State *L) {
 
 static int os_remove (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
-  /* 适配到iot_fs_delete接口 */
-  return luaL_fileresult(L, iot_fs_delete(filename) == 0, filename);
+  return luaL_fileresult(L, iot_fs_remove(filename), filename);
 }
 
 
 static int os_rename (lua_State *L) {
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
-  /* 适配到iot_fs_move接口 */
-  return luaL_fileresult(L, iot_fs_move(fromname, toname) == 0, NULL);
+  return luaL_fileresult(L, iot_fs_rename(fromname, toname), NULL);
 }
 
 

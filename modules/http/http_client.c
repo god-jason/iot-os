@@ -21,46 +21,15 @@
 #define HTTP_MAX_HEADER_SIZE 8192
 #define HTTP_MAX_BODY_SIZE   1024 * 1024
 
-struct http_client {
-    net_socket_t* sock;
-    http_client_options_t options;
-    
-    char host[256];
-    uint16_t port;
-    char path[512];
-    
-    char* recv_buf;
-    size_t recv_len;
-    size_t recv_capacity;
-    
-    int redirect_count;
-    int content_length;
-    int chunked;
-    
-    iot_fs_file_t fd;
-    size_t downloaded;
-    size_t total_size;
-    
-    http_response_t response;
-    int request_done;
-    int request_failed;
-    
-    iot_mutex_t mutex;
-    iot_sem_t sem;
-    http_gzip_ctx_t* gzip_ctx;
-    bool response_gzip;
-    
-    list_head_t list_node;
-};
-
 static const char* http_method_to_string(http_method_t method);
-static int http_build_request(struct http_client* client, char* buf, size_t buf_len);
-static int http_parse_response(struct http_client* client, http_response_t* response);
+static int http_build_request(http_client_t* client, char* buf, size_t buf_len);
+static int http_parse_response(http_client_t* client, http_response_t* response);
 static int http_parse_status_line(const char* line, int* status_code);
 static int http_parse_header(const char* header, const char* key, char* value, size_t value_len);
-static int http_connect(struct http_client* client);
-static void http_recv_data(struct http_client* client);
+static int http_connect(http_client_t* client);
+static void http_recv_data(http_client_t* client);
 static void http_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
+static int http_client_do_request(http_client_t* client);
 
 static const char* http_method_to_string(http_method_t method) {
     switch (method) {
@@ -74,7 +43,7 @@ static const char* http_method_to_string(http_method_t method) {
     }
 }
 
-static int http_build_request(struct http_client* client, char* buf, size_t buf_len) {
+static int http_build_request(http_client_t* client, char* buf, size_t buf_len) {
     const char* method = http_method_to_string(client->options.method);
     const char* path = client->path;
     
@@ -140,7 +109,7 @@ static int http_parse_header(const char* header, const char* key, char* value, s
     return 0;
 }
 
-static int http_parse_response(struct http_client* client, http_response_t* response) {
+static int http_parse_response(http_client_t* client, http_response_t* response) {
     if (!client || !client->recv_buf || client->recv_len < 4) {
         return -1;
     }
@@ -227,7 +196,7 @@ static int http_parse_response(struct http_client* client, http_response_t* resp
     return -1;
 }
 
-static int http_connect(struct http_client* client) {
+static int http_connect(http_client_t* client) {
     char ip[32];
     int ret = iot_dns_resolve(client->host, ip, sizeof(ip));
     if (ret < 0) {
@@ -251,7 +220,7 @@ static int http_connect(struct http_client* client) {
     return 0;
 }
 
-static void http_recv_data(struct http_client* client) {
+static void http_recv_data(http_client_t* client) {
     if (!client || !client->sock) return;
     
     char buf[4096];
@@ -283,7 +252,7 @@ static void http_recv_data(struct http_client* client) {
 }
 
 static void http_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
-    struct http_client* client = (struct http_client*)user_data;
+    http_client_t* client = (http_client_t*)user_data;
     if (!client) return;
     
     switch (event) {
@@ -306,10 +275,10 @@ static void http_socket_callback(net_socket_t* sock, net_event_type_t event, voi
 }
 
 http_client_t* http_client_create(const http_client_options_t* options) {
-    struct http_client* client = (struct http_client*)iot_malloc(sizeof(struct http_client));
+    http_client_t* client = (http_client_t*)iot_malloc(sizeof(http_client_t));
     if (!client) return NULL;
     
-    memset(client, 0, sizeof(struct http_client));
+    memset(client, 0, sizeof(http_client_t));
     
     if (options) {
         client->options = *options;
@@ -378,7 +347,7 @@ void http_client_set_options(http_client_t* client, const http_client_options_t*
     iot_mutex_unlock(client->mutex);
 }
 
-static int http_client_do_request(struct http_client* client) {
+static int http_client_do_request(http_client_t* client) {
     http_url_t url;
     if (http_url_parse(client->options.url, &url) != 0) {
         return -1;
@@ -695,7 +664,6 @@ int http_download(const char* url, const char* save_path) {
     if (!client) return -1;
     
     int ret = http_client_execute(client);
-    http_client_wait(client, -1);
     
     http_client_destroy(client);
     

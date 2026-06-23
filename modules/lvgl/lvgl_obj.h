@@ -46,7 +46,7 @@ lvgl.obj.set_y(btn, 20)
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "iot_callback.h"
 
 /* ==================== 宏定义 ==================== */

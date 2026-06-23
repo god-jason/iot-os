@@ -1,15 +1,15 @@
 /*
 @module  lvgl.disp
-@summary LVGL显示器操作
+@summary LVGL??????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== 显示器操作 ==================== */
+/* ==================== ??????==================== */
 
 static int lvgl_disp_get_hor_res(lua_State* L) {
     lv_coord_t res = lv_disp_get_hor_res(NULL);
@@ -37,14 +37,14 @@ static int lvgl_disp_get_physical_ver_res(lua_State* L) {
 
 static int lvgl_disp_set_rotation(lua_State* L) {
     lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
-    lv_disp_rotation_t rotation = (lv_disp_rotation_t)luaL_checkinteger(L, 2);
+    lv_disp_rot_t rotation = (lv_disp_rot_t)luaL_checkinteger(L, 2);
     lv_disp_set_rotation(disp, rotation);
     return 0;
 }
 
 static int lvgl_disp_get_rotation(lua_State* L) {
     lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
-    lv_disp_rotation_t rotation = lv_disp_get_rotation(disp);
+    lv_disp_rot_t rotation = lv_disp_get_rotation(disp);
     lua_pushinteger(L, rotation);
     return 1;
 }
@@ -62,7 +62,7 @@ static int lvgl_disp_set_bg_image(lua_State* L) {
     return 0;
 }
 
-/* 注册 disp 子模块 */
+/* ?? disp ????*/
 void lvgl_register_disp(lua_State* L) {
     REG_METHOD(L, "get_hor_res", lvgl_disp_get_hor_res);
     REG_METHOD(L, "get_ver_res", lvgl_disp_get_ver_res);

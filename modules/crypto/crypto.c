@@ -23,8 +23,9 @@
 #include <gmssl/hmac.h>
 #include <gmssl/aes.h>
 #include <gmssl/sm4.h>
+#include <gmssl/digest.h>
 #include "gmssl/pbkdf2.h"
-#include <zlib.h>
+#include "deflate.h"
 
 /*===========================================================
  * 内部函数声明
@@ -421,7 +422,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
     if (cipher_is_cbc(type)) {
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeyenc(&sm4_key, key);
+            sm4_set_encrypt_key(&sm4_key, key);
             size_t outlen_tmp = *outlen;
             if (sm4_cbc_padding_encrypt(&sm4_key, iv, in, inlen, out, &outlen_tmp) != 1) {
                 return -1;
@@ -445,8 +446,10 @@ int crypto_encrypt(crypto_cipher_type_t type,
     if (cipher_is_ctr(type)) {
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeyenc(&sm4_key, key);
-            sm4_ctr_encrypt(&sm4_key, iv, in, inlen, out);
+            uint8_t ctr[SM4_BLOCK_SIZE];
+            sm4_set_encrypt_key(&sm4_key, key);
+            memcpy(ctr, iv, SM4_BLOCK_SIZE);
+            sm4_ctr_encrypt(&sm4_key, ctr, in, inlen, out);
             *outlen = inlen;
         } else {
             AES_KEY aes_key;
@@ -502,10 +505,12 @@ int crypto_decrypt(crypto_cipher_type_t type,
             }
             size_t taglen = 16;
             size_t ciphertext_len = inlen - taglen;
-            if (aes_gcm_decrypt(&aes_key, iv, ivlen, aad, aadlen, in, ciphertext_len, out, outlen, (uint8_t*)in + ciphertext_len, &taglen) != 1) {
+            if (aes_gcm_decrypt(&aes_key, iv, ivlen, aad, aadlen, in, ciphertext_len,
+                                (uint8_t*)in + ciphertext_len, taglen, out) != 1) {
                 LOG("ERR: GCM authentication failed");
                 return -1;
             }
+            *outlen = ciphertext_len;
             return 0;
         }
     }
@@ -524,10 +529,10 @@ int crypto_decrypt(crypto_cipher_type_t type,
         }
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeydec(&sm4_key, key);
+            sm4_set_decrypt_key(&sm4_key, key);
             size_t blocks = inlen / block_size;
             for (size_t i = 0; i < blocks; i++) {
-                sm4_decrypt(&sm4_key, in + i * block_size, out + i * block_size);
+                sm4_encrypt(&sm4_key, in + i * block_size, out + i * block_size);
             }
         } else {
             AES_KEY aes_key;
@@ -553,7 +558,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
     if (cipher_is_cbc(type)) {
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeydec(&sm4_key, key);
+            sm4_set_decrypt_key(&sm4_key, key);
             size_t outlen_tmp = *outlen;
             if (sm4_cbc_padding_decrypt(&sm4_key, iv, in, inlen, out, &outlen_tmp) != 1) {
                 return -1;
@@ -577,8 +582,10 @@ int crypto_decrypt(crypto_cipher_type_t type,
     if (cipher_is_ctr(type)) {
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeyenc(&sm4_key, key);  /* CTR 模式解密也用加密密钥 */
-            sm4_ctr_encrypt(&sm4_key, iv, in, inlen, out);
+            uint8_t ctr[SM4_BLOCK_SIZE];
+            sm4_set_encrypt_key(&sm4_key, key);  /* CTR 模式解密也用加密密钥 */
+            memcpy(ctr, iv, SM4_BLOCK_SIZE);
+            sm4_ctr_encrypt(&sm4_key, ctr, in, inlen, out);
             *outlen = inlen;
         } else {
             AES_KEY aes_key;
@@ -745,7 +752,7 @@ uint32_t crypto_checksum(crypto_checksum_type_t type, const uint8_t* data, size_
         case CRYPTO_CHECKSUM_CRC32:
             return crypto_crc32(data, datalen, 0xFFFFFFFF, 0x00000000, 1);
         case CRYPTO_CHECKSUM_ADLER32:
-            return adler32(0L, data, (uInt)datalen);
+            return zlib_adler32(0, data, datalen);
         default:
             return 0;
     }
@@ -1109,7 +1116,13 @@ int crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
         return -1;
     }
 
-    if (pbkdf2_hmac_sha256(password, passwordlen, salt, saltlen, iterations, keylen, key) != 1) {
+    const DIGEST* digest = crypto_hash_to_gmssl_digest(CRYPTO_HASH_SHA256);
+    if (!digest) {
+        return -1;
+    }
+
+    if (pbkdf2_hmac_genkey(digest, (const char*)password, passwordlen,
+                           salt, saltlen, (size_t)iterations, keylen, key) != 1) {
         return -1;
     }
 

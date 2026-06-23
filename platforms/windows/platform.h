@@ -68,9 +68,14 @@
 #define iot_sem_delete(sem) \
     CloseHandle((sem))
 
-#define iot_timer_create(cb, arg, period_ms, type) \
-    CreateTimerQueueTimer(NULL, NULL, (WAITORTIMERCALLBACK)(cb), (arg), 0, \
-        (type == IOT_TIMER_PERIODIC) ? (period_ms) : 0, WT_EXECUTEDEFAULT)
+#define iot_timer_create(cb, arg, period_ms, type) ({ \
+    HANDLE _iot_timer = NULL; \
+    CreateTimerQueueTimer(&_iot_timer, NULL, (WAITORTIMERCALLBACK)(cb), (PVOID)(arg), \
+        (DWORD)(period_ms), \
+        ((type) == IOT_TIMER_PERIODIC) ? (DWORD)(period_ms) : 0, \
+        WT_EXECUTEDEFAULT); \
+    _iot_timer; \
+})
 
 #define iot_timer_start(timer, period_ms) \
     (0)
@@ -263,6 +268,7 @@ static inline int _iot_fs_readdir(iot_fs_dir_t dir, iot_fs_dirent_t* entry) {
 #define IOT_FS_WBPLUS            "wb+"
 #define IOT_FS_ABPLUS            "ab+"
 #define IOT_FS_RBPLUS            "rb+"
+#define IOT_FS_OPEN_USES_STRING_MODE
 
 #define IOT_FS_SEEK_SET          SEEK_SET
 #define IOT_FS_SEEK_CUR          SEEK_CUR
@@ -291,8 +297,18 @@ static inline int iot_path_is_separator(char c) {
  * DNS 解析适配层
  *===========================================================*/
 
-#define iot_dns_resolve(name, ip, ip_len) \
-    ({ struct hostent* _he = gethostbyname(name); \
-       (_he && _he->h_addr_list[0]) ? strncpy(ip, inet_ntoa(*(struct in_addr*)_he->h_addr_list[0]), ip_len) : -1; })
+static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
+    struct hostent* he = gethostbyname(name);
+    if (!he || !he->h_addr_list || !he->h_addr_list[0] || ip_len == 0) {
+        return -1;
+    }
+    const char* addr = inet_ntoa(*(struct in_addr*)he->h_addr_list[0]);
+    if (!addr) {
+        return -1;
+    }
+    strncpy(ip, addr, ip_len - 1);
+    ip[ip_len - 1] = '\0';
+    return 0;
+}
 
 #endif /* IOT_PLATFORM_WINDOWS_H */

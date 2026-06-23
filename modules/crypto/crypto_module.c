@@ -1013,9 +1013,9 @@ LUAMOD_API int luaopen_crypto_register(lua_State* L) {
 
     /* 注册 X509 证书类型元表 */
     luaL_newmetatable(L, X509_CERT_METATABLE);
-    lua_pushcfunction(L, x509_cert_gc);
+    lua_pushcfunction(L, luaopen_crypto_x509_cert_gc);
     lua_setfield(L, -2, "__gc");
-    lua_pushcfunction(L, x509_cert_tostring);
+    lua_pushcfunction(L, luaopen_crypto_x509_cert_tostring);
     lua_setfield(L, -2, "__tostring");
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");

@@ -12,7 +12,6 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "lvgl.h"
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
@@ -53,6 +52,8 @@ void lvgl_register_font(lua_State* L);
 void lvgl_register_disp(lua_State* L);
 void lvgl_register_indev(lua_State* L);
 void lvgl_register_timer(lua_State* L);
+int lvgl_register_theme(lua_State* L);
+int lvgl_register_fs(lua_State* L);
 void lvgl_register_canvas(lua_State* L);
 void lvgl_register_layout(lua_State* L);
 void lvgl_register_group(lua_State* L);

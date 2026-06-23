@@ -1,15 +1,29 @@
 /*
 @module  lvgl.group
-@summary LVGL对象组
+@summary LVGL????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== 对象组操作 ==================== */
+static lv_obj_t* lvgl_group_get_obj_by_index(lv_group_t* group, uint32_t index)
+{
+    lv_obj_t** obj_i;
+    uint32_t i = 0;
+
+    _LV_LL_READ(&group->obj_ll, obj_i) {
+        if (i == index) {
+            return *obj_i;
+        }
+        i++;
+    }
+    return NULL;
+}
+
+/* ==================== ??????==================== */
 
 static int lvgl_group_create(lua_State* L) {
     lv_group_t* group = lv_group_create();
@@ -19,7 +33,7 @@ static int lvgl_group_create(lua_State* L) {
 
 static int lvgl_group_delete(lua_State* L) {
     lv_group_t* group = (lv_group_t*)luaL_checklightuserdata(L, 1);
-    lv_group_delete(group);
+    lv_group_del(group);
     return 0;
 }
 
@@ -45,8 +59,12 @@ static int lvgl_group_remove_all_objs(lua_State* L) {
 static int lvgl_group_get_obj(lua_State* L) {
     lv_group_t* group = (lv_group_t*)luaL_checklightuserdata(L, 1);
     uint32_t index = (uint32_t)luaL_checkinteger(L, 2);
-    lv_obj_t* obj = lv_group_get_obj_by_index(group, index);
-    lua_pushlightuserdata(L, obj);
+    lv_obj_t* obj = lvgl_group_get_obj_by_index(group, index);
+    if (obj) {
+        lua_pushlightuserdata(L, obj);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 
@@ -84,7 +102,7 @@ static int lvgl_group_focus_prev(lua_State* L) {
 
 static int lvgl_group_make_obj_focusable(lua_State* L) {
     lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
-    lv_group_make_obj_focusable(obj);
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE);
     return 0;
 }
 
@@ -114,7 +132,7 @@ static int lvgl_group_set_wrap(lua_State* L) {
     return 0;
 }
 
-/* 注册 group 子模块 */
+/* ?? group ????*/
 void lvgl_register_group(lua_State* L) {
     REG_METHOD(L, "create", lvgl_group_create);
     REG_METHOD(L, "delete", lvgl_group_delete);

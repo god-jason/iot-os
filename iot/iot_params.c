@@ -8,6 +8,7 @@
 
 #include "iot_base.h"
 #include "iot_params.h"
+#include "iot_log.h"
 #include "platform.h"
 
 /* 创建参数列表 */

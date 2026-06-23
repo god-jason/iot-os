@@ -1,15 +1,15 @@
 /*
 @module  lvgl.layout
-@summary LVGL布局管理器
+@summary LVGL??????
 @version 2.0
 @date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
+@author  ?? & TRAE & ChatGPT
 */
 
-#include "lvgl.h"
+#include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== Flex布局 ==================== */
+/* ==================== Flex?? ==================== */
 
 static int lvgl_layout_flex_init(lua_State* L) {
     lv_flex_init();
@@ -39,7 +39,7 @@ static int lvgl_layout_flex_set_grow(lua_State* L) {
     return 0;
 }
 
-/* ==================== Grid布局 ==================== */
+/* ==================== Grid?? ==================== */
 
 static int lvgl_layout_grid_init(lua_State* L) {
     lv_grid_init();
@@ -47,7 +47,7 @@ static int lvgl_layout_grid_init(lua_State* L) {
 }
 
 static int lvgl_layout_grid_set_template(lua_State* L) {
-    /* 设置网格模板列/行 */
+    /* ??????????*/
     luaL_error(L, "grid template not fully supported yet");
     return 0;
 }
@@ -70,7 +70,7 @@ static int lvgl_layout_grid_set_align(lua_State* L) {
     return 0;
 }
 
-/* ==================== 布局属性 ==================== */
+/* ==================== ?????==================== */
 
 static int lvgl_layout_set(lua_State* L) {
     lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
@@ -81,7 +81,7 @@ static int lvgl_layout_set(lua_State* L) {
 
 static int lvgl_layout_get(lua_State* L) {
     lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
-    uint32_t layout = lv_obj_get_layout(obj);
+    uint32_t layout = lv_obj_get_style_layout(obj, LV_PART_MAIN);
     lua_pushinteger(L, layout);
     return 1;
 }
@@ -94,27 +94,30 @@ static int lvgl_layout_update(lua_State* L) {
 
 static int lvgl_layout_have_size_dependency(lua_State* L) {
     lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
-    uint32_t layout = (uint32_t)luaL_optinteger(L, 2, LV_LAYOUT_FLEX);
-    bool has = lv_obj_has_flag_any(obj, LV_OBJ_FLAG_LAYOUT_1);
+    (void)luaL_optinteger(L, 2, LV_LAYOUT_FLEX);
+    lv_coord_t w = lv_obj_get_style_width(obj, LV_PART_MAIN);
+    lv_coord_t h = lv_obj_get_style_height(obj, LV_PART_MAIN);
+    bool has = (w == LV_SIZE_CONTENT || h == LV_SIZE_CONTENT ||
+                LV_COORD_IS_PCT(w) || LV_COORD_IS_PCT(h));
     lua_pushboolean(L, has);
     return 1;
 }
 
-/* 注册 layout 子模块 */
+/* ?? layout ????*/
 void lvgl_register_layout(lua_State* L) {
-    /* Flex布局 */
+    /* Flex?? */
     REG_METHOD(L, "flex_init", lvgl_layout_flex_init);
     REG_METHOD(L, "flex_set_flow", lvgl_layout_flex_set_flow);
     REG_METHOD(L, "flex_set_align", lvgl_layout_flex_set_align);
     REG_METHOD(L, "flex_set_grow", lvgl_layout_flex_set_grow);
 
-    /* Grid布局 */
+    /* Grid?? */
     REG_METHOD(L, "grid_init", lvgl_layout_grid_init);
     REG_METHOD(L, "grid_set_template", lvgl_layout_grid_set_template);
     REG_METHOD(L, "grid_set_cell", lvgl_layout_grid_set_cell);
     REG_METHOD(L, "grid_set_align", lvgl_layout_grid_set_align);
 
-    /* 通用布局 */
+    /* ???? */
     REG_METHOD(L, "set", lvgl_layout_set);
     REG_METHOD(L, "get", lvgl_layout_get);
     REG_METHOD(L, "update", lvgl_layout_update);

@@ -10,7 +10,10 @@
 #include <string.h>
 #include "iot_task.h"
 #include "iot_base.h"
+#include "iot_log.h"
 #include "platform.h"
+#include "platform_event.h"
+#include "lualib.h"
 #include "iot_rtos.h"
 #include "iot_modules.h"
 #include "iot.luac.h"
@@ -34,7 +37,6 @@ static lua_State* g_lua_state = NULL;
 static bool iot_load_lua_file(lua_State* L, const char* lua_path)
 {
     char luac_path[256];
-    int lua_path_len = strlen(lua_path);
     
     /* 构建 .luac 文件路径 */
     snprintf(luac_path, sizeof(luac_path), "%sc", lua_path);
