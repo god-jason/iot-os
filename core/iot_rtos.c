@@ -107,10 +107,10 @@ bool iot_rtos_msg_init(void)
 
     g_rtos_msg_queue = iot_queue_create(RTOS_MSG_QUEUE_SIZE, sizeof(rtos_msg_t*));
     if (g_rtos_msg_queue == NULL) {
-        LOG_INFO("ERR queue create");
+        LOG_ERROR("Queue create failed");
         return false;
     }
-    LOG_INFO("OK queue size=%d", RTOS_MSG_QUEUE_SIZE);
+    LOG_INFO("Queue created, size=%d", RTOS_MSG_QUEUE_SIZE);
     return true;
 }
 
@@ -120,7 +120,7 @@ bool iot_rtos_msg_init(void)
 static void iot_rtos_send_msg_internal(rtos_msg_t* msg)
 {
     if (g_rtos_msg_queue == NULL || msg == NULL) {
-        LOG_INFO("ERR queue or msg is NULL");
+        LOG_ERROR("Invalid queue or msg");
         iot_rtos_msg_destroy(msg);
         return;
     }
@@ -134,7 +134,7 @@ void iot_rtos_publish(const char* str, params_t* params)
 {
     rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
-        LOG_INFO("ERR malloc PUBLISH");
+        LOG_ERROR("malloc failed for PUBLISH");
         if (params) {
             params_destroy(params);
         }
@@ -156,7 +156,7 @@ void iot_rtos_call(void* userdata, params_t* params)
 {
     rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
-        LOG_INFO("ERR malloc CALL");
+        LOG_ERROR("malloc failed for CALL");
         if (params) {
             params_destroy(params);
         }
@@ -178,7 +178,7 @@ void iot_rtos_timeout(uint32_t timer_id)
 {
     rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
     if (!msg) {
-        LOG_INFO("ERR malloc TIMEOUT id=%u", timer_id);
+        LOG_ERROR("malloc failed for TIMEOUT id=%u", timer_id);
         return;
     }
 
@@ -216,7 +216,7 @@ static int luaopen_rtos_timer_create(lua_State* L)
 
     int slot = timer_find_free_slot();
     if (slot < 0) {
-        LOG_INFO("ERR no free slot");
+        LOG_WARN("No free timer slot");
         lua_pushnil(L);
         lua_pushstring(L, "no free timer slot");
         return 2;
@@ -232,7 +232,7 @@ static int luaopen_rtos_timer_create(lua_State* L)
     ctx->timer_id = iot_timer_create(timer_callback_wrapper, (void*)(uintptr_t)slot, ctx->timeout_ticks, timer_type);
 
     if (ctx->timer_id == NULL) {
-        LOG_INFO("ERR timer create");
+        LOG_ERROR("Timer create failed");
         ctx->timer_id_lua = 0;
         ctx->timeout_ticks = 0;
         ctx->flags = 0;
@@ -243,7 +243,7 @@ static int luaopen_rtos_timer_create(lua_State* L)
     }
 
     if (iot_timer_start(ctx->timer_id, ctx->timeout_ticks) != 0) {
-        LOG_INFO("ERR timer start");
+        LOG_ERROR("Timer start failed");
         iot_timer_delete(ctx->timer_id);
         ctx->timer_id = NULL;
         ctx->timer_id_lua = 0;
@@ -255,7 +255,7 @@ static int luaopen_rtos_timer_create(lua_State* L)
         return 2;
     }
 
-    LOG_TRACE("OK timer id=%u, ms=%u, periodic=%u", ctx->timer_id_lua, timeout_ms, periodic);
+    LOG_TRACE("Timer created: id=%u, ms=%u, periodic=%u", ctx->timer_id_lua, timeout_ms, periodic);
     lua_pushinteger(L, ctx->timer_id_lua);
     return 1;
 }
@@ -270,20 +270,20 @@ static int luaopen_rtos_timer_stop(lua_State* L)
     int slot = id - 1;
 
     if (slot < 0 || slot >= MAX_TIMER_COUNT) {
-        LOG_INFO("ERR invalid id=%d", id);
+        LOG_WARN("Invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     timer_ctx_t* ctx = &g_timer_ctx[slot];
     if (ctx->timer_id == NULL) {
-        LOG_INFO("ERR timer NULL id=%d", id);
+        LOG_WARN("Timer not found id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     int ret = iot_timer_stop(ctx->timer_id);
-    LOG_TRACE("stop id=%d, ret=%d", id, ret);
+    LOG_TRACE("Timer stopped: id=%d, ret=%d", id, ret);
     lua_pushboolean(L, (ret == 0) ? 1 : 0);
     return 1;
 }
@@ -298,14 +298,14 @@ static int luaopen_rtos_timer_is_running(lua_State* L)
     int slot = id - 1;
 
     if (slot < 0 || slot >= MAX_TIMER_COUNT) {
-        LOG_INFO("ERR invalid id=%d", id);
+        LOG_WARN("Invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     timer_ctx_t* ctx = &g_timer_ctx[slot];
     if (ctx->timer_id == NULL) {
-        LOG_INFO("ERR timer NULL id=%d", id);
+        LOG_WARN("Timer not found id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -326,7 +326,7 @@ static int luaopen_rtos_timer_delete(lua_State* L)
     int slot = id - 1;
 
     if (slot < 0 || slot >= MAX_TIMER_COUNT) {
-        LOG_INFO("ERR invalid id=%d", id);
+        LOG_WARN("Invalid id=%d", id);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -344,7 +344,7 @@ static int luaopen_rtos_timer_delete(lua_State* L)
     ctx->flags = 0;
     ctx->periodic = 0;
 
-    LOG_TRACE("delete id=%d OK", id);
+    LOG_TRACE("Timer deleted: id=%d", id);
     lua_pushboolean(L, 1);
     return 1;
 }

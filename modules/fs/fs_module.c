@@ -45,13 +45,13 @@ static int g_lua_module_inited = 0;
 /* 获取文件上下文 */
 static file_lua_ctx_t* file_get_ctx_from_userdata(lua_State* L, int idx) {
     if (lua_type(L, idx) != LUA_TUSERDATA) {
-        LOG_INFO("ERR: not userdata");
+        LOG_ERROR("not userdata");
         return NULL;
     }
 
     file_lua_ctx_t** ctx_ptr = (file_lua_ctx_t**)lua_touserdata(L, idx);
     if (!ctx_ptr || !*ctx_ptr) {
-        LOG_INFO("ERR: null context");
+        LOG_ERROR("null context");
         return NULL;
     }
     return *ctx_ptr;
@@ -61,7 +61,7 @@ static file_lua_ctx_t* file_get_ctx_from_userdata(lua_State* L, int idx) {
 static file_lua_ctx_t* file_ctx_create(void) {
     file_lua_ctx_t* ctx = (file_lua_ctx_t*)iot_malloc(sizeof(file_lua_ctx_t));
     if (!ctx) {
-        LOG_INFO("ERR: malloc file ctx failed");
+        LOG_ERROR("malloc failed");
         return NULL;
     }
     memset(ctx, 0, sizeof(file_lua_ctx_t));

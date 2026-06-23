@@ -53,7 +53,7 @@ static void iot_wdt_timer_callback(void* arg) {
     iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
     if (g_wdt.started) {
         g_wdt.timeout = true;
-        LOG_INFO("[WDT] Watchdog timeout triggered!");
+        LOG_ERROR("Watchdog timeout triggered!");
         exit(1);
     }
     iot_mutex_unlock(g_wdt.mutex);
@@ -72,7 +72,7 @@ static bool iot_wdt_init_resources(uint32_t timeout_ms) {
     /* 创建互斥锁 */
     g_wdt.mutex = iot_mutex_create();
     if (g_wdt.mutex == NULL) {
-        LOG_INFO("[WDT] Failed to create mutex");
+        LOG_ERROR("Failed to create mutex");
         return false;
     }
 
@@ -83,7 +83,7 @@ static bool iot_wdt_init_resources(uint32_t timeout_ms) {
     g_wdt.timer = NULL;
     g_wdt.initialized = true;
 
-    LOG_INFO("[WDT] Resources initialized, timeout=%u ms", g_wdt.timeout_ms);
+    LOG_INFO("Resources initialized, timeout=%u ms", g_wdt.timeout_ms);
     return true;
 }
 
@@ -93,7 +93,7 @@ static bool iot_wdt_init_resources(uint32_t timeout_ms) {
  */
 static bool iot_wdt_start_timer(void) {
     if (!g_wdt.initialized) {
-        LOG_INFO("[WDT] Cannot start timer: not initialized");
+        LOG_WARN("Cannot start timer: not initialized");
         return false;
     }
 
@@ -108,7 +108,7 @@ static bool iot_wdt_start_timer(void) {
     /* 创建循环定时器 */
     g_wdt.timer = iot_timer_create(iot_wdt_timer_callback, NULL, g_wdt.timeout_ms, IOT_TIMER_PERIODIC);
     if (g_wdt.timer == NULL) {
-        LOG_INFO("[WDT] Failed to create timer");
+        LOG_ERROR("Failed to create timer");
         iot_mutex_unlock(g_wdt.mutex);
         return false;
     }
@@ -118,7 +118,7 @@ static bool iot_wdt_start_timer(void) {
 
     iot_mutex_unlock(g_wdt.mutex);
 
-    LOG_INFO("[WDT] Timer started, period=%u ms", g_wdt.timeout_ms);
+    LOG_INFO("Timer started, period=%u ms", g_wdt.timeout_ms);
     return true;
 }
 
@@ -135,7 +135,7 @@ bool iot_wdt_init(uint32_t timeout_ms) {
 
 bool iot_wdt_feed(void) {
     if (!g_wdt.initialized) {
-        LOG_INFO("[WDT] Watchdog not initialized");
+        LOG_WARN("Watchdog not initialized");
         return false;
     }
 
@@ -152,7 +152,7 @@ bool iot_wdt_feed(void) {
 
     iot_mutex_unlock(g_wdt.mutex);
 
-    LOG_INFO("[WDT] Fed");
+    LOG_TRACE("Fed");
     return true;
 }
 
@@ -160,13 +160,13 @@ void iot_wdt_wait(void) {
     /* 如果未初始化，则初始化资源但不启动定时器 */
     if (!g_wdt.initialized) {
         if (!iot_wdt_init_resources(IOT_WDT_DEFAULT_TIMEOUT)) {
-            LOG_INFO("[WDT] Auto-init failed in wait");
+            LOG_ERROR("Auto-init failed");
             return;
         }
-        LOG_INFO("[WDT] Auto-initialized in wait (timer not started)");
+        LOG_INFO("Auto-initialized (timer not started)");
     }
 
-    LOG_INFO("[WDT] Waiting for watchdog timeout...");
+    LOG_DEBUG("Waiting for watchdog timeout...");
 
     /* 阻塞等待超时 */
     while (1) {
@@ -180,12 +180,12 @@ void iot_wdt_wait(void) {
         iot_mutex_unlock(g_wdt.mutex);
     }
 
-    LOG_INFO("[WDT] Watchdog wait ended");
+    LOG_DEBUG("Watchdog wait ended");
 }
 
 bool iot_wdt_stop(void) {
     if (!g_wdt.initialized) {
-        LOG_INFO("[WDT] Watchdog not initialized");
+        LOG_WARN("Watchdog not initialized");
         return false;
     }
 
@@ -208,7 +208,7 @@ bool iot_wdt_stop(void) {
 
     g_wdt.initialized = false;
 
-    LOG_INFO("[WDT] Watchdog stopped");
+    LOG_DEBUG("Watchdog stopped");
     return true;
 }
 
@@ -240,7 +240,7 @@ bool iot_wdt_is_timeout(void) {
  * @param timeout_ms 超时时间（毫秒）
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
-static int lua_wdt_init(lua_State* L) {
+static int luaopen_wdt_init(lua_State* L) {
     int timeout_ms = luaL_checkinteger(L, 1);
 
     if (timeout_ms <= 0) {
@@ -264,7 +264,7 @@ static int lua_wdt_init(lua_State* L) {
  * @brief 喂狗（重置看门狗计时器）
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
-static int lua_wdt_feed(lua_State* L) {
+static int luaopen_wdt_feed(lua_State* L) {
     (void)L;
 
     if (iot_wdt_feed()) {
@@ -282,7 +282,7 @@ static int lua_wdt_feed(lua_State* L) {
  * @brief 停止看门狗
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
-static int lua_wdt_stop(lua_State* L) {
+static int luaopen_wdt_stop(lua_State* L) {
     (void)L;
 
     if (iot_wdt_stop()) {
@@ -300,7 +300,7 @@ static int lua_wdt_stop(lua_State* L) {
  * @brief 检查看门狗是否已初始化
  * @return 已初始化返回 true，否则返回 false
  */
-static int lua_wdt_is_initialized(lua_State* L) {
+static int luaopen_wdt_is_initialized(lua_State* L) {
     (void)L;
 
     lua_pushboolean(L, iot_wdt_is_initialized());
@@ -312,7 +312,7 @@ static int lua_wdt_is_initialized(lua_State* L) {
  * @brief 检查看门狗是否超时
  * @return 超时返回 true，否则返回 false
  */
-static int lua_wdt_is_timeout(lua_State* L) {
+static int luaopen_wdt_is_timeout(lua_State* L) {
     (void)L;
 
     lua_pushboolean(L, iot_wdt_is_timeout());
@@ -321,11 +321,11 @@ static int lua_wdt_is_timeout(lua_State* L) {
 
 /* Lua 模块方法表 */
 static const luaL_Reg wdt_lib[] = {
-    {"init",            lua_wdt_init},
-    {"feed",            lua_wdt_feed},
-    {"stop",            lua_wdt_stop},
-    {"is_initialized",  lua_wdt_is_initialized},
-    {"is_timeout",      lua_wdt_is_timeout},
+    {"init",            luaopen_wdt_init},
+    {"feed",            luaopen_wdt_feed},
+    {"stop",            luaopen_wdt_stop},
+    {"is_initialized",  luaopen_wdt_is_initialized},
+    {"is_timeout",      luaopen_wdt_is_timeout},
     {NULL, NULL}
 };
 
