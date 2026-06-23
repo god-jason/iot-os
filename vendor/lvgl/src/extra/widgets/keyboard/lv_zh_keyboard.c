@@ -626,7 +626,7 @@ static void init_selection_box(lv_obj_t * parent)
     lv_obj_align(zh_input_obj->pinyin_label, LV_ALIGN_TOP_LEFT, 0, -12);
     lv_obj_clear_flag(zh_input_obj->pinyin_label, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_size(zh_input_obj->pinyin_label, lv_obj_get_width(zh_input_obj->obj_selection_box), 20);
-    lv_obj_set_style_text_font(zh_input_obj->pinyin_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(zh_input_obj->pinyin_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(zh_input_obj->pinyin_label, lv_color_hex(0x262626), 0);
 
     lv_obj_t * ext_btn = lv_btn_create(zh_input_obj->obj_selection_box);

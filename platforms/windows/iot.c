@@ -7,6 +7,12 @@
 #include "iot_task.h"
 #include "iot_wdt.h"
 
+int net_port_set_nonblocking(int fd)
+{
+    u_long mode = 1;
+    return ioctlsocket((iot_socket_t)fd, FIONBIO, &mode);
+}
+
 /*===========================================================
  * Lua 输出函数适配
  *===========================================================*/

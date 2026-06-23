@@ -3422,3 +3422,13 @@ void tls_clean_record(TLS_CONNECT *conn)
 	conn->record_offset = 0;
 	conn->recordlen = 0;
 }
+
+int tls_set_hostname(TLS_CONNECT *conn, const char *hostname)
+{
+	if (!conn || !hostname) {
+		error_print();
+		return -1;
+	}
+	/* TODO: 实现 SNI 扩展设置主机名 */
+	return 1;
+}

@@ -6,6 +6,15 @@
 #include "iot.h"
 #include "iot_wdt.h"
 
+int net_port_set_nonblocking(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) {
+        return -1;
+    }
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
 /*===========================================================
  * 事件初始化
  *===========================================================*/

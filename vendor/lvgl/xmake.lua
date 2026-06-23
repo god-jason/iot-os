@@ -34,7 +34,7 @@ target("lvgl")
     add_files("src/extra/widgets/tabview/*.c")
     add_files("src/extra/widgets/textprogress/*.c")
     add_files("src/extra/widgets/tileview/*.c")
-    add_files("src/extra/widgets/video/*.c")
+    -- add_files("src/extra/widgets/video/*.c")  -- 需要FreeRTOS，暂不编译
     add_files("src/extra/widgets/win/*.c")
     add_files("src/font/*.c")
     add_files("src/hal/*.c")

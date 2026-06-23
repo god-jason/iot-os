@@ -26,8 +26,8 @@ target("gmssl")
     -- 编译选项（AVX/SSE 指令集支持）
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter", "-mssse3", "-mpclmul", "-maes", "-mrdrnd", "-mavx2")
 
-    -- 定义宏（启用 SM4 各种模式）
-    add_defines("ENABLE_SM4_ECB", "ENABLE_SM4_OFB", "ENABLE_SM4_CFB", "ENABLE_SM4_CCM", "ENABLE_SM4_XTS", "ENABLE_SHA1", "ENABLE_SHA2")
+    -- 定义宏（启用 SM4 各种模式和 AES）
+    add_defines("ENABLE_SM4_ECB", "ENABLE_SM4_OFB", "ENABLE_SM4_CFB", "ENABLE_SM4_CCM", "ENABLE_SM4_XTS", "ENABLE_SHA1", "ENABLE_SHA2", "ENABLE_AES")
 
     -- Windows 平台定义 WIN32 宏以适配 gmssl socket.h
     if is_plat("windows") then
