@@ -5,6 +5,7 @@
 
 #include "iot.h"
 #include "iot_task.h"
+#include "iot_wdt.h"
 
 /*===========================================================
  * Lua 输出函数适配
@@ -31,6 +32,11 @@ void iot_event_deinit(void) {
  *===========================================================*/
 
 int main(void) {
+    /* 启动 IoT 系统 */
     iot_start();
+    
+    /* 等待看门狗超时（阻塞主进程） */
+    iot_wdt_wait();
+    
     return 0;
 }

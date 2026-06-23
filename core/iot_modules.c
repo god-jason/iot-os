@@ -14,14 +14,110 @@
 #include "iot_callback.h" 
 #include "iot_params.h"
 #include "iot_pack.h"
+#include "iot_wdt.h"
 
+/*===========================================================
+ * 模块注册函数声明
+ *===========================================================*/
 
-/* 核心模块列表 */
+/* Core 模块 */
+extern int luaopen_rtos_register(lua_State* L);
+extern int luaopen_log_register(lua_State* L);
+extern int luaopen_pack_register(lua_State* L);
+extern int luaopen_wdt_register(lua_State* L);
+
+/* Modules 模块 */
+#ifdef IOT_ENABLE_MODULE_CRYPTO
+extern int luaopen_crypto_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_MODULE_FS
+extern int luaopen_fs_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_MODULE_HTTP
+extern int luaopen_http_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_MODULE_MQTT
+extern int luaopen_mqtt_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_MODULE_NET
+extern int luaopen_net_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_MODULE_ZLIB
+extern int luaopen_zlib_register(lua_State* L);
+#endif
+
+/* Vendor 模块 */
+#ifdef IOT_ENABLE_VENDOR_CJSON
+extern int luaopen_cjson_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_VENDOR_GMSSL
+extern int luaopen_gmssl_register(lua_State* L);
+#endif
+
+#ifdef IOT_ENABLE_VENDOR_SQLITE3
+extern int luaopen_sqlite3_register(lua_State* L);
+#endif
+
+/*===========================================================
+ * 核心模块列表
+ *===========================================================*/
+
 static const luaL_Reg core_modules[] = {
     {"rtos",     luaopen_rtos_register},       /* 实时操作系统接口 */
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
+#ifdef IOT_ENABLE_LUA_WDT
+    {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */
+#endif
+    {NULL, NULL}
+};
 
+/*===========================================================
+ * Modules 模块列表
+ *===========================================================*/
+
+static const luaL_Reg modules_list[] = {
+#ifdef IOT_ENABLE_MODULE_CRYPTO
+    {"crypto",   luaopen_crypto_register},     /* 加密模块 */
+#endif
+#ifdef IOT_ENABLE_MODULE_FS
+    {"fs",       luaopen_fs_register},         /* 文件系统模块 */
+#endif
+#ifdef IOT_ENABLE_MODULE_HTTP
+    {"http",     luaopen_http_register},       /* HTTP 模块 */
+#endif
+#ifdef IOT_ENABLE_MODULE_MQTT
+    {"mqtt",     luaopen_mqtt_register},       /* MQTT 模块 */
+#endif
+#ifdef IOT_ENABLE_MODULE_NET
+    {"net",      luaopen_net_register},        /* 网络模块 */
+#endif
+#ifdef IOT_ENABLE_MODULE_ZLIB
+    {"zlib",     luaopen_zlib_register},       /* ZLIB 压缩模块 */
+#endif
+    {NULL, NULL}
+};
+
+/*===========================================================
+ * Vendor 模块列表
+ *===========================================================*/
+
+static const luaL_Reg vendor_list[] = {
+#ifdef IOT_ENABLE_VENDOR_CJSON
+    {"cjson",    luaopen_cjson_register},      /* CJSON 模块 */
+#endif
+#ifdef IOT_ENABLE_VENDOR_GMSSL
+    {"gmssl",    luaopen_gmssl_register},      /* GMSSL 模块 */
+#endif
+#ifdef IOT_ENABLE_VENDOR_SQLITE3
+    {"sqlite3",  luaopen_sqlite3_register},    /* SQLite3 模块 */
+#endif
     {NULL, NULL}
 };
 
@@ -67,6 +163,26 @@ void modules_register(lua_State* L)
     
     /* 注册核心模块 */
     for (lib = core_modules; lib->func; lib++) {
+        if (register_module(L, lib->name, lib->func) == 0) {
+            success_count++;
+        } else {
+            fail_count++;
+            LOG("WARN module %s register failed", lib->name);
+        }
+    }
+    
+    /* 注册 Modules 模块 */
+    for (lib = modules_list; lib->func; lib++) {
+        if (register_module(L, lib->name, lib->func) == 0) {
+            success_count++;
+        } else {
+            fail_count++;
+            LOG("WARN module %s register failed", lib->name);
+        }
+    }
+    
+    /* 注册 Vendor 模块 */
+    for (lib = vendor_list; lib->func; lib++) {
         if (register_module(L, lib->name, lib->func) == 0) {
             success_count++;
         } else {
