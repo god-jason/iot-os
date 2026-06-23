@@ -7,7 +7,7 @@
 
 #include "http_server.h"
 #include "net.h"
-#include "platform.h"
+#include "iot.h"
 #include "iot_list.h"
 
 #include <string.h>

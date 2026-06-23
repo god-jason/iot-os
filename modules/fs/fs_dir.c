@@ -4,7 +4,7 @@
  */
 
 #include "fs_dir.h"
-#include "platform.h"
+#include "iot.h"
 #include "fs_path.h"
 
 #include <string.h>

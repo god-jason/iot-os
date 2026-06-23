@@ -12,7 +12,7 @@
 
 #include "zip.h"
 #include "deflate.h"
-#include "platform.h"
+#include "iot.h"
 #include <string.h>
 
 /* ZIP格式签名常量 */

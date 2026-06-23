@@ -28,6 +28,6 @@
 #include "lauxlib.h"
 
 #include "iot_log.h"
-#include "platform.h"
+#include "iot.h"
 
 #endif /* IOT_MODULE_H */

@@ -12,7 +12,7 @@
 
 #include "tar.h"
 #include "gzip.h"
-#include "platform.h"
+#include "iot.h"
 #include <string.h>
 #include <time.h>
 

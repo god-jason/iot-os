@@ -12,7 +12,7 @@
 
 #include "gzip.h"
 #include "deflate.h"
-#include "platform.h"
+#include "iot.h"
 #include <string.h>
 
 /* GZIP格式常量定义 */

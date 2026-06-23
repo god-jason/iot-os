@@ -24,7 +24,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-#include "platform.h"
+#include "iot.h"
 
 /*
 ** 默认的Lua模块搜索路径前缀

@@ -13,7 +13,7 @@
 #include <stddef.h>
 
 #include "iot_list.h"
-#include "platform.h"
+#include "iot.h"
 #include "net.h"
 #include "http_gzip.h"
 

@@ -13,8 +13,8 @@ extern "C" {
 /*===========================================================
  * 平台扩展接口
  *===========================================================*/
-#include "platform.h"
-#include "platform_ext.h"
+#include "iot.h"
+#include "iot_ext.h"
 
 /*===========================================================
  * 驱动类型枚举
@@ -111,7 +111,7 @@ typedef struct {
 #define DRIVER_ERR_CRC          -6
 
 /*===========================================================
- * GPIO 类型重定义 (兼容 platform_ext.h)
+ * GPIO 类型重定义 (兼容 iot_ext.h)
  *===========================================================*/
 
 #ifndef GPIO_DIR_INPUT
@@ -167,7 +167,7 @@ int driver_spi_deinit(driver_spi_t* spi);
 int driver_spi_transfer(driver_spi_t* spi, uint8_t* tx, uint8_t* rx, size_t len);
 
 /*===========================================================
- * GPIO 接口定义 (直接使用 platform_ext.h)
+ * GPIO 接口定义 (直接使用 iot_ext.h)
  *===========================================================*/
 
 #define driver_gpio_init(pin, dir) \

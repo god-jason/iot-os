@@ -41,7 +41,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include "platform.h"
+#include "iot.h"
 
 #include "http_client.h"
 #include "http_server.h"

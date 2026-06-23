@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "lua.h"
-#include "platform.h"
+#include "iot.h"
 
 /* Lua输出函数映射到系统接口 */
 extern void osPuts(const char *s);

@@ -15,7 +15,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include "platform.h"
+#include "iot.h"
 #include "iot_params.h"
 #include "iot_rtos.h"
 
@@ -555,14 +555,12 @@ static const luaL_Reg net_methods[] = {
 LUAMOD_API int luaopen_net_register(lua_State* L) {
     luaL_newlib(L, net_methods);
 
-    /* 注册常量 - 地址族和协议 */
     lua_pushinteger(L, 2);                        lua_setfield(L, -2, "AF_INET");
     lua_pushinteger(L, 1);                        lua_setfield(L, -2, "SOCK_STREAM");
     lua_pushinteger(L, 2);                        lua_setfield(L, -2, "SOCK_DGRAM");
     lua_pushinteger(L, 6);                        lua_setfield(L, -2, "IPPROTO_TCP");
     lua_pushinteger(L, 17);                       lua_setfield(L, -2, "IPPROTO_UDP");
 
-    /* 注册常量 - Socket 状态 */
     lua_pushinteger(L, NET_SOCK_STATE_CLOSED);     lua_setfield(L, -2, "CLOSED");
     lua_pushinteger(L, NET_SOCK_STATE_OPENED);     lua_setfield(L, -2, "OPENED");
     lua_pushinteger(L, NET_SOCK_STATE_LISTENING);  lua_setfield(L, -2, "LISTENING");
@@ -571,7 +569,6 @@ LUAMOD_API int luaopen_net_register(lua_State* L) {
     lua_pushinteger(L, NET_SOCK_STATE_SSL_HANDSHAKE); lua_setfield(L, -2, "SSL_HANDSHAKE");
     lua_pushinteger(L, NET_SOCK_STATE_ERROR);       lua_setfield(L, -2, "ERROR");
 
-    /* 注册常量 - Socket 事件 */
     lua_pushinteger(L, NET_EVENT_CONNECTED);    lua_setfield(L, -2, "EVENT_CONNECTED");
     lua_pushinteger(L, NET_EVENT_DISCONNECTED); lua_setfield(L, -2, "EVENT_DISCONNECTED");
     lua_pushinteger(L, NET_EVENT_ACCEPT);       lua_setfield(L, -2, "EVENT_ACCEPT");
@@ -579,13 +576,11 @@ LUAMOD_API int luaopen_net_register(lua_State* L) {
     lua_pushinteger(L, NET_EVENT_SEND);        lua_setfield(L, -2, "EVENT_SEND");
     lua_pushinteger(L, NET_EVENT_ERROR);        lua_setfield(L, -2, "EVENT_ERROR");
 
-    /* 注册常量 - SSL 协议版本 */
     lua_pushinteger(L, NET_SSL_PROTOCOL_TLS12); lua_setfield(L, -2, "SSL_PROTOCOL_TLS12");
     lua_pushinteger(L, NET_SSL_PROTOCOL_TLS13); lua_setfield(L, -2, "SSL_PROTOCOL_TLS13");
     lua_pushinteger(L, NET_SSL_PROTOCOL_TLCP);  lua_setfield(L, -2, "SSL_PROTOCOL_TLCP");
     lua_pushinteger(L, NET_SSL_PROTOCOL_AUTO);  lua_setfield(L, -2, "SSL_PROTOCOL_AUTO");
 
-    /* 注册常量 - SSL 证书验证级别 */
     lua_pushinteger(L, NET_SSL_VERIFY_NONE);     lua_setfield(L, -2, "SSL_VERIFY_NONE");
     lua_pushinteger(L, NET_SSL_VERIFY_OPTIONAL); lua_setfield(L, -2, "SSL_VERIFY_OPTIONAL");
     lua_pushinteger(L, NET_SSL_VERIFY_REQUIRED); lua_setfield(L, -2, "SSL_VERIFY_REQUIRED");

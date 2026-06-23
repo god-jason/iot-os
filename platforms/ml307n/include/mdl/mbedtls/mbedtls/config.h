@@ -1425,7 +1425,7 @@
  *       with mbedtls_entropy_add_source() instead of enabling this option.
  *
  * If you enable this option, you must configure the type
- * ::mbedtls_psa_external_random_context_t in psa/crypto_platform.h
+ * ::mbedtls_psa_external_random_context_t in psa/crypto_iot.h
  * and define a function called mbedtls_psa_external_get_random()
  * with the following prototype:
  * ```

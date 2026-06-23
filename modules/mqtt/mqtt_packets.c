@@ -4,7 +4,7 @@
  */
 
 #include "mqtt_packets.h"
-#include "platform.h"
+#include "iot.h"
 
 #include <string.h>
 #include <stdio.h>

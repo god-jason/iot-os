@@ -1,6 +1,6 @@
 /**
  * @file fs_module.c
- * @brief 基于 platform.h fs 适配层的 Lua 文件系统封装
+ * @brief 基于 iot.h fs 适配层的 Lua 文件系统封装
  *
  * 提供面向对象的文件系统接口
  */
@@ -16,7 +16,7 @@
 #include "lauxlib.h"
 
 /* IoT 核心头文件 */
-#include "platform.h"
+#include "iot.h"
 #include "iot_log.h"
 #include "iot_callback.h"
 #include "fs_path.h"

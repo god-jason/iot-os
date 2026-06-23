@@ -4,7 +4,7 @@ target("drivers")
     set_kind("static")
     add_files("*.c")
     add_includedirs("..", ".")
-    add_deps("iot")
+    add_deps("iot_core")
 
     -- 添加各个驱动子目录
     for _, dir in ipairs({

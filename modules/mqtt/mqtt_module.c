@@ -7,7 +7,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include "platform.h"
+#include "iot.h"
 #include "iot_params.h"
 #include "iot_rtos.h"
 #include "iot_callback.h"

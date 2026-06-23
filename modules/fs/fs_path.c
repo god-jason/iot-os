@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "platform.h"
+#include "iot.h"
 
 /*===========================================================
  * 路径处理工具函数

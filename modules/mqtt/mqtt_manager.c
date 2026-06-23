@@ -1,7 +1,7 @@
 #include "mqtt_manager.h"
 #include "mqtt_packets.h"
 
-#include "platform.h"
+#include "iot.h"
 #include "net.h"
 #include "iot_list.h"
 

@@ -10,7 +10,7 @@
 #include "http_gzip.h"
 #include "http_url.h"
 #include "net.h"
-#include "platform.h"
+#include "iot.h"
 #include "iot_list.h"
 
 #include <string.h>

@@ -1,7 +1,7 @@
 #ifndef LVGL_PORT_H
 #define LVGL_PORT_H
 
-#include "platform.h"
+#include "iot.h"
 
 #ifndef cm_malloc
 #define cm_malloc(size) iot_malloc(size)

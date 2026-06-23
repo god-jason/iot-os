@@ -1,5 +1,5 @@
 /**
- * \file platform.h
+ * \file iot.h
  *
  * \brief This file contains the definitions and functions of the
  *        Mbed TLS platform abstraction layer.
@@ -427,4 +427,4 @@ void mbedtls_platform_teardown( mbedtls_platform_context *ctx );
 }
 #endif
 
-#endif /* platform.h */
+#endif /* iot.h */

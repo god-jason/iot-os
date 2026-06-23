@@ -29,8 +29,8 @@
 ### 头文件说明
 
 ```c
-#include "platform.h"      // 基础平台接口 (OS, 内存, 日志, FS)
-#include "platform_ext.h"  // 扩展平台接口 (GPIO, I2C, SPI)
+#include "iot.h"      // 基础平台接口 (OS, 内存, 日志, FS)
+#include "iot_ext.h"  // 扩展平台接口 (GPIO, I2C, SPI)
 ```
 
 ---

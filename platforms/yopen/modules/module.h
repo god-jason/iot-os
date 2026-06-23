@@ -29,6 +29,6 @@
 #include "lauxlib.h"
 
 // 平台适配层
-#include "platform.h"
+#include "iot.h"
 
 #endif /* YOPEN_MODULE_H */

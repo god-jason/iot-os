@@ -6,7 +6,7 @@
  */
 
 #include "crypto.h"
-#include "platform.h"
+#include "iot.h"
 #include "iot_log.h"
 
 #include <string.h>

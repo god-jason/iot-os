@@ -371,7 +371,7 @@ typedef struct
 #endif
 
 #if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
+#include "mbedtls/iot.h"
 #endif
 
 #include <stdint.h>

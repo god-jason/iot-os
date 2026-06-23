@@ -22,13 +22,13 @@
 #ifndef PSA_CRYPTO_H
 #define PSA_CRYPTO_H
 
-#include "crypto_platform.h"
+#include "crypto_iot.h"
 
 #include <stddef.h>
 
 #ifdef __DOXYGEN_ONLY__
 /* This __DOXYGEN_ONLY__ block contains mock definitions for things that
- * must be defined in the crypto_platform.h header. These mock definitions
+ * must be defined in the crypto_iot.h header. These mock definitions
  * are present in this file as a convenience to generate pretty-printed
  * documentation that includes those definitions. */
 

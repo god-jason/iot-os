@@ -7,7 +7,7 @@ local plat = get_config("platform") or "windows"
 local is_desktop_platform = plat == "windows" or plat == "linux"
 
 -- 根据 platform 参数创建目标
-target("platform")
+target("iot")
 if is_desktop_platform then
     set_kind("binary")
     -- 使用相对于项目根目录的路径
@@ -20,12 +20,12 @@ add_files(plat .. "/modules/*.c")
 add_headerfiles(plat .. "/*.h")
 add_headerfiles(plat .. "/modules/*.h")
 add_includedirs(plat)
-add_includedirs("../vendor/lua", "../iot")
+add_includedirs("../vendor/lua", "../core")
 add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
 
 -- 桌面平台添加依赖和链接库
 if is_desktop_platform then
-    add_deps("iot", "drivers")
+    add_deps("iot_core", "drivers")
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts")
     add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
 
