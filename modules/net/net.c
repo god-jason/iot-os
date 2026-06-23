@@ -11,6 +11,7 @@
 
 #include "net.h"
 #include "iot.h"
+#include "iot_log.h"
 
 #include "gmssl/tls.h"
 
@@ -73,6 +74,7 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
 {
     struct net_socket* sock = (struct net_socket*)iot_malloc(sizeof(struct net_socket));
     if (!sock) {
+        LOG("[NET] Socket create failed: out of memory");
         return INVALID_SOCKET;
     }
 
@@ -84,11 +86,13 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
 
     iot_socket_t fd = iot_socket(domain, socktype, protocol);
     if (fd == IOT_SOCKET_INVALID) {
+        LOG("[NET] Socket create failed: socket() error");
         iot_free(sock);
         return INVALID_SOCKET;
     }
 
     if (net_socket_set_nonblocking(fd) != 0) {
+        LOG("[NET] Socket create failed: set nonblocking error");
         iot_close(fd);
         iot_free(sock);
         return INVALID_SOCKET;
@@ -104,6 +108,7 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
         sock->is_ssl = true;
         memcpy(&sock->ssl_config, ssl_config, sizeof(net_ssl_config_t));
         sock->ssl_handshake_done = false;
+        LOG("[NET] Socket create with SSL enabled");
     }
 
     sock->recv_cap = NET_SOCKET_RECV_BUF_SIZE;
@@ -112,6 +117,7 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
 
     net_socket_add(sock);
 
+    LOG("[NET] Socket created: type=%d, fd=%d", type, fd);
     return (sock_t)sock;
 }
 

@@ -11,6 +11,7 @@
 #include "iot.h"
 #include "iot_wdt.h"
 #include "iot_rtos.h"
+#include "iot_log.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -43,7 +44,7 @@ static void iot_wdt_task(void* arg) {
             iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
             if (g_wdt.initialized) {
                 g_wdt.timeout = true;
-                printf("[WDT] Watchdog timeout triggered!\n");
+                LOG("[WDT] Watchdog timeout triggered!");
 
                 /* 退出应用程序 */
                 exit(1);
@@ -65,26 +66,26 @@ static void iot_wdt_task(void* arg) {
 
 bool iot_wdt_init(uint32_t timeout_ms) {
     if (g_wdt.initialized) {
-        printf("[WDT] Watchdog already initialized\n");
+        LOG("[WDT] Watchdog already initialized");
         return false;
     }
 
     if (timeout_ms == 0) {
-        printf("[WDT] Invalid timeout value\n");
+        LOG("[WDT] Invalid timeout value");
         return false;
     }
 
     /* 创建互斥锁 */
     g_wdt.mutex = iot_mutex_create();
     if (g_wdt.mutex == NULL) {
-        printf("[WDT] Failed to create mutex\n");
+        LOG("[WDT] Failed to create mutex");
         return false;
     }
 
     /* 创建信号量（最大计数1，初始计数0） */
     g_wdt.sem = iot_sem_create(1, 0);
     if (g_wdt.sem == NULL) {
-        printf("[WDT] Failed to create semaphore\n");
+        LOG("[WDT] Failed to create semaphore");
         iot_mutex_delete(g_wdt.mutex);
         g_wdt.mutex = NULL;
         return false;
@@ -98,7 +99,7 @@ bool iot_wdt_init(uint32_t timeout_ms) {
     /* 创建看门狗任务 */
     g_wdt.task = iot_task_create("wdt", iot_wdt_task, NULL, 2048, 5);
     if (g_wdt.task == NULL) {
-        printf("[WDT] Failed to create watchdog task\n");
+        LOG("[WDT] Failed to create watchdog task");
         iot_sem_delete(g_wdt.sem);
         g_wdt.sem = NULL;
         iot_mutex_delete(g_wdt.mutex);
@@ -107,13 +108,13 @@ bool iot_wdt_init(uint32_t timeout_ms) {
         return false;
     }
 
-    printf("[WDT] Watchdog initialized with timeout %u ms\n", timeout_ms);
+    LOG("[WDT] Watchdog initialized with timeout %u ms", timeout_ms);
     return true;
 }
 
 bool iot_wdt_feed(void) {
     if (!g_wdt.initialized) {
-        printf("[WDT] Watchdog not initialized\n");
+        LOG("[WDT] Watchdog not initialized");
         return false;
     }
 
@@ -132,11 +133,11 @@ bool iot_wdt_feed(void) {
 
 void iot_wdt_wait(void) {
     if (!g_wdt.initialized) {
-        printf("[WDT] Watchdog not initialized, cannot wait\n");
+        LOG("[WDT] Watchdog not initialized, cannot wait");
         return;
     }
 
-    printf("[WDT] Waiting for watchdog timeout...\n");
+    LOG("[WDT] Waiting for watchdog timeout...");
 
     /* 阻塞等待看门狗超时 */
     while (1) {
@@ -150,12 +151,12 @@ void iot_wdt_wait(void) {
         iot_mutex_unlock(g_wdt.mutex);
     }
 
-    printf("[WDT] Watchdog wait ended\n");
+    LOG("[WDT] Watchdog wait ended");
 }
 
 bool iot_wdt_stop(void) {
     if (!g_wdt.initialized) {
-        printf("[WDT] Watchdog not initialized\n");
+        LOG("[WDT] Watchdog not initialized");
         return false;
     }
 
@@ -182,7 +183,7 @@ bool iot_wdt_stop(void) {
         g_wdt.mutex = NULL;
     }
 
-    printf("[WDT] Watchdog stopped\n");
+    LOG("[WDT] Watchdog stopped");
     return true;
 }
 
