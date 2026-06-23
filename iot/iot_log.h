@@ -59,6 +59,6 @@ void iot_log_printf(iot_log_level_t level, const char* tag, const char* fmt, ...
  * @param L Lua状态机
  * @return 1（模块表压栈）
  */
-LUAMOD_API int luaopen_log(lua_State* L);
+LUAMOD_API int luaopen_log_register(lua_State* L);
 
 #endif /* IOT_LOG_H */

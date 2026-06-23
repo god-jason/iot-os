@@ -7,13 +7,9 @@
 
 #include "module.h"
 
-extern int luaopen_socket_register(lua_State* L);
-extern int luaopen_http_register(lua_State* L);
 extern int luaopen_uart_register(lua_State* L);
 
 static const luaL_Reg platform_modules[] = {
-    {"socket", luaopen_socket_register},
-    {"http",   luaopen_http_register},
     {"uart",   luaopen_uart_register},
     {NULL, NULL}
 };

@@ -37,11 +37,14 @@ add_includedirs("script")
 includes("iot", "modules", "drivers", "platforms", "vendor")
 
 --===========================================================
--- 默认构建目标（依赖所有子目标）
+-- 默认构建目标（非桌面平台使用）
 --===========================================================
-target("all")
-    set_kind("phony")
-    add_deps("iot", "platform", "drivers")
-    add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts")
-    add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
-    set_default(true)
+local plat = get_config("platform") or "windows"
+if plat ~= "windows" and plat ~= "linux" then
+    target("all")
+        set_kind("phony")
+        add_deps("iot", "platform", "drivers")
+        add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts")
+        add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
+        set_default(true)
+end

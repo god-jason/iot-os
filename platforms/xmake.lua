@@ -3,10 +3,17 @@
 -- 获取当前平台配置
 local plat = get_config("platform") or "windows"
 
+-- 判断是否为桌面平台（需要编译成可执行文件）
+local is_desktop_platform = plat == "windows" or plat == "linux"
+
 -- 根据 platform 参数创建目标
--- 创建平台目标
 target("platform")
-set_kind("static")
+if is_desktop_platform then
+    set_kind("binary")
+    set_targetdir("build/" .. plat)
+else
+    set_kind("static")
+end
 add_files(plat .. "/*.c")
 add_files(plat .. "/modules/*.c")
 add_headerfiles(plat .. "/*.h")
@@ -14,3 +21,16 @@ add_headerfiles(plat .. "/modules/*.h")
 add_includedirs(plat)
 add_includedirs("../vendor/lua", "../iot")
 add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
+
+-- 桌面平台添加依赖和链接库
+if is_desktop_platform then
+    add_deps("iot", "drivers")
+    add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts")
+    add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
+    
+    if plat == "windows" then
+        add_links("ws2_32", "winmm")
+    end
+    
+    set_default(true)
+end

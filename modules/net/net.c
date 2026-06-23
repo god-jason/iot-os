@@ -13,7 +13,14 @@
 #include "net_port.h"
 #include "net.h"
 #include "platform.h"
+
+/* TLS 功能仅在非 Windows 平台可用 */
+#ifndef _WIN32
 #include "gmssl/tls.h"
+#define NET_SSL_ENABLED 1
+#else
+#define NET_SSL_ENABLED 0
+#endif
 
 #ifdef _WIN32
 #undef INVALID_SOCKET
@@ -34,12 +41,14 @@ struct net_socket {
     net_socket_callback_t callback;  /* 事件回调函数 */
     void* user_data;                 /* 用户数据 */
 
+#if NET_SSL_ENABLED
     bool is_ssl;                     /* 是否启用 SSL/TLS */
     TLS_CTX* tls_ctx;                /* TLS 上下文 */
     TLS_CONNECT* tls;                /* TLS 连接实例 */
     net_ssl_config_t ssl_config;     /* SSL 配置 */
     bool ssl_handshake_done;         /* SSL 握手是否完成 */
     char ssl_error[256];             /* SSL 错误信息 */
+#endif
 
     char* recv_buf;                  /* 接收缓冲区 */
     size_t recv_len;                 /* 接收数据长度 */
@@ -106,11 +115,15 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
     sock->callback = callback;
     sock->user_data = user_data;
 
+#if NET_SSL_ENABLED
     if (ssl_config) {
         sock->is_ssl = true;
         memcpy(&sock->ssl_config, ssl_config, sizeof(net_ssl_config_t));
         sock->ssl_handshake_done = false;
     }
+#else
+    (void)ssl_config;  /* 消除未使用参数警告 */
+#endif
 
     sock->recv_cap = NET_SOCKET_RECV_BUF_SIZE;
     sock->recv_buf = (char*)iot_malloc(sock->recv_cap);
@@ -210,6 +223,7 @@ int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
         net_socket_set_state(s, NET_SOCK_STATE_CONNECTED);
         net_socket_trigger_event(s, NET_EVENT_CONNECTED);
 
+#if NET_SSL_ENABLED
         if (s->is_ssl) {
             if (ssl_init_client(s) != 0) {
                 net_socket_set_state(s, NET_SOCK_STATE_ERROR);
@@ -218,6 +232,7 @@ int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
             }
             net_socket_set_state(s, NET_SOCK_STATE_SSL_HANDSHAKE);
         }
+#endif
         return 0;
     }
 
@@ -292,6 +307,7 @@ int net_socket_send(sock_t sock, const void* data, size_t len)
         return -1;
     }
 
+#if NET_SSL_ENABLED
     if (s->is_ssl && !s->ssl_handshake_done) {
         return -1;
     }
@@ -308,6 +324,7 @@ int net_socket_send(sock_t sock, const void* data, size_t len)
         }
         return -1;
     }
+#endif
 
     return lwip_send(s->fd, data, len, 0);
 }
@@ -326,6 +343,7 @@ int net_socket_recv(sock_t sock, void* buf, size_t len)
         return -1;
     }
 
+#if NET_SSL_ENABLED
     if (s->is_ssl && !s->ssl_handshake_done) {
         return -1;
     }
@@ -345,6 +363,7 @@ int net_socket_recv(sock_t sock, void* buf, size_t len)
         }
         return -1;
     }
+#endif
 
     return lwip_recv(s->fd, buf, len, 0);
 }
@@ -362,12 +381,14 @@ void net_socket_close(sock_t sock)
 
     net_socket_remove(s);
 
+#if NET_SSL_ENABLED
     if (s->is_ssl) {
         if (s->tls) {
             tls_shutdown(s->tls);
         }
         ssl_cleanup(s);
     }
+#endif
 
     if (s->fd >= 0) {
         lwip_close(s->fd);
@@ -401,8 +422,13 @@ net_sock_state_t net_socket_get_state(sock_t sock)
  */
 bool net_socket_is_ssl(sock_t sock)
 {
+#if NET_SSL_ENABLED
     net_socket_t* s = (net_socket_t*)sock;
     return s ? s->is_ssl : false;
+#else
+    (void)sock;
+    return false;
+#endif
 }
 
 /**
@@ -412,8 +438,13 @@ bool net_socket_is_ssl(sock_t sock)
  */
 bool net_socket_ssl_handshake_done(sock_t sock)
 {
+#if NET_SSL_ENABLED
     net_socket_t* s = (net_socket_t*)sock;
     return s ? s->ssl_handshake_done : false;
+#else
+    (void)sock;
+    return false;
+#endif
 }
 
 /**
@@ -423,8 +454,13 @@ bool net_socket_ssl_handshake_done(sock_t sock)
  */
 const char* net_socket_ssl_get_error(sock_t sock)
 {
+#if NET_SSL_ENABLED
     net_socket_t* s = (net_socket_t*)sock;
     return s ? s->ssl_error : "";
+#else
+    (void)sock;
+    return "";
+#endif
 }
 
 /**
@@ -706,6 +742,7 @@ static void net_poll_thread(void* arg)
                         /* TCP 连接成功 */
                         net_socket_set_state(sock, NET_SOCK_STATE_CONNECTED);
 
+#if NET_SSL_ENABLED
                         if (sock->is_ssl) {
                             /* 初始化 SSL 上下文 */
                             if (ssl_init_client(sock) != 0) {
@@ -717,13 +754,19 @@ static void net_poll_thread(void* arg)
                         } else {
                             net_socket_trigger_event(sock, NET_EVENT_CONNECTED);
                         }
+#else
+                        net_socket_trigger_event(sock, NET_EVENT_CONNECTED);
+#endif
                     } else {
                         /* TCP 连接失败 */
                         net_socket_set_state(sock, NET_SOCK_STATE_ERROR);
                         net_socket_trigger_event(sock, NET_EVENT_ERROR);
                     }
+#if NET_SSL_ENABLED
                 } else if (sock->state == NET_SOCK_STATE_SSL_HANDSHAKE) {
                     ssl_do_handshake(sock);
+                }
+#endif
                 }
             }
 
@@ -731,11 +774,15 @@ static void net_poll_thread(void* arg)
                 if (sock->state == NET_SOCK_STATE_LISTENING) {
                     /* 监听 socket 有新连接 */
                     net_socket_trigger_event(sock, NET_EVENT_ACCEPT);
+#if NET_SSL_ENABLED
                 } else if (sock->state == NET_SOCK_STATE_CONNECTED || 
                            sock->state == NET_SOCK_STATE_SSL_HANDSHAKE) {
                     if (sock->state == NET_SOCK_STATE_SSL_HANDSHAKE) {
                         ssl_do_handshake(sock);
                     }
+#else
+                } else if (sock->state == NET_SOCK_STATE_CONNECTED) {
+#endif
 
                     if (sock->state == NET_SOCK_STATE_CONNECTED) {
                         char buf[NET_SOCKET_RECV_BUF_SIZE];
@@ -900,6 +947,7 @@ static void net_socket_remove(net_socket_t* sock)
  * @brief 释放 SSL 资源
  * @param sock socket 结构体
  */
+#if NET_SSL_ENABLED
 static void ssl_cleanup(net_socket_t* sock)
 {
     if (!sock) {
@@ -918,12 +966,19 @@ static void ssl_cleanup(net_socket_t* sock)
         sock->tls_ctx = NULL;
     }
 }
+#else
+static void ssl_cleanup(net_socket_t* sock)
+{
+    (void)sock;
+}
+#endif
 
 /**
  * @brief 初始化 SSL 客户端
  * @param sock socket 结构体
  * @return 0 成功，-1 失败
  */
+#if NET_SSL_ENABLED
 static int ssl_init_client(net_socket_t* sock)
 {
     int protocol = TLS_protocol_tls12;
@@ -995,12 +1050,14 @@ static int ssl_init_client(net_socket_t* sock)
 
     return 0;
 }
+#endif
 
 /**
  * @brief 执行 SSL 握手
  * @param sock socket 结构体
  * @return 0 成功（包括握手进行中），-1 失败
  */
+#if NET_SSL_ENABLED
 static int ssl_do_handshake(net_socket_t* sock)
 {
     if (!sock->tls) {
@@ -1024,3 +1081,4 @@ static int ssl_do_handshake(net_socket_t* sock)
     net_socket_trigger_event(sock, NET_EVENT_ERROR);
     return -1;
 }
+#endif

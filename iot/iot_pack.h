@@ -11,6 +11,6 @@
 #include "lua.h"
 
 /* Lua模块入口 */
-LUAMOD_API int luaopen_pack(lua_State* L);
+LUAMOD_API int luaopen_pack_register(lua_State* L);
 
 #endif /* IOT_PACK_H */

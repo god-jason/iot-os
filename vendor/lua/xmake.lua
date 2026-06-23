@@ -10,7 +10,7 @@ target("lua")
     add_files("lgc.c", "linit.c", "liolib.c", "llex.c")
     add_files("lmathlib.c", "lmem.c", "loadlib.c", "lobject.c")
     add_files("lopcodes.c", "lparser.c", "lstate.c", "lstring.c")
-    add_files("lstrlib.c", "ltablib.c", "ltm.c", "lutf8lib.c", "loslib.c")
+    add_files("lstrlib.c", "ltablib.c", "ltable.c", "ltm.c", "lutf8lib.c", "loslib.c")
     add_files("lundump.c", "lvm.c", "lzio.c")
     
     -- 添加头文件
@@ -22,8 +22,7 @@ target("lua")
     add_headerfiles("ltm.h", "lundump.h", "lvm.h", "lzio.h")
     
     -- 包含目录
-    add_deps("platform")
-    add_includedirs("../../platforms/"..(get_config("platform") or "windows"))
+    add_includedirs(".")
     
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")

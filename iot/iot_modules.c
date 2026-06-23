@@ -18,9 +18,9 @@
 
 /* 核心模块列表 */
 static const luaL_Reg core_modules[] = {
-    {"rtos",     luaopen_rtos},       /* 实时操作系统接口 */
-    {"log",      luaopen_log},        /* 日志模块 */
-    {"pack",     luaopen_pack},       /* 数据打包/解包 */
+    {"rtos",     luaopen_rtos_register},       /* 实时操作系统接口 */
+    {"log",      luaopen_log_register},        /* 日志模块 */
+    {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
 
     {NULL, NULL}
 };

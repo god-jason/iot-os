@@ -10,10 +10,10 @@ target("lua-cjson")
     add_headerfiles("fpconv.h", "strbuf.h", "dtoa_config.h")
 
     -- 包含目录
-    add_includedirs(".", "../lua", "../../platforms/"..(get_config("platform") or "windows"))
+    add_includedirs(".", "../lua")
 
     -- 依赖
-    add_deps("lua", "platform")
+    add_deps("lua")
 
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")

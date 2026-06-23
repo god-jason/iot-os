@@ -71,6 +71,6 @@ void iot_rtos_timeout(uint32_t timer_id);
 void iot_rtos_msg_destroy(rtos_msg_t* msg);
 
 /* Lua模块入口 */
-LUAMOD_API int luaopen_rtos(lua_State* L);
+LUAMOD_API int luaopen_rtos_register(lua_State* L);
 
 #endif /* IOT_RTOS_HEADER */

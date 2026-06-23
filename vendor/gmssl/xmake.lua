@@ -17,10 +17,10 @@ target("gmssl")
     add_headerfiles("src/skf/*.h")
 
     -- 包含目录
-    add_includedirs("include", "src", "../lua", "../../platforms/"..(get_config("platform") or "windows"))
+    add_includedirs("include", "src", "../lua")
 
-    -- 依赖
-    add_deps("lua", "platform")
+    -- 依赖（gmssl_module.c 依赖 lua）
+    add_deps("lua")
 
     -- 编译选项（AVX/SSE 指令集支持）
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter", "-mssse3", "-mpclmul", "-maes", "-mrdrnd", "-mavx2")
