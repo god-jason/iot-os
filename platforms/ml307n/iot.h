@@ -9,6 +9,8 @@
  * 4. 任务 (task)
  * 5. 定时器 (timer)
  * 6. Socket 网络接口 (socket)
+ * 7. 文件系统接口 (fs)
+ * 8. 标准输出接口 (stdout)
  */
 #ifndef IOT_PLATFORM_ML307N_H
 #define IOT_PLATFORM_ML307N_H
@@ -728,7 +730,7 @@ static inline void iot_socket_deinit(void) {
 /* LOG 宏定义已移至 iot_log.h */
 
 /*===========================================================
- * 7. 标准输出接口 (stdout)
+ * 8. 标准输出接口 (stdout)
  *===========================================================*/
 
 /**
@@ -745,101 +747,254 @@ static inline void iot_socket_deinit(void) {
 #define iot_printf(fmt, ...) cm_log_printf(0, fmt, ##__VA_ARGS__)
 
 /*===========================================================
- * 文件系统适配层
+ * 7. 文件系统接口 (fs)
  *===========================================================*/
 
-/* 文件系统路径最大长度 */
+/**
+ * @brief 文件系统路径最大长度
+ */
 #define IOT_FS_MAX_PATH          255
 
+/**
+ * @brief 文件句柄类型
+ */
 #define iot_fs_file_t            cm_fs_t
+
+/**
+ * @brief 目录句柄类型
+ */
 #define iot_fs_dir_t             uint32_t
+
+/**
+ * @brief 目录项类型
+ */
 #define iot_fs_dirent_t          cm_fs_file_data_t
 
+/**
+ * @brief 打开文件
+ * @param path 文件路径
+ * @param mode 打开模式
+ * @return 文件句柄，失败返回 NULL
+ */
 #define iot_fs_open(path, mode) \
     cm_fs_open((path), (mode))
 
+/**
+ * @brief 关闭文件
+ * @param fp 文件句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_close(fp) \
     cm_fs_close((fp))
 
+/**
+ * @brief 读取文件
+ * @param fp 文件句柄
+ * @param buf 数据缓冲区
+ * @param size 读取大小
+ * @return 成功返回读取的字节数，失败返回 -1
+ */
 #define iot_fs_read(fp, buf, size) \
     cm_fs_read((fp), (buf), (size))
 
+/**
+ * @brief 写入文件
+ * @param fp 文件句柄
+ * @param buf 数据缓冲区
+ * @param size 写入大小
+ * @return 成功返回写入的字节数，失败返回 -1
+ */
 #define iot_fs_write(fp, buf, size) \
     cm_fs_write((fp), (buf), (size))
 
+/**
+ * @brief 文件定位
+ * @param fp 文件句柄
+ * @param offset 偏移量
+ * @param whence 定位方式
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_seek(fp, offset, whence) \
     cm_fs_seek((fp), (offset), (whence))
 
+/**
+ * @brief 同步文件
+ * @param fp 文件句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_sync(fp) \
     cm_fs_sync((fp))
 
+/**
+ * @brief 创建目录
+ * @param path 目录路径
+ * @param mode 权限模式
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_mkdir(path, mode) \
     cm_fs_mkdir((path))
 
+/**
+ * @brief 删除文件
+ * @param path 文件路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_remove(path) \
     cm_fs_delete((path))
 
+/**
+ * @brief 重命名文件
+ * @param oldpath 原文件路径
+ * @param newpath 新文件路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rename(oldpath, newpath) \
     cm_fs_move((oldpath), (newpath))
 
+/**
+ * @brief 检查文件是否存在
+ * @param path 文件路径
+ * @param mode 检查模式
+ * @return 存在返回非0，不存在返回 0
+ */
 #define iot_fs_access(path, mode) \
     cm_fs_exist((path))
 
+/**
+ * @brief 检查文件是否存在
+ * @param path 文件路径
+ * @return 存在返回非0，不存在返回 0
+ */
 #define iot_fs_file_exists(path) \
     cm_fs_exist((path))
 
+/**
+ * @brief 获取文件大小
+ * @param path 文件路径
+ * @return 文件大小，失败返回 -1
+ */
 #define iot_fs_filesize(path) \
     cm_fs_filesize((path))
 
+/**
+ * @brief 重置文件位置到开头
+ * @param fp 文件句柄
+ */
 #define iot_fs_rewind(fp) \
     cm_fs_seek((fp), 0, CM_FS_SEEK_SET)
 
+/**
+ * @brief 截断文件
+ * @param fd 文件描述符
+ * @param length 截断长度
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_ftruncate(fd, length) \
     ((int)-1)
 
+/**
+ * @brief 递归删除目录
+ * @param path 目录路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rmdir_recursive(path) \
     ((int)-1)
 
+/**
+ * @brief 删除目录
+ * @param path 目录路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rmdir(path) \
     cm_fs_rmdir((path))
 
+/**
+ * @brief 获取文件系统信息
+ * @param info 文件系统信息结构
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_getinfo(info) \
     cm_fs_getinfo((info))
 
+/**
+ * @brief 查找第一个文件
+ * @param path 查找路径
+ * @param file_data 文件数据
+ * @return 查找句柄，失败返回 -1
+ */
 #define iot_fs_find_first(path, file_data) \
     cm_fs_find_first((path), (file_data))
 
+/**
+ * @brief 查找下一个文件
+ * @param find_fd 查找句柄
+ * @param file_data 文件数据
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_find_next(find_fd, file_data) \
     cm_fs_find_next((find_fd), (file_data))
 
+/**
+ * @brief 关闭查找
+ * @param find_fd 查找句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_find_close(find_fd) \
     cm_fs_find_close((find_fd))
 
+/**
+ * @brief 打开目录
+ * @param path 目录路径
+ * @return 目录句柄，失败返回 NULL
+ */
 #define iot_fs_opendir(path) \
     cm_fs_find_first((path), NULL)
 
+/**
+ * @brief 读取目录项
+ * @param dir 目录句柄
+ * @param entry 目录项
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_readdir(dir, entry) \
     cm_fs_find_next((dir), (entry))
 
+/**
+ * @brief 关闭目录
+ * @param dir 目录句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_closedir(dir) \
     cm_fs_find_close((dir))
 
+/**
+ * @brief 获取文件当前位置
+ * @param fp 文件句柄
+ * @return 当前位置
+ */
 #define iot_fs_file_tell(fp) \
     ((long)0)
 
+/**
+ * @brief 获取文件大小（通过句柄）
+ * @param fp 文件句柄
+ * @return 文件大小
+ */
 #define iot_fs_size(fp) \
     ((long)0)
 
-#define IOT_FS_RB                CM_FS_RB
-#define IOT_FS_WB                CM_FS_WB
-#define IOT_FS_AB                CM_FS_AB
-#define IOT_FS_WBPLUS            CM_FS_WBPLUS
-#define IOT_FS_ABPLUS            CM_FS_ABPLUS
-#define IOT_FS_RBPLUS            CM_FS_RBPLUS
+/* 文件打开模式 */
+#define IOT_FS_RB                CM_FS_RB    /**< 只读二进制 */
+#define IOT_FS_WB                CM_FS_WB    /**< 只写二进制 */
+#define IOT_FS_AB                CM_FS_AB    /**< 追加二进制 */
+#define IOT_FS_WBPLUS            CM_FS_WBPLUS /**< 读写二进制（新建） */
+#define IOT_FS_ABPLUS            CM_FS_ABPLUS /**< 读写二进制（追加） */
+#define IOT_FS_RBPLUS            CM_FS_RBPLUS /**< 读写二进制（打开） */
 
-#define IOT_FS_SEEK_SET          CM_FS_SEEK_SET
-#define IOT_FS_SEEK_CUR          CM_FS_SEEK_CUR
-#define IOT_FS_SEEK_END          CM_FS_SEEK_END
+/* 文件定位方式 */
+#define IOT_FS_SEEK_SET          CM_FS_SEEK_SET    /**< 从文件开头定位 */
+#define IOT_FS_SEEK_CUR          CM_FS_SEEK_CUR    /**< 从当前位置定位 */
+#define IOT_FS_SEEK_END          CM_FS_SEEK_END    /**< 从文件末尾定位 */
 
 /*===========================================================
  * 路径操作适配层
@@ -877,13 +1032,6 @@ static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
     ip[ip_len - 1] = '\0';
     return 0;
 }
-
-/*===========================================================
- * 事件初始化（由 platform.c 实现）
- *===========================================================*/
-
-void iot_event_init(void);
-void iot_event_deinit(void);
 
 #ifdef __cplusplus
 }

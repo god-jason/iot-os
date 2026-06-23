@@ -9,6 +9,8 @@
  * 4. 任务 (task)
  * 5. 定时器 (timer)
  * 6. Socket 网络接口 (socket)
+ * 7. 文件系统接口 (fs)
+ * 8. 标准输出接口 (stdout)
  */
 #ifndef IOT_PLATFORM_YOPEN_H
 #define IOT_PLATFORM_YOPEN_H
@@ -765,7 +767,7 @@ static inline void iot_socket_deinit(void) {
 /* LOG 宏定义已移至 iot_log.h */
 
 /*===========================================================
- * 7. 标准输出接口 (stdout)
+ * 8. 标准输出接口 (stdout)
  *===========================================================*/
 
 /**
@@ -782,102 +784,255 @@ static inline void iot_socket_deinit(void) {
 #define iot_printf(fmt, ...) yopen_trace(fmt, ##__VA_ARGS__)
 
 /*===========================================================
- * 文件系统适配层
+ * 7. 文件系统接口 (fs)
  *===========================================================*/
 
-/* 文件系统路径最大长度 */
+/**
+ * @brief 文件系统路径最大长度
+ */
 #define IOT_FS_MAX_PATH          255
 
+/**
+ * @brief 文件句柄类型
+ */
 #define iot_fs_file_t            QFILE
+
+/**
+ * @brief 目录句柄类型
+ */
 #define iot_fs_dir_t             QDIR*
+
+/**
+ * @brief 目录项类型
+ */
 #define iot_fs_dirent_t          qdirent
 
+/**
+ * @brief 打开文件
+ * @param path 文件路径
+ * @param mode 打开模式
+ * @return 文件句柄，失败返回 NULL
+ */
 #define iot_fs_open(path, mode) \
     yopen_fopen((path), (mode))
 
+/**
+ * @brief 关闭文件
+ * @param fp 文件句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_close(fp) \
     yopen_fclose((fp))
 
+/**
+ * @brief 读取文件
+ * @param fp 文件句柄
+ * @param buf 数据缓冲区
+ * @param size 读取大小
+ * @return 成功返回读取的字节数，失败返回 -1
+ */
 #define iot_fs_read(fp, buf, size) \
     yopen_fread((fp), (buf), (size))
 
+/**
+ * @brief 写入文件
+ * @param fp 文件句柄
+ * @param buf 数据缓冲区
+ * @param size 写入大小
+ * @return 成功返回写入的字节数，失败返回 -1
+ */
 #define iot_fs_write(fp, buf, size) \
     yopen_fwrite((fp), (buf), (size))
 
+/**
+ * @brief 文件定位
+ * @param fp 文件句柄
+ * @param offset 偏移量
+ * @param whence 定位方式
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_seek(fp, offset, whence) \
     yopen_fseek((fp), (offset), (whence))
 
+/**
+ * @brief 同步文件
+ * @param fp 文件句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_sync(fp) \
     yopen_fflush((fp))
 
+/**
+ * @brief 创建目录
+ * @param path 目录路径
+ * @param mode 权限模式
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_mkdir(path, mode) \
     yopen_mkdir((path))
 
+/**
+ * @brief 删除文件
+ * @param path 文件路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_remove(path) \
     yopen_remove((path))
 
+/**
+ * @brief 重命名文件
+ * @param oldpath 原文件路径
+ * @param newpath 新文件路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rename(oldpath, newpath) \
     yopen_frename((oldpath), (newpath))
 
+/**
+ * @brief 检查文件是否存在
+ * @param path 文件路径
+ * @param mode 检查模式
+ * @return 存在返回非0，不存在返回 0
+ */
 #define iot_fs_access(path, mode) \
     yopen_file_exists((path))
 
+/**
+ * @brief 检查文件是否存在
+ * @param path 文件路径
+ * @return 存在返回非0，不存在返回 0
+ */
 #define iot_fs_file_exists(path) \
     yopen_file_exists((path))
 
+/**
+ * @brief 获取文件大小
+ * @param path 文件路径
+ * @return 文件大小，失败返回 -1
+ */
 #define iot_fs_filesize(path) \
     yopen_fsize((path))
 
+/**
+ * @brief 重置文件位置到开头
+ * @param fp 文件句柄
+ */
 #define iot_fs_rewind(fp) \
     yopen_frewind((fp))
 
+/**
+ * @brief 截断文件
+ * @param fd 文件描述符
+ * @param length 截断长度
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_ftruncate(fd, length) \
     yopen_ftruncate((fd), (length))
 
+/**
+ * @brief 递归删除目录
+ * @param path 目录路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rmdir_recursive(path) \
     yopen_rmdir_recursive((path))
 
+/**
+ * @brief 删除目录
+ * @param path 目录路径
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_rmdir(path) \
     yopen_rmdir((path))
 
+/**
+ * @brief 获取文件系统信息
+ * @param info 文件系统信息结构
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_getinfo(info) \
     ((int)-1)
 
+/**
+ * @brief 查找第一个文件
+ * @param path 查找路径
+ * @param file_data 文件数据
+ * @return 查找句柄，失败返回 -1
+ */
 #define iot_fs_find_first(path, file_data) \
     ((uint32_t)-1)
 
+/**
+ * @brief 查找下一个文件
+ * @param find_fd 查找句柄
+ * @param file_data 文件数据
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_find_next(find_fd, file_data) \
     ((int)-1)
 
+/**
+ * @brief 关闭查找
+ * @param find_fd 查找句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_find_close(find_fd) \
     ((int)-1)
 
+/**
+ * @brief 打开目录
+ * @param path 目录路径
+ * @return 目录句柄，失败返回 NULL
+ */
 #define iot_fs_opendir(path) \
     ((QDIR*)-1)
 
+/**
+ * @brief 读取目录项
+ * @param dir 目录句柄
+ * @param entry 目录项
+ * @return 成功返回目录项指针，失败返回 NULL
+ */
 #define iot_fs_readdir(dir, entry) \
     ((void*)(dir))
 
+/**
+ * @brief 关闭目录
+ * @param dir 目录句柄
+ * @return 成功返回 0，失败返回 -1
+ */
 #define iot_fs_closedir(dir) \
     ((int)-1)
 
+/**
+ * @brief 获取文件当前位置
+ * @param fp 文件句柄
+ * @return 当前位置
+ */
 #define iot_fs_file_tell(fp) \
     yopen_ftell((fp))
 
+/**
+ * @brief 获取文件大小（通过句柄）
+ * @param fp 文件句柄
+ * @return 文件大小
+ */
 #define iot_fs_size(fp) \
     yopen_fsize((fp))
 
-#define IOT_FS_RB                "rb"
-#define IOT_FS_WB                "wb"
-#define IOT_FS_AB                "ab"
-#define IOT_FS_WBPLUS            "wb+"
-#define IOT_FS_ABPLUS            "ab+"
-#define IOT_FS_RBPLUS            "rb+"
+/* 文件打开模式 */
+#define IOT_FS_RB                "rb"    /**< 只读二进制 */
+#define IOT_FS_WB                "wb"    /**< 只写二进制 */
+#define IOT_FS_AB                "ab"    /**< 追加二进制 */
+#define IOT_FS_WBPLUS            "wb+"   /**< 读写二进制（新建） */
+#define IOT_FS_ABPLUS            "ab+"   /**< 读写二进制（追加） */
+#define IOT_FS_RBPLUS            "rb+"   /**< 读写二进制（打开） */
 #define IOT_FS_OPEN_USES_STRING_MODE
 
-#define IOT_FS_SEEK_SET          SEEK_SET
-#define IOT_FS_SEEK_CUR          SEEK_CUR
-#define IOT_FS_SEEK_END          SEEK_END
+/* 文件定位方式 */
+#define IOT_FS_SEEK_SET          SEEK_SET    /**< 从文件开头定位 */
+#define IOT_FS_SEEK_CUR          SEEK_CUR    /**< 从当前位置定位 */
+#define IOT_FS_SEEK_END          SEEK_END    /**< 从文件末尾定位 */
 
 /*===========================================================
  * DNS 解析适配层

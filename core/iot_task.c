@@ -178,10 +178,6 @@ static void iot_lua_task(void* argument)
     }
     LOG("msg queue OK");
 
-    /* 初始化事件监听 */
-    iot_event_init();
-    LOG("event init OK");
-
     /* 创建 Lua 虚拟机 */
     g_lua_state = luaL_newstate();
     if (g_lua_state == NULL) {
