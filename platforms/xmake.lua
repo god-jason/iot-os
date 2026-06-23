@@ -10,7 +10,8 @@ local is_desktop_platform = plat == "windows" or plat == "linux"
 target("platform")
 if is_desktop_platform then
     set_kind("binary")
-    set_targetdir("build/" .. plat)
+    -- 使用相对于项目根目录的路径
+    set_targetdir("$(projectdir)/build/" .. plat .. "/x64/release")
 else
     set_kind("static")
 end
@@ -27,10 +28,10 @@ if is_desktop_platform then
     add_deps("iot", "drivers")
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts")
     add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
-    
+
     if plat == "windows" then
         add_links("ws2_32", "winmm")
     end
-    
+
     set_default(true)
 end
