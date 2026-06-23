@@ -12,6 +12,8 @@ if is_desktop_platform then
     set_kind("binary")
     -- 使用相对于项目根目录的路径
     set_targetdir("$(projectdir)/build/" .. plat .. "/x64/release")
+    -- 运行时工作目录设为项目根目录
+    set_rundir("$(projectdir)")
 else
     set_kind("static")
 end
