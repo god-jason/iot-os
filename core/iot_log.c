@@ -28,6 +28,7 @@ static int s_log_level = LOG_LEVEL_INFO;
 
 /* 日志级别前缀 */
 static const char* log_level_prefix[] = {
+    "[-]",
     "[D]",
     "[T]",
     "[I]",
