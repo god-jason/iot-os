@@ -266,11 +266,6 @@ extern "C" {
  *===========================================================*/
 
 /**
- * @brief 定时器类型
- */
-#define iot_timer_t              HANDLE
-
-/**
  * @brief 定时器类型枚举
  */
 #define iot_timer_type_t         int
@@ -280,7 +275,27 @@ extern "C" {
 /**
  * @brief 定时器回调函数类型
  */
-#define iot_timer_callback_t     VOID (__stdcall *)(PVOID)
+typedef void (__stdcall *iot_timer_callback_t)(void*);
+
+/**
+ * @brief 定时器上下文结构
+ */
+struct iot_timer_ctx {
+    HANDLE timer;                      /**< Windows 定时器句柄 */
+    volatile LONG executed;             /**< 回调是否已执行标志 */
+    iot_timer_callback_t user_cb;       /**< 用户回调函数 */
+    void* user_arg;                    /**< 用户回调参数 */
+};
+
+/**
+ * @brief 定时器上下文类型
+ */
+typedef struct iot_timer_ctx iot_timer_ctx_t;
+
+/**
+ * @brief 定时器类型
+ */
+typedef struct iot_timer_ctx* iot_timer_t;
 
 /**
  * @brief 创建定时器
@@ -290,14 +305,7 @@ extern "C" {
  * @param type 定时器类型（IOT_TIMER_ONCE 或 IOT_TIMER_PERIODIC）
  * @return 定时器句柄，失败返回 NULL
  */
-#define iot_timer_create(cb, arg, period_ms, type) ({ \
-    HANDLE _iot_timer = NULL; \
-    CreateTimerQueueTimer(&_iot_timer, NULL, (WAITORTIMERCALLBACK)(cb), (PVOID)(arg), \
-        (DWORD)(period_ms), \
-        ((type) == IOT_TIMER_PERIODIC) ? (DWORD)(period_ms) : 0, \
-        WT_EXECUTEDEFAULT); \
-    _iot_timer; \
-})
+iot_timer_t iot_timer_create(iot_timer_callback_t cb, void* arg, int period_ms, int type);
 
 /**
  * @brief 启动定时器
@@ -305,30 +313,27 @@ extern "C" {
  * @param period_ms 定时周期（毫秒）
  * @return 成功返回 0，失败返回 -1
  */
-#define iot_timer_start(timer, period_ms) \
-    (0)
+int iot_timer_start(iot_timer_t timer, int period_ms);
 
 /**
- * @brief 停止定时器
+ * @brief 停止定时器（如果回调已执行则直接返回）
  * @param timer 定时器句柄
+ * @return 成功返回 0，失败返回 -1
  */
-#define iot_timer_stop(timer) \
-    DeleteTimerQueueTimer(NULL, (timer), NULL)
+int iot_timer_stop(iot_timer_t timer);
 
 /**
- * @brief 删除定时器
+ * @brief 删除定时器（如果回调已执行则直接返回）
  * @param timer 定时器句柄
  */
-#define iot_timer_delete(timer) \
-    DeleteTimerQueueTimer(NULL, (timer), NULL)
+void iot_timer_delete(iot_timer_t timer);
 
 /**
  * @brief 检查定时器是否运行
  * @param timer 定时器句柄
- * @return 运行返回 true，停止返回 false
+ * @return 运行返回 1，停止返回 0
  */
-#define iot_timer_is_running(timer) \
-    ((timer) != NULL)
+int iot_timer_is_running(iot_timer_t timer);
 
 /*===========================================================
  * 6. Socket 网络接口 (socket)
