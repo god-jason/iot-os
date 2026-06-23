@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 static char http_url_hex_to_char(char c) {
     if (c >= '0' && c <= '9') return c - '0';
@@ -244,8 +245,8 @@ char* http_url_decode(const char* src, char* dst, size_t dst_len) {
     unsigned char c;
     
     while ((c = (unsigned char)*src) && (size_t)(p - dst) < dst_len - 1) {
-        if (c == '%' && isxdigit((unsigned char)str[1]) && isxdigit((unsigned char)str[2])) {
-            *p++ = (http_url_hex_to_char(str[1]) << 4) | http_url_hex_to_char(str[2]);
+        if (c == '%' && isxdigit((unsigned char)src[1]) && isxdigit((unsigned char)src[2])) {
+            *p++ = (http_url_hex_to_char(src[1]) << 4) | http_url_hex_to_char(src[2]);
             src += 3;
         } else if (c == '+') {
             *p++ = ' ';

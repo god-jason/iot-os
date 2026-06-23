@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2001-2003 Swedish Institute of Computer Science.
  * All rights reserved.
  *
@@ -33,7 +33,7 @@
 #define __ARCH_CC_H__
 
 #if !NO_SYS
-#include <os.h>
+#include "os.h"
 #include "net_pub.h"
 #endif
 

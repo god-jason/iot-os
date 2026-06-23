@@ -60,9 +60,12 @@ extern "C" {
 typedef u32_t in_addr_t;
 #endif
 
+#if !defined(in_addr_defined) && !defined(_WINSOCK_H) && !defined(_WINSOCKAPI_)
+#define in_addr_defined
 struct in_addr {
   in_addr_t s_addr;
 };
+#endif
 
 struct in6_addr {
   union {

@@ -74,18 +74,6 @@ int fs_dir_read(fs_dir_t* dir, fs_dir_entry_t* entry) {
     char full_path[1024];
     fs_path_join(full_path, sizeof(full_path), dir->path, name);
 
-#ifdef _WIN32
-    struct _stat st;
-    if (_stat(full_path, &st) == 0) {
-        entry->is_dir = (st.st_mode & _S_IFDIR) != 0;
-        entry->size = st.st_size;
-        entry->mtime = st.st_mtime;
-    } else {
-        entry->is_dir = 0;
-        entry->size = 0;
-        entry->mtime = 0;
-    }
-#else
     struct stat st;
     if (stat(full_path, &st) == 0) {
         entry->is_dir = S_ISDIR(st.st_mode);
@@ -96,7 +84,6 @@ int fs_dir_read(fs_dir_t* dir, fs_dir_entry_t* entry) {
         entry->size = 0;
         entry->mtime = 0;
     }
-#endif
 
     return 0;
 }

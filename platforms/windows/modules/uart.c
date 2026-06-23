@@ -288,21 +288,21 @@ static int luaopen_uart_get_rxrb_data_len(lua_State* L) {
     return 1;
 }
 
-static int iot_uart_clean(lua_State* L) {
+static int luaopen_uart_clean(lua_State* L) {
     int id = luaL_checkinteger(L, 1);
-    
+
     if (id < 0 || id >= IOT_UART_MAX) {
         lua_pushboolean(L, 0);
         return 1;
     }
-    
+
     if (!g_uart_ctx[id].inited) {
         lua_pushboolean(L, 0);
         return 1;
     }
-    
+
     PurgeComm(g_uart_ctx[id].hCom, PURGE_TXCLEAR | PURGE_RXCLEAR);
-    
+
     lua_pushboolean(L, 1);
     return 1;
 }

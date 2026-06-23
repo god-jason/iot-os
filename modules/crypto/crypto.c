@@ -362,7 +362,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
                 return -1;
             }
             size_t taglen = 16;
-            if (aes_gcm_encrypt(&aes_key, iv, ivlen, aad, aadlen, in, inlen, out, outlen, out + inlen, &taglen) != 1) {
+            if (aes_gcm_encrypt(&aes_key, iv, ivlen, aad, aadlen, in, inlen, out, taglen, out + inlen) != 1) {
                 return -1;
             }
             *outlen = inlen + taglen;
@@ -388,7 +388,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
     if (cipher_is_ecb(type)) {
         if (cipher_is_sm4(type)) {
             SM4_KEY sm4_key;
-            sm4_setkeyenc(&sm4_key, key);
+            sm4_set_encrypt_key(&sm4_key, key);
             size_t blocks = (inlen + block_size - 1) / block_size;
             uint8_t tmp[16] = {0};
             memcpy(tmp, in, inlen);

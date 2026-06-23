@@ -97,7 +97,7 @@ int driver_spi_transfer(driver_spi_t* spi, uint8_t* tx, uint8_t* rx, size_t len)
         return DRIVER_ERR_INVALID;
     }
 
-    return iot_spi_transfer(spi->fd, tx, rx, len, spi->speed);
+    return iot_spi_transfer(spi->fd, tx, rx, len);
 }
 
 /*===========================================================
@@ -117,7 +117,7 @@ void driver_delay_us(uint32_t us) {
     due_time.QuadPart = -(int64_t)us * 10;
     timer = CreateWaitableTimer(NULL, TRUE, NULL);
     if (timer) {
-        SetWaitableTimer(timer, &due_time, 0, NULL, NULL, FALSE, 0);
+        SetWaitableTimer(timer, &due_time, 0, NULL, NULL, FALSE);
         WaitForSingleObject(timer, INFINITE);
         CloseHandle(timer);
     }

@@ -40,10 +40,10 @@ int http_manager_init(void) {
     
     list_init(&g_http_manager.clients);
     
-    int ret = iot_task_create(&g_http_manager.task, "http_manager", 
+    g_http_manager.task = iot_task_create("http_manager", 
                               http_manager_thread, NULL, 4096, 10);
-    if (ret != 0) {
-        iot_mutex_destroy(g_http_manager.mutex);
+    if (!g_http_manager.task) {
+        iot_mutex_delete(g_http_manager.mutex);
         return -1;
     }
     
@@ -52,7 +52,7 @@ int http_manager_init(void) {
 
 void http_manager_deinit(void) {
     g_http_manager.running = 0;
-    iot_task_destroy(&g_http_manager.task);
+    iot_task_delete(g_http_manager.task);
     
     list_head_t* pos, *n;
     list_for_each_safe(pos, n, &g_http_manager.clients) {
@@ -61,7 +61,7 @@ void http_manager_deinit(void) {
         http_client_destroy(client);
     }
     
-    iot_mutex_destroy(g_http_manager.mutex);
+    iot_mutex_delete(g_http_manager.mutex);
 }
 
 int http_manager_add_client(http_client_t* client) {
@@ -108,7 +108,7 @@ int http_manager_get_default_timeout(void) {
 
 static void http_manager_check_timeout(struct http_manager* manager) {
     list_head_t* pos, *n;
-    uint32_t now = iot_get_ms();
+    uint32_t now = iot_get_tick_ms();
     
     list_for_each_safe(pos, n, &manager->clients) {
         http_client_t* client = list_entry(pos, http_client_t, list_node);
@@ -136,6 +136,6 @@ static void http_manager_thread(void* arg) {
         
         http_manager_unlock();
         
-        iot_task_sleep(HTTP_MANAGER_POLL_INTERVAL);
+        iot_task_delay(HTTP_MANAGER_POLL_INTERVAL);
     }
 }

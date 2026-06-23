@@ -25,12 +25,10 @@ const char* fs_path_basename(const char* path) {
     }
 
     const char* last_slash = strrchr(path, '/');
-#ifdef _WIN32
     const char* last_backslash = strrchr(path, '\\');
     if (last_backslash && (!last_slash || last_backslash > last_slash)) {
         last_slash = last_backslash;
     }
-#endif
 
     if (last_slash) {
         return last_slash + 1;
@@ -101,12 +99,10 @@ const char* fs_path_extname(const char* path) {
     }
 
     const char* last_slash = strrchr(path, '/');
-#ifdef _WIN32
     const char* last_backslash = strrchr(path, '\\');
     if (last_backslash && (!last_slash || last_backslash > last_slash)) {
         last_slash = last_backslash;
     }
-#endif
 
     if (last_slash && last_dot < last_slash) {
         return NULL;
@@ -173,7 +169,6 @@ int fs_path_is_absolute(const char* path) {
         return 1;
     }
 
-#ifdef _WIN32
     if (path[0] == '\\') {
         return 1;
     }
@@ -181,7 +176,6 @@ int fs_path_is_absolute(const char* path) {
     if (path[1] == ':') {
         return 1;
     }
-#endif
 
     return 0;
 }
@@ -208,7 +202,6 @@ char* fs_path_normalize(char* buf, size_t buf_len, const char* path) {
     char* end = buf + buf_len - 1;
 
     if (fs_path_is_absolute(path)) {
-#ifdef _WIN32
         if (path[1] == ':') {
             *p++ = path[0];
             *p++ = path[1];
@@ -228,11 +221,6 @@ char* fs_path_normalize(char* buf, size_t buf_len, const char* path) {
                 len--;
             }
         }
-#else
-        *p++ = '/';
-        path++;
-        len--;
-#endif
     }
 
     const char* start = path;

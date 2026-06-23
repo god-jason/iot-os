@@ -73,7 +73,7 @@ typedef u8_t sa_family_t;
 typedef u16_t in_port_t;
 #endif
 
-#if LWIP_IPV4
+#if LWIP_IPV4 && !defined(_WINSOCK_H) && !defined(_WINSOCKAPI_)
 /* members are in network byte order */
 struct sockaddr_in {
   u8_t            sin_len;
@@ -96,11 +96,13 @@ struct sockaddr_in6 {
 };
 #endif /* LWIP_IPV6 */
 
+#if !defined(_WINSOCK_H) && !defined(_WINSOCKAPI_)
 struct sockaddr {
   u8_t        sa_len;
   sa_family_t sa_family;
   char        sa_data[14];
 };
+#endif
 
 struct sockaddr_storage {
   u8_t        s2_len;
@@ -232,10 +234,12 @@ struct ifreq {
 /*
  * Structure used for manipulating linger option.
  */
+#if !defined(_WINSOCK_H) && !defined(_WINSOCKAPI_)
 struct linger {
   int l_onoff;                /* option on/off */
   int l_linger;               /* linger time in seconds */
 };
+#endif
 
 /*
  * Level number for (get/set)sockopt() to apply to socket itself.

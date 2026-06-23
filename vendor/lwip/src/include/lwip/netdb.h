@@ -88,7 +88,7 @@ extern "C" {
 #define AI_ADDRCONFIG   0x40
 #endif /* LWIP_DNS_API_DEFINE_FLAGS */
 
-#if LWIP_DNS_API_DECLARE_STRUCTS
+#if LWIP_DNS_API_DECLARE_STRUCTS && !defined(_WINSOCK_H) && !defined(_WINSOCKAPI_)
 struct hostent {
     char  *h_name;      /* Official name of the host. */
     char **h_aliases;   /* A pointer to an array of pointers to alternative host names,

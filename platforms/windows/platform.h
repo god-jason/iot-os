@@ -268,4 +268,31 @@ static inline int _iot_fs_readdir(iot_fs_dir_t dir, iot_fs_dirent_t* entry) {
 #define IOT_FS_SEEK_CUR          SEEK_CUR
 #define IOT_FS_SEEK_END          SEEK_END
 
+/*===========================================================
+ * 路径操作适配层
+ *===========================================================*/
+
+#define IOT_PATH_SEPARATOR       '\\'
+#define IOT_PATH_ALT_SEPARATOR   '/'
+
+static inline char iot_path_separator(void) {
+    return '\\';
+}
+
+static inline const char* iot_path_separator_str(void) {
+    return "\\";
+}
+
+static inline int iot_path_is_separator(char c) {
+    return c == '/' || c == '\\';
+}
+
+/*===========================================================
+ * DNS 解析适配层
+ *===========================================================*/
+
+#define iot_dns_resolve(name, ip, ip_len) \
+    ({ struct hostent* _he = gethostbyname(name); \
+       (_he && _he->h_addr_list[0]) ? strncpy(ip, inet_ntoa(*(struct in_addr*)_he->h_addr_list[0]), ip_len) : -1; })
+
 #endif /* IOT_PLATFORM_WINDOWS_H */

@@ -33,7 +33,7 @@ typedef struct {
 
 int lcd1602_init(driver_t* drv, const lcd1602_config_t* config);
 int lcd1602_clear(driver_t* drv);
-int lcd1602_set_cursor(driver_t* drv, int col, int row);
+int lcd1602_set_cursor(driver_t* drv, uint8_t col, uint8_t row);
 int lcd1602_write_char(driver_t* drv, char ch);
 int lcd1602_write_string(driver_t* drv, const char* str);
 

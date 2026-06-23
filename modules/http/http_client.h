@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "iot_list.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,6 +46,7 @@ typedef enum {
     HTTP_STATUS_SERVICE_UNAVAIL   = 503,
 } http_status_t;
 
+struct http_client;
 typedef struct http_client http_client_t;
 
 typedef struct {
@@ -76,6 +79,40 @@ typedef struct {
     int gzip_level;
     bool auto_decompress;
 } http_client_options_t;
+
+struct http_client {
+    void* sock;
+    http_client_options_t options;
+    
+    char host[256];
+    uint16_t port;
+    char path[512];
+    
+    char* recv_buf;
+    size_t recv_len;
+    size_t recv_capacity;
+    
+    int redirect_count;
+    int content_length;
+    int chunked;
+    
+    void* fd;
+    size_t downloaded;
+    size_t total_size;
+    
+    http_response_t response;
+    int request_done;
+    int request_failed;
+    
+    void* mutex;
+    void* sem;
+    void* gzip_ctx;
+    bool response_gzip;
+    
+    list_head_t list_node;
+};
+
+typedef struct http_client http_client_t;
 
 /*===========================================================
  * HTTP 客户端接口

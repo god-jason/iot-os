@@ -11,6 +11,7 @@
 #include "http_url.h"
 #include "net.h"
 #include "platform.h"
+#include "iot_list.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -36,7 +37,7 @@ struct http_client {
     int content_length;
     int chunked;
     
-    int fd;
+    iot_fs_file_t fd;
     size_t downloaded;
     size_t total_size;
     
@@ -45,6 +46,7 @@ struct http_client {
     int request_failed;
     
     iot_mutex_t mutex;
+    iot_sem_t sem;
     http_gzip_ctx_t* gzip_ctx;
     bool response_gzip;
     
@@ -227,8 +229,8 @@ static int http_parse_response(struct http_client* client, http_response_t* resp
 
 static int http_connect(struct http_client* client) {
     char ip[32];
-    int ret = net_gethostbyname(client->host, ip);
-    if (ret != 0) {
+    int ret = iot_dns_resolve(client->host, ip, sizeof(ip));
+    if (ret < 0) {
         return -1;
     }
     
@@ -236,7 +238,7 @@ static int http_connect(struct http_client* client) {
         net_socket_close((sock_t)client->sock);
     }
     
-    client->sock = (net_socket_t*)net_socket_create(SOCK_TYPE_STREAM, http_socket_callback, client);
+    client->sock = (net_socket_t*)net_socket_create(SOCK_TYPE_STREAM, NULL, http_socket_callback, client);
     if (!client->sock) {
         return -1;
     }
@@ -269,7 +271,7 @@ static void http_recv_data(struct http_client* client) {
         memcpy(client->recv_buf + client->recv_len, buf, len);
         client->recv_len += len;
         
-        if (client->fd >= 0) {
+        if (client->fd) {
             iot_fs_write(client->fd, buf, len);
             client->downloaded += len;
             
@@ -323,11 +325,11 @@ http_client_t* http_client_create(const http_client_options_t* options) {
         client->options.gzip_level = 6;
     }
     
-    client->fd = -1;
+    client->fd = NULL;
     client->content_length = -1;
     
     client->mutex = iot_mutex_create();
-    client->sem = iot_sem_create(0);
+    client->sem = iot_sem_create(1, 0);
     
     client->gzip_ctx = http_gzip_create();
     
@@ -347,7 +349,7 @@ void http_client_destroy(http_client_t* client) {
         iot_free(client->recv_buf);
     }
     
-    if (client->fd >= 0) {
+    if (client->fd) {
         iot_fs_close(client->fd);
     }
     
@@ -358,11 +360,11 @@ void http_client_destroy(http_client_t* client) {
     }
     
     if (client->mutex) {
-        iot_mutex_destroy(client->mutex);
+        iot_mutex_delete(client->mutex);
     }
     
     if (client->sem) {
-        iot_sem_destroy(client->sem);
+        iot_sem_delete(client->sem);
     }
     
     iot_free(client);
@@ -399,8 +401,8 @@ static int http_client_do_request(struct http_client* client) {
     }
     
     if (client->options.download_path) {
-        client->fd = iot_fs_open(client->options.download_path, IOT_FS_O_WRONLY | IOT_FS_O_CREAT | IOT_FS_O_TRUNC, 0644);
-        if (client->fd < 0) {
+        client->fd = iot_fs_open(client->options.download_path, IOT_FS_WB);
+        if (!client->fd) {
             return -1;
         }
         client->downloaded = 0;
@@ -410,17 +412,17 @@ static int http_client_do_request(struct http_client* client) {
     char req_buf[4096];
     int req_len = http_build_request(client, req_buf, sizeof(req_buf));
     if (req_len < 0) {
-        if (client->fd >= 0) {
+        if (client->fd) {
             iot_fs_close(client->fd);
-            client->fd = -1;
+            client->fd = NULL;
         }
         return -1;
     }
     
     if (http_connect(client) != 0) {
-        if (client->fd >= 0) {
+        if (client->fd) {
             iot_fs_close(client->fd);
-            client->fd = -1;
+            client->fd = NULL;
         }
         return -1;
     }
@@ -456,9 +458,9 @@ static int http_client_do_request(struct http_client* client) {
                             client->recv_capacity = 0;
                         }
                         
-                        if (client->fd >= 0) {
+                        if (client->fd) {
                             iot_fs_close(client->fd);
-                            client->fd = -1;
+                            client->fd = NULL;
                         }
                         
                         http_client_options_t new_options = client->options;
@@ -489,13 +491,13 @@ static int http_client_do_request(struct http_client* client) {
             break;
         }
         
-        iot_task_sleep(10);
+        iot_task_delay(10);
         wait_ms += 10;
     }
     
-    if (client->fd >= 0) {
+    if (client->fd) {
         iot_fs_close(client->fd);
-        client->fd = -1;
+        client->fd = NULL;
     }
     
     if (client->sock) {

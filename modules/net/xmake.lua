@@ -7,10 +7,8 @@ target("iot_net")
     add_includedirs(".", "..")
     add_includedirs("../../vendor/lwip")
     add_includedirs("../../vendor/lwip/src/include")
+    add_includedirs("../../vendor/gmssl/include")
     add_deps("iot")
-
-    -- 链接第三方库（需要根据实际情况配置）
-    -- add_syslinks("lwip")
-    -- add_deps("gmssl")
+    add_deps("gmssl")
 
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
