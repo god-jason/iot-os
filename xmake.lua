@@ -34,36 +34,6 @@ option("module_crypto")
     set_description("Enable crypto module")
 option_end()
 
-option("module_fs")
-    set_default(true)
-    set_showmenu(true)
-    set_description("Enable fs module")
-option_end()
-
-option("module_http")
-    set_default(true)
-    set_showmenu(true)
-    set_description("Enable http module")
-option_end()
-
-option("module_mqtt")
-    set_default(true)
-    set_showmenu(true)
-    set_description("Enable mqtt module")
-option_end()
-
-option("module_net")
-    set_default(true)
-    set_showmenu(true)
-    set_description("Enable net module")
-option_end()
-
-option("module_zlib")
-    set_default(true)
-    set_showmenu(true)
-    set_description("Enable zlib module")
-option_end()
-
 -- Vendor 模块
 option("vendor_cjson")
     set_default(false)

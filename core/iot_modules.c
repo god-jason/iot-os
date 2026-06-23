@@ -31,25 +31,11 @@ extern int luaopen_wdt_register(lua_State* L);
 extern int luaopen_crypto_register(lua_State* L);
 #endif
 
-#ifdef IOT_ENABLE_MODULE_FS
 extern int luaopen_fs_register(lua_State* L);
-#endif
-
-#ifdef IOT_ENABLE_MODULE_HTTP
 extern int luaopen_http_register(lua_State* L);
-#endif
-
-#ifdef IOT_ENABLE_MODULE_MQTT
 extern int luaopen_mqtt_register(lua_State* L);
-#endif
-
-#ifdef IOT_ENABLE_MODULE_NET
 extern int luaopen_net_register(lua_State* L);
-#endif
-
-#ifdef IOT_ENABLE_MODULE_ZLIB
 extern int luaopen_zlib_register(lua_State* L);
-#endif
 
 /* Vendor 模块 */
 #ifdef IOT_ENABLE_VENDOR_CJSON
@@ -72,9 +58,7 @@ static const luaL_Reg core_modules[] = {
     {"rtos",     luaopen_rtos_register},       /* 实时操作系统接口 */
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
-#ifdef IOT_ENABLE_LUA_WDT
     {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */
-#endif
     {NULL, NULL}
 };
 
@@ -86,21 +70,11 @@ static const luaL_Reg modules_list[] = {
 #ifdef IOT_ENABLE_MODULE_CRYPTO
     {"crypto",   luaopen_crypto_register},     /* 加密模块 */
 #endif
-#ifdef IOT_ENABLE_MODULE_FS
     {"fs",       luaopen_fs_register},         /* 文件系统模块 */
-#endif
-#ifdef IOT_ENABLE_MODULE_HTTP
     {"http",     luaopen_http_register},       /* HTTP 模块 */
-#endif
-#ifdef IOT_ENABLE_MODULE_MQTT
     {"mqtt",     luaopen_mqtt_register},       /* MQTT 模块 */
-#endif
-#ifdef IOT_ENABLE_MODULE_NET
     {"net",      luaopen_net_register},        /* 网络模块 */
-#endif
-#ifdef IOT_ENABLE_MODULE_ZLIB
     {"zlib",     luaopen_zlib_register},       /* ZLIB 压缩模块 */
-#endif
     {NULL, NULL}
 };
 
