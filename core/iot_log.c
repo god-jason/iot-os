@@ -67,76 +67,90 @@ void iot_log_printf(iot_log_level_t level, const char* fmt, ...) {
     
     /* 输出日志级别前缀 */
     const char* prefix = log_level_prefix[level];
-    iot_puts(prefix);
-    iot_puts(" ");
     
-    char buffer[256];
+    char buffer[512];
+    int offset = 0;
+    
+    /* 添加级别前缀 */
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s ", prefix);
+    
+    /* 格式化日志内容 */
     va_list args;
     va_start(args, fmt);
-    int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+    offset += vsnprintf(buffer + offset, sizeof(buffer) - offset, fmt, args);
     va_end(args);
     
-    if (len > 0 && len < (int)sizeof(buffer)) {
-        iot_puts(buffer);
-    }
+    /* 换行 */
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\r\n");
     
-    iot_puts("\r\n");
+    /* 一次性输出 */
+    iot_puts(buffer);
 }
 
 /**
- * @brief 将Lua值转换为字符串并输出
+ * @brief 将Lua值转换为字符串并输出（支持长字符串分块输出）
  * @param L Lua状态机
  * @param idx 栈上的索引
- * @param buffer 输出缓冲区
- * @param buffer_size 缓冲区大小
  * @param first 是否是第一个参数
  */
-static void value_to_string(lua_State* L, int idx, char* buffer, size_t buffer_size, int* first) {
-    if (!buffer || buffer_size == 0) {
-        return;
-    }
-    
+static void value_to_string(lua_State* L, int idx, int* first) {
     const char* prefix = *first ? "" : " ";
     *first = 0;
     
     if (lua_isstring(L, idx)) {
         size_t len;
         const char* str = lua_tolstring(L, idx, &len);
-        if (len > buffer_size - 1) {
-            len = buffer_size - 1;
+        /* 输出一段 */
+        iot_puts(prefix);
+        /* 分块输出长字符串 */
+        while (len > 0) {
+            size_t chunk = (len > 128) ? 128 : len;
+            char tmp[129];
+            memcpy(tmp, str, chunk);
+            tmp[chunk] = '\0';
+            iot_puts(tmp);
+            str += chunk;
+            len -= chunk;
         }
-        snprintf(buffer, buffer_size, "%s%.*s", prefix, (int)len, str);
     } else if (lua_isnumber(L, idx)) {
+        char buffer[64];
         if (lua_isinteger(L, idx)) {
             int64_t v = lua_tointeger(L, idx);
-            snprintf(buffer, buffer_size, "%s%lld", prefix, (long long)v);
+            snprintf(buffer, sizeof(buffer), "%s%lld", prefix, (long long)v);
         } else {
             double v = lua_tonumber(L, idx);
-            snprintf(buffer, buffer_size, "%s%f", prefix, v);
+            snprintf(buffer, sizeof(buffer), "%s%f", prefix, v);
         }
+        iot_puts(buffer);
     } else if (lua_isboolean(L, idx)) {
         int v = lua_toboolean(L, idx);
-        snprintf(buffer, buffer_size, "%s%s", prefix, v ? "true" : "false");
+        char buffer[16];
+        snprintf(buffer, sizeof(buffer), "%s%s", prefix, v ? "true" : "false");
+        iot_puts(buffer);
     } else if (lua_isnil(L, idx)) {
-        snprintf(buffer, buffer_size, "%snil", prefix);
+        char buffer[16];
+        snprintf(buffer, sizeof(buffer), "%snil", prefix);
+        iot_puts(buffer);
     } else if (lua_istable(L, idx)) {
-        lua_pushvalue(L, idx);
-        snprintf(buffer, buffer_size, "%stable: %p", prefix, lua_topointer(L, -1));
-        lua_pop(L, 1);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "%stable: %p", prefix, lua_topointer(L, idx));
+        iot_puts(buffer);
     } else if (lua_isfunction(L, idx)) {
-        lua_pushvalue(L, idx);
-        snprintf(buffer, buffer_size, "%sfunction: %p", prefix, lua_topointer(L, -1));
-        lua_pop(L, 1);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "%sfunction: %p", prefix, lua_topointer(L, idx));
+        iot_puts(buffer);
     } else if (lua_isuserdata(L, idx)) {
-        lua_pushvalue(L, idx);
-        snprintf(buffer, buffer_size, "%suserdata: %p", prefix, lua_topointer(L, -1));
-        lua_pop(L, 1);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "%suserdata: %p", prefix, lua_topointer(L, idx));
+        iot_puts(buffer);
     } else if (lua_isthread(L, idx)) {
-        lua_pushvalue(L, idx);
-        snprintf(buffer, buffer_size, "%sthread: %p", prefix, lua_topointer(L, -1));
-        lua_pop(L, 1);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "%sthread: %p", prefix, lua_topointer(L, idx));
+        iot_puts(buffer);
     } else {
-        snprintf(buffer, buffer_size, "%s%s", prefix, luaL_typename(L, idx));
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%s%s", prefix, luaL_typename(L, idx));
+        iot_puts(buffer);
     }
 }
 
@@ -150,18 +164,13 @@ static void iot_log_output(lua_State* L, int level) {
     
     /* 输出日志级别前缀 */
     iot_puts(log_level_prefix[level]);
-    iot_puts("[lua] ");
+    iot_puts("[iot] ");
     
     int n = lua_gettop(L);
     int first = 1;
-    char buffer[128];
     
     for (int i = 1; i <= n; i++) {
-        buffer[0] = '\0';
-        value_to_string(L, i, buffer, sizeof(buffer), &first);
-        if (buffer[0] != '\0') {
-            iot_puts(buffer);
-        }
+        value_to_string(L, i, &first);
     }
     
     iot_puts("\r\n");
