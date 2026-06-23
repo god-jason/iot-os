@@ -35,9 +35,11 @@ extern int luaopen_net_register(lua_State* L);
 extern int luaopen_zlib_register(lua_State* L);
 
 /* Vendor 模块 */
-extern int luaopen_cjson_register(lua_State* L);
 extern int luaopen_gmssl_register(lua_State* L);
 extern int luaopen_sqlite3_register(lua_State* L);
+
+// 注册平台模块
+extern int luaopen_cjson_register(lua_State* L);
 
 /*===========================================================
  * 核心模块列表
@@ -48,6 +50,7 @@ static const luaL_Reg core_modules[] = {
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
     {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */
+    {"json",    luaopen_cjson_register},      /* JSON 模块 */
     {NULL, NULL}
 };
 
@@ -70,7 +73,6 @@ static const luaL_Reg modules_list[] = {
  *===========================================================*/
 
 static const luaL_Reg vendor_list[] = {
-    {"cjson",    luaopen_cjson_register},      /* CJSON 模块 */
     {"gmssl",    luaopen_gmssl_register},      /* GMSSL 模块 */
     {"sqlite3",  luaopen_sqlite3_register},    /* SQLite3 模块 */
     {NULL, NULL}
@@ -145,6 +147,9 @@ void modules_register(lua_State* L)
             LOG("WARN module %s register failed", lib->name);
         }
     }
+
+    // 注册平台模块
+    platform_modules_register(L);
 
     LOG("modules register: success=%d, failed=%d", success_count, fail_count);
 }

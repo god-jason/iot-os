@@ -10,7 +10,7 @@
 extern int luaopen_uart_register(lua_State* L);
 
 static const luaL_Reg platform_modules[] = {
-    {"uart",   luaopen_uart_register},
+    {"uart",   luaopen_uart_register},    /* UART 串口 */
     {NULL, NULL}
 };
 
