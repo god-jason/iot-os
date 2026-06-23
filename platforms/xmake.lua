@@ -27,7 +27,7 @@ add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
 
 -- 桌面平台添加依赖和链接库
 if is_desktop_platform then
-    add_deps("lua", "gmssl", "libjpeg-turbo", "iot_zlib", "cjson", "sqlite3")
+    add_deps("lua", "gmssl", "libjpeg-turbo", "iot_zlib", "cjson", "sqlite3", "lua-cjson")
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_net", "iot_lvgl", "iot_fonts")
     add_deps("iot_core", "drivers")
 
@@ -37,7 +37,10 @@ if is_desktop_platform then
 
     set_policy("check.auto_ignore_flags", false)
     add_ldflags("-Wl,--start-group")
-    add_ldflags("-llua", "-lgmssl", "-llibjpeg-turbo", "-liot_zlib", "-lcjson", "-lsqlite3", "-liot_crypto", "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_net", "-liot_lvgl", "-llvgl", "-liot_fonts", "-ldrivers", "-liot_core")
+    add_ldflags("-llua", "-lgmssl", "-llibjpeg-turbo", "-llua-cjson",
+        "-liot_zlib", "-lcjson", "-lsqlite3", "-liot_crypto",
+        "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_net", "-liot_lvgl", "-llvgl",
+        "-liot_fonts", "-ldrivers", "-liot_core")
     if plat == "windows" then
         add_ldflags("-lws2_32", "-lwinmm")
     end

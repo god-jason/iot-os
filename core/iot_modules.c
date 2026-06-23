@@ -40,6 +40,7 @@ extern int luaopen_sqlite3_register(lua_State* L);
 
 // 注册平台模块
 extern int luaopen_cjson_register(lua_State* L);
+extern int luaopen_cjson(lua_State *l);
 
 /*===========================================================
  * 核心模块列表
@@ -50,7 +51,7 @@ static const luaL_Reg core_modules[] = {
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
     {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */
-    {"json",    luaopen_cjson_register},      /* JSON 模块 */
+    {"json",     luaopen_cjson},               /* JSON 模块 */
     {NULL, NULL}
 };
 

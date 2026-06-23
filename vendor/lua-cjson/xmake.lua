@@ -4,7 +4,7 @@ target("lua-cjson")
     set_kind("static")
 
     -- 添加源文件
-    add_files("lua_cjson.c", "dtoa.c", "g_fmt.c", "strbuf.c", "fpconv.c")
+    add_files("lua_cjson.c", "strbuf.c", "fpconv.c")
 
     -- 添加头文件
     add_headerfiles("fpconv.h", "strbuf.h", "dtoa_config.h")
