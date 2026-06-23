@@ -12,7 +12,6 @@
 #include "iot_base.h"
 #include "iot_log.h"
 #include "platform.h"
-#include "platform_event.h"
 #include "lualib.h"
 #include "iot_rtos.h"
 #include "iot_modules.h"

@@ -1,12 +1,9 @@
-/*
-@module  event
-@summary 系统事件模块
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-@tag     EVENT
-*/
+/**
+ * @file platform.c
+ * @brief ML307N 平台初始化实现
+ */
 
+#include "platform.h"
 #include "lua.h"
 #include "iot_base.h"
 #include "cm_fota.h"

@@ -290,4 +290,39 @@
 #define IOT_FS_SEEK_CUR          CM_FS_SEEK_CUR
 #define IOT_FS_SEEK_END          CM_FS_SEEK_END
 
+/*===========================================================
+ * 路径操作适配层
+ *===========================================================*/
+
+#define IOT_PATH_SEPARATOR       '/'
+#define IOT_PATH_ALT_SEPARATOR   '\\'
+
+static inline char iot_path_separator(void) {
+    return '/';
+}
+
+static inline const char* iot_path_separator_str(void) {
+    return "/";
+}
+
+static inline int iot_path_is_separator(char c) {
+    return c == '/' || c == '\\';
+}
+
+/*===========================================================
+ * DNS 解析适配层
+ *===========================================================*/
+
+static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
+    /* ML307N 平台使用 lwIP DNS 解析 */
+    return -1; /* 需要实现具体逻辑 */
+}
+
+/*===========================================================
+ * 事件初始化（由 platform.c 实现）
+ *===========================================================*/
+
+void iot_event_init(void);
+void iot_event_deinit(void);
+
 #endif /* IOT_PLATFORM_ML307N_H */

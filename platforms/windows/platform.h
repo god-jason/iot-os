@@ -311,4 +311,11 @@ static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
     return 0;
 }
 
+/*===========================================================
+ * 事件初始化（由 platform.c 实现）
+ *===========================================================*/
+
+void iot_event_init(void);
+void iot_event_deinit(void);
+
 #endif /* IOT_PLATFORM_WINDOWS_H */

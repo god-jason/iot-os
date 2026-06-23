@@ -299,4 +299,51 @@
 #define IOT_FS_SEEK_CUR          SEEK_CUR
 #define IOT_FS_SEEK_END          SEEK_END
 
+/*===========================================================
+ * 路径操作适配层
+ *===========================================================*/
+
+#define IOT_PATH_SEPARATOR       '/'
+#define IOT_PATH_ALT_SEPARATOR   '\\'
+
+static inline char iot_path_separator(void) {
+    return '/';
+}
+
+static inline const char* iot_path_separator_str(void) {
+    return "/";
+}
+
+static inline int iot_path_is_separator(char c) {
+    return c == '/' || c == '\\';
+}
+
+/*===========================================================
+ * DNS 解析适配层
+ *===========================================================*/
+
+#include <netdb.h>
+#include <arpa/inet.h>
+
+static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
+    struct hostent* he = gethostbyname(name);
+    if (!he || !he->h_addr_list || !he->h_addr_list[0] || ip_len == 0) {
+        return -1;
+    }
+    const char* addr = inet_ntoa(*(struct in_addr*)he->h_addr_list[0]);
+    if (!addr) {
+        return -1;
+    }
+    strncpy(ip, addr, ip_len - 1);
+    ip[ip_len - 1] = '\0';
+    return 0;
+}
+
+/*===========================================================
+ * 事件初始化（由 platform.c 实现）
+ *===========================================================*/
+
+void iot_event_init(void);
+void iot_event_deinit(void);
+
 #endif /* IOT_PLATFORM_LINUX_H */
