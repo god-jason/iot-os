@@ -211,8 +211,14 @@ extern "C" {
  * @param priority 任务优先级
  * @return 任务句柄，失败返回 NULL
  */
-#define iot_task_create(name, func, arg, stack_size, priority) \
-    CreateThread(NULL, (stack_size), (LPTHREAD_START_ROUTINE)(func), (arg), 0, NULL)
+#define iot_task_create(name, func, arg, stack_size, priority) ({ \
+    DWORD _tid = 0; \
+    HANDLE _h = CreateThread(NULL, (stack_size), (LPTHREAD_START_ROUTINE)(func), (arg), 0, &_tid); \
+    if (_h) { \
+        SetThreadPriority(_h, (priority)); \
+    } \
+    _h; \
+})
 
 /**
  * @brief 任务延时

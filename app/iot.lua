@@ -115,7 +115,7 @@ local function createTimer(func, timeout, loop, ...)
     if timeout < 1 then timeout = 1 end
     local id = genTimerId()
     local tid = rtos.timer_create(timeout, loop and 1 or 0)
-    timerPool[id] = { callback = iot.call, args = {...}, loop = loop, tid = tid }
+    timerPool[id] = { callback = func, args = {...}, loop = loop, tid = tid }
     rtosTimerIdMap[tid] = id
     return id
 end

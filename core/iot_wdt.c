@@ -15,14 +15,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* 看门狗状态结构 */
+/*===========================================================
+ * 数据结构
+ *===========================================================*/
+
+/**
+ * @brief 看门狗状态结构
+ */
 typedef struct {
-    bool initialized;       /**< 是否已初始化 */
+    bool initialized;       /**< 资源是否已初始化 */
+    bool started;           /**< 定时器是否已启动 */
     bool timeout;           /**< 是否超时 */
     uint32_t timeout_ms;    /**< 超时时间（毫秒） */
     iot_mutex_t mutex;      /**< 互斥锁 */
-    iot_sem_t sem;          /**< 信号量，用于等待超时 */
-    iot_task_t task;        /**< 看门狗任务 */
+    iot_timer_t timer;      /**< 循环定时器 */
 } iot_wdt_t;
 
 static iot_wdt_t g_wdt = {0};
@@ -30,49 +36,37 @@ static iot_wdt_t g_wdt = {0};
 /* 互斥锁超时时间（毫秒） */
 #define IOT_WDT_MUTEX_TIMEOUT  10000
 
+/* 默认超时时间（毫秒） */
+#define IOT_WDT_DEFAULT_TIMEOUT  30000
+
+/*===========================================================
+ * 内部函数
+ *===========================================================*/
+
 /**
- * @brief 看门狗任务函数
+ * @brief 看门狗定时器回调函数
  * @param arg 参数（未使用）
  */
-static void iot_wdt_task(void* arg) {
+static void iot_wdt_timer_callback(void* arg) {
     (void)arg;
 
-    while (1) {
-        /* 等待超时 */
-        if (!iot_sem_wait_timeout(g_wdt.sem, g_wdt.timeout_ms)) {
-            /* 超时处理 */
-            iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
-            if (g_wdt.initialized) {
-                g_wdt.timeout = true;
-                LOG("[WDT] Watchdog timeout triggered!");
-
-                /* 退出应用程序 */
-                exit(1);
-            }
-            iot_mutex_unlock(g_wdt.mutex);
-        } else {
-            /* 被喂狗，继续循环 */
-            iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
-
-            /* 如果未初始化，退出任务 */
-            if (!g_wdt.initialized) {
-                iot_mutex_unlock(g_wdt.mutex);
-                break;
-            }
-            iot_mutex_unlock(g_wdt.mutex);
-        }
+    iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
+    if (g_wdt.started) {
+        g_wdt.timeout = true;
+        LOG("[WDT] Watchdog timeout triggered!");
+        exit(1);
     }
+    iot_mutex_unlock(g_wdt.mutex);
 }
 
-bool iot_wdt_init(uint32_t timeout_ms) {
+/**
+ * @brief 初始化看门狗资源（不启动定时器）
+ * @param timeout_ms 超时时间（毫秒）
+ * @return 成功返回 true，失败返回 false
+ */
+static bool iot_wdt_init_resources(uint32_t timeout_ms) {
     if (g_wdt.initialized) {
-        LOG("[WDT] Watchdog already initialized");
-        return false;
-    }
-
-    if (timeout_ms == 0) {
-        LOG("[WDT] Invalid timeout value");
-        return false;
+        return true;
     }
 
     /* 创建互斥锁 */
@@ -82,34 +76,61 @@ bool iot_wdt_init(uint32_t timeout_ms) {
         return false;
     }
 
-    /* 创建信号量（最大计数1，初始计数0） */
-    g_wdt.sem = iot_sem_create(1, 0);
-    if (g_wdt.sem == NULL) {
-        LOG("[WDT] Failed to create semaphore");
-        iot_mutex_delete(g_wdt.mutex);
-        g_wdt.mutex = NULL;
-        return false;
-    }
-
     /* 设置超时时间 */
-    g_wdt.timeout_ms = timeout_ms;
+    g_wdt.timeout_ms = (timeout_ms == 0) ? IOT_WDT_DEFAULT_TIMEOUT : timeout_ms;
     g_wdt.timeout = false;
+    g_wdt.started = false;
+    g_wdt.timer = NULL;
     g_wdt.initialized = true;
 
-    /* 创建看门狗任务 */
-    g_wdt.task = iot_task_create("wdt", iot_wdt_task, NULL, 2048, 5);
-    if (g_wdt.task == NULL) {
-        LOG("[WDT] Failed to create watchdog task");
-        iot_sem_delete(g_wdt.sem);
-        g_wdt.sem = NULL;
-        iot_mutex_delete(g_wdt.mutex);
-        g_wdt.mutex = NULL;
-        g_wdt.initialized = false;
+    LOG("[WDT] Resources initialized, timeout=%u ms", g_wdt.timeout_ms);
+    return true;
+}
+
+/**
+ * @brief 启动看门狗定时器
+ * @return 成功返回 true，失败返回 false
+ */
+static bool iot_wdt_start_timer(void) {
+    if (!g_wdt.initialized) {
+        LOG("[WDT] Cannot start timer: not initialized");
         return false;
     }
 
-    LOG("[WDT] Watchdog initialized with timeout %u ms", timeout_ms);
+    iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
+
+    /* 删除旧定时器 */
+    if (g_wdt.timer != NULL) {
+        iot_timer_delete(g_wdt.timer);
+        g_wdt.timer = NULL;
+    }
+
+    /* 创建循环定时器 */
+    g_wdt.timer = iot_timer_create(iot_wdt_timer_callback, NULL, g_wdt.timeout_ms, IOT_TIMER_PERIODIC);
+    if (g_wdt.timer == NULL) {
+        LOG("[WDT] Failed to create timer");
+        iot_mutex_unlock(g_wdt.mutex);
+        return false;
+    }
+
+    g_wdt.started = true;
+    g_wdt.timeout = false;
+
+    iot_mutex_unlock(g_wdt.mutex);
+
+    LOG("[WDT] Timer started, period=%u ms", g_wdt.timeout_ms);
     return true;
+}
+
+/*===========================================================
+ * 外部接口
+ *===========================================================*/
+
+bool iot_wdt_init(uint32_t timeout_ms) {
+    if (!iot_wdt_init_resources(timeout_ms)) {
+        return false;
+    }
+    return iot_wdt_start_timer();
 }
 
 bool iot_wdt_feed(void) {
@@ -123,23 +144,31 @@ bool iot_wdt_feed(void) {
     /* 重置超时状态 */
     g_wdt.timeout = false;
 
-    /* 发送信号量，重置计时器 */
-    iot_sem_post(g_wdt.sem);
+    /* 删除旧定时器，创建新定时器（重置计时） */
+    if (g_wdt.timer != NULL) {
+        iot_timer_delete(g_wdt.timer);
+    }
+    g_wdt.timer = iot_timer_create(iot_wdt_timer_callback, NULL, g_wdt.timeout_ms, IOT_TIMER_PERIODIC);
 
     iot_mutex_unlock(g_wdt.mutex);
 
+    LOG("[WDT] Fed");
     return true;
 }
 
 void iot_wdt_wait(void) {
+    /* 如果未初始化，则初始化资源但不启动定时器 */
     if (!g_wdt.initialized) {
-        LOG("[WDT] Watchdog not initialized, cannot wait");
-        return;
+        if (!iot_wdt_init_resources(IOT_WDT_DEFAULT_TIMEOUT)) {
+            LOG("[WDT] Auto-init failed in wait");
+            return;
+        }
+        LOG("[WDT] Auto-initialized in wait (timer not started)");
     }
 
     LOG("[WDT] Waiting for watchdog timeout...");
 
-    /* 阻塞等待看门狗超时 */
+    /* 阻塞等待超时 */
     while (1) {
         iot_task_delay(100);
 
@@ -162,26 +191,22 @@ bool iot_wdt_stop(void) {
 
     iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
 
-    /* 标记为未初始化 */
-    g_wdt.initialized = false;
-
-    /* 发送信号量，唤醒任务 */
-    iot_sem_post(g_wdt.sem);
+    /* 停止定时器 */
+    g_wdt.started = false;
+    if (g_wdt.timer != NULL) {
+        iot_timer_delete(g_wdt.timer);
+        g_wdt.timer = NULL;
+    }
 
     iot_mutex_unlock(g_wdt.mutex);
 
-    /* 等待任务退出 */
-    iot_task_delay(100);
-
     /* 清理资源 */
-    if (g_wdt.sem != NULL) {
-        iot_sem_delete(g_wdt.sem);
-        g_wdt.sem = NULL;
-    }
     if (g_wdt.mutex != NULL) {
         iot_mutex_delete(g_wdt.mutex);
         g_wdt.mutex = NULL;
     }
+
+    g_wdt.initialized = false;
 
     LOG("[WDT] Watchdog stopped");
     return true;
@@ -205,16 +230,13 @@ bool iot_wdt_is_timeout(void) {
  * Lua 接口实现
  *===========================================================*/
 
-#ifdef IOT_ENABLE_LUA_WDT
-
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
-#include "iot_log.h"
 
 /**
  * @brief Lua: wdt.init(timeout_ms)
- * @brief 初始化看门狗
+ * @brief 初始化看门狗并启动定时器
  * @param timeout_ms 超时时间（毫秒）
  * @return 成功返回 true，失败返回 nil 和错误信息
  */
@@ -316,5 +338,3 @@ int luaopen_wdt_register(lua_State* L) {
     luaL_newlib(L, wdt_lib);
     return 1;
 }
-
-#endif /* IOT_ENABLE_LUA_WDT */

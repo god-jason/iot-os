@@ -19,11 +19,11 @@
 #include "zlib.h"
 
 #define LUA_STACK_SIZE  (16 * 1024)
-#define MAIN_LUA_PATH   "/app/main.lua"
-#define IOT_LUA_PATH    "/app/iot.lua"
-#define APP_ZIP_PATH    "/app.zip"
-#define APP_TAR_PATH    "/app.tar.gz"
-#define APP_DIR         "/app"
+#define MAIN_LUA_PATH   "app/main.lua"
+#define IOT_LUA_PATH    "app/iot.lua"
+#define APP_ZIP_PATH    "app.zip"
+#define APP_TAR_PATH    "app.tar.gz"
+#define APP_DIR         "app"
 
 static lua_State* g_lua_state = NULL;
 
@@ -64,7 +64,7 @@ static bool iot_load_lua_file(lua_State* L, const char* lua_path)
         }
     }
     
-    LOG("ERR both failed");
+    //LOG("ERR both failed");
     return false;
 }
 
