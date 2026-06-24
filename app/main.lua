@@ -1,37 +1,25 @@
+--- 模块封装验证入口
+--- 单测: echo zlib > app/tests/.target  再 xmake run
+--- 全测: 删除 app/tests/.target
+log.info("iot-os", "module verification")
 
-log.info("test")
-
-local tab = {
-    a = 1,
-    b = 2,
-    c = 3.14,
-    d = "hello world",
-    e = true,
-    f = nil,
-    g = {
-        a = 1,
-        b = 2,
-        c = 3.14,
-        d = "hello world",
-        e = true,
-        f = nil,
-    }
-}
-
-
-local t1 = os.time()
-for i = 1, 1000000 do
-    json.encode(tab)
+local target
+local f = io.open("app/tests/.target", "r")
+if f then
+    target = f:read("*l")
+    f:close()
+    if target then
+        target = target:match("^%s*(.-)%s*$")
+    end
 end
-log.info("test json", os.date("%c", os.time()), os.time() - t1)
 
-iot.setInterval(function()
-    log.info("test", os.date("%c", os.time()), json.encode({a = 1, b = 2}))
-end, 1000)
-
-iot.start(function ()
-    while true do
-        log.info("test sleep")
-        iot.sleep(2000)    
+local ok, err = pcall(function()
+    if target and target ~= "" then
+        dofile("app/tests/run_one.lua")(target)
+    else
+        dofile("app/tests/run_all.lua")()
     end
 end)
+if not ok then
+    log.error("tests", err)
+end

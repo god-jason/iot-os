@@ -85,14 +85,17 @@ static void socket_event_callback(net_socket_t* sock, net_event_type_t event, vo
     if (event == NET_EVENT_RECV) {
         const char* buf = net_socket_get_recv_buf((sock_t)sock);
         size_t len = net_socket_get_recv_len((sock_t)sock);
-        params_push_string(params, buf, len);
-        net_socket_clear_recv_buf((sock_t)sock);
+        if (buf && len > 0) {
+            params_push_string(params, buf, len);
+            net_socket_clear_recv_buf((sock_t)sock);
+        } else {
+            params_push_nil(params);
+        }
     } else {
         params_push_nil(params);
     }
 
     iot_rtos_call(ctx->userdata, params);
-    params_destroy(params);
 }
 
 /**
@@ -284,7 +287,7 @@ static int luaopen_net_socket_recv(lua_State* L) {
     const char* buf = net_socket_get_recv_buf((sock_t)ctx->sock);
     size_t len = net_socket_get_recv_len((sock_t)ctx->sock);
 
-    if (len > 0) {
+    if (len > 0 && buf) {
         lua_pushlstring(L, buf, len);
         net_socket_clear_recv_buf((sock_t)ctx->sock);
     } else {
@@ -471,7 +474,6 @@ static void dns_resolve_callback(const char* name, const char* ip, void* user_da
     }
 
     iot_rtos_call(userdata, params);
-    params_destroy(params);
 }
 
 /**
@@ -589,6 +591,7 @@ LUAMOD_API int luaopen_net_register(lua_State* L) {
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, socket_methods, 0);
+    lua_pop(L, 1);
 
     return 1;
 }

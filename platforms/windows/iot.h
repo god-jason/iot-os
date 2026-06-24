@@ -741,6 +741,13 @@ int iot_timer_is_running(iot_timer_t timer);
 #define IOT_ENONET                WSAENONET
 
 /**
+ * @brief 设置 socket 为非阻塞模式（供 net 模块使用）
+ * @param fd socket 句柄
+ * @return 成功返回 0，失败返回 -1
+ */
+int net_port_set_nonblocking(iot_socket_t fd);
+
+/**
  * @brief Socket 库初始化
  * @return 成功返回 0，失败返回错误码
  */

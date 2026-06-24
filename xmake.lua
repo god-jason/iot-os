@@ -30,6 +30,11 @@ add_includedirs("vendor/lua")
 add_includedirs("modules/zlib")
 add_includedirs("core")
 
+-- MSYS/Mingw 宿主上 is_plat("windows") 为 false，但仍在用 Windows 工具链
+function is_windows_toolchain()
+    return is_plat("windows") or is_plat("msys") or is_plat("mingw") or is_plat("cygwin")
+end
+
 --===========================================================
 -- 包含子目录
 --===========================================================

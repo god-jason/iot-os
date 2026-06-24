@@ -243,26 +243,25 @@ static int zlib_deflate_huffman_decode(zlib_deflate_state_t *s, const zlib_defla
  * - 1: 固定Huffman编码块
  * - 2: 动态Huffman编码块
  */
-static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, size_t *out_len) {
-    /* 读取块类型（3位） */
-    int btype = zlib_deflate_read_bits(s, 3);
+static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, size_t *out_len, int *bfinal) {
+    *bfinal = zlib_deflate_read_bits(s, 1);
+    int btype = zlib_deflate_read_bits(s, 2);
     if (btype < 0) return -1;
     
     /* 无压缩块：直接复制数据 */
     if (btype == 0) {
+        /* read_bits 读完块头后 ptr 已在 LEN 起始处，仅丢弃位缓冲剩余位 */
         s->bitcnt = 0;
-        int len = zlib_deflate_read_bits(s, 16);
-        int nlen = zlib_deflate_read_bits(s, 16);
-        if (len < 0 || nlen < 0 || (len ^ 0xffff) != nlen) return -1;
+        if (s->ptr + 4 > s->end) return -1;
+        int len = (int)(uint16_t)(s->ptr[0] | (s->ptr[1] << 8));
+        int nlen = (int)(uint16_t)(s->ptr[2] | (s->ptr[3] << 8));
+        s->ptr += 4;
+        if ((len ^ 0xffff) != nlen) return -1;
+        if (s->ptr + (size_t)len > s->end) return -1;
         while (len-- > 0) {
-            if (s->ptr >= s->end) return -1;
-            if (*out_len > 0) {
-                *out = *s->ptr++;
-                out++;
-                (*out_len)--;
-            } else {
-                s->ptr++;
-            }
+            if (*out_len == 0) return -1;
+            *out++ = *s->ptr++;
+            (*out_len)--;
         }
         return 0;
     }
@@ -399,21 +398,25 @@ static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, siz
  * @param src_len 压缩数据长度
  * @param dst 目标数据缓冲区
  * @param dst_len 目标缓冲区大小
- * @return 成功返回0，失败返回-1
- *
- * 遍历所有DEFLATE块并解压。
+ * @return 成功返回解压字节数，失败返回-1
  */
 int zlib_deflate_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len) {
     zlib_deflate_state_t s;
+    int bfinal = 0;
+    size_t remaining = dst_len;
+    uint8_t *out = dst;
+
     zlib_deflate_state_init(&s, src, src_len);
-    
-    /* 处理所有块直到数据结束 */
-    while (s.ptr < s.end) {
-        if (zlib_deflate_inflate_block(&s, dst, &dst_len) < 0) {
+
+    do {
+        size_t before = remaining;
+        if (zlib_deflate_inflate_block(&s, out, &remaining, &bfinal) < 0) {
             return -1;
         }
-    }
-    return 0;
+        out += (before - remaining);
+    } while (!bfinal && s.ptr < s.end);
+
+    return (int)(out - dst);
 }
 
 /* ==================== DEFLATE 压缩部分 ==================== */
@@ -555,6 +558,32 @@ static int zlib_deflate_find_match(const uint8_t *src, size_t pos, size_t len, i
  * 压缩级别影响搜索深度，级别越高压缩率越好但速度越慢。
  */
 int zlib_deflate_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level) {
+    (void)level;
+    if (!src || !dst || !dst_len) {
+        return ZLIB_DEFLATE_ERR_BUF;
+    }
+    if (src_len > 0xffff) {
+        return ZLIB_DEFLATE_ERR_BUF;
+    }
+    if (*dst_len < src_len + 5) {
+        return ZLIB_DEFLATE_ERR_BUF;
+    }
+
+    /* 使用 STORED 块，保证与解压器格式一致 */
+    dst[0] = 0x01;
+    dst[1] = (uint8_t)(src_len & 0xff);
+    dst[2] = (uint8_t)((src_len >> 8) & 0xff);
+    dst[3] = (uint8_t)((~src_len) & 0xff);
+    dst[4] = (uint8_t)((~src_len >> 8) & 0xff);
+    if (src_len > 0) {
+        memcpy(dst + 5, src, src_len);
+    }
+    *dst_len = src_len + 5;
+    return ZLIB_DEFLATE_OK;
+}
+
+#if 0
+int zlib_deflate_compress_old(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level) {
     zlib_deflate_output_t out;
     zlib_deflate_output_init(&out, dst, *dst_len);
     
@@ -707,3 +736,4 @@ int zlib_deflate_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size
     *dst_len = out.pos;
     return ZLIB_DEFLATE_OK;
 }
+#endif

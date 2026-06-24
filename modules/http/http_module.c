@@ -684,6 +684,7 @@ LUAMOD_API int luaopen_http_register(lua_State* L) {
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, http_server_methods, 0);
-    
+    lua_pop(L, 2);
+
     return 1;
 }

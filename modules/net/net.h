@@ -19,9 +19,6 @@ extern "C" {
 
 typedef void* sock_t;
 #define NET_INVALID_SOCK  ((sock_t)NULL)
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET    NET_INVALID_SOCK
-#endif
 
 /**
  * @brief socket 类型
@@ -105,7 +102,7 @@ typedef struct {
  * @param ssl_config SSL 配置（NULL 表示不启用 SSL）
  * @param callback 事件回调函数
  * @param user_data 用户数据
- * @return socket 句柄，失败返回 INVALID_SOCKET
+ * @return socket 句柄，失败返回 NET_INVALID_SOCK
  */
 sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_config,
                         net_socket_callback_t callback, void* user_data);
@@ -217,6 +214,12 @@ void net_socket_set_user_data(sock_t sock, void* user_data);
  * @return 接收缓冲区指针
  */
 const char* net_socket_get_recv_buf(sock_t sock);
+
+/**
+ * @brief 线程安全地将 socket 接收数据追加到调用方缓冲区
+ * @return 本次取出的字节数
+ */
+size_t net_socket_drain_recv(sock_t sock, char** buf, size_t* len, size_t* cap);
 
 /**
  * @brief 获取接收缓冲区中数据长度

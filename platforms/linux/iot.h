@@ -775,6 +775,13 @@ extern "C" {
 #define IOT_ENONET                ENONET
 
 /**
+ * @brief 设置 socket 为非阻塞模式（供 net 模块使用）
+ * @param fd socket 句柄
+ * @return 成功返回 0，失败返回 -1
+ */
+int net_port_set_nonblocking(iot_socket_t fd);
+
+/**
  * @brief Socket 库初始化（Linux 无需初始化）
  * @return 成功返回 0
  */

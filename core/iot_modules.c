@@ -8,6 +8,7 @@
 
 #include "iot_modules.h"
 #include "iot_log.h"
+#include "platform_modules.h"
 
 #include "iot_rtos.h"
 #include "iot_task.h"

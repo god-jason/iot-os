@@ -5,6 +5,7 @@
 #include "iot.h"
 #include "net.h"
 #include "iot_log.h"
+#include "iot_list.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -20,6 +21,8 @@ static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client,
 static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, const char* topic_filter, mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data);
 static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topic_filter);
 static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client);
+static void mqtt_client_options_free(mqtt_client_t* client);
+static int mqtt_client_options_copy(mqtt_client_t* client, const mqtt_connect_options_t* src);
 
 mqtt_client_t* mqtt_client_create(void) {
     mqtt_client_t* client = (mqtt_client_t*)iot_malloc(sizeof(mqtt_client_t));
@@ -29,6 +32,7 @@ mqtt_client_t* mqtt_client_create(void) {
     }
 
     memset(client, 0, sizeof(mqtt_client_t));
+    list_init(&client->list_node);
     client->state = MQTT_STATE_DISCONNECTED;
     client->next_packet_id = 1;
     client->options.keepalive = MQTT_DEFAULT_KEEPALIVE;
@@ -59,6 +63,7 @@ void mqtt_client_destroy(mqtt_client_t* client) {
     }
 
     mqtt_client_subscribe_destroy_all(client);
+    mqtt_client_options_free(client);
 
     mqtt_outgoing_msg_t* msg = client->outgoing_head;
     while (msg) {
@@ -79,7 +84,11 @@ int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* opt
 
     mqtt_client_disconnect(client);
 
-    memcpy(&client->options, options, sizeof(mqtt_connect_options_t));
+    if (mqtt_client_options_copy(client, options) != 0) {
+        client->state = MQTT_STATE_ERROR;
+        client->last_error = MQTT_ERR_MEMORY;
+        return MQTT_ERR_MEMORY;
+    }
 
     if (client->options.port == 0) {
         client->options.port = client->options.use_ssl ? MQTT_DEFAULT_SSL_PORT : MQTT_DEFAULT_PORT;
@@ -416,4 +425,63 @@ static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client) {
     client->subscribe_head = NULL;
     client->subscribe_tail = NULL;
     client->subscribe_count = 0;
+}
+
+static char* mqtt_strdup_opt(const char* s)
+{
+    if (!s) {
+        return NULL;
+    }
+    size_t n = strlen(s) + 1;
+    char* p = (char*)iot_malloc(n);
+    if (p) {
+        memcpy(p, s, n);
+    }
+    return p;
+}
+
+static void mqtt_client_options_free(mqtt_client_t* client)
+{
+    if (!client) {
+        return;
+    }
+
+    iot_free((void*)client->options.host);
+    iot_free((void*)client->options.client_id);
+    iot_free((void*)client->options.username);
+    iot_free((void*)client->options.password);
+    iot_free((void*)client->options.will_topic);
+    iot_free((void*)client->options.will_message);
+    memset(&client->options, 0, sizeof(client->options));
+}
+
+static int mqtt_client_options_copy(mqtt_client_t* client, const mqtt_connect_options_t* src)
+{
+    mqtt_connect_options_t copy = *src;
+
+    copy.host = mqtt_strdup_opt(src->host);
+    copy.client_id = mqtt_strdup_opt(src->client_id);
+    copy.username = mqtt_strdup_opt(src->username);
+    copy.password = mqtt_strdup_opt(src->password);
+    copy.will_topic = mqtt_strdup_opt(src->will_topic);
+    copy.will_message = mqtt_strdup_opt(src->will_message);
+
+    if ((src->host && !copy.host) ||
+        (src->client_id && !copy.client_id) ||
+        (src->username && !copy.username) ||
+        (src->password && !copy.password) ||
+        (src->will_topic && !copy.will_topic) ||
+        (src->will_message && !copy.will_message)) {
+        iot_free((void*)copy.host);
+        iot_free((void*)copy.client_id);
+        iot_free((void*)copy.username);
+        iot_free((void*)copy.password);
+        iot_free((void*)copy.will_topic);
+        iot_free((void*)copy.will_message);
+        return -1;
+    }
+
+    mqtt_client_options_free(client);
+    client->options = copy;
+    return 0;
 }

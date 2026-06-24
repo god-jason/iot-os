@@ -77,10 +77,10 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     
     /* 计算压缩数据长度（总长度减去8字节尾部） */
     size_t compressed_len = (src + src_len - 8) - p;
-    size_t original_dst_len = *dst_len;
     
     /* 调用DEFLATE核心解压 */
-    if (zlib_deflate_decompress(p, compressed_len, dst, *dst_len) < 0) {
+    int out_len = zlib_deflate_decompress(p, compressed_len, dst, *dst_len);
+    if (out_len < 0) {
         return GZIP_ERR_FORMAT;
     }
     
@@ -90,17 +90,12 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     uint32_t orig_size = p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
     
     /* 验证CRC32 */
-    uint32_t computed_crc = zlib_crc32(0xffffffff, dst, orig_size) ^ 0xffffffff;
-    if (computed_crc != crc32) {
+    uint32_t computed_crc = zlib_crc32(0xffffffff, dst, (size_t)out_len) ^ 0xffffffff;
+    if (computed_crc != crc32 || (uint32_t)out_len != orig_size) {
         return GZIP_ERR_CRC;
     }
     
-    /* 确保输出缓冲区足够大 */
-    if (orig_size > original_dst_len) {
-        return GZIP_ERR_MEM;
-    }
-    
-    *dst_len = orig_size;
+    *dst_len = (size_t)out_len;
     return GZIP_OK;
 }
 

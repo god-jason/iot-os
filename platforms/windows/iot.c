@@ -9,10 +9,10 @@
 #include "iot_log.h"
 #include <malloc.h>
 
-int net_port_set_nonblocking(int fd)
+int net_port_set_nonblocking(iot_socket_t fd)
 {
     u_long mode = 1;
-    int ret = ioctlsocket((iot_socket_t)fd, FIONBIO, &mode);
+    int ret = ioctlsocket(fd, FIONBIO, &mode);
     if (ret != 0) {
         LOG_WARN("set nonblocking failed: fd=%d, ret=%d", fd, ret);
     } else {

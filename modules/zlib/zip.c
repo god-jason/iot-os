@@ -61,20 +61,23 @@ static int zip_mkdir_recursive(const char *path) {
     char tmp[512];
     char *p = NULL;
     size_t len;
-    
+
     snprintf(tmp, sizeof(tmp), "%s", path);
     len = strlen(tmp);
-    if (len > 0 && tmp[len - 1] == '/') tmp[len - 1] = '\0';
-    
-    /* 遍历路径，逐级创建目录 */
+    if (len > 0 && (tmp[len - 1] == '/' || tmp[len - 1] == '\\')) {
+        tmp[len - 1] = '\0';
+    }
+
     for (p = tmp + 1; *p; p++) {
-        if (*p == '/') {
+        if (*p == '/' || *p == '\\') {
+            char saved = *p;
             *p = '\0';
             iot_fs_mkdir(tmp, 0);
-            *p = '/';
+            *p = saved;
         }
     }
-    return iot_fs_mkdir(tmp, 0);
+    iot_fs_mkdir(tmp, 0);
+    return 0;
 }
 
 /**
@@ -124,10 +127,10 @@ int zip_open(zip_t *zip, const char *zip_path) {
         return ZIP_ERR_FORMAT;
     }
     
-    /* 搜索中央目录结束签名 */
-    const uint8_t *p = buf + 22;
+    /* 搜索中央目录结束签名（EOCD 固定 22 字节，位于 buffer 末尾） */
+    const uint8_t *p = buf;
     int found = 0;
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i <= 42; i++) {
         uint32_t sig = buf[i] | (buf[i+1] << 8) | (buf[i+2] << 16) | (buf[i+3] << 24);
         if (sig == ZIP_END_CENTRAL_DIR_SIG) {
             p = buf + i;
@@ -203,7 +206,6 @@ int zip_open(zip_t *zip, const char *zip_path) {
         uint16_t compression_method = zip_read_le16(&p); /* 压缩方法 */
         zip_read_le16(&p);  /* 文件时间 */
         zip_read_le16(&p);  /* 文件日期 */
-        zip_read_le32(&p);  /* CRC32 */
         uint32_t crc32 = zip_read_le32(&p);
         uint32_t compressed_size = zip_read_le32(&p);   /* 压缩后大小 */
         uint32_t uncompressed_size = zip_read_le32(&p); /* 原始大小 */
@@ -324,27 +326,21 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
         return ZIP_ERR_FILE;
     }
     
-    /* 解析本地文件头 */
+    /* 解析本地文件头，获取文件名/扩展字段长度；其余字段用中央目录条目 */
     const uint8_t *p = header;
     uint32_t sig = zip_read_le32(&p);
     if (sig != ZIP_LOCAL_HEADER_SIG) {
         return ZIP_ERR_FORMAT;
     }
-    
-    zip_read_le16(&p);  /* 版本 */
-    zip_read_le16(&p);  /* 标志 */
-    uint16_t compression_method = zip_read_le16(&p); /* 压缩方法 */
-    zip_read_le16(&p);  /* 文件时间 */
-    zip_read_le16(&p);  /* 文件日期 */
-    zip_read_le32(&p);  /* CRC32 */
-    uint32_t crc32 = zip_read_le32(&p);
-    uint32_t compressed_size = zip_read_le32(&p);
-    uint32_t uncompressed_size = zip_read_le32(&p);
-    uint16_t filename_len = zip_read_le16(&p);
-    uint16_t extra_len = zip_read_le16(&p);
-    
-    /* 计算数据偏移 */
+
+    uint16_t filename_len = (uint16_t)(header[26] | (header[27] << 8));
+    uint16_t extra_len = (uint16_t)(header[28] | (header[29] << 8));
     size_t data_offset = entry->offset + 30 + filename_len + extra_len;
+
+    uint16_t compression_method = entry->compression_method;
+    uint32_t crc32 = entry->crc32;
+    uint32_t compressed_size = entry->compressed_size;
+    uint32_t uncompressed_size = entry->uncompressed_size;
     
     /* 根据压缩方法处理 */
     if (compression_method == ZIP_STORED) {
@@ -366,7 +362,8 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
             return ZIP_ERR_FILE;
         }
         
-        if (zlib_deflate_decompress(compressed, compressed_size, buf, uncompressed_size) < 0) {
+        int out_len = zlib_deflate_decompress(compressed, compressed_size, buf, uncompressed_size);
+        if (out_len < 0 || (size_t)out_len != uncompressed_size) {
             iot_free(compressed);
             return ZIP_ERR_FORMAT;
         }
@@ -414,6 +411,9 @@ int zip_extract_entry_to_file(zip_t *zip, int index, const char *output_path) {
     char dir_path[512];
     snprintf(dir_path, sizeof(dir_path), "%s", output_path);
     char *last_slash = strrchr(dir_path, '/');
+    if (!last_slash) {
+        last_slash = strrchr(dir_path, '\\');
+    }
     if (last_slash) {
         *last_slash = '\0';
         zip_mkdir_recursive(dir_path);
@@ -530,6 +530,9 @@ int zip_compress_file(const char *zip_path, const char **files, int file_count, 
         
         /* 使用文件路径的basename作为条目名称 */
         const char *entry_name = strrchr(file_path, '/');
+        if (!entry_name) {
+            entry_name = strrchr(file_path, '\\');
+        }
         if (entry_name) {
             entry_name++;
         } else {

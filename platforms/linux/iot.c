@@ -6,7 +6,7 @@
 #include "iot.h"
 #include "iot_wdt.h"
 
-int net_port_set_nonblocking(int fd)
+int net_port_set_nonblocking(iot_socket_t fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0) {

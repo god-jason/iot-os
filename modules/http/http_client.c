@@ -19,18 +19,48 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#if defined(_WIN32) && !defined(strncasecmp)
+#define strncasecmp _strnicmp
+#endif
+
 #define HTTP_MAX_HEADER_SIZE 8192
 #define HTTP_MAX_BODY_SIZE   1024 * 1024
 
 static const char* http_method_to_string(http_method_t method);
 static int http_build_request(http_client_t* client, char* buf, size_t buf_len);
-static int http_parse_response(http_client_t* client, http_response_t* response);
+static int http_parse_response(http_client_t* client, http_response_t* response, int finalize);
+static int http_body_is_complete(http_client_t* client, size_t body_start, size_t body_available);
+static int http_assign_body(http_client_t* client, http_response_t* response,
+                            size_t body_start, size_t body_len);
+static size_t http_decode_chunked_body(const char* src, size_t src_len,
+                                       uint8_t** out, size_t* out_len);
 static int http_parse_status_line(const char* line, int* status_code);
 static int http_parse_header(const char* header, const char* key, char* value, size_t value_len);
 static int http_connect(http_client_t* client);
 static void http_recv_data(http_client_t* client);
 static void http_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
 static int http_client_do_request(http_client_t* client);
+
+static const char* http_find_crlfcrlf(const char* buf, size_t len) {
+    if (!buf || len < 4) return NULL;
+    for (size_t i = 0; i + 3 < len; i++) {
+        if (buf[i] == '\r' && buf[i + 1] == '\n' &&
+            buf[i + 2] == '\r' && buf[i + 3] == '\n') {
+            return buf + i;
+        }
+    }
+    return NULL;
+}
+
+static const char* http_find_crlf(const char* buf, size_t len) {
+    if (!buf || len < 2) return NULL;
+    for (size_t i = 0; i + 1 < len; i++) {
+        if (buf[i] == '\r' && buf[i + 1] == '\n') {
+            return buf + i;
+        }
+    }
+    return NULL;
+}
 
 static const char* http_method_to_string(http_method_t method) {
     switch (method) {
@@ -84,51 +114,259 @@ static int http_build_request(http_client_t* client, char* buf, size_t buf_len) 
 
 static int http_parse_status_line(const char* line, int* status_code) {
     const char* p = line;
-    while (*p && !isdigit((unsigned char)*p)) p++;
-    if (!*p) return -1;
-    
+    const char* end = strstr(line, "\r\n");
+    if (!end) {
+        end = line + strlen(line);
+    }
+
+    /* 跳过协议版本 token，定位到状态码 */
+    while (p < end && *p != ' ') {
+        p++;
+    }
+    while (p < end && *p == ' ') {
+        p++;
+    }
+    if (p >= end || !isdigit((unsigned char)*p)) {
+        return -1;
+    }
+
     *status_code = atoi(p);
     return 0;
 }
 
+static int http_header_find(const char* header, const char* key, char* value, size_t value_len) {
+    if (!header || !key || !value || value_len == 0) {
+        return -1;
+    }
+
+    size_t key_len = strlen(key);
+    const char* p = header;
+
+    while (*p) {
+        const char* line_end = strstr(p, "\r\n");
+        if (!line_end) {
+            line_end = p + strlen(p);
+        }
+
+        if ((size_t)(line_end - p) >= key_len &&
+            strncasecmp(p, key, key_len) == 0 &&
+            p[key_len] == ':') {
+            const char* val = p + key_len + 1;
+            while (*val == ' ' || *val == '\t') {
+                val++;
+            }
+
+            size_t len = (size_t)(line_end - val);
+            if (len >= value_len) {
+                len = value_len - 1;
+            }
+            memcpy(value, val, len);
+            value[len] = '\0';
+            return 0;
+        }
+
+        if (*line_end == '\0') {
+            break;
+        }
+        p = line_end + 2;
+    }
+
+    return -1;
+}
+
 static int http_parse_header(const char* header, const char* key, char* value, size_t value_len) {
-    const char* p = strstr(header, key);
-    if (!p) return -1;
-    
-    p += strlen(key);
-    while (*p == ':' || *p == ' ') p++;
-    
-    const char* end = strstr(p, "\r\n");
-    if (!end) end = p + strlen(p);
-    
-    size_t len = end - p;
-    if (len >= value_len) len = value_len - 1;
-    
-    memcpy(value, p, len);
-    value[len] = '\0';
-    
+    return http_header_find(header, key, value, value_len);
+}
+
+static int http_header_has_token(const char* value, const char* token) {
+    if (!value || !token) {
+        return 0;
+    }
+
+    size_t token_len = strlen(token);
+    const char* p = value;
+
+    while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == ',') {
+            p++;
+        }
+        if (strncasecmp(p, token, token_len) == 0 &&
+            (p[token_len] == '\0' || p[token_len] == ' ' || p[token_len] == '\t' || p[token_len] == ',')) {
+            return 1;
+        }
+        while (*p && *p != ',') {
+            p++;
+        }
+        if (*p == ',') {
+            p++;
+        }
+    }
     return 0;
 }
 
-static int http_parse_response(http_client_t* client, http_response_t* response) {
+static int http_chunked_body_complete(const char* body, size_t body_len) {
+    if (!body || body_len < 5) {
+        return 0;
+    }
+
+    for (size_t i = 0; i + 4 < body_len; i++) {
+        if (body[i] == '0' && body[i + 1] == '\r' && body[i + 2] == '\n' &&
+            body[i + 3] == '\r' && body[i + 4] == '\n') {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int http_body_is_complete(http_client_t* client, size_t body_start, size_t body_available) {
+    if (!client) {
+        return 0;
+    }
+
+    if (client->chunked) {
+        return http_chunked_body_complete(client->recv_buf + body_start, body_available) ||
+               client->conn_closed;
+    }
+
+    if (client->content_length >= 0) {
+        return body_available >= (size_t)client->content_length;
+    }
+
+    return client->conn_closed;
+}
+
+static size_t http_decode_chunked_body(const char* src, size_t src_len,
+                                       uint8_t** out, size_t* out_len) {
+    if (!src || src_len == 0 || !out || !out_len) {
+        return 0;
+    }
+
+    size_t cap = src_len;
+    uint8_t* dst = (uint8_t*)iot_malloc(cap);
+    if (!dst) {
+        return 0;
+    }
+
+    size_t written = 0;
+    size_t pos = 0;
+
+    while (pos < src_len) {
+        size_t line_end = pos;
+        while (line_end + 1 < src_len && !(src[line_end] == '\r' && src[line_end + 1] == '\n')) {
+            line_end++;
+        }
+        if (line_end + 1 >= src_len) {
+            break;
+        }
+
+        unsigned long chunk_size = strtoul(src + pos, NULL, 16);
+        pos = line_end + 2;
+        if (chunk_size == 0) {
+            break;
+        }
+        if (pos + chunk_size > src_len) {
+            break;
+        }
+
+        if (written + chunk_size > cap) {
+            size_t new_cap = cap + chunk_size + 256;
+            uint8_t* new_dst = (uint8_t*)iot_realloc(dst, new_cap);
+            if (!new_dst) {
+                iot_free(dst);
+                return 0;
+            }
+            dst = new_dst;
+            cap = new_cap;
+        }
+
+        memcpy(dst + written, src + pos, chunk_size);
+        written += chunk_size;
+        pos += chunk_size;
+
+        if (pos + 1 < src_len && src[pos] == '\r' && src[pos + 1] == '\n') {
+            pos += 2;
+        }
+    }
+
+    if (written == 0) {
+        iot_free(dst);
+        *out = NULL;
+        *out_len = 0;
+        return 0;
+    }
+
+    *out = dst;
+    *out_len = written;
+    return written;
+}
+
+static int http_assign_body(http_client_t* client, http_response_t* response,
+                            size_t body_start, size_t body_len) {
+    const char* raw = client->recv_buf + body_start;
+
+    if (client->chunked) {
+        uint8_t* decoded = NULL;
+        size_t decoded_len = 0;
+        if (http_decode_chunked_body(raw, body_len, &decoded, &decoded_len) == 0 || !decoded) {
+            return -1;
+        }
+
+        if (client->response_gzip && client->options.auto_decompress && !client->options.download_path) {
+            uint8_t* decompressed = http_gzip_decompress_alloc(decoded, decoded_len, &response->body_len);
+            iot_free(decoded);
+            if (!decompressed) {
+                return -1;
+            }
+            response->body = (char*)decompressed;
+            return 0;
+        }
+
+        response->body = (char*)decoded;
+        response->body_len = decoded_len;
+        return 0;
+    }
+
+    if (client->response_gzip && client->options.auto_decompress && !client->options.download_path) {
+        uint8_t* decompressed = http_gzip_decompress_alloc((const uint8_t*)raw, body_len, &response->body_len);
+        if (!decompressed) {
+            return -1;
+        }
+        response->body = (char*)decompressed;
+        return 0;
+    }
+
+    response->body = (char*)iot_malloc(body_len + 1);
+    if (!response->body) {
+        return -1;
+    }
+    memcpy(response->body, raw, body_len);
+    response->body[body_len] = '\0';
+    response->body_len = body_len;
+    return 0;
+}
+
+static int http_parse_response(http_client_t* client, http_response_t* response, int finalize) {
     if (!client || !client->recv_buf || client->recv_len < 4) {
         return -1;
     }
     
     memset(response, 0, sizeof(http_response_t));
     
-    char* header_end = strstr(client->recv_buf, "\r\n\r\n");
+    char* header_end = (char*)http_find_crlfcrlf(client->recv_buf, client->recv_len);
     if (!header_end) {
         return -1;
     }
     
-    size_t header_len = header_end - client->recv_buf;
+    size_t header_len = (size_t)(header_end - client->recv_buf);
     
-    char* status_end = strstr(client->recv_buf, "\r\n");
+    const char* status_end = http_find_crlf(client->recv_buf, client->recv_len);
     if (status_end) {
-        *status_end = '\0';
-        http_parse_status_line(client->recv_buf, &response->status_code);
-        *status_end = '\r';
+        char status_line[256];
+        size_t status_len = (size_t)(status_end - client->recv_buf);
+        if (status_len >= sizeof(status_line)) status_len = sizeof(status_line) - 1;
+        memcpy(status_line, client->recv_buf, status_len);
+        status_line[status_len] = '\0';
+        http_parse_status_line(status_line, &response->status_code);
     }
     
     response->header = (char*)iot_malloc(header_len + 1);
@@ -147,7 +385,7 @@ static int http_parse_response(http_client_t* client, http_response_t* response)
     
     char transfer_encoding[64];
     if (http_parse_header(response->header, "Transfer-Encoding", transfer_encoding, sizeof(transfer_encoding)) == 0) {
-        client->chunked = (strstr(transfer_encoding, "chunked") != NULL);
+        client->chunked = http_header_has_token(transfer_encoding, "chunked");
     } else {
         client->chunked = 0;
     }
@@ -158,43 +396,50 @@ static int http_parse_response(http_client_t* client, http_response_t* response)
     size_t body_available = client->recv_len - body_start;
     
     if (body_available == 0) {
-        return 0;
-    }
-    
-    if (client->response_gzip && client->options.auto_decompress && !client->options.download_path) {
-        uint8_t* decompressed = http_gzip_decompress_alloc((const uint8_t*)(client->recv_buf + body_start),
-                                                           body_available, &response->body_len);
-        if (decompressed) {
-            response->body = (char*)decompressed;
-            return 0;
-        }
-    }
-    
-    if (!client->chunked && client->content_length > 0) {
-        if (body_available >= (size_t)client->content_length) {
-            response->body = (char*)iot_malloc(client->content_length + 1);
-            if (response->body) {
-                memcpy(response->body, client->recv_buf + body_start, client->content_length);
-                response->body[client->content_length] = '\0';
-                response->body_len = client->content_length;
-            }
+        if (client->content_length == 0) {
             return 0;
         }
         return -1;
-    } else if (!client->chunked && client->content_length < 0) {
-        if (body_available > 0) {
-            response->body = (char*)iot_malloc(body_available + 1);
-            if (response->body) {
-                memcpy(response->body, client->recv_buf + body_start, body_available);
-                response->body[body_available] = '\0';
-                response->body_len = body_available;
-            }
-            return 0;
-        }
-        return 0;
     }
-    
-    return -1;
+
+    size_t body_len = body_available;
+    if (!client->chunked && client->content_length >= 0) {
+        if (body_available < (size_t)client->content_length &&
+            !finalize && !client->conn_closed) {
+            return -1;
+        }
+        if (body_available > (size_t)client->content_length) {
+            body_len = (size_t)client->content_length;
+        }
+    } else if (client->chunked) {
+        if (!http_body_is_complete(client, body_start, body_available) && !finalize) {
+            return -1;
+        }
+    } else if (!finalize && !client->conn_closed) {
+        /* 无 Content-Length：gzip 正文可在连接关闭前收齐 */
+        if (client->response_gzip && client->options.auto_decompress &&
+            !client->options.download_path) {
+            if (http_assign_body(client, response, body_start, body_len) == 0) {
+                return 0;
+            }
+        }
+        return -1;
+    }
+
+    if (http_assign_body(client, response, body_start, body_len) != 0) {
+        if (finalize && client->response_gzip && client->options.auto_decompress) {
+            bool saved = client->options.auto_decompress;
+            client->options.auto_decompress = false;
+            if (http_assign_body(client, response, body_start, body_len) == 0) {
+                client->options.auto_decompress = saved;
+                return 0;
+            }
+            client->options.auto_decompress = saved;
+        }
+        return -1;
+    }
+
+    return 0;
 }
 
 static int http_connect(http_client_t* client) {
@@ -223,32 +468,25 @@ static int http_connect(http_client_t* client) {
 
 static void http_recv_data(http_client_t* client) {
     if (!client || !client->sock) return;
-    
-    char buf[4096];
-    int len;
-    
-    while ((len = net_socket_recv((sock_t)client->sock, buf, sizeof(buf))) > 0) {
-        if (client->recv_len + len > client->recv_capacity) {
-            size_t new_cap = client->recv_capacity + HTTP_MAX_HEADER_SIZE;
-            char* new_buf = (char*)iot_realloc(client->recv_buf, new_cap);
-            if (!new_buf) {
-                return;
-            }
-            client->recv_buf = new_buf;
-            client->recv_capacity = new_cap;
-        }
-        
-        memcpy(client->recv_buf + client->recv_len, buf, len);
-        client->recv_len += len;
-        
-        if (client->fd) {
-            iot_fs_write(client->fd, buf, len);
-            client->downloaded += len;
-            
+
+    size_t prev_len = client->recv_len;
+    size_t got;
+
+    while ((got = net_socket_drain_recv((sock_t)client->sock,
+                                        &client->recv_buf,
+                                        &client->recv_len,
+                                        &client->recv_capacity)) > 0) {
+        if (client->fd && client->recv_len > prev_len) {
+            size_t n = client->recv_len - prev_len;
+            iot_fs_write(client->fd, client->recv_buf + prev_len, n);
+            client->downloaded += n;
+
             if (client->options.download_cb) {
-                client->options.download_cb(client, client->downloaded, client->total_size, client->options.user_data);
+                client->options.download_cb(client, client->downloaded, client->total_size,
+                                            client->options.user_data);
             }
         }
+        prev_len = client->recv_len;
     }
 }
 
@@ -261,7 +499,7 @@ static void http_socket_callback(net_socket_t* sock, net_event_type_t event, voi
             break;
         }
         case NET_EVENT_RECV: {
-            http_recv_data(client);
+            /* 由 http_client_do_request 轮询 drain，避免与主线程互斥锁死锁 */
             break;
         }
         case NET_EVENT_DISCONNECTED: {
@@ -300,6 +538,8 @@ http_client_t* http_client_create(const http_client_options_t* options) {
     
     client->fd = NULL;
     client->content_length = -1;
+    client->chunked = 0;
+    client->conn_closed = 0;
     
     client->mutex = iot_mutex_create();
     client->sem = iot_sem_create(1, 0);
@@ -400,75 +640,133 @@ static int http_client_do_request(http_client_t* client) {
         }
         return -1;
     }
+
+    int connect_wait = 0;
+    while (net_socket_get_state((sock_t)client->sock) == NET_SOCK_STATE_CONNECTING &&
+           connect_wait < client->options.timeout_ms) {
+        iot_task_delay(10);
+        connect_wait += 10;
+    }
+    if (net_socket_get_state((sock_t)client->sock) != NET_SOCK_STATE_CONNECTED) {
+        if (client->fd) {
+            iot_fs_close(client->fd);
+            client->fd = NULL;
+        }
+        return -1;
+    }
     
     net_socket_send((sock_t)client->sock, req_buf, req_len);
     
     int wait_ms = 0;
     while (wait_ms < client->options.timeout_ms) {
         http_recv_data(client);
-        
-        if (!client->options.download_path) {
-            char* header_end = strstr(client->recv_buf, "\r\n\r\n");
+
+        iot_mutex_lock(client->mutex, -1);
+
+        if (!client->options.download_path && client->recv_buf && client->recv_len > 0) {
+            const char* header_end = http_find_crlfcrlf(client->recv_buf, client->recv_len);
             if (header_end) {
                 char header_copy[HTTP_MAX_HEADER_SIZE];
-                size_t header_len = header_end - client->recv_buf;
+                size_t header_len = (size_t)(header_end - client->recv_buf);
                 if (header_len >= HTTP_MAX_HEADER_SIZE) header_len = HTTP_MAX_HEADER_SIZE - 1;
                 memcpy(header_copy, client->recv_buf, header_len);
                 header_copy[header_len] = '\0';
-                
+
                 int status_code;
-                http_parse_status_line(client->recv_buf, &status_code);
-                
-                if ((status_code == 301 || status_code == 302) && 
+                char status_line[256];
+                const char* status_end = http_find_crlf(client->recv_buf, client->recv_len);
+                if (status_end) {
+                    size_t status_len = (size_t)(status_end - client->recv_buf);
+                    if (status_len >= sizeof(status_line)) status_len = sizeof(status_line) - 1;
+                    memcpy(status_line, client->recv_buf, status_len);
+                    status_line[status_len] = '\0';
+                    http_parse_status_line(status_line, &status_code);
+                } else {
+                    status_code = 0;
+                }
+
+                if ((status_code == 301 || status_code == 302) &&
                     client->redirect_count < client->options.max_redirects) {
                     char location[512];
                     if (http_parse_header(header_copy, "Location", location, sizeof(location)) == 0) {
                         client->redirect_count++;
-                        
+
                         if (client->recv_buf) {
                             iot_free(client->recv_buf);
                             client->recv_buf = NULL;
                             client->recv_len = 0;
                             client->recv_capacity = 0;
                         }
-                        
+
                         if (client->fd) {
                             iot_fs_close(client->fd);
                             client->fd = NULL;
                         }
-                        
+
                         http_client_options_t new_options = client->options;
                         new_options.url = location;
-                        http_client_set_options(client, &new_options);
-                        
+                        client->options = new_options;
+
+                        iot_mutex_unlock(client->mutex);
                         return http_client_do_request(client);
                     }
                 }
-                
-                if (http_parse_response(client, &client->response) == 0) {
+
+                if (http_parse_response(client, &client->response, 0) == 0) {
                     client->request_done = 1;
                     client->request_failed = 0;
+                    iot_mutex_unlock(client->mutex);
                     break;
                 }
             }
         }
-        
-        if (net_socket_get_state((sock_t)client->sock) == NET_SOCK_STATE_CLOSED) {
+
+        net_sock_state_t sock_state = net_socket_get_state((sock_t)client->sock);
+        if (sock_state == NET_SOCK_STATE_CLOSED || sock_state == NET_SOCK_STATE_ERROR) {
+            client->conn_closed = 1;
+            iot_mutex_unlock(client->mutex);
+            http_recv_data(client);
+            iot_mutex_lock(client->mutex, -1);
             if (client->options.download_path) {
                 client->request_done = 1;
-                client->request_failed = 0;
+                client->request_failed = (client->downloaded == 0);
             } else if (client->recv_len > 0) {
-                http_parse_response(client, &client->response);
+                if (http_parse_response(client, &client->response, 1) == 0) {
+                    client->request_done = 1;
+                    client->request_failed = 0;
+                } else {
+                    client->request_done = 1;
+                    client->request_failed = 1;
+                }
+            } else {
                 client->request_done = 1;
-                client->request_failed = 0;
+                client->request_failed = 1;
             }
+            iot_mutex_unlock(client->mutex);
             break;
         }
-        
+        iot_mutex_unlock(client->mutex);
+
         iot_task_delay(10);
         wait_ms += 10;
     }
-    
+
+    if (!client->request_done) {
+        http_recv_data(client);
+        client->conn_closed = 1;
+        if (client->options.download_path) {
+            client->request_done = 1;
+            client->request_failed = (client->downloaded == 0);
+        } else if (client->recv_len > 0 &&
+            http_parse_response(client, &client->response, 1) == 0) {
+            client->request_done = 1;
+            client->request_failed = 0;
+        } else {
+            client->request_done = 1;
+            client->request_failed = 1;
+        }
+    }
+
     if (client->fd) {
         iot_fs_close(client->fd);
         client->fd = NULL;
@@ -477,11 +775,6 @@ static int http_client_do_request(http_client_t* client) {
     if (client->sock) {
         net_socket_close((sock_t)client->sock);
         client->sock = NULL;
-    }
-    
-    if (!client->request_done) {
-        client->request_done = 1;
-        client->request_failed = 1;
     }
     
     return client->request_failed ? -1 : 0;
@@ -496,6 +789,9 @@ int http_client_execute(http_client_t* client) {
     client->request_failed = 0;
     client->redirect_count = 0;
     client->recv_len = 0;
+    client->content_length = -1;
+    client->chunked = 0;
+    client->conn_closed = 0;
     iot_mutex_unlock(client->mutex);
     
     int ret = http_client_do_request(client);

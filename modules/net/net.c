@@ -14,10 +14,12 @@
 #include "iot_log.h"
 
 #include "gmssl/tls.h"
+#include "gmssl/socket.h"
 
 #define NET_SOCKET_RECV_BUF_SIZE 4096
 #define NET_SOCKET_SEND_BUF_SIZE 4096
 #define NET_POLL_INTERVAL_MS     10
+#define NET_POLL_STACK_SIZE      (32 * 1024)
 
 /**
  * @brief 网络 socket 结构体
@@ -50,6 +52,7 @@ static struct net_socket* s_socket_list = NULL;  /* socket 链表头 */
 static iot_mutex_t s_socket_mutex;               /* socket 链表互斥锁 */
 static iot_task_t s_net_task;                    /* 网络轮询线程 */
 static bool s_net_running = false;               /* 网络模块运行标志 */
+static bool s_tls_lib_inited = false;            /* GmSSL socket 库是否已初始化 */
 
 static void net_socket_set_state(net_socket_t* sock, net_sock_state_t state);
 static void net_socket_trigger_event(net_socket_t* sock, net_event_type_t event);
@@ -57,6 +60,11 @@ static int net_socket_set_nonblocking(iot_socket_t fd);
 static void ssl_cleanup(net_socket_t* sock);
 static int ssl_init_client(net_socket_t* sock);
 static int ssl_do_handshake(net_socket_t* sock);
+static int net_resolve_host(const char* host, char* ip, size_t ip_len);
+static char* net_strdup(const char* s);
+static void net_ssl_config_clear(net_ssl_config_t* config);
+static void net_ssl_config_dup(net_ssl_config_t* dst, const net_ssl_config_t* src);
+static int net_ssl_ctx_setup(net_socket_t* sock, TLS_CTX* ctx);
 static void net_socket_add(net_socket_t* sock);
 static void net_socket_remove(net_socket_t* sock);
 static void net_poll_thread(void* arg);
@@ -67,7 +75,7 @@ static void net_poll_thread(void* arg);
  * @param ssl_config SSL 配置（NULL 表示不启用 SSL）
  * @param callback 事件回调函数
  * @param user_data 用户数据
- * @return socket 句柄，失败返回 INVALID_SOCKET
+ * @return socket 句柄，失败返回 NET_INVALID_SOCK
  */
 sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_config,
                         net_socket_callback_t callback, void* user_data)
@@ -75,7 +83,7 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
     struct net_socket* sock = (struct net_socket*)iot_malloc(sizeof(struct net_socket));
     if (!sock) {
         LOG_ERROR("socket create failed: out of memory");
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     memset(sock, 0, sizeof(struct net_socket));
@@ -88,14 +96,14 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
     if (fd == IOT_SOCKET_INVALID) {
         LOG_ERROR("socket create failed: socket() error");
         iot_free(sock);
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     if (net_socket_set_nonblocking(fd) != 0) {
         LOG_ERROR("socket create failed: set nonblocking error");
         iot_close(fd);
         iot_free(sock);
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     sock->fd = fd;
@@ -106,7 +114,7 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
 
     if (ssl_config) {
         sock->is_ssl = true;
-        memcpy(&sock->ssl_config, ssl_config, sizeof(net_ssl_config_t));
+        net_ssl_config_dup(&sock->ssl_config, ssl_config);
         sock->ssl_handshake_done = false;
         LOG_DEBUG("socket create with SSL enabled");
     }
@@ -114,6 +122,14 @@ sock_t net_socket_create(net_sock_type_t type, const net_ssl_config_t* ssl_confi
     sock->recv_cap = NET_SOCKET_RECV_BUF_SIZE;
     sock->recv_buf = (char*)iot_malloc(sock->recv_cap);
     sock->send_buf = (char*)iot_malloc(NET_SOCKET_SEND_BUF_SIZE);
+    if (!sock->recv_buf || !sock->send_buf) {
+        LOG_ERROR("socket create failed: out of memory");
+        if (sock->recv_buf) iot_free(sock->recv_buf);
+        if (sock->send_buf) iot_free(sock->send_buf);
+        iot_close(fd);
+        iot_free(sock);
+        return NET_INVALID_SOCK;
+    }
 
     net_socket_add(sock);
     
@@ -183,10 +199,16 @@ int net_socket_listen(sock_t sock, int backlog)
  * @param port 服务器端口号
  * @return 0 成功（可能是异步连接中），-1 失败
  */
-int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
+int net_socket_connect(sock_t sock, const char* host, uint16_t port)
 {
     net_socket_t* s = (net_socket_t*)sock;
     if (!s || s->state != NET_SOCK_STATE_OPENED || s->type != SOCK_TYPE_STREAM) {
+        return -1;
+    }
+
+    char ip_str[32];
+    if (net_resolve_host(host, ip_str, sizeof(ip_str)) != 0) {
+        LOG_ERROR("socket connect failed: dns resolve %s", host ? host : "(null)");
         return -1;
     }
 
@@ -194,7 +216,11 @@ int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = iot_inet_addr(ip);
+    addr.sin_addr.s_addr = iot_inet_addr(ip_str);
+    if (addr.sin_addr.s_addr == INADDR_NONE) {
+        LOG_ERROR("socket connect failed: invalid address %s", ip_str);
+        return -1;
+    }
 
     net_socket_set_state(s, NET_SOCK_STATE_CONNECTING);
 
@@ -228,13 +254,13 @@ int net_socket_connect(sock_t sock, const char* ip, uint16_t port)
  * @param listen_sock 监听 socket 句柄
  * @param callback 新连接的事件回调函数
  * @param user_data 用户数据
- * @return 新连接的 socket 句柄，失败返回 INVALID_SOCKET
+ * @return 新连接的 socket 句柄，失败返回 NET_INVALID_SOCK
  */
 sock_t net_socket_accept(sock_t listen_sock, net_socket_callback_t callback, void* user_data)
 {
     net_socket_t* ls = (net_socket_t*)listen_sock;
     if (!ls || ls->state != NET_SOCK_STATE_LISTENING) {
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     iot_sockaddr_in_t addr;
@@ -242,13 +268,13 @@ sock_t net_socket_accept(sock_t listen_sock, net_socket_callback_t callback, voi
 
     iot_socket_t client_fd = iot_accept(ls->fd, (iot_sockaddr_t*)&addr, &addr_len);
     if (client_fd == IOT_SOCKET_INVALID) {
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     net_socket_t* client_sock = (net_socket_t*)iot_malloc(sizeof(struct net_socket));
     if (!client_sock) {
         iot_close(client_fd);
-        return INVALID_SOCKET;
+        return NET_INVALID_SOCK;
     }
 
     memset(client_sock, 0, sizeof(struct net_socket));
@@ -263,6 +289,13 @@ sock_t net_socket_accept(sock_t listen_sock, net_socket_callback_t callback, voi
     client_sock->recv_cap = NET_SOCKET_RECV_BUF_SIZE;
     client_sock->recv_buf = (char*)iot_malloc(client_sock->recv_cap);
     client_sock->send_buf = (char*)iot_malloc(NET_SOCKET_SEND_BUF_SIZE);
+    if (!client_sock->recv_buf || !client_sock->send_buf) {
+        if (client_sock->recv_buf) iot_free(client_sock->recv_buf);
+        if (client_sock->send_buf) iot_free(client_sock->send_buf);
+        iot_close(client_fd);
+        iot_free(client_sock);
+        return NET_INVALID_SOCK;
+    }
 
     net_socket_add(client_sock);
     net_socket_trigger_event(ls, NET_EVENT_ACCEPT);
@@ -359,6 +392,7 @@ void net_socket_close(sock_t sock)
             tls_shutdown(s->tls);
         }
         ssl_cleanup(s);
+        net_ssl_config_clear(&s->ssl_config);
     }
 
     if (s->fd != IOT_SOCKET_INVALID) {
@@ -477,6 +511,39 @@ void net_socket_clear_recv_buf(sock_t sock)
     }
 }
 
+size_t net_socket_drain_recv(sock_t sock, char** buf, size_t* len, size_t* cap)
+{
+    net_socket_t* s = (net_socket_t*)sock;
+    if (!s || !s->recv_buf || s->recv_len == 0 || !buf || !len || !cap) {
+        return 0;
+    }
+
+    if (!iot_mutex_lock(s_socket_mutex, (int)0xFFFFFFFF)) {
+        return 0;
+    }
+
+    size_t chunk = s->recv_len;
+    size_t required = *len + chunk + 1;
+    if (required > *cap) {
+        size_t new_cap = required + 4096;
+        char* new_buf = (char*)iot_realloc(*buf, new_cap);
+        if (!new_buf) {
+            iot_mutex_unlock(s_socket_mutex);
+            return 0;
+        }
+        *buf = new_buf;
+        *cap = new_cap;
+    }
+
+    memcpy(*buf + *len, s->recv_buf, chunk);
+    *len += chunk;
+    (*buf)[*len] = '\0';
+    s->recv_len = 0;
+
+    iot_mutex_unlock(s_socket_mutex);
+    return chunk;
+}
+
 /**
  * @brief DNS 解析上下文
  */
@@ -546,6 +613,14 @@ int net_init(void)
         return -1;
     }
 
+    if (!s_tls_lib_inited) {
+        if (tls_socket_lib_init() == 1) {
+            s_tls_lib_inited = true;
+        } else {
+            LOG_WARN("tls_socket_lib_init failed, SSL may be unavailable");
+        }
+    }
+
     s_socket_mutex = iot_mutex_create();
     if (!s_socket_mutex) {
         iot_socket_deinit();
@@ -553,7 +628,7 @@ int net_init(void)
     }
 
     s_net_running = true;
-    s_net_task = iot_task_create("net_poll", net_poll_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
+    s_net_task = iot_task_create("net_poll", net_poll_thread, NULL, NET_POLL_STACK_SIZE, IOT_OS_PRIO_NORMAL);
     if (!s_net_task) {
         iot_mutex_delete(s_socket_mutex);
         s_net_running = false;
@@ -694,6 +769,10 @@ static void net_poll_thread(void* arg)
                         char buf[NET_SOCKET_RECV_BUF_SIZE];
                         int len = net_socket_recv((sock_t)sock, buf, sizeof(buf));
                         if (len > 0) {
+                            if (!sock->recv_buf) {
+                                sock = next;
+                                continue;
+                            }
                             if (sock->recv_len + len > sock->recv_cap) {
                                 size_t new_cap = sock->recv_cap + NET_SOCKET_RECV_BUF_SIZE;
                                 char* new_buf = (char*)iot_realloc(sock->recv_buf, new_cap);
@@ -775,6 +854,83 @@ void net_ssl_config_init(net_ssl_config_t* config)
     }
 }
 
+static char* net_strdup(const char* s)
+{
+    if (!s) {
+        return NULL;
+    }
+    size_t n = strlen(s) + 1;
+    char* p = (char*)iot_malloc(n);
+    if (p) {
+        memcpy(p, s, n);
+    }
+    return p;
+}
+
+static void net_ssl_config_clear(net_ssl_config_t* config)
+{
+    if (!config) {
+        return;
+    }
+    iot_free((void*)config->hostname);
+    iot_free((void*)config->ca_file);
+    iot_free((void*)config->cert_file);
+    iot_free((void*)config->key_file);
+    iot_free((void*)config->key_password);
+    net_ssl_config_init(config);
+}
+
+static void net_ssl_config_dup(net_ssl_config_t* dst, const net_ssl_config_t* src)
+{
+    net_ssl_config_clear(dst);
+    if (!src) {
+        return;
+    }
+    dst->protocol = src->protocol;
+    dst->verify_mode = src->verify_mode;
+    dst->handshake_timeout_ms = src->handshake_timeout_ms;
+    dst->hostname = net_strdup(src->hostname);
+    dst->ca_file = net_strdup(src->ca_file);
+    dst->cert_file = net_strdup(src->cert_file);
+    dst->key_file = net_strdup(src->key_file);
+    dst->key_password = net_strdup(src->key_password);
+}
+
+static int net_is_dotted_ipv4(const char* host)
+{
+    int a = 0;
+    int b = 0;
+    int c = 0;
+    int d = 0;
+    char tail = 0;
+
+    if (!host) {
+        return 0;
+    }
+
+    if (sscanf(host, "%d.%d.%d.%d%c", &a, &b, &c, &d, &tail) != 4) {
+        return 0;
+    }
+
+    return a >= 0 && a <= 255 && b >= 0 && b <= 255 &&
+           c >= 0 && c <= 255 && d >= 0 && d <= 255;
+}
+
+static int net_resolve_host(const char* host, char* ip, size_t ip_len)
+{
+    if (!host || !ip || ip_len == 0) {
+        return -1;
+    }
+
+    if (net_is_dotted_ipv4(host)) {
+        strncpy(ip, host, ip_len - 1);
+        ip[ip_len - 1] = '\0';
+        return 0;
+    }
+
+    return iot_dns_resolve(host, ip, ip_len);
+}
+
 /**
  * @brief 设置 socket 状态
  * @param sock socket 结构体
@@ -806,7 +962,7 @@ static void net_socket_trigger_event(net_socket_t* sock, net_event_type_t event)
  */
 static int net_socket_set_nonblocking(iot_socket_t fd)
 {
-    return net_port_set_nonblocking((int)fd);
+    return net_port_set_nonblocking(fd);
 }
 
 /**
@@ -871,6 +1027,24 @@ static void ssl_cleanup(net_socket_t* sock)
  * @param sock socket 结构体
  * @return 0 成功，-1 失败
  */
+static int net_ssl_ctx_setup(net_socket_t* sock, TLS_CTX* ctx)
+{
+    int protocol = TLS_protocol_tls12;
+    if (sock->ssl_config.protocol == NET_SSL_PROTOCOL_TLS13) {
+        protocol = TLS_protocol_tls13;
+    } else if (sock->ssl_config.protocol == NET_SSL_PROTOCOL_TLCP) {
+        protocol = TLS_protocol_tlcp;
+    }
+
+    if (protocol == TLS_protocol_tls13) {
+        return tls_ctx_set_cipher_suites(ctx, tls13_cipher_suites, tls13_cipher_suites_cnt);
+    }
+    if (protocol == TLS_protocol_tlcp) {
+        return tls_ctx_set_cipher_suites(ctx, tlcp_cipher_suites, tlcp_cipher_suites_cnt);
+    }
+    return tls_ctx_set_cipher_suites(ctx, tls12_cipher_suites, tls12_cipher_suites_cnt);
+}
+
 static int ssl_init_client(net_socket_t* sock)
 {
     int protocol = TLS_protocol_tls12;
@@ -885,9 +1059,16 @@ static int ssl_init_client(net_socket_t* sock)
         snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to create TLS context");
         return -1;
     }
+    memset(sock->tls_ctx, 0, sizeof(TLS_CTX));
 
     if (tls_ctx_init(sock->tls_ctx, protocol, TLS_client_mode) != 1) {
         snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to init TLS context");
+        ssl_cleanup(sock);
+        return -1;
+    }
+
+    if (net_ssl_ctx_setup(sock, sock->tls_ctx) != 1) {
+        snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to set TLS cipher suites");
         ssl_cleanup(sock);
         return -1;
     }
@@ -920,6 +1101,7 @@ static int ssl_init_client(net_socket_t* sock)
         ssl_cleanup(sock);
         return -1;
     }
+    memset(sock->tls, 0, sizeof(TLS_CONNECT));
 
     if (tls_init(sock->tls, sock->tls_ctx) != 1) {
         snprintf(sock->ssl_error, sizeof(sock->ssl_error), "Failed to init TLS connection");

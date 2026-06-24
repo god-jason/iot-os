@@ -11,7 +11,7 @@ target("iot")
 if is_desktop_platform then
     set_kind("binary")
     -- 使用相对于项目根目录的路径
-    set_targetdir("$(projectdir)/build/" .. plat .. "/x64/release")
+    set_targetdir("$(projectdir)/build/" .. plat .. "/x64/$(mode)")
     -- 运行时工作目录设为项目根目录
     set_rundir("$(projectdir)")
 else
@@ -32,7 +32,7 @@ if is_desktop_platform then
     add_deps("iot_core", "drivers")
 
     if plat == "windows" then
-        add_links("ws2_32", "winmm")
+        add_links("ws2_32", "winmm", "bcrypt")
     end
 
     set_policy("check.auto_ignore_flags", false)
@@ -42,7 +42,7 @@ if is_desktop_platform then
         "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_net", "-liot_lvgl", "-llvgl",
         "-liot_fonts", "-ldrivers", "-liot_core")
     if plat == "windows" then
-        add_ldflags("-lws2_32", "-lwinmm")
+        add_ldflags("-lws2_32", "-lwinmm", "-lbcrypt")
     end
     add_ldflags("-Wl,--end-group")
 

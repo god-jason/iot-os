@@ -119,11 +119,11 @@ static int luaopen_zlib_deflate_decompress(lua_State* L) {
     if (ret < 0) {
         iot_free(dst);
         lua_pushnil(L);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, "decompress failed");
         return 2;
     }
     
-    lua_pushlstring(L, (const char*)dst, ret);
+    lua_pushlstring(L, (const char*)dst, (size_t)ret);
     iot_free(dst);
     return 1;
 }

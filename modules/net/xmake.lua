@@ -9,7 +9,7 @@ target("iot_net")
     add_deps("iot_core")
 
     -- Windows 平台链接 Winsock 库，所有平台都依赖 gmssl（TLS/TLCP 功能）
-    if is_plat("windows") then
+    if is_windows_toolchain() then
         add_links("ws2_32", "winmm")
     end
     add_deps("gmssl")

@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#if defined(_WIN32) && !defined(strncasecmp)
+#define strncasecmp _strnicmp
+#endif
+
 /*===========================================================
  * 内部结构
  *===========================================================*/
@@ -291,17 +295,30 @@ uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level,
 
 bool http_gzip_check_response(const char* header) {
     if (!header) return false;
-    
-    const char* encoding = strstr(header, "Content-Encoding:");
-    if (!encoding) return false;
-    
-    encoding = strchr(encoding, ':');
-    if (!encoding) return false;
-    encoding++;
-    
-    while (*encoding == ' ' || *encoding == '\t') encoding++;
-    
-    return (strncmp(encoding, "gzip", 4) == 0);
+
+    const char* p = header;
+    while (*p) {
+        const char* line_end = strstr(p, "\r\n");
+        if (!line_end) {
+            line_end = p + strlen(p);
+        }
+
+        if ((size_t)(line_end - p) >= 17 &&
+            strncasecmp(p, "Content-Encoding:", 17) == 0) {
+            const char* encoding = p + 17;
+            while (*encoding == ' ' || *encoding == '\t') {
+                encoding++;
+            }
+            return (strncasecmp(encoding, "gzip", 4) == 0);
+        }
+
+        if (*line_end == '\0') {
+            break;
+        }
+        p = line_end + 2;
+    }
+
+    return false;
 }
 
 int http_gzip_build_request_header(char* buf, size_t buf_len) {

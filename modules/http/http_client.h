@@ -98,6 +98,7 @@ struct http_client {
     int redirect_count;
     int content_length;
     int chunked;
+    int conn_closed;
     
     iot_fs_file_t fd;
     size_t downloaded;

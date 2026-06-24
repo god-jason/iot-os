@@ -139,15 +139,19 @@ static void mqtt_event_callback(mqtt_client_t* client, mqtt_event_type_t event, 
         params_push_int(params, 1);
         if (ctx->connect_callback_ud) {
             iot_rtos_call(ctx->connect_callback_ud, params);
+            params = NULL;
         }
     } else if (event == MQTT_EVENT_DISCONNECTED || event == MQTT_EVENT_ERROR) {
         params_push_int(params, 0);
         if (ctx->close_callback_ud) {
             iot_rtos_call(ctx->close_callback_ud, params);
+            params = NULL;
         }
     }
-    
-    params_destroy(params);
+
+    if (params) {
+        params_destroy(params);
+    }
 }
 
 static void mqtt_message_callback(const char* topic, const uint8_t* payload,
@@ -172,8 +176,11 @@ static void mqtt_message_callback(const char* topic, const uint8_t* payload,
             params_push_int(params, qos);
             params_push_int(params, retain ? 1 : 0);
             
-            iot_rtos_call(entry->callback_ud, params);
-            params_destroy(params);
+            if (entry->callback_ud) {
+                iot_rtos_call(entry->callback_ud, params);
+            } else {
+                params_destroy(params);
+            }
         }
         entry = entry->next;
     }
@@ -571,6 +578,7 @@ LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, mqtt_client_methods, 0);
-    
+    lua_pop(L, 1);
+
     return 1;
 }

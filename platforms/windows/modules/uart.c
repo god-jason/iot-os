@@ -13,6 +13,7 @@
 #include <windows.h>
 
 #define IOT_UART_MAX   4
+#define IOT_UART_POLL_MS 20
 
 typedef struct {
     int inited;
@@ -26,56 +27,47 @@ static iot_mutex_t g_uart_mutex = NULL;
 static int g_uart_thread_running = 0;
 static iot_task_t g_uart_thread = NULL;
 
-static void uart_event_cb(int id) {
-    if (id < 0 || id >= IOT_UART_MAX) return;
-    
-    LOG_TRACE("event: id=%d", id);
-    
-    if (g_uart_ctx[id].callback_ud) {
-        iot_callback_call(g_uart_ctx[id].callback_ud, NULL);
+static void uart_event_cb(int id, void* callback_ud) {
+    if (id < 0 || id >= IOT_UART_MAX || !callback_ud) {
+        return;
     }
+
+    LOG_TRACE("event: id=%d", id);
+    iot_callback_call(callback_ud, NULL);
 }
 
-static DWORD WINAPI uart_read_thread(LPVOID arg) {
-    HANDLE events[IOT_UART_MAX + 1];
-    int event_count;
-    
+static void uart_read_thread(void* arg) {
+    (void)arg;
+
     LOG_DEBUG("read thread started");
-    
+
     while (g_uart_thread_running) {
+        int fired = 0;
+
         iot_mutex_lock(g_uart_mutex, -1);
-        
-        event_count = 0;
         for (int i = 0; i < IOT_UART_MAX; i++) {
-            if (g_uart_ctx[i].inited && g_uart_ctx[i].hCom != INVALID_HANDLE_VALUE) {
-                events[event_count++] = g_uart_ctx[i].hCom;
+            if (!g_uart_ctx[i].inited || g_uart_ctx[i].hCom == INVALID_HANDLE_VALUE) {
+                continue;
+            }
+
+            COMSTAT stat;
+            DWORD errors = 0;
+            if (ClearCommError(g_uart_ctx[i].hCom, &errors, &stat) && stat.cbInQue > 0) {
+                void* cb = g_uart_ctx[i].callback_ud;
+                iot_mutex_unlock(g_uart_mutex);
+                uart_event_cb(i, cb);
+                fired = 1;
+                iot_mutex_lock(g_uart_mutex, -1);
             }
         }
-        
         iot_mutex_unlock(g_uart_mutex);
-        
-        if (event_count == 0) {
-            iot_task_delay(10);
-            continue;
-        }
-        
-        DWORD ret = WaitForMultipleObjects(event_count, events, FALSE, 10);
-        if (ret == WAIT_TIMEOUT) continue;
-        if (ret == WAIT_FAILED) continue;
-        
-        int idx = ret - WAIT_OBJECT_0;
-        if (idx < 0 || idx >= event_count) continue;
-        
-        for (int i = 0; i < IOT_UART_MAX; i++) {
-            if (g_uart_ctx[i].inited && g_uart_ctx[i].hCom == events[idx]) {
-                uart_event_cb(i);
-                break;
-            }
+
+        if (!fired) {
+            iot_task_delay(IOT_UART_POLL_MS);
         }
     }
-    
+
     LOG_DEBUG("read thread stopped");
-    return 0;
 }
 
 static void uart_start_read_thread(void) {
@@ -88,7 +80,7 @@ static void uart_start_read_thread(void) {
     }
     
     g_uart_thread_running = 1;
-    g_uart_thread = iot_task_create("uart_read", uart_read_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
+    g_uart_thread = iot_task_create("uart_read", uart_read_thread, NULL, 8192, IOT_OS_PRIO_NORMAL);
 }
 
 static int luaopen_uart_setup(lua_State* L) {
@@ -106,10 +98,21 @@ static int luaopen_uart_setup(lua_State* L) {
         lua_pushboolean(L, 0);
         return 1;
     }
-    
+
+    if (!g_uart_mutex) {
+        g_uart_mutex = iot_mutex_create();
+    }
+
+    iot_mutex_lock(g_uart_mutex, -1);
+
     if (g_uart_ctx[id].inited) {
         LOG_WARN("setup: closing existing port id=%d", id);
+        if (g_uart_ctx[id].callback_ud) {
+            iot_callback_free(g_uart_ctx[id].callback_ud);
+            g_uart_ctx[id].callback_ud = NULL;
+        }
         CloseHandle(g_uart_ctx[id].hCom);
+        g_uart_ctx[id].hCom = INVALID_HANDLE_VALUE;
         g_uart_ctx[id].inited = 0;
     }
     
@@ -120,11 +123,12 @@ static int luaopen_uart_setup(lua_State* L) {
                              0,
                              NULL,
                              OPEN_EXISTING,
-                             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+                             0,
                              NULL);
     
     if (hCom == INVALID_HANDLE_VALUE) {
         LOG_ERROR("setup failed: cannot open %s", g_uart_ctx[id].device);
+        iot_mutex_unlock(g_uart_mutex);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -136,6 +140,7 @@ static int luaopen_uart_setup(lua_State* L) {
     if (!GetCommState(hCom, &dcb)) {
         LOG_ERROR("setup failed: GetCommState error");
         CloseHandle(hCom);
+        iot_mutex_unlock(g_uart_mutex);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -162,6 +167,7 @@ static int luaopen_uart_setup(lua_State* L) {
     if (!SetCommState(hCom, &dcb)) {
         LOG_ERROR("setup failed: SetCommState error");
         CloseHandle(hCom);
+        iot_mutex_unlock(g_uart_mutex);
         lua_pushboolean(L, 0);
         return 1;
     }
@@ -180,7 +186,9 @@ static int luaopen_uart_setup(lua_State* L) {
     
     g_uart_ctx[id].hCom = hCom;
     g_uart_ctx[id].inited = 1;
-    
+
+    iot_mutex_unlock(g_uart_mutex);
+
     uart_start_read_thread();
     
     LOG_INFO("setup success: %s at %d bps", g_uart_ctx[id].device, baudrate);
@@ -204,6 +212,12 @@ static int luaopen_uart_close(lua_State* L) {
         lua_pushboolean(L, 1);
         return 1;
     }
+
+    if (!g_uart_mutex) {
+        g_uart_mutex = iot_mutex_create();
+    }
+
+    iot_mutex_lock(g_uart_mutex, -1);
     
     if (g_uart_ctx[id].callback_ud) {
         iot_callback_free(g_uart_ctx[id].callback_ud);
@@ -211,7 +225,10 @@ static int luaopen_uart_close(lua_State* L) {
     }
     
     CloseHandle(g_uart_ctx[id].hCom);
+    g_uart_ctx[id].hCom = INVALID_HANDLE_VALUE;
     g_uart_ctx[id].inited = 0;
+
+    iot_mutex_unlock(g_uart_mutex);
     
     LOG_INFO("closed: id=%d", id);
     lua_pushboolean(L, 1);

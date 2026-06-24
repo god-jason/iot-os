@@ -79,7 +79,9 @@ int mqtt_manager_remove_client(mqtt_client_t* client) {
     if (!client) return -1;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
-    list_del(&client->list_node);
+    if (!list_empty(&client->list_node)) {
+        list_del_init(&client->list_node);
+    }
     iot_mutex_unlock(s_mqtt_mutex);
 
     return 0;

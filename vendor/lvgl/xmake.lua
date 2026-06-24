@@ -48,5 +48,5 @@ target("lvgl")
     -- 编译选项
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
     
-    -- 定义 LVGL 配置
-    add_defines("LV_CONF_INCLUDE_SIMPLE")
+    -- 使用 lv_conf_internal.h 内建默认配置（与 modules/lvgl/lvgl_port.h 一致）
+    add_defines("LV_CONF_SKIP")
