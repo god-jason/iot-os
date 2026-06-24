@@ -12,6 +12,7 @@
 
 #include "gzip.h"
 #include "deflate.h"
+#include "crc32.h"
 #include "iot.h"
 #include <string.h>
 
@@ -79,8 +80,8 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     size_t compressed_len = (src + src_len - 8) - p;
     
     /* 调用DEFLATE核心解压 */
-    int out_len = zlib_deflate_decompress(p, compressed_len, dst, *dst_len);
-    if (out_len < 0) {
+    size_t out_len = inflate_decompress(p, compressed_len, dst, *dst_len);
+    if (out_len == 0) {
         return GZIP_ERR_FORMAT;
     }
     
@@ -90,7 +91,7 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     uint32_t orig_size = p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
     
     /* 验证CRC32 */
-    uint32_t computed_crc = zlib_crc32(0xffffffff, dst, (size_t)out_len) ^ 0xffffffff;
+    uint32_t computed_crc = crc32_update(0xffffffff, dst, (size_t)out_len) ^ 0xffffffff;
     if (computed_crc != crc32 || (uint32_t)out_len != orig_size) {
         return GZIP_ERR_CRC;
     }
@@ -118,7 +119,7 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
     }
     
     /* 估算最大压缩大小 */
-    size_t max_compressed_len = zlib_deflate_bound(src_len);
+    size_t max_compressed_len = src_len * 4 + 128;  /* LZ77 worst case + overhead */
     size_t total_len = 10 + max_compressed_len + 8;
     
     if (*dst_len < total_len) {
@@ -142,15 +143,14 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
     p += 10;
     
     /* 计算CRC32校验码 */
-    uint32_t crc = zlib_crc32(0xffffffff, src, src_len) ^ 0xffffffff;
+    uint32_t crc = crc32_update(0xffffffff, src, src_len) ^ 0xffffffff;
     
     /* 压缩数据 */
-    size_t compressed_len = *dst_len - 18;
-    int ret = zlib_deflate_compress(src, src_len, p, &compressed_len, level);
-    if (ret != ZLIB_DEFLATE_OK) {
+    size_t compressed = deflate_compress(src, src_len, p, *dst_len - 18);
+    if (compressed == 0) {
         return GZIP_ERR_MEM;
     }
-    p += compressed_len;
+    p += compressed;
     
     /* 写入CRC32（4字节） */
     *p++ = crc & 0xff;
@@ -295,7 +295,7 @@ int gzip_compress_file(const char *src_path, const char *dst_path, int level) {
     iot_fs_close(src_fd);
     
     /* 分配压缩缓冲区 */
-    size_t dst_size = zlib_deflate_bound(file_size) + 18;
+    size_t dst_size = file_size * 4 + 128 + 18;  /* LZ77 worst case + overhead + gzip header/trailer */
     uint8_t *dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);

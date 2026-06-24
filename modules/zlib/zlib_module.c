@@ -24,6 +24,8 @@
 #include "gzip.h"
 #include "zip.h"
 #include "tar.h"
+#include "crc32.h"
+#include "adler32.h"
 
 /*===========================================================
  * 辅助函数
@@ -65,13 +67,14 @@ static const char* zlib_error_str(int err) {
 static int luaopen_zlib_deflate_compress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
-    int level = (int)luaL_optinteger(L, 2, ZLIB_DEFLATE_LEVEL_DEFAULT);
+    int level = (int)luaL_optinteger(L, 2, 6);  /* default level 6 */
     
-    if (level < 1) level = ZLIB_DEFLATE_LEVEL_FAST;
-    if (level > 9) level = ZLIB_DEFLATE_LEVEL_BEST;
+    if (level < 1) level = 1;
+    if (level > 9) level = 9;
+    (void)level; /* currently uses fixed compression */
     
     /* 计算输出缓冲区大小 */
-    size_t dst_len = zlib_deflate_bound(src_len);
+    size_t dst_len = src_len * 4 + 128;  /* LZ77 worst case + overhead */
     uint8_t* dst = (uint8_t*)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
@@ -79,13 +82,12 @@ static int luaopen_zlib_deflate_compress(lua_State* L) {
         return 2;
     }
     
-    size_t out_len = dst_len;
-    int ret = zlib_deflate_compress((const uint8_t*)src, src_len, dst, &out_len, level);
+    size_t out_len = deflate_compress((const uint8_t*)src, src_len, dst, dst_len);
     
-    if (ret != ZLIB_DEFLATE_OK) {
+    if (out_len == 0) {
         iot_free(dst);
         lua_pushnil(L);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, "compress error");
         return 2;
     }
     
@@ -114,16 +116,16 @@ static int luaopen_zlib_deflate_decompress(lua_State* L) {
         return 2;
     }
     
-    int ret = zlib_deflate_decompress((const uint8_t*)src, src_len, dst, dst_len);
+    size_t out_len = inflate_decompress((const uint8_t*)src, src_len, dst, dst_len);
     
-    if (ret < 0) {
+    if (out_len == 0) {
         iot_free(dst);
         lua_pushnil(L);
         lua_pushstring(L, "decompress failed");
         return 2;
     }
     
-    lua_pushlstring(L, (const char*)dst, (size_t)ret);
+    lua_pushlstring(L, (const char*)dst, out_len);
     iot_free(dst);
     return 1;
 }
@@ -139,7 +141,7 @@ static int luaopen_zlib_deflate_adler32(lua_State* L) {
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t adler = (uint32_t)luaL_optinteger(L, 2, 1);
     
-    uint32_t result = zlib_adler32(adler, (const uint8_t*)data, len);
+    uint32_t result = adler32_update(adler, (const uint8_t*)data, len);
     lua_pushinteger(L, result);
     return 1;
 }
@@ -155,7 +157,7 @@ static int luaopen_zlib_deflate_crc32(lua_State* L) {
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t crc = (uint32_t)luaL_optinteger(L, 2, 0);
     
-    uint32_t result = zlib_crc32(crc, (const uint8_t*)data, len);
+    uint32_t result = crc32_update(crc, (const uint8_t*)data, len);
     lua_pushinteger(L, result);
     return 1;
 }

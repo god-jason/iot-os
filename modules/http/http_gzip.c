@@ -6,6 +6,7 @@
 #include "http_gzip.h"
 #include "../zlib/zlib.h"
 #include "../zlib/gzip.h"
+#include "../zlib/deflate.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -63,8 +64,9 @@ static int zlib_inflate_init(void** strm, int windowbits) {
     
     memset(zs, 0, sizeof(z_stream_t));
     
-    int ret = zlib_deflate_decompress(NULL, 0, NULL, 0);
-    (void)ret;
+    /* 初始化测试 */
+    size_t test = inflate_decompress(NULL, 0, NULL, 0);
+    (void)test;
     
     zs->strm = malloc(128);
     if (!zs->strm) {
@@ -84,10 +86,10 @@ static int zlib_inflate(void* strm, int flush) {
     size_t src_len = zs->avail_in;
     size_t dst_len = zs->avail_out;
     
-    int ret = zlib_deflate_decompress(zs->next_in, src_len, zs->next_out, dst_len);
+    size_t ret = inflate_decompress(zs->next_in, src_len, zs->next_out, dst_len);
     
-    if (ret < 0) {
-        return ret;
+    if (ret == 0) {
+        return -1;
     }
     
     zs->next_in += src_len - zs->avail_in;
@@ -128,15 +130,16 @@ static int zlib_deflate_init(void** strm, int level) {
 
 static int http_zlib_deflate_compress(void* strm, const uint8_t* src, size_t src_len,
                                   uint8_t* dst, size_t dst_cap, int level, size_t* produced) {
-    size_t dst_len = dst_cap;
     (void)strm;
-    int ret = zlib_deflate_compress(src, src_len, dst, &dst_len, level);
+    (void)level;
     
-    if (ret == 0) {
-        if (produced) *produced = dst_len;
+    size_t ret = deflate_compress(src, src_len, dst, dst_cap);
+    
+    if (ret > 0) {
+        if (produced) *produced = ret;
         return 0;
     }
-    return ret;
+    return -1;
 }
 
 static int zlib_deflate_end(void* strm) {
@@ -270,7 +273,7 @@ int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t 
 uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len) {
     if (!src || src_len == 0) return NULL;
     
-    size_t bound = zlib_deflate_bound(src_len) + 64;
+    size_t bound = src_len * 4 + 128 + 64;  /* LZ77 worst case + overhead + gzip header/trailer */
     
     uint8_t* dst = (uint8_t*)malloc(bound);
     if (!dst) return NULL;

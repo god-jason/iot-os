@@ -12,6 +12,7 @@
 
 #include "zip.h"
 #include "deflate.h"
+#include "crc32.h"
 #include "iot.h"
 #include "iot_log.h"
 #include <string.h>
@@ -343,26 +344,6 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
     uint32_t compressed_size = entry->compressed_size;
     uint32_t uncompressed_size = entry->uncompressed_size;
     
-    LOG_DEBUG("Extract entry: method=%d, compressed=%u, uncompressed=%u",
-              compression_method, compressed_size, uncompressed_size);
-    
-    /* 读取本地文件头标志位 */
-    uint8_t flags = header[6];
-    LOG_DEBUG("ZIP flags: 0x%02X (bit3=%d)", flags, (flags >> 3) & 1);
-    
-    /* 调试：打印前16字节的十六进制值 */
-    uint8_t first_bytes[16];
-    iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
-    iot_fs_read(fd, first_bytes, 16);
-    LOG_DEBUG("First 16 bytes: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
-              first_bytes[0], first_bytes[1], first_bytes[2], first_bytes[3],
-              first_bytes[4], first_bytes[5], first_bytes[6], first_bytes[7],
-              first_bytes[8], first_bytes[9], first_bytes[10], first_bytes[11],
-              first_bytes[12], first_bytes[13], first_bytes[14], first_bytes[15]);
-    
-    /* 重新定位到数据开始位置 */
-    iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
-    
     /* 根据压缩方法处理 */
     if (compression_method == ZIP_STORED) {
         /* 无压缩：直接复制 */
@@ -383,11 +364,9 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
             return ZIP_ERR_FILE;
         }
         
-        int out_len = zlib_deflate_decompress(compressed, compressed_size, buf, uncompressed_size);
-        LOG_DEBUG("DEFLATE decompress: compressed=%u, uncompressed=%u, out_len=%d", 
-                  compressed_size, uncompressed_size, out_len);
-        if (out_len < 0 || (size_t)out_len != uncompressed_size) {
-            LOG_ERROR("DEFLATE decompress failed: expected=%u, got=%d", uncompressed_size, out_len);
+        size_t out_len = inflate_decompress(compressed, compressed_size, buf, uncompressed_size);
+        if (out_len == 0 || out_len != uncompressed_size) {
+            LOG_ERROR("DEFLATE decompress failed: expected=%u, got=%u", uncompressed_size, out_len);
             iot_free(compressed);
             return ZIP_ERR_FORMAT;
         }
@@ -397,7 +376,7 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
     }
     
     /* 验证CRC32 */
-    uint32_t computed_crc = zlib_crc32(0xffffffff, buf, uncompressed_size) ^ 0xffffffff;
+    uint32_t computed_crc = crc32_update(0xffffffff, buf, uncompressed_size) ^ 0xffffffff;
     if (computed_crc != crc32) {
         return ZIP_ERR_CRC;
     }
@@ -655,24 +634,25 @@ int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char 
     uint16_t compression_method = (level == 0) ? ZIP_STORED : ZIP_DEFLATED;
     
     /* 计算CRC32 */
-    uint32_t crc32 = zlib_crc32(0xffffffff, data, data_len) ^ 0xffffffff;
+    uint32_t crc32 = crc32_update(0xffffffff, data, data_len) ^ 0xffffffff;
     
     /* 压缩数据 */
     size_t compressed_size = data_len;
     uint8_t *compressed_data = NULL;
     
     if (compression_method == ZIP_DEFLATED && data_len > 0) {
-        compressed_size = zlib_deflate_bound(data_len);
-        compressed_data = (uint8_t *)iot_malloc(compressed_size);
+        size_t max_compressed = data_len * 4 + 128;  /* LZ77 worst case + overhead */
+        compressed_data = (uint8_t *)iot_malloc(max_compressed);
         if (!compressed_data) {
             return ZIP_ERR_MEM;
         }
         
-        int ret = zlib_deflate_compress(data, data_len, compressed_data, &compressed_size, level);
-        if (ret != ZLIB_DEFLATE_OK) {
+        size_t compressed = deflate_compress(data, data_len, compressed_data, max_compressed);
+        if (compressed == 0) {
             iot_free(compressed_data);
             return ZIP_ERR_MEM;
         }
+        compressed_size = compressed;
     } else {
         compressed_data = (uint8_t *)data;
         compressed_size = data_len;

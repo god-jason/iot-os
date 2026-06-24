@@ -93,7 +93,7 @@ void huffman_encode_fixed(bitstream_t *bs,
 
     for (size_t i = 0; i < n; i++) {
 
-        if (tokens[i].type == LZ77_TOKEN_LIT) {
+        if (tokens[i].type == LZ77_LIT) {
 
             emit_lit(bs, tokens[i].lit);
         }

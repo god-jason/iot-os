@@ -6,7 +6,6 @@
  * - 哈希算法: MD5, SHA1, SHA224, SHA256, SHA384, SHA512, SM3
  * - HMAC: 基于各种哈希算法的消息认证码
  * - 对称加密: AES, SM4 (ECB, CBC, CTR, GCM 模式)
- * - 校验算法: CRC16, CRC32, Adler32
  * - 编码转换: Hex, Base64
  * - 证书操作: X509 证书解析和验证
  * - 密钥派生: PBKDF2
@@ -57,13 +56,6 @@ typedef enum {
     CRYPTO_CIPHER_SM4_CTR,
     CRYPTO_CIPHER_SM4_GCM
 } crypto_cipher_type_t;
-
-/* 校验算法类型 */
-typedef enum {
-    CRYPTO_CHECKSUM_CRC16 = 0,
-    CRYPTO_CHECKSUM_CRC32,
-    CRYPTO_CHECKSUM_ADLER32
-} crypto_checksum_type_t;
 
 /* X509 证书信息 */
 typedef struct crypto_x509_cert crypto_x509_cert_t;
@@ -236,48 +228,6 @@ int crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outl
  * @return 0 成功，-1 失败
  */
 int crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outlen);
-
-/*===========================================================
- * 校验算法接口
- *===========================================================*/
-
-/**
- * @brief 获取校验算法名称
- * @param type 校验类型
- * @return 算法名称
- */
-const char* crypto_checksum_name(crypto_checksum_type_t type);
-
-/**
- * @brief 计算校验值 (一步完成)
- * @param type 校验类型
- * @param data 输入数据
- * @param datalen 数据长度
- * @return 校验值，失败返回 0
- */
-uint32_t crypto_checksum(crypto_checksum_type_t type, const uint8_t* data, size_t datalen);
-
-/**
- * @brief CRC16 计算 (常用 CRC16/MODBUS 变种)
- * @param data 输入数据
- * @param datalen 数据长度
- * @param init 初值
- * @param xorout 最终异或值
- * @param rev 反转标志
- * @return CRC16 值
- */
-uint16_t crypto_crc16(const uint8_t* data, size_t datalen, uint16_t init, uint16_t xorout, int rev);
-
-/**
- * @brief CRC32 计算 (常用 CRC32/MPEG2 变种)
- * @param data 输入数据
- * @param datalen 数据长度
- * @param init 初值
- * @param xorout 最终异或值
- * @param rev 反转标志
- * @return CRC32 值
- */
-uint32_t crypto_crc32(const uint8_t* data, size_t datalen, uint32_t init, uint32_t xorout, int rev);
 
 /*===========================================================
  * Base64 编解码接口

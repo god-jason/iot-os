@@ -586,87 +586,6 @@ static int luaopen_crypto_bin2hex(lua_State* L) {
 }
 
 /*===========================================================
- * 校验算法 (CRC, Adler32)
- *===========================================================*/
-
-/**
- * @brief 计算数据校验和
- * @api crypto.checksum(type, data)
- * @string type 校验算法类型: "crc16", "crc32", "adler32"
- * @string data 输入数据
- * @return 校验值的十六进制字符串
- */
-static int luaopen_crypto_checksum(lua_State* L) {
-    const char* type = luaL_checkstring(L, 1);
-    size_t datalen;
-    const char* data = luaL_checklstring(L, 2, &datalen);
-
-    crypto_checksum_type_t checksum_type;
-    if (strcmp(type, "crc16") == 0) {
-        checksum_type = CRYPTO_CHECKSUM_CRC16;
-    } else if (strcmp(type, "crc32") == 0) {
-        checksum_type = CRYPTO_CHECKSUM_CRC32;
-    } else if (strcmp(type, "adler32") == 0) {
-        checksum_type = CRYPTO_CHECKSUM_ADLER32;
-    } else {
-        lua_pushnil(L);
-        lua_pushstring(L, "unsupported checksum type, use crc16/crc32/adler32");
-        return 2;
-    }
-
-    uint32_t result = crypto_checksum(checksum_type, (const uint8_t*)data, datalen);
-
-    /* 返回十六进制格式 */
-    char hex[16];
-    if (checksum_type == CRYPTO_CHECKSUM_CRC16) {
-        snprintf(hex, sizeof(hex), "%04X", result);
-    } else {
-        snprintf(hex, sizeof(hex), "%08X", result);
-    }
-
-    lua_pushstring(L, hex);
-    return 1;
-}
-
-/**
- * @brief 计算 CRC16
- * @api crypto.crc16(data, init, xorout)
- * @string data 输入数据
- * @int init 初始值，默认为 0xFFFF
- * @int xorout 输出异或值，默认为 0x0000
- * @return CRC16 值
- */
-static int luaopen_crypto_crc16(lua_State* L) {
-    size_t datalen;
-    const char* data = luaL_checklstring(L, 1, &datalen);
-    uint16_t init = (uint16_t)luaL_optinteger(L, 2, 0xFFFF);
-    uint16_t xorout = (uint16_t)luaL_optinteger(L, 3, 0x0000);
-
-    uint16_t result = crypto_crc16((const uint8_t*)data, datalen, init, xorout, 1);
-    lua_pushinteger(L, result);
-    return 1;
-}
-
-/**
- * @brief 计算 CRC32
- * @api crypto.crc32(data, init, xorout)
- * @string data 输入数据
- * @int init 初始值，默认为 0xFFFFFFFF
- * @int xorout 输出异或值，默认为 0x00000000
- * @return CRC32 值
- */
-static int luaopen_crypto_crc32(lua_State* L) {
-    size_t datalen;
-    const char* data = luaL_checklstring(L, 1, &datalen);
-    uint32_t init = (uint32_t)luaL_optinteger(L, 2, 0xFFFFFFFF);
-    uint32_t xorout = (uint32_t)luaL_optinteger(L, 3, 0x00000000);
-
-    uint32_t result = crypto_crc32((const uint8_t*)data, datalen, init, xorout, 1);
-    lua_pushinteger(L, result);
-    return 1;
-}
-
-/*===========================================================
  * Base64 编解码
  *===========================================================*/
 
@@ -966,9 +885,6 @@ static const luaL_Reg crypto_methods[] = {
     { "rand",         luaopen_crypto_rand },
     { "hex2bin",      luaopen_crypto_hex2bin },
     { "bin2hex",      luaopen_crypto_bin2hex },
-    { "checksum",     luaopen_crypto_checksum },
-    { "crc16",        luaopen_crypto_crc16 },
-    { "crc32",        luaopen_crypto_crc32 },
     { "base64_encode",luaopen_crypto_base64_encode },
     { "base64_decode",luaopen_crypto_base64_decode },
     { "x509_parse_pem",luaopen_crypto_x509_parse_pem },
@@ -1005,11 +921,6 @@ LUAMOD_API int luaopen_crypto_register(lua_State* L) {
     lua_pushstring(L, "sm4-cbc"); lua_setfield(L, -2, "SM4_CBC");
     lua_pushstring(L, "sm4-ctr"); lua_setfield(L, -2, "SM4_CTR");
     lua_pushstring(L, "sm4-gcm"); lua_setfield(L, -2, "SM4_GCM");
-
-    /* 校验算法常量 */
-    lua_pushstring(L, "crc16");   lua_setfield(L, -2, "CHECKSUM_CRC16");
-    lua_pushstring(L, "crc32");   lua_setfield(L, -2, "CHECKSUM_CRC32");
-    lua_pushstring(L, "adler32"); lua_setfield(L, -2, "CHECKSUM_ADLER32");
 
     /* 注册 X509 证书类型元表 */
     luaL_newmetatable(L, X509_CERT_METATABLE);
