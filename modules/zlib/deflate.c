@@ -13,6 +13,7 @@
  */
 
 #include "deflate.h"
+#include "iot_log.h"
 #include <string.h>
 
 /* ==================== ADLER32 校验 ==================== */
@@ -248,6 +249,8 @@ static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, siz
     int btype = zlib_deflate_read_bits(s, 2);
     if (btype < 0) return -1;
     
+    LOG_DEBUG("Block: bfinal=%d, btype=%d, remaining=%d", *bfinal, btype, (int)(s->end - s->ptr));
+    
     /* 无压缩块：直接复制数据 */
     if (btype == 0) {
         /* read_bits 读完块头后 ptr 已在 LEN 起始处，仅丢弃位缓冲剩余位 */
@@ -266,6 +269,12 @@ static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, siz
         return 0;
     }
     
+    /* 无效的块类型 */
+    if (btype == 3) {
+        LOG_ERROR("Invalid block type: 3 (reserved)");
+        return -1;
+    }
+    
     /* Huffman编码块（固定或动态） */
     if (btype == 1 || btype == 2) {
         /* 读取码长信息 */
@@ -274,13 +283,16 @@ static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, siz
         int hclen = zlib_deflate_read_bits(s, 4) + 4;      /* 码长码数量 */
         if (hlit < 0 || hdist < 0 || hclen < 0) return -1;
         
+        LOG_DEBUG("Huffman: hlit=%d, hdist=%d, hclen=%d", hlit, hdist, hclen);
+        
         /* 读取码长码表的长度 */
+        /* DEFLATE 标准规定的码长码顺序：16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 */
+        static const int code_length_order[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
         uint8_t clen[19] = {0};
         for (int i = 0; i < hclen; i++) {
             int v = zlib_deflate_read_bits(s, 3);
             if (v < 0) return -1;
-            int idx = (i * 4 + (3 - i % 4)) % 19;
-            clen[idx] = v;
+            clen[code_length_order[i]] = v;
         }
         
         /* 构建码长Huffman表 */
@@ -291,7 +303,10 @@ static int zlib_deflate_inflate_block(zlib_deflate_state_t *s, uint8_t *out, siz
         uint8_t litlen_len[288] = {0};
         for (int i = 0; i < hlit; ) {
             int sym = zlib_deflate_huffman_decode(s, &ctable, 256);
-            if (sym < 0) return -1;
+            if (sym < 0) {
+                LOG_ERROR("Huffman decode failed at litlen i=%d", i);
+                return -1;
+            }
             if (sym < 16) {
                 /* 直接存储长度 */
                 litlen_len[i++] = sym;

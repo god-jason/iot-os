@@ -161,7 +161,7 @@ static void check_and_extract_app_zip(void)
 /**
  * @brief Lua Task 主函数
  */
-static void iot_lua_task(void* argument)
+void iot_lua_task(void* argument)
 {
     (void)argument;
 
@@ -218,6 +218,7 @@ static void iot_lua_task(void* argument)
     if(!iot_load_lua_file(g_lua_state, MAIN_LUA_PATH))
     {
         LOG_ERROR("load main failed");
+        return;
     }
 
     /* 运行 iot.run() */
@@ -236,8 +237,6 @@ static void iot_lua_task(void* argument)
     LOG_DEBUG("exiting");
     lua_close(g_lua_state);
     g_lua_state = NULL;
-
-    iot_task_exit();
 }
 
 /**

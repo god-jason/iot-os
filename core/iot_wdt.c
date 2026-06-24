@@ -191,6 +191,9 @@ bool iot_wdt_stop(void) {
 
     iot_mutex_lock(g_wdt.mutex, IOT_WDT_MUTEX_TIMEOUT);
 
+    /* 设置超时标志，终止 iot_wdt_wait 循环 */
+    g_wdt.timeout = true;
+
     /* 停止定时器 */
     g_wdt.started = false;
     if (g_wdt.timer != NULL) {

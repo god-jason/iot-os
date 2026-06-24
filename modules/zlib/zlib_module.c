@@ -316,10 +316,19 @@ static int luaopen_zlib_zip_decompress_file(lua_State* L) {
     int ret = zip_decompress_file(zip_path, dest_dir);
     if (ret != ZIP_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        /* ZIP 错误码单独处理 */
+        const char* err_msg;
+        switch (ret) {
+            case ZIP_ERR_MEM:       err_msg = "memory error"; break;
+            case ZIP_ERR_FORMAT:    err_msg = "format error"; break;
+            case ZIP_ERR_CRC:       err_msg = "crc error"; break;
+            case ZIP_ERR_FILE:      err_msg = "file error"; break;
+            case ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
+            default:                err_msg = "unknown error"; break;
+        }
+        lua_pushstring(L, err_msg);
         return 2;
     }
-    
     lua_pushboolean(L, 1);
     return 1;
 }

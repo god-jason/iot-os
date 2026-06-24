@@ -164,11 +164,9 @@ void iot_event_deinit(void) {
  *===========================================================*/
 
 int main(void) {
-    /* 启动 IoT 系统 */
-    iot_start();
     
-    /* 等待看门狗超时（阻塞主进程） */
-    iot_wdt_wait();
+    /* 启动 IoT 系统 */
+    iot_lua_task(NULL);
     
     return 0;
 }

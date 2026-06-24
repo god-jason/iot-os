@@ -13,6 +13,7 @@
 #include "zip.h"
 #include "deflate.h"
 #include "iot.h"
+#include "iot_log.h"
 #include <string.h>
 
 /* ZIP格式签名常量 */
@@ -342,6 +343,26 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
     uint32_t compressed_size = entry->compressed_size;
     uint32_t uncompressed_size = entry->uncompressed_size;
     
+    LOG_DEBUG("Extract entry: method=%d, compressed=%u, uncompressed=%u",
+              compression_method, compressed_size, uncompressed_size);
+    
+    /* 读取本地文件头标志位 */
+    uint8_t flags = header[6];
+    LOG_DEBUG("ZIP flags: 0x%02X (bit3=%d)", flags, (flags >> 3) & 1);
+    
+    /* 调试：打印前16字节的十六进制值 */
+    uint8_t first_bytes[16];
+    iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
+    iot_fs_read(fd, first_bytes, 16);
+    LOG_DEBUG("First 16 bytes: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+              first_bytes[0], first_bytes[1], first_bytes[2], first_bytes[3],
+              first_bytes[4], first_bytes[5], first_bytes[6], first_bytes[7],
+              first_bytes[8], first_bytes[9], first_bytes[10], first_bytes[11],
+              first_bytes[12], first_bytes[13], first_bytes[14], first_bytes[15]);
+    
+    /* 重新定位到数据开始位置 */
+    iot_fs_seek(fd, data_offset, IOT_FS_SEEK_SET);
+    
     /* 根据压缩方法处理 */
     if (compression_method == ZIP_STORED) {
         /* 无压缩：直接复制 */
@@ -363,7 +384,10 @@ int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_
         }
         
         int out_len = zlib_deflate_decompress(compressed, compressed_size, buf, uncompressed_size);
+        LOG_DEBUG("DEFLATE decompress: compressed=%u, uncompressed=%u, out_len=%d", 
+                  compressed_size, uncompressed_size, out_len);
         if (out_len < 0 || (size_t)out_len != uncompressed_size) {
+            LOG_ERROR("DEFLATE decompress failed: expected=%u, got=%d", uncompressed_size, out_len);
             iot_free(compressed);
             return ZIP_ERR_FORMAT;
         }

@@ -16,6 +16,8 @@
 #include "lua.h"
 #include "iot_rtos.h"
 
+void iot_lua_task(void* argument);
+
 /**
  * @brief 启动IoT Lua应用
  */
