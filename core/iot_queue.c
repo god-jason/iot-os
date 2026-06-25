@@ -113,13 +113,10 @@ bool iot_queue_recv(iot_queue_t queue, void* data, uint32_t timeout_ms)
     
     iot_queue_internal_t* q = (iot_queue_internal_t*)queue;
     
-    LOG_TRACE("queue recv: timeout=%u", timeout_ms);
-    
     if (timeout_ms == IOT_WAIT_FOREVER) {
         iot_sem_wait(q->sem_full);
     } else {
         if (!iot_sem_wait_timeout(q->sem_full, timeout_ms)) {
-            LOG_TRACE("queue recv: timeout");
             return false;
         }
     }

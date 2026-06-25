@@ -5,6 +5,7 @@ return function(name)
 
     local tests = {
         zlib = { path = "app/tests/test_zlib.lua", sync = true, need_net = false },
+        modbus = { path = "app/tests/test_modbus.lua", sync = true, need_net = false },
         net  = { path = "app/tests/test_net.lua",  sync = false, need_net = true },
         http = { path = "app/tests/test_http.lua", sync = false, need_net = true },
         mqtt = { path = "app/tests/test_mqtt.lua", sync = false, need_net = true },
@@ -14,11 +15,12 @@ return function(name)
 
     local entry = tests[name]
     if not entry then
-        error("unknown test: " .. tostring(name) .. " (zlib|net|http|mqtt|uart|lvgl)")
+        error("unknown test: " .. tostring(name) .. " (zlib|modbus|net|http|mqtt|uart|lvgl)")
     end
 
     local timeouts = {
         zlib = 5000,
+        modbus = 5000,
         net  = 60000,
         http = 90000,
         mqtt = 120000,

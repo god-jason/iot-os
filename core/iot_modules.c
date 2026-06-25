@@ -34,6 +34,7 @@ extern int luaopen_http_register(lua_State* L);
 extern int luaopen_mqtt_register(lua_State* L);
 extern int luaopen_net_register(lua_State* L);
 extern int luaopen_zlib_register(lua_State* L);
+extern int luaopen_modbus_register(lua_State* L);
 
 /* Vendor 模块 */
 extern int luaopen_gmssl_register(lua_State* L);
@@ -67,6 +68,7 @@ static const luaL_Reg modules_list[] = {
     {"mqtt",     luaopen_mqtt_register},       /* MQTT 模块 */
     {"net",      luaopen_net_register},        /* 网络模块 */
     {"zlib",     luaopen_zlib_register},       /* ZLIB 压缩模块 */
+    {"modbus",   luaopen_modbus_register},     /* Modbus RTU 模块 */
     {NULL, NULL}
 };
 

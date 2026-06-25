@@ -4,6 +4,7 @@ local M = T
 
 local tests = {
     { name = "zlib", path = "app/tests/test_zlib.lua", sync = true },
+    { name = "modbus", path = "app/tests/test_modbus.lua", sync = true },
     { name = "net", path = "app/tests/test_net.lua", sync = false },
     { name = "http", path = "app/tests/test_http.lua", sync = false },
     { name = "mqtt", path = "app/tests/test_mqtt.lua", sync = false },
