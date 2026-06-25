@@ -101,7 +101,7 @@ static int lvgl_pct(lua_State* L) {
 /* 主模块注册 */
 LUAMOD_API int luaopen_lvgl(lua_State* L) {
     /* 创建主表 */
-    luaL_newlib(L, NULL);
+    lua_createtable(L, 0, 0);
 
     /* 注册基础对象系统(必须在组件之前) */
     lvgl_register_obj(L);
