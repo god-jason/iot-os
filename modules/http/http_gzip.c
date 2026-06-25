@@ -1,12 +1,10 @@
 /**
  * @file http_gzip.c
- * @brief HTTP Gzip 压缩支持实现
+ * @brief HTTP Gzip 压缩支持（基于 iot_zlib/miniz）
  */
 
 #include "http_gzip.h"
-#include "../zlib/zlib.h"
 #include "../zlib/gzip.h"
-#include "../zlib/deflate.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -16,290 +14,147 @@
 #define strncasecmp _strnicmp
 #endif
 
-/*===========================================================
- * 内部结构
- *===========================================================*/
-
 struct http_gzip_ctx {
-    void* zstream;
-    uint8_t* pending_buf;
-    size_t pending_len;
-    size_t pending_cap;
     int initialized;
-    int finished;
 };
 
-/*===========================================================
- * zlib 适配层接口
- *===========================================================*/
-
-typedef struct {
-    void* opaque;
-    void* (*alloc)(void*, unsigned, unsigned);
-    void (*free)(void*, void*);
-} zlib_alloc_func;
-
-typedef struct {
-    int (*init)(void* strm, int level);
-    int (*deflate)(void* strm, int flush);
-    int (*inflate)(void* strm, int flush);
-    int (*end)(void* strm);
-    const char* (*msg)(void* strm);
-} zlib_funcs;
-
-typedef struct {
-    void* strm;
-    zlib_funcs funcs;
-    uint8_t* next_in;
-    uint8_t* next_out;
-    unsigned avail_in;
-    unsigned avail_out;
-} z_stream_t;
-
-static int zlib_inflate_init(void** strm, int windowbits) {
-    (void)windowbits;
-    
-    z_stream_t* zs = (z_stream_t*)malloc(sizeof(z_stream_t));
-    if (!zs) return -1;
-    
-    memset(zs, 0, sizeof(z_stream_t));
-    
-    /* 初始化测试 */
-    size_t test = inflate_decompress(NULL, 0, NULL, 0);
-    (void)test;
-    
-    zs->strm = malloc(128);
-    if (!zs->strm) {
-        free(zs);
-        return -1;
-    }
-    memset(zs->strm, 0, 128);
-    
-    *strm = zs;
-    return 0;
-}
-
-static int zlib_inflate(void* strm, int flush) {
-    z_stream_t* zs = (z_stream_t*)strm;
-    if (!zs) return -1;
-    
-    size_t src_len = zs->avail_in;
-    size_t dst_len = zs->avail_out;
-    
-    size_t ret = inflate_decompress(zs->next_in, src_len, zs->next_out, dst_len);
-    
-    if (ret == 0) {
-        return -1;
-    }
-    
-    zs->next_in += src_len - zs->avail_in;
-    zs->avail_in = 0;
-    zs->next_out += ret;
-    zs->avail_out -= ret;
-    
-    return 0;
-}
-
-static int zlib_inflate_end(void* strm) {
-    z_stream_t* zs = (z_stream_t*)strm;
-    if (!zs) return -1;
-    
-    if (zs->strm) free(zs->strm);
-    free(zs);
-    return 0;
-}
-
-static int zlib_deflate_init(void** strm, int level) {
-    (void)level;
-    
-    z_stream_t* zs = (z_stream_t*)malloc(sizeof(z_stream_t));
-    if (!zs) return -1;
-    
-    memset(zs, 0, sizeof(z_stream_t));
-    
-    zs->strm = malloc(128);
-    if (!zs->strm) {
-        free(zs);
-        return -1;
-    }
-    memset(zs->strm, 0, 128);
-    
-    *strm = zs;
-    return 0;
-}
-
-static int http_zlib_deflate_compress(void* strm, const uint8_t* src, size_t src_len,
-                                  uint8_t* dst, size_t dst_cap, int level, size_t* produced) {
-    (void)strm;
-    (void)level;
-    
-    size_t ret = deflate_compress(src, src_len, dst, dst_cap);
-    
-    if (ret > 0) {
-        if (produced) *produced = ret;
-        return 0;
-    }
-    return -1;
-}
-
-static int zlib_deflate_end(void* strm) {
-    z_stream_t* zs = (z_stream_t*)strm;
-    if (!zs) return -1;
-    
-    if (zs->strm) free(zs->strm);
-    free(zs);
-    return 0;
-}
-
-/*===========================================================
- * Gzip 上下文操作
- *===========================================================*/
-
-http_gzip_ctx_t* http_gzip_create(void) {
+http_gzip_ctx_t* http_gzip_create(void)
+{
     http_gzip_ctx_t* ctx = (http_gzip_ctx_t*)malloc(sizeof(http_gzip_ctx_t));
-    if (!ctx) return NULL;
-    
-    memset(ctx, 0, sizeof(http_gzip_ctx_t));
-    
-    if (zlib_inflate_init(&ctx->zstream, 15 + 32) != 0) {
-        free(ctx);
+    if (!ctx) {
         return NULL;
     }
-    
-    ctx->pending_cap = 4096;
-    ctx->pending_buf = (uint8_t*)malloc(ctx->pending_cap);
-    if (!ctx->pending_buf) {
-        zlib_inflate_end(ctx->zstream);
-        free(ctx);
-        return NULL;
-    }
-    
     ctx->initialized = 1;
     return ctx;
 }
 
-void http_gzip_destroy(http_gzip_ctx_t* ctx) {
-    if (!ctx) return;
-    
-    if (ctx->zstream) {
-        zlib_inflate_end(ctx->zstream);
-    }
-    if (ctx->pending_buf) {
-        free(ctx->pending_buf);
-    }
+void http_gzip_destroy(http_gzip_ctx_t* ctx)
+{
     free(ctx);
 }
 
-int http_gzip_reset(http_gzip_ctx_t* ctx) {
-    if (!ctx) return -1;
-    
-    if (ctx->zstream) {
-        zlib_inflate_end(ctx->zstream);
-    }
-    
-    if (zlib_inflate_init(&ctx->zstream, 15 + 32) != 0) {
+int http_gzip_reset(http_gzip_ctx_t* ctx)
+{
+    if (!ctx) {
         return -1;
     }
-    
-    ctx->pending_len = 0;
-    ctx->finished = 0;
-    
+    ctx->initialized = 1;
     return 0;
 }
 
-/*===========================================================
- * Gzip 解压
- *===========================================================*/
-
 int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_len,
-                        uint8_t* dst, size_t dst_cap, size_t* produced) {
-    if (!ctx || !src || !dst) return -1;
-    
-    if (produced) *produced = 0;
-    
-    z_stream_t* zs = (z_stream_t*)ctx->zstream;
-    if (!zs) return -1;
-    
-    zs->next_in = (uint8_t*)src;
-    zs->avail_in = (unsigned)src_len;
-    zs->next_out = dst;
-    zs->avail_out = (unsigned)dst_cap;
-    
-    int ret = zlib_inflate(zs, 0);
-    
+                         uint8_t* dst, size_t dst_cap, size_t* produced)
+{
+    size_t out_len;
+
+    if (!ctx || !src || !dst) {
+        return -1;
+    }
+
+    out_len = dst_cap;
+    if (gzip_decompress(src, src_len, dst, &out_len) != GZIP_OK) {
+        return -1;
+    }
+
     if (produced) {
-        *produced = dst_cap - zs->avail_out;
+        *produced = out_len;
     }
-    
-    return (ret == 0 || zs->avail_out == 0) ? 0 : -1;
+    return 0;
 }
 
-uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len) {
-    if (!src || src_len == 0) return NULL;
-    
-    size_t bound = src_len * 4;
-    if (bound < 4096) bound = 4096;
-    
-    uint8_t* dst = (uint8_t*)malloc(bound);
-    if (!dst) return NULL;
-    
-    size_t dst_len = bound;
-    int ret = gzip_decompress(src, src_len, dst, &dst_len);
-    
-    if (ret != 0) {
+uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len)
+{
+    size_t bound;
+    uint8_t* dst;
+    size_t dst_len;
+
+    if (!src || src_len == 0) {
+        return NULL;
+    }
+
+    bound = src_len * 4;
+    if (bound < 4096) {
+        bound = 4096;
+    }
+
+    dst = (uint8_t*)malloc(bound);
+    if (!dst) {
+        return NULL;
+    }
+
+    dst_len = bound;
+    if (gzip_decompress(src, src_len, dst, &dst_len) != GZIP_OK) {
         free(dst);
         return NULL;
     }
-    
-    if (out_len) *out_len = dst_len;
-    
-    uint8_t* result = (uint8_t*)realloc(dst, dst_len);
-    return result ? result : dst;
+
+    if (out_len) {
+        *out_len = dst_len;
+    }
+
+    {
+        uint8_t* result = (uint8_t*)realloc(dst, dst_len);
+        return result ? result : dst;
+    }
 }
 
-/*===========================================================
- * Gzip 压缩
- *===========================================================*/
+int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level)
+{
+    size_t dst_len;
 
-int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level) {
-    if (!src || !dst || src_len == 0 || dst_cap == 0) return -1;
-    
-    size_t dst_len = dst_cap;
-    int ret = gzip_compress(src, src_len, dst, &dst_len, level);
-    
-    return (ret == 0) ? (int)dst_len : -1;
+    if (!src || !dst || src_len == 0 || dst_cap == 0) {
+        return -1;
+    }
+
+    dst_len = dst_cap;
+    if (gzip_compress(src, src_len, dst, &dst_len, level) != GZIP_OK) {
+        return -1;
+    }
+
+    return (int)dst_len;
 }
 
-uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len) {
-    if (!src || src_len == 0) return NULL;
-    
-    size_t bound = src_len * 4 + 128 + 64;  /* LZ77 worst case + overhead + gzip header/trailer */
-    
-    uint8_t* dst = (uint8_t*)malloc(bound);
-    if (!dst) return NULL;
-    
-    size_t dst_len = bound;
-    int ret = gzip_compress(src, src_len, dst, &dst_len, level);
-    
-    if (ret != 0) {
+uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len)
+{
+    size_t bound;
+    uint8_t* dst;
+    size_t dst_len;
+
+    if (!src || src_len == 0) {
+        return NULL;
+    }
+
+    bound = src_len * 4 + 128;
+    dst = (uint8_t*)malloc(bound);
+    if (!dst) {
+        return NULL;
+    }
+
+    dst_len = bound;
+    if (gzip_compress(src, src_len, dst, &dst_len, level) != GZIP_OK) {
         free(dst);
         return NULL;
     }
-    
-    if (out_len) *out_len = dst_len;
-    
-    uint8_t* result = (uint8_t*)realloc(dst, dst_len);
-    return result ? result : dst;
+
+    if (out_len) {
+        *out_len = dst_len;
+    }
+
+    {
+        uint8_t* result = (uint8_t*)realloc(dst, dst_len);
+        return result ? result : dst;
+    }
 }
 
-/*===========================================================
- * HTTP 头处理
- *===========================================================*/
+bool http_gzip_check_response(const char* header)
+{
+    const char* p;
 
-bool http_gzip_check_response(const char* header) {
-    if (!header) return false;
+    if (!header) {
+        return false;
+    }
 
-    const char* p = header;
+    p = header;
     while (*p) {
         const char* line_end = strstr(p, "\r\n");
         if (!line_end) {
@@ -324,9 +179,12 @@ bool http_gzip_check_response(const char* header) {
     return false;
 }
 
-int http_gzip_build_request_header(char* buf, size_t buf_len) {
-    if (!buf || buf_len == 0) return -1;
-    
+int http_gzip_build_request_header(char* buf, size_t buf_len)
+{
+    if (!buf || buf_len == 0) {
+        return -1;
+    }
+
     snprintf(buf, buf_len, "Accept-Encoding: gzip, deflate\r\n");
     return 0;
 }

@@ -24,8 +24,7 @@
 #include "gzip.h"
 #include "zip.h"
 #include "tar.h"
-#include "crc32.h"
-#include "adler32.h"
+#include "miniz.h"
 
 /*===========================================================
  * 辅助函数
@@ -141,7 +140,7 @@ static int luaopen_zlib_deflate_adler32(lua_State* L) {
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t adler = (uint32_t)luaL_optinteger(L, 2, 1);
     
-    uint32_t result = adler32_update(adler, (const uint8_t*)data, len);
+    uint32_t result = (uint32_t)mz_adler32((mz_ulong)adler, (const unsigned char *)data, len);
     lua_pushinteger(L, result);
     return 1;
 }
@@ -157,7 +156,7 @@ static int luaopen_zlib_deflate_crc32(lua_State* L) {
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t crc = (uint32_t)luaL_optinteger(L, 2, 0);
     
-    uint32_t result = crc32_update(crc, (const uint8_t*)data, len);
+    uint32_t result = (uint32_t)mz_crc32((mz_ulong)crc, (const unsigned char *)data, len);
     lua_pushinteger(L, result);
     return 1;
 }

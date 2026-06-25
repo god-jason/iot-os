@@ -25,10 +25,10 @@ extern "C" {
 #endif
 
 /* 版本信息 */
-#define ZLIB_VERSION_MAJOR    1
+#define ZLIB_VERSION_MAJOR    2
 #define ZLIB_VERSION_MINOR    0
 #define ZLIB_VERSION_PATCH    0
-#define ZLIB_VERSION          "1.0.0"
+#define ZLIB_VERSION          "2.0.0-miniz"
 
 /* 通用错误码 */
 #define ZLIB_OK               0   /**< 成功 */

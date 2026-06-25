@@ -1,6 +1,7 @@
 --- 模块封装验证入口
 --- 单测: echo zlib > app/tests/.target  再 xmake run
 --- 全测: 删除 app/tests/.target
+log.level(log.TRACE)
 log.info("iot-os", "module verification")
 
 local target

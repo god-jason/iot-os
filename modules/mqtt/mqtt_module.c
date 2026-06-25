@@ -541,6 +541,13 @@ static const luaL_Reg mqtt_module_methods[] = {
 };
 
 LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
+    static int s_mqtt_manager_started = 0;
+    if (!s_mqtt_manager_started) {
+        if (mqtt_manager_start() == 0) {
+            s_mqtt_manager_started = 1;
+        }
+    }
+
     luaL_newlib(L, mqtt_module_methods);
     
     /* 注册常量 - MQTT QoS 级别 */

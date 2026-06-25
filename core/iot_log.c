@@ -41,7 +41,7 @@ static const char* log_level_prefix[] = {
  * @param level 日志级别 (0-4)
  */
 void iot_log_set_level(iot_log_level_t level) {
-    if (level >= LOG_LEVEL_NONE && level <= LOG_LEVEL_DEBUG) {
+    if (level >= LOG_LEVEL_NONE && level <= LOG_LEVEL_TRACE) {
         s_log_level = (int)level;
     }
 }

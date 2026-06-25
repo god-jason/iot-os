@@ -1,333 +1,320 @@
 /**
  * @file gzip.c
- * @brief GZIP压缩格式实现
- *
- * 本文件实现GZIP格式的压缩和解压功能。
- * GZIP格式在DEFLATE压缩数据前后添加了固定的头部和尾部，
- * 包含文件名、时间戳、CRC32校验等信息。
- *
- * @author  杰神 & TRAE & ChatGPT
- * @date    2026.06.10
+ * @brief GZIP 压缩/解压（miniz 封装）
  */
 
 #include "gzip.h"
-#include "deflate.h"
-#include "crc32.h"
+#include "miniz.h"
 #include "iot.h"
 #include <string.h>
+#include <stdio.h>
 
-/* GZIP格式常量定义 */
-#define GZIP_MAGIC1          0x1F    /**< GZIP魔数高字节 */
-#define GZIP_MAGIC2          0x8B    /**< GZIP魔数低字节 */
-#define GZIP_METHOD_DEFLATE  0x08    /**< 压缩方法：DEFLATE */
-#define GZIP_FLAG_FEXTRA     0x04    /**< 标志：包含额外字段 */
-#define GZIP_FLAG_FNAME      0x08    /**< 标志：包含原始文件名 */
-#define GZIP_FLAG_FCOMMENT   0x10    /**< 标志：包含注释 */
+#define GZIP_MAGIC1          0x1F
+#define GZIP_MAGIC2          0x8B
+#define GZIP_METHOD_DEFLATE  0x08
+#define GZIP_FLAG_FEXTRA     0x04
+#define GZIP_FLAG_FNAME      0x08
+#define GZIP_FLAG_FCOMMENT   0x10
 
-/**
- * @brief 解压GZIP格式数据
- *
- * 解析GZIP头部，跳过可选字段，调用DEFLATE解压核心，
- * 最后验证CRC32校验码。
- *
- * @param src 压缩数据缓冲区
- * @param src_len 压缩数据长度
- * @param dst 目标数据缓冲区
- * @param dst_len 输入为目标缓冲区大小，输出为解压后实际数据大小
- * @return GZIP_OK成功，其他值失败
- */
-int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len) {
-    if (!src || !dst || !dst_len || src_len < 18) {
-        return GZIP_ERR_FORMAT;
-    }
-    
-    const uint8_t *p = src;
-    
-    /* 验证GZIP魔数和方法 */
-    if (p[0] != GZIP_MAGIC1 || p[1] != GZIP_MAGIC2 || p[2] != GZIP_METHOD_DEFLATE) {
-        return GZIP_ERR_FORMAT;
-    }
-    
-    /* 读取FLG标志字节 */
-    uint8_t flags = p[3];
-    p += 10;  /* 跳过固定头部长度 */
-    
-    /* 跳过可选字段 */
-    if (flags & GZIP_FLAG_FEXTRA) {
-        /* FEXTRA字段：2字节长度 + 额外数据 */
-        uint16_t extra_len = p[0] | (p[1] << 8);
-        p += 2 + extra_len;
-    }
-    
-    if (flags & GZIP_FLAG_FNAME) {
-        /* FNAME字段：以NULL结尾的原始文件名 */
-        while (*p != '\0' && p < src + src_len) p++;
-        p++;
-    }
-    
-    if (flags & GZIP_FLAG_FCOMMENT) {
-        /* FCOMMENT字段：以NULL结尾的注释 */
-        while (*p != '\0' && p < src + src_len) p++;
-        p++;
-    }
-    
-    if (flags & 0x02) {
-        /* CRC16字段：2字节CRC16校验 */
-        p += 2;
-    }
-    
-    /* 计算压缩数据长度（总长度减去8字节尾部） */
-    size_t compressed_len = (src + src_len - 8) - p;
-    
-    /* 调用DEFLATE核心解压 */
-    size_t out_len = inflate_decompress(p, compressed_len, dst, *dst_len);
-    if (out_len == 0) {
-        return GZIP_ERR_FORMAT;
-    }
-    
-    /* 读取GZIP尾部：CRC32和原始大小 */
-    p = src + src_len - 8;
-    uint32_t crc32 = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
-    uint32_t orig_size = p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
-    
-    /* 验证CRC32 */
-    uint32_t computed_crc = crc32_update(0xffffffff, dst, (size_t)out_len) ^ 0xffffffff;
-    if (computed_crc != crc32 || (uint32_t)out_len != orig_size) {
-        return GZIP_ERR_CRC;
-    }
-    
-    *dst_len = (size_t)out_len;
-    return GZIP_OK;
+static size_t gzip_raw_deflate(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, int level)
+{
+    int flags = tdefl_create_comp_flags_from_zip_params(level, -MZ_DEFAULT_WINDOW_BITS, 0);
+    return tdefl_compress_mem_to_mem(dst, dst_cap, src, src_len, flags);
 }
 
-/**
- * @brief 压缩数据为GZIP格式
- *
- * 首先计算数据的CRC32校验码，然后调用DEFLATE核心压缩，
- * 最后添加GZIP头部和尾部。
- *
- * @param src 源数据缓冲区
- * @param src_len 源数据长度
- * @param dst 目标数据缓冲区
- * @param dst_len 输入为目标缓冲区大小，输出为实际压缩数据大小
- * @param level 压缩级别（1-9）
- * @return GZIP_OK成功，其他值失败
- */
-int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level) {
+static size_t gzip_raw_inflate(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap)
+{
+    return tinfl_decompress_mem_to_mem(dst, dst_cap, src, src_len, 0);
+}
+
+static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_t *compressed_len)
+{
+    const uint8_t *p = src;
+
+    if (!src || src_len < 18 || compressed_len == NULL) {
+        return NULL;
+    }
+
+    if (p[0] != GZIP_MAGIC1 || p[1] != GZIP_MAGIC2 || p[2] != GZIP_METHOD_DEFLATE) {
+        return NULL;
+    }
+
+    {
+        uint8_t flags = p[3];
+        p += 10;
+
+        if (flags & GZIP_FLAG_FEXTRA) {
+            uint16_t extra_len;
+            if ((size_t)(p - src) + 2 > src_len) {
+                return NULL;
+            }
+            extra_len = (uint16_t)(p[0] | (p[1] << 8));
+            p += 2 + extra_len;
+        }
+
+        if (flags & GZIP_FLAG_FNAME) {
+            while (p < src + src_len && *p != '\0') {
+                p++;
+            }
+            if (p >= src + src_len) {
+                return NULL;
+            }
+            p++;
+        }
+
+        if (flags & GZIP_FLAG_FCOMMENT) {
+            while (p < src + src_len && *p != '\0') {
+                p++;
+            }
+            if (p >= src + src_len) {
+                return NULL;
+            }
+            p++;
+        }
+
+        if (flags & 0x02) {
+            p += 2;
+        }
+    }
+
+    if ((size_t)(src + src_len - p) < 8) {
+        return NULL;
+    }
+
+    *compressed_len = (size_t)((src + src_len - 8) - p);
+    return p;
+}
+
+int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len)
+{
+    size_t compressed_len = 0;
+    const uint8_t *payload;
+    size_t out_len;
+    const uint8_t *tail;
+    uint32_t crc32;
+    uint32_t orig_size;
+    uint32_t computed_crc;
+
     if (!src || !dst || !dst_len) {
         return GZIP_ERR_FORMAT;
     }
-    
-    /* 估算最大压缩大小 */
-    size_t max_compressed_len = src_len * 4 + 128;  /* LZ77 worst case + overhead */
-    size_t total_len = 10 + max_compressed_len + 8;
-    
-    if (*dst_len < total_len) {
-        *dst_len = total_len;
+
+    payload = gzip_skip_header(src, src_len, &compressed_len);
+    if (!payload || compressed_len == 0) {
+        return GZIP_ERR_FORMAT;
+    }
+
+    out_len = gzip_raw_inflate(payload, compressed_len, dst, *dst_len);
+    if (out_len == 0) {
+        return GZIP_ERR_FORMAT;
+    }
+
+    tail = src + src_len - 8;
+    crc32 = (uint32_t)(tail[0] | (tail[1] << 8) | (tail[2] << 16) | (tail[3] << 24));
+    orig_size = (uint32_t)(tail[4] | (tail[5] << 8) | (tail[6] << 16) | (tail[7] << 24));
+
+    computed_crc = (uint32_t)mz_crc32(MZ_CRC32_INIT, dst, out_len) ^ 0xffffffffU;
+    if (computed_crc != crc32 || (uint32_t)out_len != orig_size) {
+        return GZIP_ERR_CRC;
+    }
+
+    *dst_len = out_len;
+    return GZIP_OK;
+}
+
+int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level)
+{
+    uint8_t *p;
+    uint32_t crc;
+    size_t compressed;
+    uint32_t size;
+
+    if (!src || !dst || !dst_len) {
+        return GZIP_ERR_FORMAT;
+    }
+
+    if (level < 1) {
+        level = GZIP_COMPRESS_FAST;
+    }
+    if (level > 9) {
+        level = GZIP_COMPRESS_BEST;
+    }
+
+    if (*dst_len < src_len + 128) {
+        *dst_len = src_len + 128;
         return GZIP_ERR_MEM;
     }
-    
-    uint8_t *p = dst;
-    
-    /* 写入GZIP头部（10字节） */
+
+    p = dst;
     p[0] = GZIP_MAGIC1;
     p[1] = GZIP_MAGIC2;
     p[2] = GZIP_METHOD_DEFLATE;
-    p[3] = 0;                     /* FLG：无可选字段 */
-    p[4] = 0;                    /* MTIME：修改时间 */
-    p[5] = 0;
-    p[6] = 0;
-    p[7] = 0;
-    p[8] = 0;                    /* XFL：额外标志 */
-    p[9] = 0x03;                 /* OS：0x03=Unix */
+    p[3] = 0;
+    memset(p + 4, 0, 6);
+    p[9] = 0x03;
     p += 10;
-    
-    /* 计算CRC32校验码 */
-    uint32_t crc = crc32_update(0xffffffff, src, src_len) ^ 0xffffffff;
-    
-    /* 压缩数据 */
-    size_t compressed = deflate_compress(src, src_len, p, *dst_len - 18);
+
+    crc = (uint32_t)mz_crc32(MZ_CRC32_INIT, src, src_len) ^ 0xffffffffU;
+    compressed = gzip_raw_deflate(src, src_len, p, *dst_len - 18, level);
     if (compressed == 0) {
         return GZIP_ERR_MEM;
     }
     p += compressed;
-    
-    /* 写入CRC32（4字节） */
-    *p++ = crc & 0xff;
-    *p++ = (crc >> 8) & 0xff;
-    *p++ = (crc >> 16) & 0xff;
-    *p++ = (crc >> 24) & 0xff;
-    
-    /* 写入原始大小（4字节） */
-    uint32_t size = (uint32_t)src_len;
-    *p++ = size & 0xff;
-    *p++ = (size >> 8) & 0xff;
-    *p++ = (size >> 16) & 0xff;
-    *p++ = (size >> 24) & 0xff;
-    
-    *dst_len = p - dst;
+
+    *p++ = (uint8_t)(crc & 0xff);
+    *p++ = (uint8_t)((crc >> 8) & 0xff);
+    *p++ = (uint8_t)((crc >> 16) & 0xff);
+    *p++ = (uint8_t)((crc >> 24) & 0xff);
+
+    size = (uint32_t)src_len;
+    *p++ = (uint8_t)(size & 0xff);
+    *p++ = (uint8_t)((size >> 8) & 0xff);
+    *p++ = (uint8_t)((size >> 16) & 0xff);
+    *p++ = (uint8_t)((size >> 24) & 0xff);
+
+    *dst_len = (size_t)(p - dst);
     return GZIP_OK;
 }
 
-/**
- * @brief 解压GZIP文件
- *
- * 读取整个GZIP文件到内存，然后调用gzip_decompress进行解压，
- * 最后将解压后的数据写入目标文件。
- *
- * @param src_path 源GZIP文件路径
- * @param dst_path 目标文件路径
- * @return GZIP_OK成功，其他值失败
- */
-int gzip_decompress_file(const char *src_path, const char *dst_path) {
+int gzip_decompress_file(const char *src_path, const char *dst_path)
+{
+    iot_fs_file_t src_fd;
+    int32_t file_size;
+    uint8_t *src_buf;
+    uint8_t *dst_buf;
+    size_t out_len;
+    int ret;
+    iot_fs_file_t dst_fd;
+    const uint8_t *tail;
+    uint32_t dst_size;
+
     if (!src_path || !dst_path) {
         return GZIP_ERR_FORMAT;
     }
-    
-    /* 打开源文件 */
-    iot_fs_file_t src_fd = iot_fs_open(src_path, IOT_FS_RB);
+
+    src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
         return GZIP_ERR_FILE;
     }
-    
-    /* 获取文件大小 */
-    int32_t file_size = iot_fs_filesize(src_path);
+
+    file_size = iot_fs_filesize(src_path);
     if (file_size < 18) {
         iot_fs_close(src_fd);
         return GZIP_ERR_FORMAT;
     }
-    
-    /* 分配内存并读取文件 */
-    uint8_t *src_buf = (uint8_t *)iot_malloc(file_size);
+
+    src_buf = (uint8_t *)iot_malloc((size_t)file_size);
     if (!src_buf) {
         iot_fs_close(src_fd);
         return GZIP_ERR_MEM;
     }
-    
-    if (iot_fs_read(src_fd, src_buf, file_size) != file_size) {
+
+    if (iot_fs_read(src_fd, src_buf, (size_t)file_size) != file_size) {
         iot_free(src_buf);
         iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
     iot_fs_close(src_fd);
-    
-    /* 从文件尾部读取预期的解压后大小 */
-    const uint8_t *p = src_buf + file_size - 8;
-    uint32_t dst_size = p[4] | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
-    
-    /* 分配解压缓冲区 */
-    uint8_t *dst_buf = (uint8_t *)iot_malloc(dst_size);
+
+    tail = src_buf + file_size - 8;
+    dst_size = (uint32_t)(tail[4] | (tail[5] << 8) | (tail[6] << 16) | (tail[7] << 24));
+
+    dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);
         return GZIP_ERR_MEM;
     }
-    
-    /* 执行解压 */
-    size_t out_len = dst_size;
-    int ret = gzip_decompress(src_buf, file_size, dst_buf, &out_len);
+
+    out_len = dst_size;
+    ret = gzip_decompress(src_buf, (size_t)file_size, dst_buf, &out_len);
+    iot_free(src_buf);
     if (ret != GZIP_OK) {
         iot_free(dst_buf);
-        iot_free(src_buf);
         return ret;
     }
-    
-    /* 写入目标文件 */
-    iot_fs_file_t dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
+
+    dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
         iot_free(dst_buf);
-        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
-    
-    if (iot_fs_write(dst_fd, dst_buf, dst_size) != dst_size) {
+
+    if (iot_fs_write(dst_fd, dst_buf, out_len) != (int32_t)out_len) {
         iot_fs_close(dst_fd);
         iot_free(dst_buf);
-        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
-    
+
     iot_fs_close(dst_fd);
     iot_free(dst_buf);
-    iot_free(src_buf);
-    
     return GZIP_OK;
 }
 
-/**
- * @brief 压缩文件为GZIP格式
- *
- * 读取源文件，使用GZIP格式压缩，然后写入目标文件。
- *
- * @param src_path 源文件路径
- * @param dst_path 目标GZIP文件路径
- * @param level 压缩级别（1-9）
- * @return GZIP_OK成功，其他值失败
- */
-int gzip_compress_file(const char *src_path, const char *dst_path, int level) {
+int gzip_compress_file(const char *src_path, const char *dst_path, int level)
+{
+    iot_fs_file_t src_fd;
+    int32_t file_size;
+    uint8_t *src_buf;
+    uint8_t *dst_buf;
+    size_t dst_size;
+    int ret;
+    iot_fs_file_t dst_fd;
+
     if (!src_path || !dst_path) {
         return GZIP_ERR_FORMAT;
     }
-    
-    /* 打开源文件 */
-    iot_fs_file_t src_fd = iot_fs_open(src_path, IOT_FS_RB);
+
+    src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
         return GZIP_ERR_FILE;
     }
-    
-    int32_t file_size = iot_fs_filesize(src_path);
+
+    file_size = iot_fs_filesize(src_path);
     if (file_size <= 0) {
         iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
-    
-    /* 读取源文件数据 */
-    uint8_t *src_buf = (uint8_t *)iot_malloc(file_size);
+
+    src_buf = (uint8_t *)iot_malloc((size_t)file_size);
     if (!src_buf) {
         iot_fs_close(src_fd);
         return GZIP_ERR_MEM;
     }
-    
-    if (iot_fs_read(src_fd, src_buf, file_size) != file_size) {
+
+    if (iot_fs_read(src_fd, src_buf, (size_t)file_size) != file_size) {
         iot_free(src_buf);
         iot_fs_close(src_fd);
         return GZIP_ERR_FILE;
     }
     iot_fs_close(src_fd);
-    
-    /* 分配压缩缓冲区 */
-    size_t dst_size = file_size * 4 + 128 + 18;  /* LZ77 worst case + overhead + gzip header/trailer */
-    uint8_t *dst_buf = (uint8_t *)iot_malloc(dst_size);
+
+    dst_size = (size_t)file_size * 4 + 128;
+    dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);
         return GZIP_ERR_MEM;
     }
-    
-    /* 执行压缩 */
-    int ret = gzip_compress(src_buf, file_size, dst_buf, &dst_size, level);
+
+    ret = gzip_compress(src_buf, (size_t)file_size, dst_buf, &dst_size, level);
+    iot_free(src_buf);
     if (ret != GZIP_OK) {
         iot_free(dst_buf);
-        iot_free(src_buf);
         return ret;
     }
-    
-    /* 写入目标文件 */
-    iot_fs_file_t dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
+
+    dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
         iot_free(dst_buf);
-        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
-    
+
     if (iot_fs_write(dst_fd, dst_buf, dst_size) != (int32_t)dst_size) {
         iot_fs_close(dst_fd);
         iot_free(dst_buf);
-        iot_free(src_buf);
         return GZIP_ERR_FILE;
     }
-    
+
     iot_fs_close(dst_fd);
     iot_free(dst_buf);
-    iot_free(src_buf);
-    
     return GZIP_OK;
 }

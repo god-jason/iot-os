@@ -310,8 +310,8 @@ local function processCmsg(msg)
         end
 
     elseif msg.type == MSG_CALL then
-        if msg.data then
-            local func = debug.getuservalue(msg.data)
+        if msg.userdata then
+            local func = debug.getuservalue(msg.userdata)
             if type(func) == "function" then
                 if msg.params then
                     func(unpack(msg.params))
