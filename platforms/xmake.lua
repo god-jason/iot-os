@@ -29,7 +29,7 @@ add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
 if plat == "wasm" then
     set_kind("shared")
     add_rules("wasm")
-    add_cflags("-s USE_SDL=2", "-s USE_LVGL=1", "-s ALLOW_MEMORY_GROWTH=1")
+    add_ldflags("-s USE_SDL=2", "-s USE_LVGL=1", "-s ALLOW_MEMORY_GROWTH=1")
     add_ldflags("-s EXPORTED_FUNCTIONS=['_main','_iot_wasm_stop']", "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']")
     add_deps("lua", "cjson", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts")
     add_deps("iot_core")

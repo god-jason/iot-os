@@ -4,7 +4,7 @@
  */
 
 #include "iot.h"
-#include "iot_wdt.h"
+#include "lvgl/lvgl.h"
 
 static int g_main_loop_id = 0;
 

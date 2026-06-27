@@ -25,20 +25,10 @@ typedef struct {
 } ws_instance_t;
 
 static ws_instance_t ws_instances[MAX_WS_INSTANCES];
-static int ws_instance_count = 0;
 
 static int ws_find_free_slot(void) {
     for (int i = 0; i < MAX_WS_INSTANCES; i++) {
         if (ws_instances[i].ws == 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static int ws_find_by_handle(EMSCRIPTEN_WEBSOCKET_T ws) {
-    for (int i = 0; i < MAX_WS_INSTANCES; i++) {
-        if (ws_instances[i].ws == ws) {
             return i;
         }
     }
@@ -115,10 +105,15 @@ static int lvgl_websocket_create(lua_State* L) {
         return luaL_error(L, "websocket: max instances exceeded");
     }
     
-    EMSCRIPTEN_WEBSOCKET_T ws = emscripten_websocket_new(url, NULL, NULL, ws_callback, (void*)(intptr_t)idx);
+    EMSCRIPTEN_WEBSOCKET_T ws = emscripten_websocket_new();
     if (ws == 0) {
         return luaL_error(L, "websocket: failed to create");
     }
+    
+    emscripten_websocket_set_url(ws, url);
+    emscripten_websocket_set_callback(ws, ws_callback, (void*)(intptr_t)idx);
+    
+    emscripten_websocket_connect(ws);
     
     ws_instances[idx].ws = ws;
     ws_instances[idx].connected = 0;
@@ -187,7 +182,7 @@ static int lvgl_websocket_close(lua_State* L) {
     if (inst->ws) {
         emscripten_websocket_close(inst->ws, 1000, "normal close");
         if (inst->lua_ref != LUA_NOREF) {
-            luaL_unref(lua_gettop(L) > 0 ? L : NULL, LUA_REGISTRYINDEX, inst->lua_ref);
+            luaL_unref(L, LUA_REGISTRYINDEX, inst->lua_ref);
             inst->lua_ref = LUA_NOREF;
         }
         inst->ws = 0;
