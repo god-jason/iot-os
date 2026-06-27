@@ -935,6 +935,205 @@ static inline int iot_socket_init(void) {
 #define IOT_SEEK_CUR              SEEK_CUR
 #define IOT_SEEK_END              SEEK_END
 
+/* 文件系统路径最大长度 */
+#define IOT_FS_MAX_PATH          255
+
+/* 文件句柄类型（使用 POSIX 文件描述符） */
+#define iot_fs_file_t            int
+
+/* 目录句柄类型 */
+#define iot_fs_dir_t             DIR*
+
+/* 目录项类型 */
+#define iot_fs_dirent_t          struct dirent
+
+/* 目录项成员访问宏 - 获取名称 */
+#define iot_fs_dirent_name(dirent)       ((dirent)->d_name)
+
+/* 目录项成员访问宏 - 判断是否为目录 */
+#define iot_fs_dirent_is_dir(dirent)     ((dirent)->d_type == DT_DIR)
+
+/* 目录项成员访问宏 - 获取大小 */
+#define iot_fs_dirent_size(dirent)       ((long)0)
+
+/* 文件打开模式 */
+#define IOT_FS_RB                "rb"    /**< 只读二进制 */
+#define IOT_FS_WB                "wb"    /**< 只写二进制 */
+#define IOT_FS_AB                "ab"    /**< 追加二进制 */
+#define IOT_FS_WBPLUS            "wb+"   /**< 读写二进制（新建） */
+#define IOT_FS_ABPLUS            "ab+"   /**< 读写二进制（追加） */
+#define IOT_FS_RBPLUS            "rb+"   /**< 读写二进制（打开） */
+#define IOT_FS_OPEN_USES_STRING_MODE
+
+/* 文件定位方式 */
+#define IOT_FS_SEEK_SET          SEEK_SET    /**< 从文件开头定位 */
+#define IOT_FS_SEEK_CUR          SEEK_CUR    /**< 从当前位置定位 */
+#define IOT_FS_SEEK_END          SEEK_END    /**< 从文件末尾定位 */
+
+/* 路径操作 */
+#define IOT_PATH_SEPARATOR       '/'
+#define IOT_PATH_ALT_SEPARATOR   '\\'
+
+static inline char iot_path_separator(void) {
+    return '/';
+}
+
+static inline const char* iot_path_separator_str(void) {
+    return "/";
+}
+
+static inline int iot_path_is_separator(char c) {
+    return c == '/' || c == '\\';
+}
+
+/**
+ * @brief 检查文件是否存在
+ * @param path 文件路径
+ * @return 存在返回非0，不存在返回 0
+ */
+#define iot_fs_file_exists(path) \
+    (access((path), F_OK) == 0)
+
+/**
+ * @brief 获取文件大小（通过路径）
+ * @param path 文件路径
+ * @return 文件大小，失败返回 -1
+ */
+#define iot_fs_filesize(path) ({ \
+    struct stat _st; \
+    stat((path), &_st) == 0 ? (long)_st.st_size : -1; \
+})
+
+/**
+ * @brief 获取文件大小（通过句柄）
+ * @param fd 文件描述符
+ * @return 文件大小，失败返回 -1
+ */
+#define iot_fs_size(fd) ({ \
+    struct stat _st; \
+    fstat((fd), &_st) == 0 ? (long)_st.st_size : -1; \
+})
+
+/**
+ * @brief 获取文件当前位置
+ * @param fd 文件描述符
+ * @return 当前位置
+ */
+#define iot_fs_tell(fd) \
+    lseek((fd), 0, SEEK_CUR)
+
+/**
+ * @brief 重置文件位置到开头
+ * @param fd 文件描述符
+ */
+#define iot_fs_rewind(fd) \
+    lseek((fd), 0, SEEK_SET)
+
+/**
+ * @brief 同步文件
+ * @param fd 文件描述符
+ * @return 成功返回 0，失败返回 -1
+ */
+#define iot_fs_sync(fd) \
+    fsync((fd))
+
+/**
+ * @brief 截断文件
+ * @param fd 文件描述符
+ * @param length 截断长度
+ * @return 成功返回 0，失败返回 -1
+ */
+#define iot_fs_ftruncate(fd, length) \
+    ftruncate((fd), (length))
+
+/**
+ * @brief 递归删除目录
+ * @param path 目录路径
+ * @return 成功返回 0，失败返回 -1
+ */
+static inline int iot_fs_rmdir_recursive(const char* path) {
+    DIR* d = opendir(path);
+    if (!d) return -1;
+    
+    struct dirent* p;
+    int ret = 0;
+    char subpath[512];
+    
+    while ((p = readdir(d)) != NULL) {
+        if (strcmp(p->d_name, ".") == 0 || strcmp(p->d_name, "..") == 0) {
+            continue;
+        }
+        snprintf(subpath, sizeof(subpath), "%s/%s", path, p->d_name);
+        if (p->d_type == DT_DIR) {
+            ret = iot_fs_rmdir_recursive(subpath);
+        } else {
+            ret = unlink(subpath);
+        }
+        if (ret != 0) break;
+    }
+    
+    closedir(d);
+    if (ret == 0) {
+        ret = rmdir(path);
+    }
+    return ret;
+}
+
+/**
+ * @brief 获取文件系统信息
+ * @param info 文件系统信息结构
+ * @return 成功返回 0，失败返回 -1
+ */
+#define iot_fs_getinfo(info) \
+    ((int)-1)
+
+/**
+ * @brief 查找第一个文件
+ * @param path 查找路径
+ * @param file_data 文件数据
+ * @return 查找句柄，失败返回 -1
+ */
+#define iot_fs_find_first(path, file_data) \
+    ((uint32_t)-1)
+
+/**
+ * @brief 查找下一个文件
+ * @param find_fd 查找句柄
+ * @param file_data 文件数据
+ * @return 成功返回 0，失败返回 -1
+ */
+#define iot_fs_find_next(find_fd, file_data) \
+    ((int)-1)
+
+/**
+ * @brief 关闭查找
+ * @param find_fd 查找句柄
+ * @return 成功返回 0，失败返回 -1
+ */
+#define iot_fs_find_close(find_fd) \
+    ((int)-1)
+
+/**
+ * @brief DNS 域名解析
+ * @param name 域名
+ * @param ip 存储解析结果的 IP 字符串缓冲区
+ * @param ip_len 缓冲区长度
+ * @return 成功返回 0，失败返回 -1
+ */
+static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
+    struct hostent* he = gethostbyname(name);
+    if (!he || !he->h_addr_list || !he->h_addr_list[0] || ip_len == 0) {
+        return -1;
+    }
+    const char* addr = inet_ntoa(*(struct in_addr*)he->h_addr_list[0]);
+    if (!addr) {
+        return -1;
+    }
+    strncpy(ip, addr, ip_len - 1);
+    ip[ip_len - 1] = '\0';
+    return 0;
+}
+
 /*===========================================================
  * 8. 标准输出接口 (stdout)
  *===========================================================*/

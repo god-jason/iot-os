@@ -414,6 +414,13 @@ static inline void iot_socket_deinit(void) {
 }
 
 /**
+ * @brief 设置 socket 为非阻塞模式（供 net 模块使用）
+ * @param fd socket 句柄
+ * @return 成功返回 0，失败返回 -1
+ */
+int net_port_set_nonblocking(iot_socket_t fd);
+
+/**
  * @brief 创建 Socket
  * @param domain 协议域（AF_INET, AF_INET6 等）
  * @param type Socket 类型

@@ -1106,6 +1106,52 @@ static inline int iot_dns_resolve(const char* name, char* ip, size_t ip_len) {
     return 0;
 }
 
+/*===========================================================
+ * 9. 系统接口 (system)
+ *===========================================================*/
+
+/**
+ * @brief 获取环境变量
+ * @param name 环境变量名
+ * @return 环境变量值，不存在返回 NULL
+ */
+#define iot_getenv(name) \
+    getenv((name))
+
+/**
+ * @brief 设置环境变量
+ * @param name 环境变量名
+ * @param value 环境变量值
+ * @param overwrite 是否覆盖已存在的变量
+ * @return 成功返回 0，失败返回 -1
+ */
+static inline int iot_setenv(const char* name, const char* value, int overwrite) {
+    char buf[512];
+    if (!overwrite && getenv(name)) {
+        return 0;
+    }
+    snprintf(buf, sizeof(buf), "%s=%s", name, value);
+    return _putenv(buf);
+}
+
+/**
+ * @brief 取消环境变量
+ * @param name 环境变量名
+ * @return 成功返回 0，失败返回 -1
+ */
+static inline int iot_unsetenv(const char* name) {
+    char buf[512];
+    snprintf(buf, sizeof(buf), "%s=", name);
+    return _putenv(buf);
+}
+
+/**
+ * @brief 执行系统命令
+ * @param command 命令字符串
+ * @return 命令执行状态
+ */
+#define iot_system(command) \
+    system((command))
 
 #ifdef __cplusplus
 }

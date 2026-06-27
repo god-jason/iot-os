@@ -30,6 +30,24 @@
 | ESP32 | `platforms/esp32/` | Espressif ESP32 平台，使用 FreeRTOS |
 | Linux | `platforms/linux/` | Linux PC 平台，使用 pthread |
 | Windows | `platforms/windows/` | Windows PC 平台，使用 Win32 API |
+| WASM | `platforms/wasm/` | WebAssembly 浏览器平台，使用 Emscripten |
+
+### 平台特性对比
+
+| 特性 | ML307N | YOPEN | ESP32 | Linux | Windows | WASM |
+|------|--------|-------|-------|-------|---------|------|
+| **操作系统** | OneOS (CMSIS-RTOS2) | Yocto Linux | FreeRTOS | Linux | Windows | 浏览器事件循环 |
+| **内存管理** | cm_malloc (4字节对齐) | yopen_malloc | heap_caps_malloc | malloc | malloc | malloc (Emscripten) |
+| **多线程** | ✅ 支持 | ✅ 支持 | ✅ 支持 | ✅ 支持 | ✅ 支持 | ⚠️ 单线程 (async_call) |
+| **互斥锁** | ✅ osMutex | ✅ yopen_mutex | ✅ xSemaphore | ✅ pthread_mutex | ✅ CreateMutex | ⚠️ 空操作 (单线程) |
+| **信号量** | ✅ osSemaphore | ✅ yopen_sem | ✅ xSemaphore | ✅ sem_t | ✅ CreateSemaphore | ⚠️ 空操作 (单线程) |
+| **定时器** | ✅ osTimer | ✅ yopen_timer | ✅ xTimer | ✅ timer_create | ✅ 自定义实现 | ✅ setInterval/setTimeout |
+| **网络** | ✅ LwIP | ✅ BSD Socket | ✅ LwIP | ✅ BSD Socket | ✅ Winsock2 | ⚠️ WebSocket / Fetch |
+| **文件系统** | ✅ cm_fs (VFS) | ✅ yopen_fs | ✅ SPIFFS / FATFS | ✅ POSIX | ✅ CRT / Win32 | ⚠️ MEMFS (内存文件系统) |
+| **GPIO** | ✅ cm_gpio | ✅ yopen_gpio | ✅ gpio | ⚠️ sysfs | ⚠️ 模拟 | ❌ 不支持 |
+| **I2C** | ✅ cm_i2c | ✅ yopen_i2c | ✅ i2c_driver | ⚠️ /dev/i2c-N | ⚠️ 模拟 | ❌ 不支持 |
+| **SPI** | ✅ cm_spi | ✅ yopen_spi | ✅ spi_bus | ⚠️ /dev/spidev | ⚠️ 模拟 | ❌ 不支持 |
+| **图形显示** | ❌ 无 | ❌ 无 | ✅ LVGL | ✅ LVGL (SDL) | ✅ LVGL (SDL) | ✅ LVGL (SDL2 + Canvas) |
 
 ---
 
@@ -623,4 +641,124 @@ if (f) {
     }
     iot_fs_close(f);
 }
+```
+
+---
+
+## 13. WASM 平台专用模块
+
+WASM 平台额外提供浏览器环境专用的 Lua 模块，位于 `platforms/wasm/modules/`：
+
+### 模块列表
+
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| `websocket` | `websocket.c` | WebSocket 客户端 |
+| `fetch` | `fetch.c` | HTTP 请求 (Fetch API) |
+| `storage` | `storage.c` | IndexedDB 持久化存储 |
+| `localStorage` | `localStorage.c` | 浏览器本地存储 |
+| `device` | `device.c` | 设备/浏览器信息 |
+| `canvas` | `canvas.c` | HTML5 Canvas 2D 绘图 |
+
+### Lua API 示例
+
+#### WebSocket
+
+```lua
+local ws = websocket.create("wss://echo.websocket.org", {
+    on_open = function()
+        print("WebSocket connected")
+    end,
+    on_message = function(data)
+        print("Received:", data)
+    end,
+    on_close = function(code, reason)
+        print("Closed:", code, reason)
+    end,
+    on_error = function(msg)
+        print("Error:", msg)
+    end
+})
+websocket.send(ws, "hello")
+websocket.close(ws)
+```
+
+#### Fetch
+
+```lua
+-- 同步 GET
+local resp = fetch.get("https://api.example.com/data")
+print("Status:", resp.status)
+print("Body:", resp.body)
+
+-- POST
+local resp = fetch.post("https://api.example.com/submit",
+    '{"key":"value"}',
+    "application/json")
+```
+
+#### localStorage
+
+```lua
+localStorage.set("username", "test")
+localStorage.set("score", tostring(100))
+
+local name = localStorage.get("username")
+local score = tonumber(localStorage.get("score"))
+
+localStorage.remove("username")
+local keys = localStorage.keys()
+local count = localStorage.length()
+```
+
+#### device
+
+```lua
+local info = device.info()
+print("Browser:", info.browser, info.version)
+print("Language:", info.language)
+print("Platform:", info.platform)
+print("Screen:", info.screenWidth, "x", info.screenHeight)
+print("Device type:", info.deviceType)  -- desktop / mobile / tablet
+```
+
+#### storage (IndexedDB)
+
+```lua
+local db = storage.open("mydb", "1.0")
+storage.set(db, "user", '{"name":"test","age":25}')
+
+local data = storage.get(db, "user")
+print(data)
+
+storage.remove(db, "user")
+storage.close(db)
+```
+
+#### canvas
+
+```lua
+local canvas = canvas.create(320, 240)
+local ctx = canvas.getContext()
+
+ctx:clearRect(0, 0, 320, 240)
+ctx:setFillStyle("#FF0000")
+ctx:fillRect(10, 10, 100, 50)
+ctx:setStrokeStyle("#00FF00")
+ctx:setLineWidth(2)
+ctx:strokeRect(10, 10, 100, 50)
+ctx:setFont("16px Arial")
+ctx:fillText("Hello", 50, 30)
+
+-- 路径绘图
+ctx:beginPath()
+ctx:moveTo(0, 0)
+ctx:lineTo(100, 100)
+ctx:closePath()
+ctx:stroke()
+
+-- 圆弧
+ctx:beginPath()
+ctx:arc(100, 100, 50, 0, math.pi * 2)
+ctx:fill()
 ```
