@@ -30,8 +30,15 @@ if plat == "wasm" then
     set_kind("shared")
     add_rules("wasm")
     add_ldflags("-s USE_SDL=2", "-s USE_LVGL=1", "-s ALLOW_MEMORY_GROWTH=1")
-    add_ldflags("-s EXPORTED_FUNCTIONS=['_main','_iot_wasm_stop']", "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']")
-    add_deps("lua", "cjson", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts")
+    add_ldflags("-s EXPORTED_FUNCTIONS=['_main','_iot_wasm_stop']")
+    add_ldflags("-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']")
+    -- 启用 fetch API
+    add_ldflags("-s FETCH=1")
+    -- 启用 WebSocket
+    add_ldflags("-s WEBSOCKET_SUBPROTOCOL='binary'")
+    -- 启用文件系统
+    add_ldflags("-s FORCE_FILESYSTEM=1")
+    add_deps("lua", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts")
     add_deps("iot_core")
     set_default(true)
     return
@@ -39,7 +46,7 @@ end
 
 -- 桌面平台添加依赖和链接库
 if is_desktop_platform then
-    add_deps("lua", "gmssl", "libjpeg-turbo", "miniz", "iot_zlib", "cjson", "sqlite3", "lua-cjson")
+    add_deps("lua", "gmssl", "miniz", "iot_zlib", "lua-cjson")
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_lvgl", "iot_fonts")
     add_deps("iot_core", "drivers")
 
@@ -49,8 +56,8 @@ if is_desktop_platform then
 
     set_policy("check.auto_ignore_flags", false)
     add_ldflags("-Wl,--start-group")
-    add_ldflags("-llua", "-lgmssl", "-llibjpeg-turbo", "-llua-cjson",
-        "-lminiz", "-liot_zlib", "-lcjson", "-lsqlite3", "-liot_crypto",
+    add_ldflags("-llua", "-lgmssl", "-llua-cjson",
+        "-lminiz", "-liot_zlib", "-liot_crypto",
         "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_modbus", "-liot_net", "-liot_lvgl", "-llvgl",
         "-liot_fonts", "-ldrivers", "-liot_core")
     if plat == "windows" then

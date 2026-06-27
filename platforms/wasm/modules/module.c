@@ -6,9 +6,19 @@
 */
 
 extern int luaopen_websocket_register(lua_State* L);
+extern int luaopen_fetch_register(lua_State* L);
+extern int luaopen_storage_register(lua_State* L);
+extern int luaopen_localStorage_register(lua_State* L);
+extern int luaopen_device_register(lua_State* L);
+extern int luaopen_canvas_register(lua_State* L);
 
 static const luaL_Reg platform_modules[] = {
     {"websocket", luaopen_websocket_register},
+    {"fetch", luaopen_fetch_register},
+    {"storage", luaopen_storage_register},
+    {"localStorage", luaopen_localStorage_register},
+    {"device", luaopen_device_register},
+    {"canvas", luaopen_canvas_register},
     {NULL, NULL}
 };
 
