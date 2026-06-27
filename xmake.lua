@@ -20,7 +20,7 @@ option("platform")
     set_default("windows")
     set_showmenu(true)
     set_description("选择目标平台")
-    set_values("linux", "windows", "esp32", "ml307n", "yopen")
+    set_values("linux", "windows", "esp32", "ml307n", "yopen", "wasm")
 option_end()
 
 -- 公共头文件目录

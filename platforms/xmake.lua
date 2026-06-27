@@ -4,7 +4,7 @@
 local plat = get_config("platform") or "windows"
 
 -- 判断是否为桌面平台（需要编译成可执行文件）
-local is_desktop_platform = plat == "windows" or plat == "linux"
+local is_desktop_platform = plat == "windows" or plat == "linux" or plat == "wasm"
 
 -- 根据 platform 参数创建目标
 target("iot")
@@ -24,6 +24,18 @@ add_headerfiles(plat .. "/modules/*.h")
 add_includedirs(plat)
 add_includedirs("../vendor/lua", "../core")
 add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")
+
+-- WASM 平台特殊配置
+if plat == "wasm" then
+    set_kind("shared")
+    add_rules("wasm")
+    add_cflags("-s USE_SDL=2", "-s USE_LVGL=1", "-s ALLOW_MEMORY_GROWTH=1")
+    add_ldflags("-s EXPORTED_FUNCTIONS=['_main','_iot_wasm_stop']", "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']")
+    add_deps("lua", "cjson", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts")
+    add_deps("iot_core")
+    set_default(true)
+    return
+end
 
 -- 桌面平台添加依赖和链接库
 if is_desktop_platform then
