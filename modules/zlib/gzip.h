@@ -55,6 +55,11 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
 int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level);
 
 /**
+ * @brief 估算 GZIP 压缩输出缓冲区大小
+ */
+size_t gzip_compress_bound(size_t src_len);
+
+/**
  * @brief 解压GZIP文件
  * @param src_path 源GZIP文件路径
  * @param dst_path 目标文件路径

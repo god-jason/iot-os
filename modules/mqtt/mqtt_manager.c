@@ -433,10 +433,6 @@ static void mqtt_manager_thread(void* arg) {
             if (client->state == MQTT_STATE_CONNECTED) {
                 mqtt_manager_check_keepalive(client);
                 mqtt_manager_resend_messages(client);
-
-                if (client->sock && client->recv_len > 0) {
-                    mqtt_manager_process_packet(client);
-                }
             }
 
             mqtt_manager_check_reconnect(client);

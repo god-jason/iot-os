@@ -39,7 +39,18 @@ static void lua_pushstring_safe(lua_State* L, const char* str, size_t len) {
     }
 }
 
-/* 将错误码转换为错误消息 */
+/* 将 gzip 错误码转换为错误消息 */
+static const char* gzip_error_str(int err) {
+    switch (err) {
+        case GZIP_OK:           return "success";
+        case GZIP_ERR_MEM:      return "memory error";
+        case GZIP_ERR_FORMAT:   return "format error";
+        case GZIP_ERR_CRC:      return "crc error";
+        case GZIP_ERR_FILE:     return "file error";
+        default:                return "unknown error";
+    }
+}
+
 static const char* zlib_error_str(int err) {
     switch (err) {
         case ZLIB_OK:           return "success";
@@ -47,7 +58,7 @@ static const char* zlib_error_str(int err) {
         case ZLIB_ERR_BUF:      return "buffer error";
         case ZLIB_ERR_FORMAT:   return "format error";
         case ZLIB_ERR_CRC:      return "crc error";
-        case ZLIB_ERR_FILE:      return "file error";
+        case ZLIB_ERR_FILE:     return "file error";
         case ZLIB_ERR_NOT_FOUND: return "not found";
         default:                return "unknown error";
     }
@@ -189,7 +200,7 @@ static int luaopen_zlib_gzip_compress(lua_State* L) {
     if (level > 9) level = GZIP_COMPRESS_BEST;
     
     /* 估算输出缓冲区大小 */
-    size_t dst_len = src_len + src_len / 10 + 128;
+    size_t dst_len = gzip_compress_bound(src_len);
     uint8_t* dst = (uint8_t*)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
@@ -203,7 +214,7 @@ static int luaopen_zlib_gzip_compress(lua_State* L) {
     if (ret != GZIP_OK) {
         iot_free(dst);
         lua_pushnil(L);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, gzip_error_str(ret));
         return 2;
     }
     
@@ -238,7 +249,7 @@ static int luaopen_zlib_gzip_decompress(lua_State* L) {
     if (ret != GZIP_OK) {
         iot_free(dst);
         lua_pushnil(L);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, gzip_error_str(ret));
         return 2;
     }
     
@@ -262,7 +273,7 @@ static int luaopen_zlib_gzip_compress_file(lua_State* L) {
     int ret = gzip_compress_file(src_path, dst_path, level);
     if (ret != GZIP_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, gzip_error_str(ret));
         return 2;
     }
     
@@ -283,7 +294,7 @@ static int luaopen_zlib_gzip_decompress_file(lua_State* L) {
     int ret = gzip_decompress_file(src_path, dst_path);
     if (ret != GZIP_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        lua_pushstring(L, gzip_error_str(ret));
         return 2;
     }
     
@@ -372,7 +383,16 @@ static int luaopen_zlib_zip_compress_file(lua_State* L) {
     
     if (ret != ZIP_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        const char* err_msg;
+        switch (ret) {
+            case ZIP_ERR_MEM:       err_msg = "memory error"; break;
+            case ZIP_ERR_FORMAT:    err_msg = "format error"; break;
+            case ZIP_ERR_CRC:       err_msg = "crc error"; break;
+            case ZIP_ERR_FILE:      err_msg = "file error"; break;
+            case ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
+            default:                err_msg = "unknown error"; break;
+        }
+        lua_pushstring(L, err_msg);
         return 2;
     }
     
@@ -404,7 +424,15 @@ static int luaopen_zlib_tar_decompress_file(lua_State* L) {
     int ret = tar_decompress_file(src_path, dst_dir);
     if (ret != TAR_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        const char* err_msg;
+        switch (ret) {
+            case TAR_ERR_MEM:       err_msg = "memory error"; break;
+            case TAR_ERR_FORMAT:    err_msg = "format error"; break;
+            case TAR_ERR_FILE:      err_msg = "file error"; break;
+            case TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
+            default:                err_msg = "unknown error"; break;
+        }
+        lua_pushstring(L, err_msg);
         return 2;
     }
     
@@ -452,7 +480,15 @@ static int luaopen_zlib_tar_compress_file(lua_State* L) {
     
     if (ret != TAR_OK) {
         lua_pushboolean(L, 0);
-        lua_pushstring(L, zlib_error_str(ret));
+        const char* err_msg;
+        switch (ret) {
+            case TAR_ERR_MEM:       err_msg = "memory error"; break;
+            case TAR_ERR_FORMAT:    err_msg = "format error"; break;
+            case TAR_ERR_FILE:      err_msg = "file error"; break;
+            case TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
+            default:                err_msg = "unknown error"; break;
+        }
+        lua_pushstring(L, err_msg);
         return 2;
     }
     

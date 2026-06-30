@@ -122,11 +122,28 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     return GZIP_OK;
 }
 
+static size_t gzip_compress_bound_size(size_t src_len)
+{
+    mz_ulong bound = mz_compressBound((mz_ulong)src_len);
+    size_t total = (size_t)bound + 18;
+
+    if (total < src_len + 128) {
+        total = src_len + 128;
+    }
+    return total;
+}
+
+size_t gzip_compress_bound(size_t src_len)
+{
+    return gzip_compress_bound_size(src_len);
+}
+
 int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level)
 {
     uint8_t *p;
     uint32_t crc;
     size_t compressed;
+    size_t bound;
     uint32_t size;
 
     if (!src || !dst || !dst_len) {
@@ -140,8 +157,8 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
         level = GZIP_COMPRESS_BEST;
     }
 
-    if (*dst_len < src_len + 128) {
-        *dst_len = src_len + 128;
+    bound = gzip_compress_bound_size(src_len);
+    if (*dst_len < bound) {
         return GZIP_ERR_MEM;
     }
 
@@ -288,7 +305,7 @@ int gzip_compress_file(const char *src_path, const char *dst_path, int level)
     }
     iot_fs_close(src_fd);
 
-    dst_size = (size_t)file_size * 4 + 128;
+    dst_size = gzip_compress_bound_size((size_t)file_size);
     dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);

@@ -391,6 +391,9 @@ static int luaopen_rtos_recv(lua_State* L)
         if (msg->data) {
             lua_pushlightuserdata(L, msg->data);
             lua_setfield(L, -2, "userdata");
+            /* 兼容旧版 iot.luac：processCmsg 曾使用 msg.data */
+            lua_pushlightuserdata(L, msg->data);
+            lua_setfield(L, -2, "data");
         }
 
         /* 追加params字段 */
