@@ -350,6 +350,33 @@ static int luaopen_rtos_timer_delete(lua_State* L)
 }
 
 /**
+ * @brief 将 iot_callback_save 保存的回调推入 Lua 消息表
+ * @note msg->data 是指向 full userdata 的指针，须从注册表取出才能 getuservalue
+ */
+static void rtos_push_call_userdata(lua_State* L, void* ud)
+{
+    if (!ud) {
+        return;
+    }
+
+    lua_pushlightuserdata(L, ud);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (!lua_isnil(L, -1)) {
+        lua_setfield(L, -2, "userdata");
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "data");
+        return;
+    }
+
+    lua_pop(L, 1);
+    LOG_WARN("CALL callback missing in registry: ptr=%p", ud);
+    lua_pushlightuserdata(L, ud);
+    lua_setfield(L, -2, "userdata");
+    lua_pushlightuserdata(L, ud);
+    lua_setfield(L, -2, "data");
+}
+
+/**
  * @brief Lua接口: 接收系统消息
  * @api rtos.recv(timeout)
  */
@@ -387,14 +414,8 @@ static int luaopen_rtos_recv(lua_State* L)
             lua_setfield(L, -2, "params");
         }
     } else if (msg->type == MSG_TYPE_CALL) {
-        /* 处理CALL消息 */
-        if (msg->data) {
-            lua_pushlightuserdata(L, msg->data);
-            lua_setfield(L, -2, "userdata");
-            /* 兼容旧版 iot.luac：processCmsg 曾使用 msg.data */
-            lua_pushlightuserdata(L, msg->data);
-            lua_setfield(L, -2, "data");
-        }
+        /* 处理CALL消息：推送 full userdata（含 uservalue 中的 Lua 回调） */
+        rtos_push_call_userdata(L, msg->data);
 
         /* 追加params字段 */
         if (msg->params && msg->params->count > 0) {
