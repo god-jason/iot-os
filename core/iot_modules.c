@@ -39,7 +39,6 @@ extern int luaopen_lvgl(lua_State* L);
 
 /* Vendor 模块 */
 extern int luaopen_gmssl_register(lua_State* L);
-extern int luaopen_sqlite3_register(lua_State* L);
 
 // 注册平台模块
 extern int luaopen_cjson_register(lua_State* L);
@@ -80,7 +79,6 @@ static const luaL_Reg modules_list[] = {
 
 static const luaL_Reg vendor_list[] = {
     {"gmssl",    luaopen_gmssl_register},      /* GMSSL 模块 */
-    {"sqlite3",  luaopen_sqlite3_register},    /* SQLite3 模块 */
     {NULL, NULL}
 };
 

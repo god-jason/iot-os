@@ -2,9 +2,9 @@
 local T = dofile("app/tests/common.lua")
 local mqtt = T.mod("mqtt")
 
-local BROKER = "test.mosquitto.org"
+local BROKER = "git.zgwit.com"
 local PORT = 1883
-local TOPIC = "iot-os/test/" .. tostring(os.time())
+local TOPIC = "iot-os/test"
 
 return function()
     local client = mqtt.new()
