@@ -472,6 +472,63 @@ return function()
     cal:align(lv.ALIGN_TOP_LEFT, COL4_X, col4_y + 420)
     T.pass("lvgl.calendar")
 
+    -- ==================== 容器与线条控件 ====================
+    -- ---- line (底部折线) ----
+    local line_obj = lv.line.create(scr)
+    line_obj:set_points({{0,0},{60,10},{30,40},{80,25},{50,55}})
+    line_obj:align(lv.ALIGN_BOTTOM_LEFT, 40, -30)
+    T.pass("lvgl.line")
+
+    -- ---- win (窗口,带关闭按钮事件) ----
+    local win = lv.win.create(scr, 36)
+    win:set_title("Window")
+    win:set_size(300, 180)
+    win:align(lv.ALIGN_CENTER, -260, -60)
+    local win_btn = win:add_btn(nil, 36)
+    win:set_btn_title(win_btn, "X")
+    -- 关闭按钮点击事件: 删除窗口
+    lv.obj.add_event_cb(win_btn, function(e, code)
+        if code == lv.EVENT_CLICKED then
+            lv.obj.delete(win)
+            status:set_text("Window closed")
+        end
+    end, lv.EVENT_CLICKED)
+    local win_cont = win:get_content()
+    local win_lbl = lv.label.create(win_cont)
+    win_lbl:set_text("Window content area")
+    win_lbl:center()
+    T.pass("lvgl.win")
+
+    -- ---- msgbox (消息框,带按钮点击事件) ----
+    local mbox = lv.msgbox.create(nil)
+    mbox:set_title("提示")
+    mbox:set_text("消息框测试,点击按钮关闭")
+    mbox:add_button("确定")
+    mbox:add_button("取消")
+    -- 按钮点击事件: 获取点击的按钮文本并关闭消息框
+    mbox:add_event_cb(function(e, code)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local btn_text = mbox:get_active_btn_text()
+            status:set_text("MsgBox: " .. (btn_text or "?"))
+            mbox:close()
+        end
+    end, lv.EVENT_VALUE_CHANGED)
+    T.pass("lvgl.msgbox")
+
+    -- ---- tileview (平铺视图) ----
+    local tv2 = lv.tileview.create(scr)
+    tv2:set_size(240, 120)
+    tv2:align(lv.ALIGN_CENTER, 260, 160)
+    local tile1 = tv2:add_tile(0, 0, lv.DIR_RIGHT)
+    local t1_lbl = lv.label.create(tile1)
+    t1_lbl:set_text("Tile 1")
+    t1_lbl:center()
+    local tile2 = tv2:add_tile(1, 0, lv.DIR_LEFT)
+    local t2_lbl = lv.label.create(tile2)
+    t2_lbl:set_text("Tile 2")
+    t2_lbl:center()
+    T.pass("lvgl.tileview")
+
     -- 立即刷新
     lv.refr_now(nil)
     T.pass("lvgl.refr_now")

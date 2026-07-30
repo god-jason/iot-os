@@ -23,7 +23,7 @@ static int lvgl_line_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ??OO?? ==================== */
+/* ==================== 线条OO方法 ==================== */
 
 /*
 创建线条控件(OO风格)
@@ -48,6 +48,12 @@ static int lvgl_line_set_points(lua_State* L) {
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
 
+    /* 释放旧的点数组(LVGL的lv_line_set_points只保存指针不复制,需自行管理) */
+    lv_point_t* old_points = (lv_point_t*)lv_obj_get_user_data(line);
+    if (old_points) {
+        cm_free(old_points);
+    }
+
     lv_point_t* points = (lv_point_t*)cm_malloc(sizeof(lv_point_t) * point_num);
     if (!points) {
         luaL_error(L, "memory allocation failed");
@@ -67,7 +73,8 @@ static int lvgl_line_set_points(lua_State* L) {
     }
 
     lv_line_set_points(line, points, point_num);
-    cm_free(points);
+    /* 保存点数组指针到user_data,供下次set_points或销毁时释放 */
+    lv_obj_set_user_data(line, points);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -138,7 +145,7 @@ static int lvgl_line_get_y_invert(lua_State* L) {
 
 /* 注册 line 子模块 */
 void lvgl_register_line(lua_State* L) {
-    /* 创建组件方法表用于metatable继承) */
+    /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
@@ -162,6 +169,6 @@ void lvgl_register_line(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主表lvgl.line) */
+    /* 注册create函数到主表(lvgl.line) */
     REG_METHOD(L, "create", lvgl_line_create);
 }

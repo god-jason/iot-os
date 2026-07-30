@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* styleçťäťśçmetatableĺźç¨ */
+/* style组件的metatable引用 */
 static int style_metatable_ref = LUA_NOREF;
 
-/* ==================== ĺé¨ĺĺťşĺ˝ć° ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_style_create_internal(lua_State* L) {
     lv_style_t* style = (lv_style_t*)cm_malloc(sizeof(lv_style_t));
@@ -28,10 +28,10 @@ static int lvgl_style_create_internal(lua_State* L) {
 }
 
 /*
-äťčĄ¨ĺĺťşć ˇĺź(ĺé¨ĺ˝ć°)
-@param L Luaçść?
-@param idx čĄ¨çç´˘ĺź
-@return lv_style_t* ć ˇĺźćé
+从表创建样式(内部函数)
+@param L Lua状态
+@param idx 表的索引
+@return lv_style_t* 样式指针
 */
 static lv_style_t* lvgl_style_create_from_table_internal(lua_State* L, int idx) {
     lv_style_t* style = (lv_style_t*)cm_malloc(sizeof(lv_style_t));
@@ -40,7 +40,7 @@ static lv_style_t* lvgl_style_create_from_table_internal(lua_State* L, int idx) 
     }
     lv_style_init(style);
 
-    /* ćŁćĽĺšśĺşç¨ĺĺąć?*/
+    /* 检查并应用各属性 */
     lua_getfield(L, idx, "width");
     if (lua_isinteger(L, -1)) {
         lv_style_set_width(style, (lv_coord_t)lua_tointeger(L, -1));
@@ -266,17 +266,17 @@ static lv_style_t* lvgl_style_create_from_table_internal(lua_State* L, int idx) 
     return style;
 }
 
-/* ==================== ć ˇĺźOOćšćł ==================== */
+/* ==================== 样式OO方法 ==================== */
 
 /*
-ĺĺťşć ˇĺź
-@param tab ĺŻé?ĺĺŤć ˇĺźĺąć§çčĄ?
-@return userdata ć ˇĺźćé
+创建样式
+@param tab 可选,包含样式属性的表
+@return userdata 样式指针
 @usage local style = lvgl.style.create()
 @usage local style = lvgl.style.create({width=100, height=50, radius=10})
 */
 static int lvgl_style_create(lua_State* L) {
-    /* ćŁćĽćŻĺŚäź ĺĽäşčĄ¨ĺć?*/
+    /* 检查是否传入了表参数 */
     if (lua_istable(L, 1)) {
         lv_style_t* style = lvgl_style_create_from_table_internal(L, 1);
         if (!style) {
@@ -287,13 +287,13 @@ static int lvgl_style_create(lua_State* L) {
         return 1;
     }
 
-    /* äź çťćšĺźĺĺťş */
+    /* 传统方式创建 */
     return lvgl_obj_create_instance(L, lvgl_style_create_internal, style_metatable_ref);
 }
 
 /*
-ĺ é¤ć ˇĺź
-@param self ć ˇĺźĺŽäž
+删除样式
+@param self 样式实例
 @return nil
 @usage style:delete()
 */
@@ -307,8 +307,8 @@ static int lvgl_style_delete(lua_State* L) {
 }
 
 /*
-éç˝Žć ˇĺź
-@param self ć ˇĺźĺŽäž
+重置样式
+@param self 样式实例
 @return self
 @usage style:reset()
 */
@@ -320,7 +320,7 @@ static int lvgl_style_reset(lua_State* L) {
     return 1;
 }
 
-/* ==================== ĺ°şĺŻ¸ĺąć?==================== */
+/* ==================== 尺寸属性 ==================== */
 
 static int lvgl_style_set_width(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -376,7 +376,7 @@ static int lvgl_style_set_max_height(lua_State* L) {
     return 1;
 }
 
-/* ==================== čžščˇĺąć?==================== */
+/* ==================== 边距属性 ==================== */
 
 static int lvgl_style_set_pad_top(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -441,7 +441,7 @@ static int lvgl_style_set_pad_all(lua_State* L) {
     return 1;
 }
 
-/* ==================== čćŻĺąć?==================== */
+/* ==================== 背景属性 ==================== */
 
 static int lvgl_style_set_bg_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -490,7 +490,7 @@ static int lvgl_style_set_bg_grad_stop(lua_State* L) {
     return 1;
 }
 
-/* ==================== čžšćĄĺąć?==================== */
+/* ==================== 边框属性 ==================== */
 
 static int lvgl_style_set_border_width(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -529,7 +529,7 @@ static int lvgl_style_set_border_side(lua_State* L) {
     return 1;
 }
 
-/* ==================== ĺč§ĺąć?==================== */
+/* ==================== 圆角属性 ==================== */
 
 static int lvgl_style_set_radius(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -540,7 +540,7 @@ static int lvgl_style_set_radius(lua_State* L) {
     return 1;
 }
 
-/* ==================== ććŹĺąć?==================== */
+/* ==================== 文本属性 ==================== */
 
 static int lvgl_style_set_text_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -579,7 +579,7 @@ static int lvgl_style_set_text_align(lua_State* L) {
     return 1;
 }
 
-/* ==================== ĺžçĺąć?==================== */
+/* ==================== 图片属性 ==================== */
 
 static int lvgl_style_set_img_recolor(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -600,7 +600,7 @@ static int lvgl_style_set_img_recolor_opa(lua_State* L) {
     return 1;
 }
 
-/* ==================== é´ĺ˝ąĺąć?==================== */
+/* ==================== 阴影属性 ==================== */
 
 static int lvgl_style_set_shadow_width(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -657,7 +657,7 @@ static int lvgl_style_set_shadow_ofs_y(lua_State* L) {
     return 1;
 }
 
-/* ==================== č˝Žĺťĺąć?==================== */
+/* ==================== 轮廓属性 ==================== */
 
 static int lvgl_style_set_outline_width(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
@@ -696,16 +696,16 @@ static int lvgl_style_set_outline_pad(lua_State* L) {
     return 1;
 }
 
-/* ćł¨ĺ style ĺ­ć¨Ąĺ?*/
+/* 注册 style 子模块 */
 void lvgl_register_style(lua_State* L) {
-    /* ĺĺťşçťäťśćšćłčĄ?ç¨äşmetatableçť§ćż) */
+    /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
-    /* ćł¨ĺOOéŁć źćšćł */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "delete", lvgl_style_delete);
     REG_METHOD(L, "reset", lvgl_style_reset);
 
-    /* ĺ°şĺŻ¸ĺąć?*/
+    /* 尺寸属性 */
     REG_METHOD(L, "set_width", lvgl_style_set_width);
     REG_METHOD(L, "set_height", lvgl_style_set_height);
     REG_METHOD(L, "set_min_width", lvgl_style_set_min_width);
@@ -713,7 +713,7 @@ void lvgl_register_style(lua_State* L) {
     REG_METHOD(L, "set_max_width", lvgl_style_set_max_width);
     REG_METHOD(L, "set_max_height", lvgl_style_set_max_height);
 
-    /* čžščˇĺąć?*/
+    /* 边距属性 */
     REG_METHOD(L, "set_pad_top", lvgl_style_set_pad_top);
     REG_METHOD(L, "set_pad_bottom", lvgl_style_set_pad_bottom);
     REG_METHOD(L, "set_pad_left", lvgl_style_set_pad_left);
@@ -722,33 +722,33 @@ void lvgl_register_style(lua_State* L) {
     REG_METHOD(L, "set_pad_column", lvgl_style_set_pad_column);
     REG_METHOD(L, "set_pad_all", lvgl_style_set_pad_all);
 
-    /* čćŻĺąć?*/
+    /* 背景属性 */
     REG_METHOD(L, "set_bg_color", lvgl_style_set_bg_color);
     REG_METHOD(L, "set_bg_opa", lvgl_style_set_bg_opa);
     REG_METHOD(L, "set_bg_grad_color", lvgl_style_set_bg_grad_color);
     REG_METHOD(L, "set_bg_grad_dir", lvgl_style_set_bg_grad_dir);
     REG_METHOD(L, "set_bg_grad_stop", lvgl_style_set_bg_grad_stop);
 
-    /* čžšćĄĺąć?*/
+    /* 边框属性 */
     REG_METHOD(L, "set_border_width", lvgl_style_set_border_width);
     REG_METHOD(L, "set_border_color", lvgl_style_set_border_color);
     REG_METHOD(L, "set_border_opa", lvgl_style_set_border_opa);
     REG_METHOD(L, "set_border_side", lvgl_style_set_border_side);
 
-    /* ĺč§ĺąć?*/
+    /* 圆角属性 */
     REG_METHOD(L, "set_radius", lvgl_style_set_radius);
 
-    /* ććŹĺąć?*/
+    /* 文本属性 */
     REG_METHOD(L, "set_text_color", lvgl_style_set_text_color);
     REG_METHOD(L, "set_text_opa", lvgl_style_set_text_opa);
     REG_METHOD(L, "set_text_font", lvgl_style_set_text_font);
     REG_METHOD(L, "set_text_align", lvgl_style_set_text_align);
 
-    /* ĺžçĺąć?*/
+    /* 图片属性 */
     REG_METHOD(L, "set_img_recolor", lvgl_style_set_img_recolor);
     REG_METHOD(L, "set_img_recolor_opa", lvgl_style_set_img_recolor_opa);
 
-    /* é´ĺ˝ąĺąć?*/
+    /* 阴影属性 */
     REG_METHOD(L, "set_shadow_width", lvgl_style_set_shadow_width);
     REG_METHOD(L, "set_shadow_color", lvgl_style_set_shadow_color);
     REG_METHOD(L, "set_shadow_opa", lvgl_style_set_shadow_opa);
@@ -756,16 +756,16 @@ void lvgl_register_style(lua_State* L) {
     REG_METHOD(L, "set_shadow_ofs_x", lvgl_style_set_shadow_ofs_x);
     REG_METHOD(L, "set_shadow_ofs_y", lvgl_style_set_shadow_ofs_y);
 
-    /* č˝Žĺťĺąć?*/
+    /* 轮廓属性 */
     REG_METHOD(L, "set_outline_width", lvgl_style_set_outline_width);
     REG_METHOD(L, "set_outline_color", lvgl_style_set_outline_color);
     REG_METHOD(L, "set_outline_opa", lvgl_style_set_outline_opa);
     REG_METHOD(L, "set_outline_pad", lvgl_style_set_outline_pad);
 
-    /* äżĺ­çťäťśmetatableĺźç¨(ç¨äşçť§ćż) */
+    /* 保存组件metatable引用(用于继承) */
     style_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ĺ°ćšćłĺ¤ĺśĺ°çťäťśĺ­čĄ¨(ćŻć lvgl.style.set_radius(style, ...) č°ç¨) */
+    /* 将方法复制到组件子表(支持 lvgl.style.set_radius(style, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, style_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -776,6 +776,6 @@ void lvgl_register_style(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ćł¨ĺcreateĺ˝ć°ĺ°ä¸ťčĄ?lvgl.style) */
+    /* 注册create函数到主表(lvgl.style) */
     REG_METHOD(L, "create", lvgl_style_create);
 }
