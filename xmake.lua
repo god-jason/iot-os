@@ -10,6 +10,12 @@ set_languages("c99")
 -- 添加编译规则
 add_rules("mode.debug", "mode.release")
 
+-- 添加镜像仓库（优先使用清华镜像）
+-- add_repositories("tuna https://mirrors.tuna.tsinghua.edu.cn/xmake-repo.git", {priority = 999})
+-- add_repositories("xmake-repo https://gitcode.com/xmake-mirror/xmake-repo.git")
+
+
+
 -- 默认使用 gcc 工具链
 set_toolchains("gcc")
 

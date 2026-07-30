@@ -50,8 +50,19 @@ if is_desktop_platform then
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_lvgl", "iot_fonts", "iot_filters", "iot_pack", "iot_wdt")
     add_deps("iot_core", "drivers")
 
+    -- 桌面平台引入 SDL2（供 LVGL 窗口驱动使用）
+    if plat ~= "wasm" then
+        if plat == "windows" then
+            add_includedirs("../vendor/libsdl/SDL2-2.32.10/x86_64-w64-mingw32/include/SDL2")
+            add_linkdirs("../vendor/libsdl/SDL2-2.32.10/x86_64-w64-mingw32/lib")
+            -- 静态链接 SDL2，禁用 main 宏重定向
+            add_defines("SDL_MAIN_HANDLED")
+        end
+    end
+
     if plat == "windows" then
-        add_links("ws2_32", "winmm", "bcrypt")
+        -- 静态链接 SDL2，禁用 main 宏重定向
+        add_defines("SDL_MAIN_HANDLED")
     end
 
     set_policy("check.auto_ignore_flags", false)
@@ -61,7 +72,11 @@ if is_desktop_platform then
         "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_modbus", "-liot_net", "-liot_lvgl", "-llvgl",
         "-liot_fonts", "-liot_filters", "-liot_pack", "-liot_wdt", "-ldrivers", "-liot_core")
     if plat == "windows" then
-        add_ldflags("-lws2_32", "-lwinmm", "-lbcrypt")
+        -- SDL2 静态链接，系统库必须在 SDL2 之后
+        add_ldflags("-Wl,-Bstatic", "-lSDL2", "-lSDL2main", "-Wl,-Bdynamic")
+        add_ldflags("-lws2_32", "-lwinmm", "-lgdi32", "-limm32", "-lole32", "-loleaut32",
+            "-lshell32", "-lsetupapi", "-lversion", "-ladvapi32", "-luser32",
+            "-luuid", "-ldinput8", "-ldxguid", "-lbcrypt", "-lmingw32")
     end
     add_ldflags("-Wl,--end-group")
 

@@ -25,7 +25,7 @@ return function(name)
         http = 90000,
         mqtt = 120000,
         uart = 30000,
-        lvgl = 5000,
+        lvgl = 10000,
     }
 
     local function run_test()

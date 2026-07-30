@@ -50,3 +50,8 @@ target("lvgl")
     
     -- 使用 lv_conf_internal.h 内建默认配置（与 modules/lvgl/lvgl_port.h 一致）
     add_defines("LV_CONF_SKIP")
+
+    -- 桌面平台引入 SDL2（供 LVGL 窗口驱动使用）
+    if plat == "windows" or plat == "macos" or plat == "linux" then
+        add_packages("libsdl2")
+    end
