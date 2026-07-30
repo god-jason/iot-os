@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== čžĺĽčŽžĺ¤ćä˝ ==================== */
+/* ==================== 输入设备操作 ==================== */
 
 static int lvgl_indev_get_act(lua_State* L) {
     lv_indev_t* indev = lv_indev_get_act();
@@ -45,7 +45,7 @@ static int lvgl_indev_get_key(lua_State* L) {
     return 1;
 }
 
-/* ćł¨ĺ indev ĺ­ć¨Ąĺ?*/
+/* 注册 indev 子模块 */
 void lvgl_register_indev(lua_State* L) {
     REG_METHOD(L, "get_act", lvgl_indev_get_act);
     REG_METHOD(L, "get_type", lvgl_indev_get_type);

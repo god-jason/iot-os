@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* rollerç»ä»¶çmetatableå¼ç¨ */
+/* roller组件的metatable引用 */
 static int roller_metatable_ref = LUA_NOREF;
 
-/* ==================== åé¨åå»ºå½æ° ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_roller_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -23,12 +23,12 @@ static int lvgl_roller_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== æ»è½®OOæ¹æ³ ==================== */
+/* ==================== 滚轮OO方法 ==================== */
 
 /*
-åå»ºæ»è½®æ§ä»¶(OOé£æ ¼)
-@param self ç¶å¯¹è±?å¯é?
-@return userdata å¸¦metatableçæ»è½®å®ä¾?
+创建滚轮控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的滚轮实例
 @usage local roller = lvgl.roller.create(scr)
 */
 static int lvgl_roller_create(lua_State* L) {
@@ -36,10 +36,10 @@ static int lvgl_roller_create(lua_State* L) {
 }
 
 /*
-è®¾ç½®æ»è½®éé¡¹
-@param self æ»è½®å®ä¾ææé?
-@param options éé¡¹å­ç¬¦ä¸?ç¨\nåé)
-@param mode æ¨¡å¼(å¯é?é»è®¤NORMAL)
+设置滚轮选项
+@param self 滚轮实例或指针
+@param options 选项字符串(用\n分隔)
+@param mode 模式(可选,默认NORMAL)
 @return self
 @usage roller:set_options("A\nB\nC", lvgl.ROLLER_MODE_NORMAL)
 */
@@ -53,10 +53,10 @@ static int lvgl_roller_set_options(lua_State* L) {
 }
 
 /*
-è®¾ç½®éä¸­é¡?
-@param self æ»è½®å®ä¾ææé?
-@param sel éä¸­é¡¹ç´¢å¼?
-@param anim æ¯å¦å¨ç»(å¯é?
+设置选中项
+@param self 滚轮实例或指针
+@param sel 选中项索引
+@param anim 是否动画(可选)
 @return self
 @usage roller:set_selected(1, 0)
 */
@@ -70,9 +70,9 @@ static int lvgl_roller_set_selected(lua_State* L) {
 }
 
 /*
-è®¾ç½®å¯è§è¡æ°
-@param self æ»è½®å®ä¾ææé?
-@param row_cnt è¡æ°
+设置可见行数
+@param self 滚轮实例或指针
+@param row_cnt 行数
 @return self
 @usage roller:set_visible_row_count(3)
 */
@@ -85,9 +85,9 @@ static int lvgl_roller_set_visible_row_count(lua_State* L) {
 }
 
 /*
-è·åéä¸­é¡¹ç´¢å¼?
-@param self æ»è½®å®ä¾ææé?
-@return integer éä¸­é¡¹ç´¢å¼?
+获取选中项索引
+@param self 滚轮实例或指针
+@return integer 选中项索引
 @usage local sel = roller:get_selected()
 */
 static int lvgl_roller_get_selected(lua_State* L) {
@@ -106,22 +106,22 @@ static int lvgl_roller_get_selected_str(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å roller å­æ¨¡块*/
+/* 注册 roller 子模块 */
 void lvgl_register_roller(lua_State* L) {
-    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
+    /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
-    /* æ³¨åOOé£æ ¼æ¹æ³ */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_options", lvgl_roller_set_options);
     REG_METHOD(L, "set_selected", lvgl_roller_set_selected);
     REG_METHOD(L, "set_visible_row_count", lvgl_roller_set_visible_row_count);
     REG_METHOD(L, "get_selected", lvgl_roller_get_selected);
     REG_METHOD(L, "get_selected_str", lvgl_roller_get_selected_str);
 
-    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
+    /* 保存组件metatable引用(用于继承) */
     roller_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.roller.set_options(roller, ...) è°ç¨) */
+    /* 将方法复制到组件子表(支持 lvgl.roller.set_options(roller, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, roller_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -132,6 +132,6 @@ void lvgl_register_roller(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.roller) */
+    /* 注册create函数到主表(lvgl.roller) */
     REG_METHOD(L, "create", lvgl_roller_create);
 }

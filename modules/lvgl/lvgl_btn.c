@@ -11,12 +11,12 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* btnç»ä»¶çmetatableå¼ç¨ */
+/* btn组件的metatable引用 */
 static int btn_metatable_ref = LUA_NOREF;
 
-/* ==================== åé¨åå»ºå½æ° ==================== */
+/* ==================== 内部创建函数 ==================== */
 
-/* å®éåå»ºæé®çå½æ?è¢«OOåè£å¨è°ç? */
+/* 实际创建按钮的函数(被OO包装器调用) */
 static int lvgl_btn_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
     lv_obj_t* btn = lv_btn_create(parent);
@@ -24,12 +24,12 @@ static int lvgl_btn_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== æé®OOæ¹æ³ ==================== */
+/* ==================== 按钮OO方法 ==================== */
 
 /*
-åå»ºæé®(OOé£æ ¼)
-@param self ç¶å¯¹è±?å¯é?
-@return userdata å¸¦metatableçæé®å®ä¾?
+创建按钮(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的按钮实例
 @usage local btn = lvgl.btn.create(scr)
 */
 static int lvgl_btn_create(lua_State* L) {
@@ -37,9 +37,9 @@ static int lvgl_btn_create(lua_State* L) {
 }
 
 /*
-è®¾ç½®æé®ææ¬
-@param self æé®å®ä¾ææé?
-@param text ææ¬åå®¹
+设置按钮文本
+@param self 按钮实例或指针
+@param text 文本内容
 @return self
 @usage btn:set_text("OK")
 */
@@ -52,9 +52,9 @@ static int lvgl_btn_set_text(lua_State* L) {
 }
 
 /*
-è·åæé®ææ¬
-@param self æé®å®ä¾ææé?
-@return string ææ¬åå®¹
+获取按钮文本
+@param self 按钮实例或指针
+@return string 文本内容
 @usage local text = btn:get_text()
 */
 static int lvgl_btn_get_text(lua_State* L) {
@@ -65,9 +65,9 @@ static int lvgl_btn_get_text(lua_State* L) {
 }
 
 /*
-è®¾ç½®æé®ç¶æ?
-@param self æé®å®ä¾ææé?
-@param state ç¶æå?
+设置按钮状态
+@param self 按钮实例或指针
+@param state 状态值
 @return self
 @usage btn:set_state(lvgl.BTN_STATE_PRESSED)
 */
@@ -80,9 +80,9 @@ static int lvgl_btn_set_state(lua_State* L) {
 }
 
 /*
-è·åæé®ç¶æ?
-@param self æé®å®ä¾ææé?
-@return integer ç¶æå?
+获取按钮状态
+@param self 按钮实例或指针
+@return integer 状态值
 @usage local state = btn:get_state()
 */
 static int lvgl_btn_get_state(lua_State* L) {
@@ -93,8 +93,8 @@ static int lvgl_btn_get_state(lua_State* L) {
 }
 
 /*
-åæ¢æé®ç¶æ?
-@param self æé®å®ä¾ææé?
+切换按钮状态
+@param self 按钮实例或指针
 @return self
 @usage btn:toggle()
 */
@@ -106,9 +106,9 @@ static int lvgl_btn_toggle(lua_State* L) {
 }
 
 /*
-è®¾ç½®æ¯å¦å¯å换
-@param self æé®å®ä¾ææé?
-@param en æ¯å¦å¯å换
+设置是否可切换
+@param self 按钮实例或指针
+@param en 是否可切换
 @return self
 @usage btn:set_checkable(true)
 */
@@ -121,9 +121,9 @@ static int lvgl_btn_set_checkable(lua_State* L) {
 }
 
 /*
-è®¾ç½®æé®å¸å±
-@param self æé®å®ä¾ææé?
-@param layout å¸å±ç±»å
+设置按钮布局
+@param self 按钮实例或指针
+@param layout 布局类型
 @return self
 @usage btn:set_layout(lvgl.LAYOUT_CENTER)
 */
@@ -136,8 +136,8 @@ static int lvgl_btn_set_layout(lua_State* L) {
 }
 
 /*
-æ¸é¤æé®å¸å±
-@param self æé®å®ä¾ææé?
+清除按钮布局
+@param self 按钮实例或指针
 @return self
 @usage btn:clear_layout()
 */
@@ -148,12 +148,12 @@ static int lvgl_btn_clear_layout(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å btn å­æ¨¡块*/
+/* 注册 btn 子模块 */
 void lvgl_register_btn(lua_State* L) {
-    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
+    /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
     
-    /* æ³¨åOOé£æ ¼æ¹æ³(å¯ä»¥instance:method()è°ç¨) */
+    /* 注册OO风格方法(可以instance:method()调用) */
     REG_METHOD(L, "set_text", lvgl_btn_set_text);
     REG_METHOD(L, "get_text", lvgl_btn_get_text);
     REG_METHOD(L, "set_state", lvgl_btn_set_state);
@@ -163,10 +163,10 @@ void lvgl_register_btn(lua_State* L) {
     REG_METHOD(L, "set_layout", lvgl_btn_set_layout);
     REG_METHOD(L, "clear_layout", lvgl_btn_clear_layout);
 
-    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
+    /* 保存组件metatable引用(用于继承) */
     btn_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.btn.set_text(btn, ...) è°ç¨) */
+    /* 将方法复制到组件子表(支持 lvgl.btn.set_text(btn, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, btn_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -177,6 +177,6 @@ void lvgl_register_btn(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.btn) */
+    /* 注册create函数到主表(lvgl.btn) */
     REG_METHOD(L, "create", lvgl_btn_create);
 }
