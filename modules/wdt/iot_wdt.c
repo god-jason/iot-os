@@ -10,7 +10,7 @@
  */
 #include "iot.h"
 #include "iot_wdt.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_log.h"
 #include <stdio.h>
 #include <stdlib.h>

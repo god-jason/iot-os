@@ -14,19 +14,19 @@
 #include "iot_log.h"
 #include "platform_modules.h"
 
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_task.h"
 #include "iot_callback.h"
 #include "iot_params.h"
-#include "iot_pack.h"
-#include "iot_wdt.h"
+#include "pack/iot_pack.h"
+#include "wdt/iot_wdt.h"
 
 /*===========================================================
  * 模块注册函数声明
  *===========================================================*/
 
 /* Core 模块 */
-extern int luaopen_rtos_register(lua_State* L);
+extern int luaopen_os_register(lua_State* L);
 extern int luaopen_log_register(lua_State* L);
 extern int luaopen_pack_register(lua_State* L);
 extern int luaopen_wdt_register(lua_State* L);
@@ -54,7 +54,7 @@ extern int luaopen_cjson(lua_State *l);
  *===========================================================*/
 
 static const luaL_Reg core_modules[] = {
-    {"rtos",     luaopen_rtos_register},       /* 实时操作系统接口 */
+    {"os",     luaopen_os_register},       /* 实时操作系统接口 */
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
     {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */

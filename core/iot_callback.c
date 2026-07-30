@@ -12,7 +12,7 @@
 
 #include "iot_base.h"
 #include "iot_callback.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_log.h"
 
 /**
@@ -88,7 +88,7 @@ void iot_callback_call(void* ud, params_t* params) {
     }
     
     LOG_TRACE("callback call: ptr=%p", ud);
-    iot_rtos_call(ud, params);
+    iot_os_call(ud, params);
 }
 
 /**
@@ -127,5 +127,5 @@ void iot_callback_call_from_stack(lua_State* L, void* ud, int nargs) {
         }
     }
     
-    iot_rtos_call(ud, params);
+    iot_os_call(ud, params);
 }

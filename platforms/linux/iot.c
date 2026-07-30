@@ -4,7 +4,7 @@
  */
 
 #include "iot.h"
-#include "iot_wdt.h"
+#include "wdt/iot_wdt.h"
 
 int net_port_set_nonblocking(iot_socket_t fd)
 {

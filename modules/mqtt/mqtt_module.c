@@ -20,7 +20,7 @@
 
 #include "iot.h"
 #include "iot_params.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_callback.h"
 
 #include "mqtt_client.h"
@@ -149,13 +149,13 @@ static void mqtt_event_callback(mqtt_client_t* client, mqtt_event_type_t event, 
     if (event == MQTT_EVENT_CONNECTED) {
         params_push_int(params, 1);
         if (ctx->connect_callback_ud) {
-            iot_rtos_call(ctx->connect_callback_ud, params);
+            iot_os_call(ctx->connect_callback_ud, params);
             params = NULL;
         }
     } else if (event == MQTT_EVENT_DISCONNECTED || event == MQTT_EVENT_ERROR) {
         params_push_int(params, 0);
         if (ctx->close_callback_ud) {
-            iot_rtos_call(ctx->close_callback_ud, params);
+            iot_os_call(ctx->close_callback_ud, params);
             params = NULL;
         }
     }
@@ -188,7 +188,7 @@ static void mqtt_message_callback(const char* topic, const uint8_t* payload,
             params_push_int(params, retain ? 1 : 0);
             
             if (entry->callback_ud) {
-                iot_rtos_call(entry->callback_ud, params);
+                iot_os_call(entry->callback_ud, params);
             } else {
                 params_destroy(params);
             }

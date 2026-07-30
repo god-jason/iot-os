@@ -5,7 +5,7 @@
 
 #include "iot.h"
 #include "iot_task.h"
-#include "iot_wdt.h"
+#include "wdt/iot_wdt.h"
 #include "iot_log.h"
 #include <malloc.h>
 

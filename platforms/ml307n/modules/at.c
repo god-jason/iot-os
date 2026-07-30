@@ -27,7 +27,7 @@ at.off("+CMT")
 
 #include "lua.h"
 #include "module.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "cm_virt_at.h"
 
 #define AT_URC_MAX 16
@@ -49,7 +49,7 @@ static void at_urc_callback(uint8_t* urc, int32_t urc_len) {
                     continue;
                 }
                 params_push_string(params, (const char*)urc, urc_len);
-                iot_rtos_call(at_urc_table[i].callback_ud, params);
+                iot_os_call(at_urc_table[i].callback_ud, params);
             }
         }
     }
@@ -71,7 +71,7 @@ static void at_async_callback(cm_virt_at_param_t* param) {
         params_push_nil(params);
     }
     
-    iot_rtos_call(ud, params);
+    iot_os_call(ud, params);
 }
 
 /**

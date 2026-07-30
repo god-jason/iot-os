@@ -51,7 +51,7 @@ end)
 #include "module.h"
 #include "cm_ntp.h"
 #include "iot_callback.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 
 /* NTP回调相关 */
 static void* g_ntp_callback_ud = NULL;
@@ -78,7 +78,7 @@ static void ntp_event_cb(cm_ntp_event_e event, void *event_param, void *cb_param
     }
 
     /* 调用回调 */
-    iot_rtos_call(g_ntp_callback_ud, params);
+    iot_os_call(g_ntp_callback_ud, params);
 }
 
 /**

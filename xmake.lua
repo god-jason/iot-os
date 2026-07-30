@@ -48,7 +48,7 @@ if plat ~= "windows" and plat ~= "linux" then
     target("all")
         set_kind("phony")
         add_deps("iot_core", "drivers", "iot")
-        add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts", "iot_filters")
+        add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_zlib", "iot_lvgl", "iot_fonts", "iot_filters", "iot_pack", "iot_wdt")
         add_deps("lua", "cjson", "lua-cjson", "gmssl", "libjpeg-turbo")
         set_default(true)
 end

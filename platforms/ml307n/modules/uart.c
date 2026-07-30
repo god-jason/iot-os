@@ -29,7 +29,7 @@ uart.close(1)
 #include "lua.h"
 #include "module.h"
 #include "cm_uart.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 
 /* UART设备数量 */
 #define IOT_UART_MAX   4
@@ -53,7 +53,7 @@ static void uart_event_cb(void *param, uint32_t evt) {
     LOG_INFO("evt id=%d evt=%u", id, evt);
     
     if (g_uart_ctx[id].callback_ud) {
-        iot_rtos_call(g_uart_ctx[id].callback_ud, NULL);
+        iot_os_call(g_uart_ctx[id].callback_ud, NULL);
     }
 }
 

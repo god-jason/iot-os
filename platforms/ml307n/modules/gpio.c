@@ -38,7 +38,7 @@ gpio.close(7)
 #include "lua.h"
 #include "module.h"
 #include "cm_gpio.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_params.h"
 
 /* GPIO方向 */
@@ -85,7 +85,7 @@ static void iot_gpio_interrupt_callback(cm_gpio_num_e pin, cm_gpio_level_e level
     params_push_int(params, level);
 
     /* 通过RTOS消息队列安全调用回调 */
-    iot_rtos_call(g_gpio_callback_ud[pin], params);
+    iot_os_call(g_gpio_callback_ud[pin], params);
 }
 
 /**

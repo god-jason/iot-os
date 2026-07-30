@@ -1,12 +1,12 @@
 /**
- * @file iot_rtos.c
- * @brief RTOS消息队列与定时器实现
+ * @file iot_os.c
+ * @brief OS消息队列与定时器实现
  *
- * 本文件实现RTOS消息队列管理及定时器功能，包括：
+ * 本文件实现系统消息队列管理及定时器功能，包括：
  * - 消息队列创建与销毁
  * - 消息发布（PUBLISH）、调用（CALL）、超时（TIMEOUT）机制
  * - 最多8个定时器的创建、停止、删除
- * - Lua接口实现（rtos.recv、rtos.timer_* 等）
+ * - Lua接口实现（os.recv、os.timer_* 等）
  *
  * @author  杰神 & TRAE & ChatGPT
  * @date    2026.06.10
@@ -16,11 +16,11 @@
 #include "iot_base.h"
 #include "iot_params.h"
 #include "iot_queue.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_log.h"
 
 /* 消息队列大小 */
-#define RTOS_MSG_QUEUE_SIZE 32
+#define OS_MSG_QUEUE_SIZE 32
 
 /* 定时器最大数量 */
 #define MAX_TIMER_COUNT 8
@@ -35,7 +35,7 @@ typedef struct {
 } timer_ctx_t;
 
 /* 全局消息队列 */
-static iot_queue_t g_rtos_msg_queue = NULL;
+static iot_queue_t g_os_msg_queue = NULL;
 
 /* Lua状态机指针 */
 static lua_State* g_lua_L = NULL;
@@ -101,44 +101,44 @@ static void timer_callback_wrapper(void* param)
     }
 
     /* 发送MSG_TIMEOUT */
-    iot_rtos_timeout(ctx->timer_id_lua);
+    iot_os_timeout(ctx->timer_id_lua);
 }
 
 /**
- * @brief 初始化RTOS消息队列
+ * @brief 初始化OS消息队列
  */
-bool iot_rtos_msg_init(void)
+bool iot_os_msg_init(void)
 {
     timer_context_init();
 
-    g_rtos_msg_queue = iot_queue_create(RTOS_MSG_QUEUE_SIZE, sizeof(rtos_msg_t*));
-    if (g_rtos_msg_queue == NULL) {
+    g_os_msg_queue = iot_queue_create(OS_MSG_QUEUE_SIZE, sizeof(os_msg_t*));
+    if (g_os_msg_queue == NULL) {
         LOG_ERROR("Queue create failed");
         return false;
     }
-    LOG_INFO("Queue created, size=%d", RTOS_MSG_QUEUE_SIZE);
+    LOG_INFO("Queue created, size=%d", OS_MSG_QUEUE_SIZE);
     return true;
 }
 
 /**
  * @brief 发送消息到队列
  */
-static void iot_rtos_send_msg_internal(rtos_msg_t* msg)
+static void iot_os_send_msg_internal(os_msg_t* msg)
 {
-    if (g_rtos_msg_queue == NULL || msg == NULL) {
+    if (g_os_msg_queue == NULL || msg == NULL) {
         LOG_ERROR("Invalid queue or msg");
-        iot_rtos_msg_destroy(msg);
+        iot_os_msg_destroy(msg);
         return;
     }
-    iot_queue_send(g_rtos_msg_queue, &msg, 0);
+    iot_queue_send(g_os_msg_queue, &msg, 0);
 }
 
 /**
  * @brief 发送PUBLISH消息
  */
-void iot_rtos_publish(const char* str, params_t* params)
+void iot_os_publish(const char* str, params_t* params)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
+    os_msg_t* msg = (os_msg_t*)iot_malloc(sizeof(os_msg_t));
     if (!msg) {
         LOG_ERROR("malloc failed for PUBLISH");
         if (params) {
@@ -147,20 +147,20 @@ void iot_rtos_publish(const char* str, params_t* params)
         return;
     }
 
-    memset(msg, 0, sizeof(rtos_msg_t));
+    memset(msg, 0, sizeof(os_msg_t));
     msg->type = MSG_TYPE_PUBLISH;
     msg->data = (void*)str; /* 仅支持常量字符串，不做内存复制 */
     msg->params = params;
 
-    iot_rtos_send_msg_internal(msg);
+    iot_os_send_msg_internal(msg);
 }
 
 /**
  * @brief 发送CALL消息
  */
-void iot_rtos_call(void* userdata, params_t* params)
+void iot_os_call(void* userdata, params_t* params)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
+    os_msg_t* msg = (os_msg_t*)iot_malloc(sizeof(os_msg_t));
     if (!msg) {
         LOG_ERROR("malloc failed for CALL");
         if (params) {
@@ -169,36 +169,36 @@ void iot_rtos_call(void* userdata, params_t* params)
         return;
     }
 
-    memset(msg, 0, sizeof(rtos_msg_t));
+    memset(msg, 0, sizeof(os_msg_t));
     msg->type = MSG_TYPE_CALL;
     msg->data = userdata;
     msg->params = params;
 
-    iot_rtos_send_msg_internal(msg);
+    iot_os_send_msg_internal(msg);
 }
 
 /**
  * @brief 发送定时器超时消息
  */
-void iot_rtos_timeout(uint32_t timer_id)
+void iot_os_timeout(uint32_t timer_id)
 {
-    rtos_msg_t* msg = (rtos_msg_t*)iot_malloc(sizeof(rtos_msg_t));
+    os_msg_t* msg = (os_msg_t*)iot_malloc(sizeof(os_msg_t));
     if (!msg) {
         LOG_ERROR("malloc failed for TIMEOUT id=%u", timer_id);
         return;
     }
 
-    memset(msg, 0, sizeof(rtos_msg_t));
+    memset(msg, 0, sizeof(os_msg_t));
     msg->type = MSG_TYPE_TIMEOUT;
     msg->id = timer_id;
 
-    iot_rtos_send_msg_internal(msg);
+    iot_os_send_msg_internal(msg);
 }
 
 /**
  * @brief 销毁消息
  */
-void iot_rtos_msg_destroy(rtos_msg_t* msg)
+void iot_os_msg_destroy(os_msg_t* msg)
 {
     if (!msg) {
         return;
@@ -213,9 +213,9 @@ void iot_rtos_msg_destroy(rtos_msg_t* msg)
 
 /**
  * @brief Lua接口: 创建定时器
- * @api rtos.timer_create(timeout_ms, periodic)
+ * @api os.timer_create(timeout_ms, periodic)
  */
-static int luaopen_rtos_timer_create(lua_State* L)
+static int luaopen_os_timer_create(lua_State* L)
 {
     uint32_t timeout_ms = luaL_checkinteger(L, 1);
     uint32_t periodic = luaL_optinteger(L, 2, 0);
@@ -268,9 +268,9 @@ static int luaopen_rtos_timer_create(lua_State* L)
 
 /**
  * @brief Lua接口: 停止定时器
- * @api rtos.timer_stop(timer_id)
+ * @api os.timer_stop(timer_id)
  */
-static int luaopen_rtos_timer_stop(lua_State* L)
+static int luaopen_os_timer_stop(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -296,9 +296,9 @@ static int luaopen_rtos_timer_stop(lua_State* L)
 
 /**
  * @brief Lua接口: 检查定时器是否运行
- * @api rtos.timer_is_running(timer_id)
+ * @api os.timer_is_running(timer_id)
  */
-static int luaopen_rtos_timer_is_running(lua_State* L)
+static int luaopen_os_timer_is_running(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -324,9 +324,9 @@ static int luaopen_rtos_timer_is_running(lua_State* L)
 
 /**
  * @brief Lua接口: 删除定时器
- * @api rtos.timer_delete(timer_id)
+ * @api os.timer_delete(timer_id)
  */
-static int luaopen_rtos_timer_delete(lua_State* L)
+static int luaopen_os_timer_delete(lua_State* L)
 {
     int id = luaL_checkinteger(L, 1);
     int slot = id - 1;
@@ -359,7 +359,7 @@ static int luaopen_rtos_timer_delete(lua_State* L)
  * @brief 将 iot_callback_save 保存的回调推入 Lua 消息表
  * @note msg->data 是指向 full userdata 的指针，须从注册表取出才能 getuservalue
  */
-static void rtos_push_call_userdata(lua_State* L, void* ud)
+static void os_push_call_userdata(lua_State* L, void* ud)
 {
     if (!ud) {
         return;
@@ -384,15 +384,15 @@ static void rtos_push_call_userdata(lua_State* L, void* ud)
 
 /**
  * @brief Lua接口: 接收系统消息
- * @api rtos.recv(timeout)
+ * @api os.recv(timeout)
  */
-static int luaopen_rtos_recv(lua_State* L)
+static int luaopen_os_recv(lua_State* L)
 {
     uint32_t timeout = (uint32_t)luaL_optinteger(L, 1, 0);
-    rtos_msg_t* msg = NULL;
+    os_msg_t* msg = NULL;
 
     /* 使用封装的消息队列接收接口 */
-    bool ok = iot_queue_recv(g_rtos_msg_queue, &msg, timeout);
+    bool ok = iot_queue_recv(g_os_msg_queue, &msg, timeout);
     if (!ok || msg == NULL) {
         lua_pushnil(L);
         return 1;
@@ -421,7 +421,7 @@ static int luaopen_rtos_recv(lua_State* L)
         }
     } else if (msg->type == MSG_TYPE_CALL) {
         /* 处理CALL消息：推送 full userdata（含 uservalue 中的 Lua 回调） */
-        rtos_push_call_userdata(L, msg->data);
+        os_push_call_userdata(L, msg->data);
 
         /* 追加params字段 */
         if (msg->params && msg->params->count > 0) {
@@ -431,28 +431,28 @@ static int luaopen_rtos_recv(lua_State* L)
     }
 
     /* 销毁消息 */
-    iot_rtos_msg_destroy(msg);
+    iot_os_msg_destroy(msg);
 
     return 1;
 }
 
 /* Lua模块注册 */
-static const luaL_Reg rtos_lib[] = {
-    { "recv",          luaopen_rtos_recv },
-    { "timer_create",      luaopen_rtos_timer_create },
-    { "timer_stop",        luaopen_rtos_timer_stop },
-    { "timer_is_running",  luaopen_rtos_timer_is_running },
-    { "timer_delete",      luaopen_rtos_timer_delete },
+static const luaL_Reg os_lib[] = {
+    { "recv",          luaopen_os_recv },
+    { "timer_create",      luaopen_os_timer_create },
+    { "timer_stop",        luaopen_os_timer_stop },
+    { "timer_is_running",  luaopen_os_timer_is_running },
+    { "timer_delete",      luaopen_os_timer_delete },
     { NULL, NULL }
 };
 
 /**
- * @brief 注册rtos模块到Lua
+ * @brief 注册os模块到Lua
  */
-LUAMOD_API int luaopen_rtos_register(lua_State* L)
+LUAMOD_API int luaopen_os_register(lua_State* L)
 {
-    luaL_newlibtable(L, rtos_lib);
-    luaL_setfuncs(L, rtos_lib, 0);
+    luaL_newlibtable(L, os_lib);
+    luaL_setfuncs(L, os_lib, 0);
 
     /* 推送消息类型常量 */
     lua_pushinteger(L, MSG_TYPE_TIMEOUT);

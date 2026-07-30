@@ -15,7 +15,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "lua.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 
 void iot_lua_task(void* argument);
 

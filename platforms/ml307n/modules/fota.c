@@ -59,7 +59,7 @@ static void fota_result_callback_wrapper(cm_fota_error_e error) {
     params_t* params = params_create(1);
     if (params) {
         params_push_int(params, error);
-        iot_rtos_call(g_fota_result_callback_ud, params);
+        iot_os_call(g_fota_result_callback_ud, params);
     }
 }
 

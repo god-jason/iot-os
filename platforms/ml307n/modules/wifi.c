@@ -36,7 +36,7 @@ end
 #include "lua.h"
 #include "module.h"
 #include "cm_wifiscan.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 
 static void* wifi_scan_callback_ud = NULL;
 static int wifi_scan_in_progress = 0;
@@ -82,7 +82,7 @@ static void wifi_scan_cb(cm_wifi_scan_info_t* param, void* user_param) {
     strcat(json_buf + len, "]}");
 
     params_push_string(params, json_buf, strlen(json_buf));
-    iot_rtos_call(wifi_scan_callback_ud, params);
+    iot_os_call(wifi_scan_callback_ud, params);
     
     wifi_scan_callback_ud = NULL;
     wifi_scan_in_progress = 0;

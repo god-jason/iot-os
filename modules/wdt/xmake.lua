@@ -1,9 +1,9 @@
--- iot 核心库 xmake 配置
+-- wdt 模块 xmake 配置
 
-target("iot_core")
+target("iot_wdt")
     set_kind("static")
     add_files("*.c")
     add_headerfiles("*.h")
-    add_includedirs(".", "../modules")
-    add_deps("iot_zlib")
+    add_includedirs(".", "..")
+    add_deps("iot_core")
     add_cflags("-Wall", "-Wextra", "-Wno-unused-parameter")

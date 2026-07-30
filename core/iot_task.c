@@ -19,7 +19,7 @@
 #include "iot_log.h"
 #include "iot.h"
 #include "lualib.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 #include "iot_modules.h"
 #include "iot.luac.h"
 #include "zlib.h"
@@ -177,7 +177,7 @@ void iot_lua_task(void* argument)
     check_and_extract_app_zip();
 
     /* 初始化消息队列 */
-    if (!iot_rtos_msg_init()) {
+    if (!iot_os_msg_init()) {
         LOG_ERROR("msg queue init failed");
         return;
     }

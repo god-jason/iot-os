@@ -48,7 +48,7 @@ audio.deinit()
 #include "module.h"
 #include "cm_audio_player.h"
 #include "cm_audio_recorder.h"
-#include "iot_rtos.h"
+#include "iot_os.h"
 
 /* 录音回调参数 */
 typedef struct {
@@ -273,7 +273,7 @@ static void audio_record_callback(cm_audio_record_event_e event, void *param) {
         params_push_nil(params);
     }
 
-    iot_rtos_call(g_record_ctx->callback_ud, params);
+    iot_os_call(g_record_ctx->callback_ud, params);
 }
 
 /**
