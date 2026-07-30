@@ -251,6 +251,21 @@ return function()
     ta:set_text("Edit me...")
     ta:set_one_line(true)
     ta:align(lv.ALIGN_TOP_LEFT, COL4_X, col4_y)
+    -- 将 textarea 加入默认 group，使其能接收键盘输入
+    local def_group = lv.group.get_default()
+    if def_group then
+        lv.group.add_obj(def_group, ta)
+        -- 聚焦时进入编辑模式
+        ta:add_event_cb(function(e, code)
+            lv.group.set_editing(def_group, true)
+            status:set_text("textarea focused — type to edit")
+        end, lv.EVENT_FOCUSED)
+        -- 失焦时退出编辑模式
+        ta:add_event_cb(function(e, code)
+            lv.group.set_editing(def_group, false)
+            status:set_text("textarea defocused")
+        end, lv.EVENT_DEFOCUSED)
+    end
     T.pass("lvgl.textarea")
 
     -- ---- colorwheel ----

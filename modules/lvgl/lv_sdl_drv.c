@@ -310,7 +310,12 @@ bool lv_sdl_drv_init(int hor_res, int ver_res)
     lv_indev_drv_init(&s_sdl.kb_indev_drv);
     s_sdl.kb_indev_drv.type = LV_INDEV_TYPE_KEYPAD;
     s_sdl.kb_indev_drv.read_cb = sdl_keyboard_read_cb;
-    lv_indev_drv_register(&s_sdl.kb_indev_drv);
+    lv_indev_t* kb_indev = lv_indev_drv_register(&s_sdl.kb_indev_drv);
+
+    /* 创建默认 group 并关联键盘 indev，使键盘事件能发送到 group 中的控件 */
+    lv_group_t* group = lv_group_create();
+    lv_group_set_default(group);
+    lv_indev_set_group(kb_indev, group);
 
     /* 初始化 LVGL tick */
     /* LVGL v8 使用 lv_tick_inc 手动递增 */

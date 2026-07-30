@@ -41,13 +41,13 @@ static int lvgl_group_delete(lua_State* L) {
 
 static int lvgl_group_add_obj(lua_State* L) {
     lv_group_t* group = (lv_group_t*)luaL_checklightuserdata(L, 1);
-    lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 2);
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 2);
     lv_group_add_obj(group, obj);
     return 0;
 }
 
 static int lvgl_group_remove_obj(lua_State* L) {
-    lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     lv_group_remove_obj(obj);
     return 0;
 }
@@ -85,7 +85,7 @@ static int lvgl_group_get_focused(lua_State* L) {
 }
 
 static int lvgl_group_focus_obj(lua_State* L) {
-    lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     lv_group_focus_obj(obj);
     return 0;
 }
@@ -103,7 +103,7 @@ static int lvgl_group_focus_prev(lua_State* L) {
 }
 
 static int lvgl_group_make_obj_focusable(lua_State* L) {
-    lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE);
     return 0;
 }
