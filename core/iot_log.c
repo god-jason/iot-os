@@ -136,6 +136,7 @@ void iot_log_printf(iot_log_level_t level, const char* fmt, ...) {
     
     /* 一次性输出 */
     iot_puts(s_log_buffer);
+    //fflush(stdout);
 }
 
 /**
@@ -249,9 +250,20 @@ static void iot_log_output(lua_State* L, int level) {
     }
     
     int offset = 0;
+
+    // 获取当前调用栈信息
+    // lua_Debug ar;
+    // if (lua_getinfo(L, ">Snl", &ar)){
+    //     offset = log_buf_append(offset, "%s [%s:%d:%s] ", 
+    //         log_level_prefix[level], 
+    //         (ar.short_src?ar.short_src:""), 
+    //         ar.currentline, 
+    //         (ar.name?ar.name:""));
+    // } else {
+    //     offset = log_buf_append(offset, "%s ", log_level_prefix[level]);
+    // }
+    offset = log_buf_append(offset, "%s ", log_level_prefix[level]);
     
-    /* 日志级别前缀 + [lua] 标识 */
-    offset = log_buf_append(offset, "%s [lua] ", log_level_prefix[level]);
     
     int n = lua_gettop(L);
     int first = 1;
@@ -265,6 +277,7 @@ static void iot_log_output(lua_State* L, int level) {
     
     /* 一次性输出 */
     iot_puts(s_log_buffer);
+    //fflush(stdout);
 }
 
 /**

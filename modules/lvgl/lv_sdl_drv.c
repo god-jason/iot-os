@@ -262,13 +262,18 @@ bool lv_sdl_drv_init(int hor_res, int ver_res)
     return true;
 }
 
+bool lv_sdl_drv_is_inited(void)
+{
+    return s_sdl.inited;
+}
+
 bool lv_sdl_drv_loop(void)
 {
     if (!s_sdl.inited) {
-        return false;
+        return true;  /* 未初始化不阻止调用方 */
     }
 
-    /* 处理 SDL 事件 */
+    /* 处理 SDL 事件（非阻塞） */
     if (!sdl_process_events()) {
         LOG_INFO("SDL window closed");
         return false;
@@ -281,12 +286,6 @@ bool lv_sdl_drv_loop(void)
         lv_tick_inc(elapsed);
         s_sdl.last_tick = now;
     }
-
-    /* LVGL 任务调度 */
-    lv_timer_handler();
-
-    /* 控制刷新频率 */
-    SDL_Delay(SDL_DRV_REFR_PERIOD);
 
     return true;
 }

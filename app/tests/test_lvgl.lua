@@ -1,4 +1,5 @@
 --- lvgl 模块验证 — 通过 SDL 窗口显示 LVGL 界面
+-- require("lvgl") 时自动创建 SDL 窗口，通过 iot.setInterval 周期调用 lvgl.task_handler() 驱动
 local T = dofile("app/tests/common.lua")
 
 return function()
@@ -16,77 +17,80 @@ return function()
         T.pass("lvgl.loaded")
     end
 
-    -- 检查 SDL 驱动是否可用
-    if not lv.sdl_init then
-        T.skip("lvgl.sdl", "SDL driver not available in this build")
-        return
-    end
-
-    -- 初始化 SDL 窗口 (480x320)
-    local ok2 = lv.sdl_init(480, 320)
-    if not ok2 then
-        T.fail("lvgl.sdl_init", "failed to create SDL window")
-        return
-    end
-    T.pass("lvgl.sdl_init", "480x320 window created")
-
     -- 获取活动屏幕
     local scr = lv.scr_act()
     if not scr then
         T.fail("lvgl.scr_act", "no active screen")
-        lv.sdl_deinit()
         return
     end
     T.pass("lvgl.scr_act")
 
-    -- 创建标题标签
+    -- 标题
     local title = lv.label.create(scr)
-    title:set_text("IoT-OS LVGL Test")
-    title:align(lv.ALIGN_TOP_MID, 0, 20)
-    T.pass("lvgl.label.create", "title")
+    title:set_text("IoT-OS LVGL Widgets Test")
+    title:align(lv.ALIGN_TOP_MID, 0, 10)
+    T.pass("lvgl.label", "title")
 
-    -- 创建按钮
+    -- ---- btn ----
     local btn = lv.btn.create(scr)
-    btn:set_size(120, 50)
-    btn:align(lv.ALIGN.CENTER, 0, 0)
-    T.pass("lvgl.btn.create")
+    btn:set_size(100, 40)
+    btn:align(lv.ALIGN_TOP_LEFT, 20, 50)
+    local btn_lbl = lv.label.create(btn)
+    btn_lbl:set_text("Button")
+    btn_lbl:center()
+    T.pass("lvgl.btn")
 
-    -- 按钮上的文字
-    local btn_label = lv.label.create(btn)
-    btn_label:set_text("Click Me!")
-    btn_label:center()
-    T.pass("lvgl.label.on_btn")
+    -- ---- switch ----
+    local sw = lv.switch.create(scr)
+    sw:align(lv.ALIGN_TOP_LEFT, 20, 110)
+    local sw_lbl = lv.label.create(scr)
+    sw_lbl:set_text("Switch")
+    sw_lbl:align_to(sw, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    T.pass("lvgl.switch")
 
-    -- 创建底部状态标签
+    -- ---- slider ----
+    local slider = lv.slider.create(scr)
+    slider:set_width(160)
+    slider:align(lv.ALIGN_TOP_LEFT, 20, 170)
+    local sl_lbl = lv.label.create(scr)
+    sl_lbl:set_text("Slider: 0")
+    sl_lbl:align_to(slider, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    T.pass("lvgl.slider")
+
+    -- ---- 第二列 ----
+    local btn2 = lv.btn.create(scr)
+    btn2:set_size(100, 40)
+    btn2:align(lv.ALIGN_TOP_LEFT, 260, 50)
+    local btn2_lbl = lv.label.create(btn2)
+    btn2_lbl:set_text("Toggle")
+    btn2_lbl:center()
+
+    local sw2 = lv.switch.create(scr)
+    sw2:align(lv.ALIGN_TOP_LEFT, 260, 110)
+
+    local slider2 = lv.slider.create(scr)
+    slider2:set_width(160)
+    slider2:align(lv.ALIGN_TOP_LEFT, 260, 170)
+
+    -- 底部状态
     local status = lv.label.create(scr)
-    status:set_text("Running...")
-    status:align(lv.ALIGN.BOTTOM_MID, 0, -20)
-    T.pass("lvgl.label.status")
+    status:set_text("Close window to exit...")
+    status:align(lv.ALIGN_BOTTOM_MID, 0, -10)
+    T.pass("lvgl.label", "status")
 
-    -- 立即刷新一次
+    -- 立即刷新
     lv.refr_now(nil)
     T.pass("lvgl.refr_now")
 
-    -- 使用 iot.setInterval 非阻塞运行 SDL 事件循环
-    -- 每 10ms 调用一次 lv.sdl_loop()，共运行约 3 秒（300 次）
-    local loops = 0
-    local max_loops = 300
+    -- 周期调用 task_handler 驱动 SDL 事件 + LVGL 渲染
     local timer_id = iot.setInterval(function()
-        local running = lv.sdl_loop()
-        loops = loops + 1
-        if not running or loops >= max_loops then
-            iot.clearInterval(timer_id)
-            if loops > 0 then
-                T.pass("lvgl.sdl_loop", string.format("ran %d iterations", loops))
-            else
-                T.fail("lvgl.sdl_loop", "window closed immediately")
-            end
-            lv.sdl_deinit()
-            T.pass("lvgl.sdl_deinit")
-            -- 测试完成，延迟退出（等待 summary 输出）
-            iot.setTimeout(function()
-                os.exit(0)
-            end, 1000)
-        end
+        lv.task_handler()
     end, 10)
+    T.pass("lvgl.task_handler", "interval started")
+
+    -- iot.setTimeout(function()
+    --     iot.clearInterval(timer_id)
+    --     T.pass("lvgl.timeout", "30s elapsed")
+    --     os.exit(0)
+    -- end, 5000)
 end

@@ -14,6 +14,12 @@ if f then
     end
 end
 
+-- 避免测试超时退出程序
+-- iot.setTimeout(function ()
+--     print("timeout!")
+--     os.exit(0)
+-- end, 15000)
+
 local ok, err = pcall(function()
     if target and target ~= "" then
         dofile("app/tests/run_one.lua")(target)

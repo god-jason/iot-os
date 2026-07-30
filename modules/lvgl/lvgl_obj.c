@@ -11,6 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 #include "iot_callback.h"
+#include <stdio.h>
 
 static int obj_metatable_ref = LUA_NOREF;
 
@@ -18,7 +19,14 @@ lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx) {
     int abs_idx = idx > 0 ? idx : (lua_gettop(L) + idx + 1);
 
     if (lua_isuserdata(L, abs_idx)) {
-        return (lv_obj_t*)lua_touserdata(L, abs_idx);
+        if (lua_islightuserdata(L, abs_idx)) {
+            /* lightuserdata: 指针直接存储 */
+            return (lv_obj_t*)lua_touserdata(L, abs_idx);
+        } else {
+            /* full userdata: 存储的是 lv_obj_t* 指针，需要解引用 */
+            lv_obj_t** p = (lv_obj_t**)lua_touserdata(L, abs_idx);
+            return p ? *p : NULL;
+        }
     }
 
     if (lua_istable(L, abs_idx)) {
@@ -121,26 +129,75 @@ int lvgl_get_obj_metatable_ref(void) {
 }
 
 int lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref) {
+    /* 1. 调用 create_func 创建对象，push lightuserdata */
     create_func(L);
+    /* 栈: [lightud] */
 
-    lua_rawgeti(L, LUA_REGISTRYINDEX, obj_metatable_ref);
+    /* 2. 取出指针，弹出 lightuserdata */
+    lv_obj_t* obj = (lv_obj_t*)lua_touserdata(L, -1);
+    lua_pop(L, 1);
+    /* 栈: [] */
 
-    if (metatable_ref != LUA_NOREF) {
-        lua_newtable(L);
-        lua_pushvalue(L, -2);
-        lua_setfield(L, -2, "__index");
-        lua_rawgeti(L, LUA_REGISTRYINDEX, metatable_ref);
-        lua_pushnil(L);
-        while (lua_next(L, -2) != 0) {
-            lua_pushvalue(L, -2);
-            lua_insert(L, -2);
-            lua_settable(L, -4);
-        }
-        lua_pop(L, 1);
-        lua_setmetatable(L, -3);
-    } else {
+    /* 3. 创建 full userdata，存储 lv_obj_t* 指针 */
+    lv_obj_t** ud = (lv_obj_t**)lua_newuserdata(L, sizeof(lv_obj_t*));
+    *ud = obj;
+    /* 栈: [ud] */
+
+    if (metatable_ref == LUA_NOREF) {
+        /* 仅使用基础 metatable */
+        lua_rawgeti(L, LUA_REGISTRYINDEX, obj_metatable_ref);
         lua_setmetatable(L, -2);
+        return 1;
     }
+
+    /* 4. 创建专属 metatable（new_mt） */
+    lua_newtable(L);
+    /* 栈: [ud, new_mt] */
+
+    /* 5. new_mt.__index = new_mt 自身（让方法通过 __index 查找） */
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+    /* 栈: [ud, new_mt] */
+
+    /* 6. 把 base_mt 的方法复制到 new_mt（继承基础对象方法） */
+    lua_rawgeti(L, LUA_REGISTRYINDEX, obj_metatable_ref);
+    /* 栈: [ud, new_mt, base_mt] */
+    lua_pushnil(L);
+    while (lua_next(L, -2) != 0) {
+        /* 栈: [ud, new_mt, base_mt, key, value] */
+        /* -1: value, -2: key, -3: base_mt, -4: new_mt */
+        const char* key_str = lua_tostring(L, -2);
+        if (key_str) {
+            lua_setfield(L, -4, key_str);  /* new_mt[key_str] = value */
+        } else {
+            lua_pop(L, 1);
+        }
+        /* 栈: [ud, new_mt, base_mt, key] */
+    }
+    lua_pop(L, 1);  /* 弹出 base_mt */
+    /* 栈: [ud, new_mt] */
+
+    /* 7. 把 spec_mt 的方法复制到 new_mt（控件专属方法） */
+    lua_rawgeti(L, LUA_REGISTRYINDEX, metatable_ref);
+    /* 栈: [ud, new_mt, spec_mt] */
+    lua_pushnil(L);
+    while (lua_next(L, -2) != 0) {
+        /* 栈: [ud, new_mt, spec_mt, key, value] */
+        /* -1: value, -2: key, -3: spec_mt, -4: new_mt */
+        const char* key_str = lua_tostring(L, -2);
+        if (key_str) {
+            lua_setfield(L, -4, key_str);  /* new_mt[key_str] = value */
+        } else {
+            lua_pop(L, 1);
+        }
+        /* 栈: [ud, new_mt, spec_mt, key] */
+    }
+    lua_pop(L, 1);  /* 弹出 spec_mt */
+    /* 栈: [ud, new_mt] */
+
+    /* 8. 给 ud 设置 metatable = new_mt */
+    lua_setmetatable(L, -2);
+    /* 栈: [ud] */
 
     return 1;
 }

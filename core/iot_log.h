@@ -49,11 +49,11 @@ void iot_log_printf(iot_log_level_t level, const char* fmt, ...);
 /**
  * @brief 分级别日志宏定义
  */
-#define LOG_TRACE(fmt, ...) iot_log_printf(LOG_LEVEL_TRACE, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) iot_log_printf(LOG_LEVEL_DEBUG, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...)  iot_log_printf(LOG_LEVEL_INFO,  "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...)  iot_log_printf(LOG_LEVEL_WARN,  "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) iot_log_printf(LOG_LEVEL_ERROR, "[%s():%d] " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_TRACE(fmt, ...) iot_log_printf(LOG_LEVEL_TRACE, "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) iot_log_printf(LOG_LEVEL_DEBUG, "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...)  iot_log_printf(LOG_LEVEL_INFO,  "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  iot_log_printf(LOG_LEVEL_WARN,  "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) iot_log_printf(LOG_LEVEL_ERROR, "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 /**
  * @brief 注册log模块到Lua

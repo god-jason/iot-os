@@ -10,6 +10,8 @@
 
 #include "lvgl.h"
 #include "lvgl_obj.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef LV_USE_SDL_DRV
 #include "lv_sdl_drv.h"
@@ -54,6 +56,16 @@ static int lvgl_tick_inc(lua_State* L) {
 
 
 static int lvgl_task_handler(lua_State* L) {
+
+#ifdef LV_USE_SDL_DRV
+    /* 桌面平台：先处理 SDL 事件，窗口关闭则退出 */
+    if (lv_sdl_drv_is_inited()) {
+        if (!lv_sdl_drv_loop()) {
+            lv_sdl_drv_deinit();
+            exit(0);
+        }
+    }
+#endif
 
     lv_task_handler();
 
@@ -189,34 +201,20 @@ static int lvgl_pct(lua_State* L) {
     return 1;
 }
 
-#ifdef LV_USE_SDL_DRV
-/* SDL 窗口驱动 Lua 接口 */
-static int lvgl_sdl_init(lua_State* L) {
-    int hor = (int)luaL_optinteger(L, 1, 0);
-    int ver = (int)luaL_optinteger(L, 2, 0);
-    bool ok = lv_sdl_drv_init(hor, ver);
-    lua_pushboolean(L, ok ? 1 : 0);
-    return 1;
-}
-
-static int lvgl_sdl_loop(lua_State* L) {
-    bool running = lv_sdl_drv_loop();
-    lua_pushboolean(L, running ? 1 : 0);
-    return 1;
-}
-
-static int lvgl_sdl_deinit(lua_State* L) {
-    lv_sdl_drv_deinit();
-    return 0;
-}
-#endif
-
 /* 主模块注册 */
 
 LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     /* 初始化 LVGL（幂等，重复调用安全） */
     lv_init();
+    fprintf(stderr, "[lvgl] lv_init done\n"); fflush(stderr);
+
+#ifdef LV_USE_SDL_DRV
+    /* 桌面平台：隐式创建 SDL 窗口并注册显示/输入驱动 */
+    fprintf(stderr, "[lvgl] creating SDL window...\n"); fflush(stderr);
+    lv_sdl_drv_init(480, 320);
+    fprintf(stderr, "[lvgl] SDL window created\n"); fflush(stderr);
+#endif
 
     /* 创建主表 */
 
@@ -577,12 +575,6 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
     REG_METHOD(L, "indev_get_default", lvgl_indev_get_default);
 
     REG_METHOD(L, "pct", lvgl_pct);
-
-#ifdef LV_USE_SDL_DRV
-    REG_METHOD(L, "sdl_init", lvgl_sdl_init);
-    REG_METHOD(L, "sdl_loop", lvgl_sdl_loop);
-    REG_METHOD(L, "sdl_deinit", lvgl_sdl_deinit);
-#endif
 
     return 1;
 }
