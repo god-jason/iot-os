@@ -36,11 +36,15 @@ static struct {
     lv_color_t*   buf2;          /* 显示缓冲区 2（双缓冲，可选） */
     lv_disp_drv_t disp_drv;
     lv_disp_draw_buf_t draw_buf;
-    lv_indev_drv_t indev_drv;
+    lv_indev_drv_t indev_drv;     /* 鼠标输入驱动 */
+    lv_indev_drv_t kb_indev_drv;  /* 键盘输入驱动 */
     bool          mouse_pressed;
     int           mouse_x;
     int           mouse_y;
     uint32_t      last_tick;     /* 上次 tick 时间 */
+    /* 键盘状态 */
+    uint32_t      kb_key;        /* 当前按键(LVGL 按键码) */
+    bool          kb_pressed;    /* 按键是否按下 */
 } s_sdl;
 
 /*===========================================================
@@ -92,6 +96,46 @@ static void sdl_mouse_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
     data->state = s_sdl.mouse_pressed ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
 }
 
+/**
+ * @brief LVGL 键盘输入读取回调
+ *        将缓存的按键状态传给 LVGL，支持字符输入与控制键
+ */
+static void sdl_keyboard_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
+{
+    (void)drv;
+    data->key = s_sdl.kb_key;
+    data->state = s_sdl.kb_pressed ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+}
+
+/**
+ * @brief 将 SDL 按键码映射为 LVGL 按键码
+ *        对于可打印字符直接返回 ASCII，控制键映射到 LVGL 定义
+ */
+static uint32_t sdl_key_to_lv_key(SDL_Keycode sdl_key)
+{
+    switch (sdl_key) {
+    case SDLK_BACKSPACE:  return LV_KEY_BACKSPACE;
+    case SDLK_RETURN:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN2:    return LV_KEY_ENTER;
+    case SDLK_ESCAPE:     return LV_KEY_ESC;
+    case SDLK_DELETE:     return LV_KEY_DEL;
+    case SDLK_HOME:       return LV_KEY_HOME;
+    case SDLK_END:        return LV_KEY_END;
+    case SDLK_TAB:        return LV_KEY_NEXT;
+    case SDLK_UP:         return LV_KEY_UP;
+    case SDLK_DOWN:       return LV_KEY_DOWN;
+    case SDLK_LEFT:       return LV_KEY_LEFT;
+    case SDLK_RIGHT:      return LV_KEY_RIGHT;
+    default:
+        /* 可打印 ASCII 字符直接返回 */
+        if (sdl_key >= 0x20 && sdl_key <= 0x7E) {
+            return (uint32_t)sdl_key;
+        }
+        return 0;
+    }
+}
+
 /*===========================================================
  * SDL 事件处理
  *===========================================================*/
@@ -133,6 +177,19 @@ static bool sdl_process_events(void)
                 s_sdl.mouse_x = event.button.x;
                 s_sdl.mouse_y = event.button.y;
             }
+            break;
+
+        case SDL_KEYDOWN: {
+            uint32_t key = sdl_key_to_lv_key(event.key.keysym.sym);
+            if (key != 0) {
+                s_sdl.kb_key = key;
+                s_sdl.kb_pressed = true;
+            }
+            break;
+        }
+
+        case SDL_KEYUP:
+            s_sdl.kb_pressed = false;
             break;
 
         default:
@@ -249,6 +306,12 @@ bool lv_sdl_drv_init(int hor_res, int ver_res)
     s_sdl.indev_drv.read_cb = sdl_mouse_read_cb;
     lv_indev_drv_register(&s_sdl.indev_drv);
 
+    /* 初始化键盘输入驱动（用于 textarea 等文本输入） */
+    lv_indev_drv_init(&s_sdl.kb_indev_drv);
+    s_sdl.kb_indev_drv.type = LV_INDEV_TYPE_KEYPAD;
+    s_sdl.kb_indev_drv.read_cb = sdl_keyboard_read_cb;
+    lv_indev_drv_register(&s_sdl.kb_indev_drv);
+
     /* 初始化 LVGL tick */
     /* LVGL v8 使用 lv_tick_inc 手动递增 */
 
@@ -256,6 +319,8 @@ bool lv_sdl_drv_init(int hor_res, int ver_res)
     s_sdl.mouse_pressed = false;
     s_sdl.mouse_x = 0;
     s_sdl.mouse_y = 0;
+    s_sdl.kb_key = 0;
+    s_sdl.kb_pressed = false;
     s_sdl.last_tick = SDL_GetTicks();
 
     LOG_INFO("SDL driver init OK: %dx%d", hor_res, ver_res);
