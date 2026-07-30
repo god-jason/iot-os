@@ -106,7 +106,7 @@ static int lvgl_roller_get_selected_str(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å roller å­æ¨¡å?*/
+/* æ³¨å roller å­æ¨¡块*/
 void lvgl_register_roller(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

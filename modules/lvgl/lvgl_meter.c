@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* meter???metatable?? */
+/* meter组件的metatable引用 */
 static int meter_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_meter_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -23,12 +23,12 @@ static int lvgl_meter_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???OO?? ==================== */
+/* ==================== 仪表盘OO方法 ==================== */
 
 /*
-????????OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建仪表盘控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的仪表盘实例
 @usage local meter = lvgl.meter.create(scr)
 */
 static int lvgl_meter_create(lua_State* L) {
@@ -36,11 +36,11 @@ static int lvgl_meter_create(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param angle_range ????
-@param rotation ????(?????0)
-@return userdata ????
+添加刻度
+@param self 仪表盘实例或指针
+@param angle_range 角度范围
+@param rotation 旋转角度(可选,默认0)
+@return userdata 刻度指针
 @usage local scale = meter:add_scale(270, 0)
 */
 static int lvgl_meter_add_scale(lua_State* L) {
@@ -54,13 +54,13 @@ static int lvgl_meter_add_scale(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param scale ????
-@param min ????
-@param max ????
-@param angle_range ????
-@param rotation ????(???
+设置刻度范围
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param min 最小值
+@param max 最大值
+@param angle_range 角度范围
+@param rotation 旋转角度(可选)
 @return self
 @usage meter:set_scale_range(scale, 0, 100, 270, 225)
 */
@@ -77,13 +77,13 @@ static int lvgl_meter_set_scale_range(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param scale ????
-@param cnt ??????
-@param len ??????
-@param width ???????????2)
-@param color ?????????????)
+设置刻度线
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param cnt 刻度线数量
+@param len 刻度线长度
+@param width 刻度线宽度(可选,默认2)
+@param color 刻度线颜色(可选,默认黑色)
 @return self
 @usage meter:set_scale_ticks(scale, 11, 2, 5, 0x000000)
 */
@@ -101,13 +101,13 @@ static int lvgl_meter_set_scale_ticks(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param scale ????
-@param nth ?N????????
-@param len ??????
-@param width ?????????
-@param color ?????????
+设置主刻度线
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param nth 每N个刻度为主刻度
+@param len 主刻度长度
+@param width 主刻度宽度(可选)
+@param color 主刻度颜色(可选)
 @return self
 @usage meter:set_scale_major_ticks(scale, 4, 2, 5, 0xFF0000)
 */
@@ -126,13 +126,13 @@ static int lvgl_meter_set_scale_major_ticks(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param scale ????
-@param width ????
-@param color ????
-@param length ????(???
-@return userdata ??????
+添加线条指示器
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param width 线条宽度
+@param color 线条颜色
+@param length 线条长度(可选)
+@return userdata 指示器指针
 @usage local indic = meter:add_indicator_line(scale, 3, 0x0000FF, 10)
 */
 static int lvgl_meter_add_indicator_line(lua_State* L) {
@@ -148,13 +148,13 @@ static int lvgl_meter_add_indicator_line(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param scale ????
-@param width ????
-@param color ????
-@param length ????(???
-@return userdata ??????
+添加圆弧指示器
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param width 圆弧宽度
+@param color 圆弧颜色
+@param length 圆弧长度(可选)
+@return userdata 指示器指针
 @usage local arc_indic = meter:add_indicator_arc(scale, 10, 0x00FF00, 5)
 */
 static int lvgl_meter_add_indicator_arc(lua_State* L) {
@@ -170,12 +170,12 @@ static int lvgl_meter_add_indicator_arc(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param scale ????
-@param color ????
-@param width ????(?????4)
-@return userdata ??????
+添加指针指示器
+@param self 仪表盘实例或指针
+@param scale 刻度指针
+@param color 指针颜色
+@param width 指针宽度(可选,默认4)
+@return userdata 指示器指针
 @usage local needle = meter:add_indicator_needle(scale, 0xFF0000, 4)
 */
 static int lvgl_meter_add_indicator_needle(lua_State* L) {
@@ -190,10 +190,10 @@ static int lvgl_meter_add_indicator_needle(lua_State* L) {
 }
 
 /*
-???????
-@param self ????????
-@param indic ??????
-@param value ??
+设置指示器值
+@param self 仪表盘实例或指针
+@param indic 指示器指针
+@param value 值
 @return self
 @usage meter:set_indicator_value(indic, 50)
 */
@@ -207,10 +207,10 @@ static int lvgl_meter_set_indicator_value(lua_State* L) {
 }
 
 /*
-?????????
-@param self ????????
-@param indic ??????
-@param value ????
+设置指示器起始值
+@param self 仪表盘实例或指针
+@param indic 指示器指针
+@param value 起始值
 @return self
 @usage meter:set_indicator_start_value(indic, 0)
 */
@@ -224,10 +224,10 @@ static int lvgl_meter_set_indicator_start_value(lua_State* L) {
 }
 
 /*
-?????????
-@param self ????????
-@param indic ??????
-@param value ????
+设置指示器结束值
+@param self 仪表盘实例或指针
+@param indic 指示器指针
+@param value 结束值
 @return self
 @usage meter:set_indicator_end_value(indic, 100)
 */
@@ -240,12 +240,12 @@ static int lvgl_meter_set_indicator_end_value(lua_State* L) {
     return 1;
 }
 
-/* ?? meter ????*/
+/* 注册 meter 子模块 */
 void lvgl_register_meter(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "add_scale", lvgl_meter_add_scale);
     REG_METHOD(L, "set_scale_range", lvgl_meter_set_scale_range);
     REG_METHOD(L, "set_scale_ticks", lvgl_meter_set_scale_ticks);
@@ -257,10 +257,10 @@ void lvgl_register_meter(lua_State* L) {
     REG_METHOD(L, "set_indicator_start_value", lvgl_meter_set_indicator_start_value);
     REG_METHOD(L, "set_indicator_end_value", lvgl_meter_set_indicator_end_value);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     meter_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.meter.add_scale(meter, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.meter.add_scale(meter, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, meter_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -271,6 +271,6 @@ void lvgl_register_meter(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.meter) */
+    /* 注册create函数到主表lvgl.meter) */
     REG_METHOD(L, "create", lvgl_meter_create);
 }

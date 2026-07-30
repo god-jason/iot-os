@@ -176,7 +176,7 @@ static int lvgl_anim_del_all(lua_State* L) {
     return 0;
 }
 
-/* æ³¨å anim å­æ¨¡å?*/
+/* æ³¨å anim å­æ¨¡块*/
 void lvgl_register_anim(lua_State* L) {
     REG_METHOD(L, "init", lvgl_anim_init);
     REG_METHOD(L, "delete", lvgl_anim_delete);

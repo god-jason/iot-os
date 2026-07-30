@@ -489,7 +489,7 @@ int lvgl_obj_get_type(lua_State* L) {
     return 1;
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 事件回调相关 ==================== */
 
 static void lvgl_event_handler(lv_event_t* e) {
     void* ud = lv_event_get_user_data(e);
@@ -567,7 +567,7 @@ int lvgl_obj_set_event_cb(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???? ==================== */
+/* ==================== 滚动操作 ==================== */
 
 int lvgl_obj_scroll_to_x(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);

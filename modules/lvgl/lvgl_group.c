@@ -25,7 +25,7 @@ static lv_obj_t* lvgl_group_get_obj_by_index(lv_group_t* group, uint32_t index)
     return NULL;
 }
 
-/* ==================== ??????==================== */
+/* ==================== 对象组操作 ==================== */
 
 static int lvgl_group_create(lua_State* L) {
     lv_group_t* group = lv_group_create();
@@ -134,7 +134,7 @@ static int lvgl_group_set_wrap(lua_State* L) {
     return 0;
 }
 
-/* ?? group ????*/
+/* 注册 group 子模块 */
 void lvgl_register_group(lua_State* L) {
     REG_METHOD(L, "create", lvgl_group_create);
     REG_METHOD(L, "delete", lvgl_group_delete);

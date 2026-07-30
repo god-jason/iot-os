@@ -60,7 +60,7 @@ static int lvgl_switch_get_state(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å switch å­æ¨¡å?*/
+/* æ³¨å switch å­æ¨¡块*/
 void lvgl_register_switch(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

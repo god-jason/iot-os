@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* chart???metatable?? */
+/* chart组件的metatable引用 */
 static int chart_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_chart_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -26,9 +26,9 @@ static int lvgl_chart_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建图表控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的图表实例
 @usage local chart = lvgl.chart.create(scr)
 */
 static int lvgl_chart_create(lua_State* L) {
@@ -36,9 +36,9 @@ static int lvgl_chart_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param type ????(lvgl.CHART_TYPE_LINE??
+设置图表类型
+@param self 图表实例或指针
+@param type 图表类型(lvgl.CHART_TYPE_LINE等)
 @return self
 @usage chart:set_type(lvgl.CHART_TYPE_LINE)
 */
@@ -51,11 +51,11 @@ static int lvgl_chart_set_type(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param axis ????lvgl.CHART_AXIS_PRIMARY_Y??
-@param min ????
-@param max ????
+设置图表范围
+@param self 图表实例或指针
+@param axis 轴类型(lvgl.CHART_AXIS_PRIMARY_Y等)
+@param min 最小值
+@param max 最大值
 @return self
 @usage chart:set_range(lvgl.CHART_AXIS_PRIMARY_Y, 0, 100)
 */
@@ -70,9 +70,9 @@ static int lvgl_chart_set_range(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param cnt ????
+设置数据点数量
+@param self 图表实例或指针
+@param cnt 点数量
 @return self
 @usage chart:set_point_count(10)
 */
@@ -85,10 +85,10 @@ static int lvgl_chart_set_point_count(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param hdiv ????????
-@param vdiv ????????
+设置分割线数量
+@param self 图表实例或指针
+@param hdiv 水平分割线数量
+@param vdiv 垂直分割线数量
 @return self
 @usage chart:set_div_line_count(3, 5)
 */
@@ -102,9 +102,9 @@ static int lvgl_chart_set_div_line_count(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param mode ????
+设置更新模式
+@param self 图表实例或指针
+@param mode 更新模式
 @return self
 @usage chart:set_update_mode(lvgl.CHART_UPDATE_MODE_SHIFT)
 */
@@ -117,14 +117,14 @@ static int lvgl_chart_set_update_mode(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param axis ????
-@param major_len ??????
-@param minor_len ??????
-@param major_cnt ??????
-@param minor_cnt ??????
-@param label_en ??????
+设置轴刻度
+@param self 图表实例或指针
+@param axis 轴类型
+@param major_len 主刻度长度
+@param minor_len 次刻度长度
+@param major_cnt 主刻度数量
+@param minor_cnt 次刻度数量
+@param label_en 是否显示标签
 @return self
 @usage chart:set_axis_tick(lvgl.CHART_AXIS_PRIMARY_Y, 10, 5, 3, 2, true)
 */
@@ -143,10 +143,10 @@ static int lvgl_chart_set_axis_tick(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param color ????
-@return userdata ????
+添加数据系列
+@param self 图表实例或指针
+@param color 系列颜色
+@return userdata 系列指针
 @usage local series = chart:add_series(0xFF0000)
 */
 static int lvgl_chart_add_series(lua_State* L) {
@@ -160,10 +160,10 @@ static int lvgl_chart_add_series(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param series ????
-@param color ????
+设置系列颜色
+@param self 图表实例或指针
+@param series 系列指针
+@param color 新颜色
 @return self
 @usage chart:set_series_color(series, 0x00FF00)
 */
@@ -178,10 +178,10 @@ static int lvgl_chart_set_series_color(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param series ????
-@param value ??
+设置系列所有值
+@param self 图表实例或指针
+@param series 系列指针
+@param value 值
 @return self
 @usage chart:set_all_value(series, 50)
 */
@@ -195,11 +195,11 @@ static int lvgl_chart_set_all_value(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param series ????
-@param id ????
-@param value ??
+设置系列单个值
+@param self 图表实例或指针
+@param series 系列指针
+@param id 点索引
+@param value 值
 @return self
 @usage chart:set_value_by_id(series, 0, 50)
 */
@@ -214,8 +214,8 @@ static int lvgl_chart_set_value_by_id(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
+刷新图表
+@param self 图表实例或指针
 @return self
 @usage chart:refresh()
 */
@@ -226,12 +226,12 @@ static int lvgl_chart_refresh(lua_State* L) {
     return 1;
 }
 
-/* ?? chart ????*/
+/* 注册 chart 子模块 */
 void lvgl_register_chart(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_type", lvgl_chart_set_type);
     REG_METHOD(L, "set_range", lvgl_chart_set_range);
     REG_METHOD(L, "set_point_count", lvgl_chart_set_point_count);
@@ -244,10 +244,10 @@ void lvgl_register_chart(lua_State* L) {
     REG_METHOD(L, "set_value_by_id", lvgl_chart_set_value_by_id);
     REG_METHOD(L, "refresh", lvgl_chart_refresh);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     chart_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.chart.set_type(chart, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.chart.set_type(chart, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, chart_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -258,6 +258,6 @@ void lvgl_register_chart(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.chart) */
+    /* 注册create函数到主表lvgl.chart) */
     REG_METHOD(L, "create", lvgl_chart_create);
 }

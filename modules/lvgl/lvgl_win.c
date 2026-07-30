@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* win???metatable?? */
+/* win组件的metatable引用 */
 static int win_metatable_ref = LUA_NOREF;
 
 static lv_obj_t* lvgl_win_find_title(lv_obj_t* win)
@@ -33,7 +33,7 @@ static lv_obj_t* lvgl_win_find_title(lv_obj_t* win)
     return NULL;
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_win_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -46,9 +46,9 @@ static int lvgl_win_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建窗口控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的窗口实例
 @usage local win = lvgl.win.create(scr)
 */
 static int lvgl_win_create(lua_State* L) {
@@ -56,11 +56,11 @@ static int lvgl_win_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param title ????
+设置窗口标题
+@param self 窗口实例或指针
+@param title 标题文本
 @return self
-@usage win:set_title("??")
+@usage win:set_title("设置")
 */
 static int lvgl_win_set_title(lua_State* L) {
     lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
@@ -76,10 +76,10 @@ static int lvgl_win_set_title(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param icon ??(???
-@return userdata ????
+添加标题栏按钮
+@param self 窗口实例或指针
+@param icon 图标(可选)
+@return userdata 按钮对象
 @usage local btn = win:add_btn(nil)
 */
 static int lvgl_win_add_btn(lua_State* L) {
@@ -99,10 +99,10 @@ static int lvgl_win_add_btn(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param btn ????
-@param title ????
+设置按钮标题
+@param self 窗口实例或指针
+@param btn 按钮对象
+@param title 标题文本
 @return self
 @usage win:set_btn_title(btn, "X")
 */
@@ -117,9 +117,9 @@ static int lvgl_win_set_btn_title(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return userdata ??????
+获取内容区域
+@param self 窗口实例或指针
+@return userdata 内容区域对象
 @usage local cont = win:get_content()
 */
 static int lvgl_win_get_content(lua_State* L) {
@@ -130,9 +130,9 @@ static int lvgl_win_get_content(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param height ????
+设置标题栏高度
+@param self 窗口实例或指针
+@param height 高度值
 @return self
 @usage win:set_title_height(40)
 */
@@ -148,9 +148,9 @@ static int lvgl_win_set_title_height(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param flags ????
+设置窗口标志
+@param self 窗口实例或指针
+@param flags 标志值
 @return self
 @usage win:set_flags(lvgl.WIN_FLAG_HEADER)
 */
@@ -164,9 +164,9 @@ static int lvgl_win_set_flags(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param flags ????
+清除窗口标志
+@param self 窗口实例或指针
+@param flags 标志值
 @return self
 @usage win:clear_flags(lvgl.WIN_FLAG_HEADER)
 */
@@ -179,12 +179,12 @@ static int lvgl_win_clear_flags(lua_State* L) {
     return 1;
 }
 
-/* ?? win ????*/
+/* 注册 win 子模块 */
 void lvgl_register_win(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_title", lvgl_win_set_title);
     REG_METHOD(L, "add_btn", lvgl_win_add_btn);
     REG_METHOD(L, "set_btn_title", lvgl_win_set_btn_title);
@@ -193,10 +193,10 @@ void lvgl_register_win(lua_State* L) {
     REG_METHOD(L, "set_flags", lvgl_win_set_flags);
     REG_METHOD(L, "clear_flags", lvgl_win_clear_flags);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     win_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.win.set_title(win, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.win.set_title(win, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, win_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -207,6 +207,6 @@ void lvgl_register_win(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.win) */
+    /* 注册create函数到主表lvgl.win) */
     REG_METHOD(L, "create", lvgl_win_create);
 }

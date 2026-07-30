@@ -11,11 +11,11 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== ??????==================== */
+/* ==================== 定时器操作 ==================== */
 
 /*
-??????
-@param timer ??????
+删除定时器
+@param timer 定时器指针
 @usage lvgl.timer.delete(timer)
 */
 static int lvgl_timer_delete(lua_State* L) {
@@ -25,8 +25,8 @@ static int lvgl_timer_delete(lua_State* L) {
 }
 
 /*
-??????
-@param timer ??????
+暂停定时器
+@param timer 定时器指针
 @usage lvgl.timer.pause(timer)
 */
 static int lvgl_timer_pause(lua_State* L) {
@@ -36,8 +36,8 @@ static int lvgl_timer_pause(lua_State* L) {
 }
 
 /*
-??????
-@param timer ??????
+恢复定时器
+@param timer 定时器指针
 @usage lvgl.timer.resume(timer)
 */
 static int lvgl_timer_resume(lua_State* L) {
@@ -47,9 +47,9 @@ static int lvgl_timer_resume(lua_State* L) {
 }
 
 /*
-????????
-@param timer ??????
-@param period ??(??)
+设置定时器周期
+@param timer 定时器指针
+@param period 周期(毫秒)
 @usage lvgl.timer.set_period(timer, 1000)
 */
 static int lvgl_timer_set_period(lua_State* L) {
@@ -60,9 +60,9 @@ static int lvgl_timer_set_period(lua_State* L) {
 }
 
 /*
-????????
-@param timer ??????
-@return number ??(??)
+获取定时器周期
+@param timer 定时器指针
+@return number 周期(毫秒)
 @usage local period = lvgl.timer.get_period(timer)
 */
 static int lvgl_timer_get_period(lua_State* L) {
@@ -72,8 +72,8 @@ static int lvgl_timer_get_period(lua_State* L) {
 }
 
 /*
-??????
-@param timer ??????
+重置定时器
+@param timer 定时器指针
 @usage lvgl.timer.reset(timer)
 */
 static int lvgl_timer_reset(lua_State* L) {
@@ -83,8 +83,8 @@ static int lvgl_timer_reset(lua_State* L) {
 }
 
 /*
-????????
-@param timer ??????
+使定时器立即就绪
+@param timer 定时器指针
 @usage lvgl.timer.ready(timer)
 */
 static int lvgl_timer_ready(lua_State* L) {
@@ -94,9 +94,9 @@ static int lvgl_timer_ready(lua_State* L) {
 }
 
 /*
-??????????
-@param timer ??????
-@return number ????(??)
+获取定时器剩余时间
+@param timer 定时器指针
+@return number 剩余时间(毫秒)
 @usage local time = lvgl.timer.get_time(timer)
 */
 static int lvgl_timer_get_time(lua_State* L) {
@@ -108,9 +108,9 @@ static int lvgl_timer_get_time(lua_State* L) {
 }
 
 /*
-??????????
-@param timer ??????
-@param repeat_count ????(-1??????)
+设置定时器重复次数
+@param timer 定时器指针
+@param repeat_count 重复次数(-1表示无限循环)
 @usage lvgl.timer.set_repeat_count(timer, -1)
 */
 static int lvgl_timer_set_repeat_count(lua_State* L) {
@@ -121,9 +121,9 @@ static int lvgl_timer_set_repeat_count(lua_State* L) {
 }
 
 /*
-??????????
-@param timer ??????
-@return number ????
+获取定时器重复次数
+@param timer 定时器指针
+@return number 重复次数
 @usage local count = lvgl.timer.get_repeat_count(timer)
 */
 static int lvgl_timer_get_repeat_count(lua_State* L) {
@@ -132,7 +132,7 @@ static int lvgl_timer_get_repeat_count(lua_State* L) {
     return 1;
 }
 
-/* ?? timer ????*/
+/* 注册 timer 子模块 */
 void lvgl_register_timer(lua_State* L) {
     REG_METHOD(L, "delete", lvgl_timer_delete);
     REG_METHOD(L, "pause", lvgl_timer_pause);

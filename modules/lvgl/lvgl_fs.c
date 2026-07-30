@@ -11,13 +11,13 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== ???? ==================== */
+/* ==================== 文件操作 ==================== */
 
 /*
-????
-@param path ????
-@param mode ????
-@return userdata ????
+打开文件
+@param path 文件路径
+@param mode 打开模式
+@return userdata 文件指针
 @usage local f = lvgl.fs.open("test.txt", lvgl.FS_MODE_RD)
 */
 static int lvgl_fs_open(lua_State* L) {
@@ -40,8 +40,8 @@ static int lvgl_fs_open(lua_State* L) {
 }
 
 /*
-????
-@param file ????
+关闭文件
+@param file 文件指针
 @usage f:close()
 */
 static int lvgl_fs_close(lua_State* L) {
@@ -52,10 +52,10 @@ static int lvgl_fs_close(lua_State* L) {
 }
 
 /*
-????
-@param file ????
-@param size ????
-@return string ??????
+读取文件
+@param file 文件指针
+@param size 读取大小
+@return string 读取的数据
 @usage local data = f:read(1024)
 */
 static int lvgl_fs_read(lua_State* L) {
@@ -81,10 +81,10 @@ static int lvgl_fs_read(lua_State* L) {
 }
 
 /*
-????
-@param file ????
-@param data ??
-@return integer ??????
+写入文件
+@param file 文件指针
+@param data 数据
+@return integer 写入的字节数
 @usage local bytes = f:write("hello")
 */
 static int lvgl_fs_write(lua_State* L) {
@@ -103,11 +103,11 @@ static int lvgl_fs_write(lua_State* L) {
 }
 
 /*
-??????
-@param file ????
-@param pos ??
-@param whence ????(SEEK_SET/SEEK_CUR/SEEK_END)
-@return integer ????????
+设置文件位置
+@param file 文件指针
+@param pos 位置
+@param whence 起始位置(SEEK_SET/SEEK_CUR/SEEK_END)
+@return integer 新位置或错误码
 @usage f:seek(10, lvgl.FS_SEEK_SET)
 */
 static int lvgl_fs_seek(lua_State* L) {
@@ -132,9 +132,9 @@ static int lvgl_fs_seek(lua_State* L) {
 }
 
 /*
-??????
-@param file ????
-@return integer ????
+获取文件大小
+@param file 文件指针
+@return integer 文件大小
 @usage local size = f:size()
 */
 static int lvgl_fs_size(lua_State* L) {
@@ -165,9 +165,9 @@ static int lvgl_fs_size(lua_State* L) {
 }
 
 /*
-??????
-@param file ????
-@return integer ????
+获取文件位置
+@param file 文件指针
+@return integer 当前位置
 @usage local pos = f:tell()
 */
 static int lvgl_fs_tell(lua_State* L) {
@@ -183,12 +183,12 @@ static int lvgl_fs_tell(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???? ==================== */
+/* ==================== 文件操作 ==================== */
 
 /*
-????
-@param path ????
-@return userdata ????
+打开目录
+@param path 目录路径
+@return userdata 目录指针
 @usage local dir = lvgl.fs.dir_open("data/")
 */
 static int lvgl_fs_dir_open(lua_State* L) {
@@ -210,8 +210,8 @@ static int lvgl_fs_dir_open(lua_State* L) {
 }
 
 /*
-????
-@param dir ????
+关闭目录
+@param dir 目录指针
 @usage dir:close()
 */
 static int lvgl_fs_dir_close(lua_State* L) {
@@ -222,9 +222,9 @@ static int lvgl_fs_dir_close(lua_State* L) {
 }
 
 /*
-??????
-@param dir ????
-@return table ??????nil
+读取目录项
+@param dir 目录指针
+@return table 目录项信息或nil
 @usage local item = dir:read()
 */
 static int lvgl_fs_dir_read(lua_State* L) {
@@ -249,12 +249,12 @@ static int lvgl_fs_dir_read(lua_State* L) {
     return 1;
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 文件操作 ==================== */
 
 /*
-????????
-@param drv ????
-@return table ??????
+获取驱动器信息
+@param drv 驱动器名
+@return table 驱动器信息
 @usage local info = lvgl.fs.get_drive_info("S")
 */
 static int lvgl_fs_get_drive_info(lua_State* L) {
@@ -264,12 +264,12 @@ static int lvgl_fs_get_drive_info(lua_State* L) {
     return 2;
 }
 
-/* ==================== ???? ==================== */
+/* ==================== 文件操作 ==================== */
 
 /*
-????(????)
-@param path ????
-@return table ????
+列出目录(便捷函数)
+@param path 目录路径
+@return table 文件列表
 @usage local files = lvgl.fs.list("data/")
 */
 static int lvgl_fs_list(lua_State* L) {
@@ -307,9 +307,9 @@ static int lvgl_fs_list(lua_State* L) {
 }
 
 /*
-????????(????)
-@param path ????
-@return string ????
+读取文件全部内容(便捷函数)
+@param path 文件路径
+@return string 文件内容
 @usage local content = lvgl.fs.read_file("test.txt")
 */
 static int lvgl_fs_read_file(lua_State* L) {
@@ -367,7 +367,7 @@ static int lvgl_fs_read_file(lua_State* L) {
     return 1;
 }
 
-/* ?? fs ????*/
+/* 注册 fs 子模块 */
 int lvgl_register_fs(lua_State* L) {
     REG_METHOD(L, "open", lvgl_fs_open);
     REG_METHOD(L, "close", lvgl_fs_close);

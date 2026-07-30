@@ -30,12 +30,9 @@ static lv_disp_t* lvgl_theme_get_disp(lua_State* L, int idx)
 }
 
 /*
-??????
-@param primary ?????
-@param secondary ?????
-@param dark ?????????
-@return userdata ????
-@usage local theme = lvgl.theme.create(0x3366FF, 0x6633FF, false)
+创建主题
+@return userdata 主题指针
+@usage local theme = lvgl.theme.create()
 */
 static int lvgl_theme_create(lua_State* L)
 {
@@ -56,9 +53,8 @@ static int lvgl_theme_create(lua_State* L)
 }
 
 /*
-???????
-@param theme ????
-@param disp ????????
+设置主题
+@param theme 主题指针
 @usage lvgl.theme.set(theme)
 */
 static int lvgl_theme_set(lua_State* L)
@@ -70,9 +66,8 @@ static int lvgl_theme_set(lua_State* L)
 }
 
 /*
-???????
-@param disp ????????
-@return userdata ??????
+获取当前主题
+@return userdata 当前主题指针
 @usage local theme = lvgl.theme.get()
 */
 static int lvgl_theme_get(lua_State* L)
@@ -83,8 +78,8 @@ static int lvgl_theme_get(lua_State* L)
 }
 
 /*
-??????
-@return userdata ??????
+获取默认主题
+@return userdata 默认主题指针
 @usage local theme = lvgl.theme.default()
 */
 static int lvgl_theme_default(lua_State* L)
@@ -106,8 +101,8 @@ static int lvgl_theme_default(lua_State* L)
 }
 
 /*
-????????
-@param obj ????
+应用主题到对象
+@param obj 对象指针
 @usage lvgl.theme.apply(obj)
 */
 static int lvgl_theme_apply(lua_State* L)
@@ -146,10 +141,10 @@ static bool lvgl_theme_get_color_field(const lv_theme_t* theme, int color_id, lv
 }
 
 /*
-??????
-@param theme ????
-@param color_id ??ID
-@param color ???
+设置主题颜色
+@param theme 主题指针
+@param color_id 颜色ID
+@param color 颜色值
 @usage theme:set_color(lvgl.THEME_COLOR_PRIMARY, 0x3366FF)
 */
 static int lvgl_theme_set_color(lua_State* L)
@@ -169,10 +164,10 @@ static int lvgl_theme_set_color(lua_State* L)
 }
 
 /*
-??????
-@param theme ????
-@param color_id ??ID
-@return integer ???
+获取主题颜色
+@param theme 主题指针
+@param color_id 颜色ID
+@return integer 颜色值
 @usage local color = theme:get_color(lvgl.THEME_COLOR_PRIMARY)
 */
 static int lvgl_theme_get_color(lua_State* L)
@@ -223,10 +218,10 @@ static const lv_font_t* lvgl_theme_get_font_field(const lv_theme_t* theme, int f
 }
 
 /*
-??????
-@param theme ????
-@param font_id ??ID
-@param font ????
+设置主题字体
+@param theme 主题指针
+@param font_id 字体ID
+@param font 字体指针
 @usage theme:set_font(lvgl.THEME_FONT_SMALL, font)
 */
 static int lvgl_theme_set_font(lua_State* L)
@@ -245,10 +240,10 @@ static int lvgl_theme_set_font(lua_State* L)
 }
 
 /*
-??????
-@param theme ????
-@param font_id ??ID
-@return userdata ????
+获取主题字体
+@param theme 主题指针
+@param font_id 字体ID
+@return userdata 字体指针
 @usage local font = theme:get_font(lvgl.THEME_FONT_SMALL)
 */
 static int lvgl_theme_get_font(lua_State* L)
@@ -266,10 +261,10 @@ static int lvgl_theme_get_font(lua_State* L)
 }
 
 /*
-???????LVGL 8 ??? API????????
-@param theme ????
-@param size_id ??ID
-@param size ???
+设置主题尺寸
+@param theme 主题指针
+@param size_id 尺寸ID
+@param size 尺寸值
 @usage theme:set_size(lvgl.THEME_SIZE_BUTTON_HEIGHT, 40)
 */
 static int lvgl_theme_set_size(lua_State* L)
@@ -282,10 +277,10 @@ static int lvgl_theme_set_size(lua_State* L)
 }
 
 /*
-???????LVGL 8 ??? API????????
-@param theme ????
-@param size_id ??ID
-@return integer ???
+获取主题尺寸
+@param theme 主题指针
+@param size_id 尺寸ID
+@return integer 尺寸值
 @usage local size = theme:get_size(lvgl.THEME_SIZE_BUTTON_HEIGHT)
 */
 static int lvgl_theme_get_size(lua_State* L)
@@ -296,7 +291,7 @@ static int lvgl_theme_get_size(lua_State* L)
     return 1;
 }
 
-/* ?? theme ??? */
+/* 注册 theme 子模块 */
 int lvgl_register_theme(lua_State* L)
 {
     REG_METHOD(L, "create", lvgl_theme_create);

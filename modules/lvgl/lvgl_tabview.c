@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* tabview???metatable?? */
+/* tabview组件的metatable引用 */
 static int tabview_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_tabview_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -25,12 +25,12 @@ static int lvgl_tabview_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ????OO?? ==================== */
+/* ==================== 标签视图OO方法 ==================== */
 
 /*
-????????(OO??)
-@param self ???????
-@return userdata ?metatable????????
+创建标签视图控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的标签视图实例
 @usage local tv = lvgl.tabview.create(scr)
 */
 static int lvgl_tabview_create(lua_State* L) {
@@ -38,11 +38,11 @@ static int lvgl_tabview_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ??????????
-@param name ????
-@return userdata ??????
-@usage local tab1 = tv:add_tab("??1")
+添加标签页
+@param self 标签视图实例或指针
+@param name 标签名称
+@return userdata 标签页对象
+@usage local tab1 = tv:add_tab("页面1")
 */
 static int lvgl_tabview_add_tab(lua_State* L) {
     lv_obj_t* tv = lvgl_get_obj_ptr(L, 1);
@@ -53,9 +53,9 @@ static int lvgl_tabview_add_tab(lua_State* L) {
 }
 
 /*
-????????
-@param self ??????????
-@param pos ??????
+设置标签栏位置
+@param self 标签视图实例或指针
+@param pos 标签栏位置
 @return self
 @usage tv:set_tab_bar_position(lvgl.TABVIEW_TAB_POS_TOP)
 */
@@ -68,9 +68,9 @@ static int lvgl_tabview_set_tab_bar_position(lua_State* L) {
 }
 
 /*
-????????
-@param self ??????????
-@param width ????
+设置标签栏宽度
+@param self 标签视图实例或指针
+@param width 宽度值
 @return self
 @usage tv:set_tab_bar_width(100)
 */
@@ -91,10 +91,10 @@ static int lvgl_tabview_set_tab_bar_width(lua_State* L) {
 }
 
 /*
-??????
-@param self ??????????
-@param idx ????
-@return userdata ??????
+获取标签页
+@param self 标签视图实例或指针
+@param idx 标签索引
+@return userdata 标签页对象
 @usage local page0 = tv:get_tab(0)
 */
 static int lvgl_tabview_get_tab(lua_State* L) {
@@ -107,10 +107,10 @@ static int lvgl_tabview_get_tab(lua_State* L) {
 }
 
 /*
-?????????
-@param self ??????????
-@param idx ????
-@param anim ????(???
+设置当前激活标签
+@param self 标签视图实例或指针
+@param idx 标签索引
+@param anim 是否动画(可选)
 @return self
 @usage tv:set_active(0, 0)
 */
@@ -124,9 +124,9 @@ static int lvgl_tabview_set_active(lua_State* L) {
 }
 
 /*
-???????????
-@param self ??????????
-@return integer ????
+获取当前激活标签索引
+@param self 标签视图实例或指针
+@return integer 标签索引
 @usage local active = tv:get_active()
 */
 static int lvgl_tabview_get_active(lua_State* L) {
@@ -137,9 +137,9 @@ static int lvgl_tabview_get_active(lua_State* L) {
 }
 
 /*
-??????
-@param self ??????????
-@return integer ????
+获取标签数量
+@param self 标签视图实例或指针
+@return integer 标签数量
 @usage local count = tv:get_tab_count()
 */
 static int lvgl_tabview_get_tab_count(lua_State* L) {
@@ -149,12 +149,12 @@ static int lvgl_tabview_get_tab_count(lua_State* L) {
     return 1;
 }
 
-/* ?? tabview ????*/
+/* 注册 tabview 子模块 */
 void lvgl_register_tabview(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "add_tab", lvgl_tabview_add_tab);
     REG_METHOD(L, "set_tab_bar_position", lvgl_tabview_set_tab_bar_position);
     REG_METHOD(L, "set_tab_bar_width", lvgl_tabview_set_tab_bar_width);
@@ -163,10 +163,10 @@ void lvgl_register_tabview(lua_State* L) {
     REG_METHOD(L, "get_active", lvgl_tabview_get_active);
     REG_METHOD(L, "get_tab_count", lvgl_tabview_get_tab_count);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     tabview_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.tabview.add_tab(tv, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.tabview.add_tab(tv, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, tabview_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -177,6 +177,6 @@ void lvgl_register_tabview(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.tabview) */
+    /* 注册create函数到主表lvgl.tabview) */
     REG_METHOD(L, "create", lvgl_tabview_create);
 }

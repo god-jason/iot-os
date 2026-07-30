@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* label???metatable?? */
+/* label组件的metatable引用 */
 static int label_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_label_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -26,9 +26,9 @@ static int lvgl_label_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建标签(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的标签实例
 @usage local label = lvgl.label.create(scr)
 */
 static int lvgl_label_create(lua_State* L) {
@@ -36,9 +36,9 @@ static int lvgl_label_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param text ????
+设置标签文本
+@param self 标签实例或指针
+@param text 文本内容
 @return self
 @usage label:set_text("Hello")
 */
@@ -51,9 +51,9 @@ static int lvgl_label_set_text(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return string ????
+获取标签文本
+@param self 标签实例或指针
+@return string 文本内容
 @usage local text = label:get_text()
 */
 static int lvgl_label_get_text(lua_State* L) {
@@ -64,9 +64,9 @@ static int lvgl_label_get_text(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param align ????
+设置文本对齐方式
+@param self 标签实例或指针
+@param align 对齐方式
 @return self
 @usage label:set_align(lvgl.TEXT_ALIGN_CENTER)
 */
@@ -79,9 +79,9 @@ static int lvgl_label_set_align(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param mode ??: LABEL_LONG_WRAP, LABEL_LONG_SCROLL, LABEL_LONG_DOT, LABEL_LONG_SCROLL_CIRCULAR, LABEL_LONG_CROP
+设置长文本模式
+@param self 标签实例或指针
+@param mode 模式: LABEL_LONG_WRAP, LABEL_LONG_SCROLL, LABEL_LONG_DOT, LABEL_LONG_SCROLL_CIRCULAR, LABEL_LONG_CROP
 @return self
 @usage label:set_long_mode(lvgl.LABEL_LONG_SCROLL_CIRCULAR)
 */
@@ -94,9 +94,9 @@ static int lvgl_label_set_long_mode(lua_State* L) {
 }
 
 /*
-?????????
-@param self ????????
-@param en ????
+设置文本重新着色
+@param self 标签实例或指针
+@param en 是否启用
 @return self
 @usage label:set_recolor(true)
 */
@@ -109,9 +109,9 @@ static int lvgl_label_set_recolor(lua_State* L) {
 }
 
 /*
-???????????
-@param self ????????
-@param pos ??
+设置文本选中开始位置
+@param self 标签实例或指针
+@param pos 位置
 @return self
 @usage label:set_text_sel_start(0)
 */
@@ -124,9 +124,9 @@ static int lvgl_label_set_text_sel_start(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@param pos ??
+设置文本选中结束位置
+@param self 标签实例或指针
+@param pos 位置
 @return self
 @usage label:set_text_sel_end(5)
 */
@@ -139,8 +139,8 @@ static int lvgl_label_set_text_sel_end(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
+获取文本是否在光标下
+@param self 标签实例或指针
 @return boolean
 @usage local under = label:is_char_under_cursor()
 */
@@ -164,12 +164,12 @@ static int lvgl_label_is_char_under_cursor(lua_State* L) {
     return 1;
 }
 
-/* ?? label ????*/
+/* 注册 label 子模块 */
 void lvgl_register_label(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_text", lvgl_label_set_text);
     REG_METHOD(L, "get_text", lvgl_label_get_text);
     REG_METHOD(L, "set_align", lvgl_label_set_align);
@@ -179,10 +179,10 @@ void lvgl_register_label(lua_State* L) {
     REG_METHOD(L, "set_text_sel_end", lvgl_label_set_text_sel_end);
     REG_METHOD(L, "is_char_under_cursor", lvgl_label_is_char_under_cursor);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     label_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.label.set_text(label, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.label.set_text(label, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, label_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -193,6 +193,6 @@ void lvgl_register_label(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.label) */
+    /* 注册create函数到主表lvgl.label) */
     REG_METHOD(L, "create", lvgl_label_create);
 }

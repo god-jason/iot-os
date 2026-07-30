@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* table???metatable?? */
+/* table组件的metatable引用 */
 static int table_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_table_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -26,9 +26,9 @@ static int lvgl_table_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建表格控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的表格实例
 @usage local table = lvgl.table.create(scr)
 */
 static int lvgl_table_create(lua_State* L) {
@@ -36,9 +36,9 @@ static int lvgl_table_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param row_cnt ??
+设置表格行数
+@param self 表格实例或指针
+@param row_cnt 行数
 @return self
 @usage table:set_row_cnt(3)
 */
@@ -51,9 +51,9 @@ static int lvgl_table_set_row_cnt(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param col_cnt ??
+设置表格列数
+@param self 表格实例或指针
+@param col_cnt 列数
 @return self
 @usage table:set_col_cnt(3)
 */
@@ -66,11 +66,11 @@ static int lvgl_table_set_col_cnt(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param row ?????????
-@param col ?????????
-@param txt ????
+设置单元格文本
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param txt 文本内容
 @return self
 @usage table:set_cell_value(0, 0, "Name")
 */
@@ -85,10 +85,10 @@ static int lvgl_table_set_cell_value(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param col ?????????
-@param width ??
+设置列宽度
+@param self 表格实例或指针
+@param col 列索引(从0开始)
+@param width 宽度
 @return self
 @usage table:set_col_width(0, 80)
 */
@@ -102,11 +102,11 @@ static int lvgl_table_set_col_width(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@param row ?????????
-@param col ?????????
-@param align ????
+设置单元格对齐方式
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param align 对齐方式
 @return self
 @usage table:set_cell_align(0, 0, lvgl.TEXT_ALIGN_CENTER)
 */
@@ -122,11 +122,11 @@ static int lvgl_table_set_cell_align(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param row ?????????
-@param col ?????????
-@return string ????
+获取单元格文本
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@return string 文本内容
 @usage local text = table:get_cell_value(0, 0)
 */
 static int lvgl_table_get_cell_value(lua_State* L) {
@@ -139,9 +139,9 @@ static int lvgl_table_get_cell_value(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return integer ??????
+获取选中行
+@param self 表格实例或指针
+@return integer 选中行索引
 @usage local row = table:get_selected_row()
 */
 static int lvgl_table_get_selected_row(lua_State* L) {
@@ -154,9 +154,9 @@ static int lvgl_table_get_selected_row(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return integer ??????
+获取选中列
+@param self 表格实例或指针
+@return integer 选中列索引
 @usage local col = table:get_selected_col()
 */
 static int lvgl_table_get_selected_col(lua_State* L) {
@@ -169,11 +169,11 @@ static int lvgl_table_get_selected_col(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@param row ?????????
-@param col ?????????
-@param ctrl ???????
+添加单元格控制属性
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param ctrl 控制属性标志
 @return self
 @usage table:add_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_NONE)
 */
@@ -188,11 +188,11 @@ static int lvgl_table_add_cell_ctrl(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@param row ?????????
-@param col ?????????
-@param ctrl ???????
+移除单元格控制属性
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param ctrl 控制属性标志
 @return self
 @usage table:remove_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_NONE)
 */
@@ -206,7 +206,7 @@ static int lvgl_table_remove_cell_ctrl(lua_State* L) {
     return 1;
 }
 
-/* ?? table ????*/
+/* 注册 table 子模块 */
 void lvgl_register_table(lua_State* L) {
     lua_newtable(L);
 
@@ -233,6 +233,6 @@ void lvgl_register_table(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.table) */
+    /* 注册create函数到主表lvgl.table) */
     REG_METHOD(L, "create", lvgl_table_create);
 }

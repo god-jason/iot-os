@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* colorwheel???metatable?? */
+/* colorwheel组件的metatable引用 */
 static int colorwheel_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_colorwheel_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -24,16 +24,16 @@ static int lvgl_colorwheel_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???OO?? ==================== */
+/* ==================== 颜色轮OO方法 ==================== */
 
 static int lvgl_colorwheel_create(lua_State* L) {
     return lvgl_obj_create_instance(L, lvgl_colorwheel_create_internal, colorwheel_metatable_ref);
 }
 
 /*
-????????
-@param self ????????
-@param mode ??????
+设置颜色轮模式
+@param self 颜色轮实例或指针
+@param mode 颜色轮模式
 @return self
 @usage cw:set_mode(lvgl.COLORWHEEL_MODE_HUE)
 */
@@ -46,9 +46,9 @@ static int lvgl_colorwheel_set_mode(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param angle ??????
+设置角度偏移
+@param self 颜色轮实例或指针
+@param angle 角度偏移值
 @return self
 @usage cw:set_angle_offset(45)
 */
@@ -62,9 +62,9 @@ static int lvgl_colorwheel_set_angle_offset(lua_State* L) {
 }
 
 /*
-??RGB????
-@param self ????????
-@return r,g,b ???????????
+获取RGB颜色值
+@param self 颜色轮实例或指针
+@return r,g,b 红色、绿色、蓝色分量
 @usage local r, g, b = cw:get_rgb()
 */
 static int lvgl_colorwheel_get_rgb(lua_State* L) {
@@ -78,11 +78,11 @@ static int lvgl_colorwheel_get_rgb(lua_State* L) {
 }
 
 /*
-??RGB????
-@param self ????????
-@param r ????(0-255)
-@param g ????(0-255)
-@param b ????(0-255)
+设置RGB颜色值
+@param self 颜色轮实例或指针
+@param r 红色分量(0-255)
+@param g 绿色分量(0-255)
+@param b 蓝色分量(0-255)
 @return self
 @usage cw:set_rgb(255, 0, 0)
 */
@@ -98,9 +98,9 @@ static int lvgl_colorwheel_set_rgb(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@return integer ??????
+获取颜色值(完整值)
+@param self 颜色轮实例或指针
+@return integer 颜色完整值
 @usage local color = cw:get_color()
 */
 static int lvgl_colorwheel_get_color(lua_State* L) {
@@ -111,9 +111,9 @@ static int lvgl_colorwheel_get_color(lua_State* L) {
 }
 
 /*
-??????????
-@param self ????????
-@param color_val ??????
+设置颜色值(完整值)
+@param self 颜色轮实例或指针
+@param color_val 颜色完整值
 @return self
 @usage cw:set_color(0xFF0000)
 */
@@ -127,12 +127,12 @@ static int lvgl_colorwheel_set_color(lua_State* L) {
     return 1;
 }
 
-/* ?? colorwheel ????*/
+/* 注册 colorwheel 子模块 */
 void lvgl_register_colorwheel(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_mode", lvgl_colorwheel_set_mode);
     REG_METHOD(L, "set_angle_offset", lvgl_colorwheel_set_angle_offset);
     REG_METHOD(L, "get_rgb", lvgl_colorwheel_get_rgb);
@@ -140,10 +140,10 @@ void lvgl_register_colorwheel(lua_State* L) {
     REG_METHOD(L, "get_color", lvgl_colorwheel_get_color);
     REG_METHOD(L, "set_color", lvgl_colorwheel_set_color);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     colorwheel_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.colorwheel.set_mode(cw, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.colorwheel.set_mode(cw, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, colorwheel_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -154,6 +154,6 @@ void lvgl_register_colorwheel(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.colorwheel) */
+    /* 注册create函数到主表lvgl.colorwheel) */
     REG_METHOD(L, "create", lvgl_colorwheel_create);
 }

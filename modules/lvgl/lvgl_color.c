@@ -11,14 +11,14 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== ???? ==================== */
+/* ==================== 颜色操作 ==================== */
 
 /*
-??RGB??????
-@param r ????(0-255)
-@param g ????(0-255)
-@param b ????(0-255)
-@return integer ????
+通过RGB值创建颜色
+@param r 红色分量(0-255)
+@param g 绿色分量(0-255)
+@param b 蓝色分量(0-255)
+@return integer 颜色值
 @usage local color = lvgl.color.make(255, 0, 0)
 */
 static int lvgl_color_make(lua_State* L) {
@@ -31,9 +31,9 @@ static int lvgl_color_make(lua_State* L) {
 }
 
 /*
-??????????
-@param hex ??????????xFF0000)
-@return integer ????
+通过十六进制创建颜色
+@param hex 十六进制颜色值(如0xFF0000)
+@return integer 颜色值
 @usage local color = lvgl.color.hex(0xFF0000)
 */
 static int lvgl_color_hex(lua_State* L) {
@@ -44,9 +44,9 @@ static int lvgl_color_hex(lua_State* L) {
 }
 
 /*
-??3??????????
-@param hex 3???????????xF00)
-@return integer ????
+通过3位十六进制创建颜色
+@param hex 3位十六进制颜色值(如0xF00)
+@return integer 颜色值
 @usage local color = lvgl.color.hex3(0xF00)
 */
 static int lvgl_color_hex3(lua_State* L) {
@@ -57,10 +57,10 @@ static int lvgl_color_hex3(lua_State* L) {
 }
 
 /*
-??????
-@param color ????
-@param bright ??????-255??55)
-@return integer ????????
+调整颜色亮度
+@param color 颜色值
+@param bright 亮度调整值(-255到255)
+@return integer 调整后的颜色值
 @usage local brightened = lvgl.color.change_brightness(color, 30)
 */
 static int lvgl_color_change_brightness(lua_State* L) {
@@ -76,10 +76,10 @@ static int lvgl_color_change_brightness(lua_State* L) {
 }
 
 /*
-??????
-@param color ????
-@param level ????(0-255)
-@return integer ????????
+使颜色变亮
+@param color 颜色值
+@param level 变亮级别(0-255)
+@return integer 变亮后的颜色值
 @usage local lighter = lvgl.color.lighten(color, 50)
 */
 static int lvgl_color_lighten(lua_State* L) {
@@ -92,10 +92,10 @@ static int lvgl_color_lighten(lua_State* L) {
 }
 
 /*
-??????
-@param color ????
-@param level ????(0-255)
-@return integer ????????
+使颜色变暗
+@param color 颜色值
+@param level 变暗级别(0-255)
+@return integer 变暗后的颜色值
 @usage local darker = lvgl.color.darken(color, 50)
 */
 static int lvgl_color_darken(lua_State* L) {
@@ -108,9 +108,9 @@ static int lvgl_color_darken(lua_State* L) {
 }
 
 /*
-??????1????
-@param color ????
-@return integer ????????
+将颜色转换为1位颜色
+@param color 颜色值
+@return integer 转换后的颜色值
 @usage local mono = lvgl.color.to_1(color)
 */
 static int lvgl_color_to_1(lua_State* L) {
@@ -121,11 +121,11 @@ static int lvgl_color_to_1(lua_State* L) {
 }
 
 /*
-??????
-@param c1 ??1??
-@param c2 ??2??
-@param mix ????(0-255,0=??c1,255=??c2)
-@return integer ????????
+混合两种颜色
+@param c1 颜色1值
+@param c2 颜色2值
+@param mix 混合比例(0-255,0=全部c1,255=全部c2)
+@return integer 混合后的颜色值
 @usage local mixed = lvgl.color.mix(color1, color2, 128)
 */
 static int lvgl_color_mix(lua_State* L) {
@@ -139,7 +139,7 @@ static int lvgl_color_mix(lua_State* L) {
     return 1;
 }
 
-/* ?? color ????*/
+/* 注册 color 子模块 */
 void lvgl_register_color(lua_State* L) {
     REG_METHOD(L, "make", lvgl_color_make);
     REG_METHOD(L, "hex", lvgl_color_hex);

@@ -134,7 +134,7 @@ static int lvgl_checkbox_get_state(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å checkbox å­æ¨¡å?*/
+/* æ³¨å checkbox å­æ¨¡块*/
 void lvgl_register_checkbox(lua_State* L) {
     lua_newtable(L);
 

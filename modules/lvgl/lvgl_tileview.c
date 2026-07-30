@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* tileview???metatable?? */
+/* tileview组件的metatable引用 */
 static int tileview_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_tileview_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -23,12 +23,12 @@ static int lvgl_tileview_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ????OO?? ==================== */
+/* ==================== 瓦片视图OO方法 ==================== */
 
 /*
-????????(OO??)
-@param self ???????
-@return userdata ?metatable????????
+创建瓦片视图控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的瓦片视图实例
 @usage local tv = lvgl.tileview.create(scr)
 */
 static int lvgl_tileview_create(lua_State* L) {
@@ -36,12 +36,12 @@ static int lvgl_tileview_create(lua_State* L) {
 }
 
 /*
-????
-@param self ??????????
-@param col ????
-@param row ????
-@param dir ????(???
-@return userdata ????
+添加瓦片
+@param self 瓦片视图实例或指针
+@param col 列索引
+@param row 行索引
+@param dir 滑动方向(可选)
+@return userdata 瓦片对象
 @usage local tile = tv:add_tile(0, 0, lvgl.DIR_RIGHT)
 */
 static int lvgl_tileview_add_tile(lua_State* L) {
@@ -55,10 +55,10 @@ static int lvgl_tileview_add_tile(lua_State* L) {
 }
 
 /*
-??????
-@param self ??????????
-@param tile ????
-@param anim ????(???
+设置当前瓦片
+@param self 瓦片视图实例或指针
+@param tile 瓦片对象
+@param anim 是否动画(可选)
 @return self
 @usage tv:set_tile(tile, 0)
 */
@@ -72,10 +72,10 @@ static int lvgl_tileview_set_tile(lua_State* L) {
 }
 
 /*
-????????
-@param self ??????????
-@param tile ????
-@param dir ????
+设置瓦片滑动方向
+@param self 瓦片视图实例或指针
+@param tile 瓦片对象
+@param dir 滑动方向
 @return self
 @usage tv:set_tile_drag_dir(tile, lvgl.DIR_LEFT)
 */
@@ -94,9 +94,9 @@ static int lvgl_tileview_set_tile_drag_dir(lua_State* L) {
 }
 
 /*
-?????????
-@param self ??????????
-@return userdata ????
+获取当前激活瓦片
+@param self 瓦片视图实例或指针
+@return userdata 瓦片对象
 @usage local cur = tv:get_tile_act()
 */
 static int lvgl_tileview_get_tile_act(lua_State* L) {
@@ -106,21 +106,21 @@ static int lvgl_tileview_get_tile_act(lua_State* L) {
     return 1;
 }
 
-/* ?? tileview ????*/
+/* 注册 tileview 子模块 */
 void lvgl_register_tileview(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "add_tile", lvgl_tileview_add_tile);
     REG_METHOD(L, "set_tile", lvgl_tileview_set_tile);
     REG_METHOD(L, "set_tile_drag_dir", lvgl_tileview_set_tile_drag_dir);
     REG_METHOD(L, "get_tile_act", lvgl_tileview_get_tile_act);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     tileview_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.tileview.add_tile(tv, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.tileview.add_tile(tv, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, tileview_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -131,6 +131,6 @@ void lvgl_register_tileview(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.tileview) */
+    /* 注册create函数到主表lvgl.tileview) */
     REG_METHOD(L, "create", lvgl_tileview_create);
 }

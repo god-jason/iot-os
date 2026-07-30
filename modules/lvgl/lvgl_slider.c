@@ -110,7 +110,7 @@ static int lvgl_slider_is_dragged(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å slider å­æ¨¡å?*/
+/* æ³¨å slider å­æ¨¡块*/
 void lvgl_register_slider(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

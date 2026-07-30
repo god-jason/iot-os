@@ -49,7 +49,7 @@ static int lvgl_layout_grid_init(lua_State* L) {
 }
 
 static int lvgl_layout_grid_set_template(lua_State* L) {
-    /* ??????????*/
+    /* 通用布局 */
     luaL_error(L, "grid template not fully supported yet");
     return 0;
 }
@@ -72,7 +72,7 @@ static int lvgl_layout_grid_set_align(lua_State* L) {
     return 0;
 }
 
-/* ==================== ?????==================== */
+/* ==================== 布局属性 ==================== */
 
 static int lvgl_layout_set(lua_State* L) {
     lv_obj_t* obj = (lv_obj_t*)luaL_checklightuserdata(L, 1);
@@ -105,7 +105,7 @@ static int lvgl_layout_have_size_dependency(lua_State* L) {
     return 1;
 }
 
-/* ?? layout ????*/
+/* 注册 layout 子模块 */
 void lvgl_register_layout(lua_State* L) {
     /* Flex?? */
     REG_METHOD(L, "flex_init", lvgl_layout_flex_init);
@@ -119,7 +119,7 @@ void lvgl_register_layout(lua_State* L) {
     REG_METHOD(L, "grid_set_cell", lvgl_layout_grid_set_cell);
     REG_METHOD(L, "grid_set_align", lvgl_layout_grid_set_align);
 
-    /* ???? */
+    /* 通用布局 */
     REG_METHOD(L, "set", lvgl_layout_set);
     REG_METHOD(L, "get", lvgl_layout_get);
     REG_METHOD(L, "update", lvgl_layout_update);

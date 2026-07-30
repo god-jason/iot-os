@@ -143,7 +143,7 @@ static int lvgl_arc_get_angle_end(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å arc å­æ¨¡å?*/
+/* æ³¨å arc å­æ¨¡块*/
 void lvgl_register_arc(lua_State* L) {
     lua_newtable(L);
 

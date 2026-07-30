@@ -12,7 +12,7 @@
 #include "lvgl_obj.h"
 #include <string.h>
 
-/* msgbox???metatable?? */
+/* msgbox组件的metatable引用 */
 static int msgbox_metatable_ref = LUA_NOREF;
 
 typedef struct {
@@ -106,7 +106,7 @@ static void lvgl_msgbox_refresh_btns(lv_obj_t* msgbox, lvgl_msgbox_btns_t* store
     lv_obj_set_size(mbox->btns, store->count * (2 * LV_DPI_DEF / 3), btn_h);
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_msgbox_create_internal(lua_State* L) {
     lv_obj_t* parent = NULL;
@@ -118,12 +118,12 @@ static int lvgl_msgbox_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???OO?? ==================== */
+/* ==================== 消息框OO方法 ==================== */
 
 /*
-????????OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建消息框控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的消息框实例
 @usage local msgbox = lvgl.msgbox.create(nil)
 */
 static int lvgl_msgbox_create(lua_State* L) {
@@ -131,11 +131,11 @@ static int lvgl_msgbox_create(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param title ????
+设置消息框标题
+@param self 消息框实例或指针
+@param title 标题文本
 @return self
-@usage msgbox:set_title("??")
+@usage msgbox:set_title("提示")
 */
 static int lvgl_msgbox_set_title(lua_State* L) {
     lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
@@ -146,11 +146,11 @@ static int lvgl_msgbox_set_title(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param text ????
+设置消息框文本
+@param self 消息框实例或指针
+@param text 文本内容
 @return self
-@usage msgbox:set_text("????")
+@usage msgbox:set_text("操作成功")
 */
 static int lvgl_msgbox_set_text(lua_State* L) {
     lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
@@ -161,11 +161,11 @@ static int lvgl_msgbox_set_text(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param txt ????
+添加按钮
+@param self 消息框实例或指针
+@param txt 按钮文本
 @return self
-@usage msgbox:add_button("??")
+@usage msgbox:add_button("确定")
 */
 static int lvgl_msgbox_add_button(lua_State* L) {
     lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
@@ -207,9 +207,9 @@ static int lvgl_msgbox_add_button(lua_State* L) {
 }
 
 /*
-?????????
-@param self ????????
-@return integer ????
+获取激活的按钮索引
+@param self 消息框实例或指针
+@return integer 按钮索引
 @usage local btn_index = msgbox:get_active_btn()
 */
 static int lvgl_msgbox_get_active_btn(lua_State* L) {
@@ -220,9 +220,9 @@ static int lvgl_msgbox_get_active_btn(lua_State* L) {
 }
 
 /*
-?????????
-@param self ????????
-@return string ????
+获取激活的按钮文本
+@param self 消息框实例或指针
+@return string 按钮文本
 @usage local btn_text = msgbox:get_active_btn_text()
 */
 static int lvgl_msgbox_get_active_btn_text(lua_State* L) {
@@ -233,8 +233,8 @@ static int lvgl_msgbox_get_active_btn_text(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
+关闭消息框
+@param self 消息框实例或指针
 @return self
 @usage msgbox:close()
 */
@@ -247,12 +247,12 @@ static int lvgl_msgbox_close(lua_State* L) {
     return 1;
 }
 
-/* ?? msgbox ????*/
+/* 注册 msgbox 子模块 */
 void lvgl_register_msgbox(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_title", lvgl_msgbox_set_title);
     REG_METHOD(L, "set_text", lvgl_msgbox_set_text);
     REG_METHOD(L, "add_button", lvgl_msgbox_add_button);
@@ -260,10 +260,10 @@ void lvgl_register_msgbox(lua_State* L) {
     REG_METHOD(L, "get_active_btn_text", lvgl_msgbox_get_active_btn_text);
     REG_METHOD(L, "close", lvgl_msgbox_close);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     msgbox_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.msgbox.set_title(mb, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.msgbox.set_title(mb, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, msgbox_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -274,6 +274,6 @@ void lvgl_register_msgbox(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.msgbox) */
+    /* 注册create函数到主表lvgl.msgbox) */
     REG_METHOD(L, "create", lvgl_msgbox_create);
 }

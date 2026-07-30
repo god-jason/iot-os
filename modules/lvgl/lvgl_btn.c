@@ -106,9 +106,9 @@ static int lvgl_btn_toggle(lua_State* L) {
 }
 
 /*
-è®¾ç½®æ¯å¦å¯åæ?
+è®¾ç½®æ¯å¦å¯å换
 @param self æé®å®ä¾ææé?
-@param en æ¯å¦å¯åæ?
+@param en æ¯å¦å¯å换
 @return self
 @usage btn:set_checkable(true)
 */
@@ -148,7 +148,7 @@ static int lvgl_btn_clear_layout(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å btn å­æ¨¡å?*/
+/* æ³¨å btn å­æ¨¡块*/
 void lvgl_register_btn(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

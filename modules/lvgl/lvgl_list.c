@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* list???metatable?? */
+/* list组件的metatable引用 */
 static int list_metatable_ref = LUA_NOREF;
 
 static lv_obj_t* lvgl_list_find_selected_btn(lv_obj_t* list)
@@ -57,7 +57,7 @@ static lv_flex_flow_t lvgl_list_dir_to_flex(lv_dir_t dir)
     }
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_list_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -69,9 +69,9 @@ static int lvgl_list_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建列表控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的列表实例
 @usage local list = lvgl.list.create(scr)
 */
 static int lvgl_list_create(lua_State* L) {
@@ -79,12 +79,12 @@ static int lvgl_list_create(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param img ??(???
-@param txt ????
-@return userdata ????
-@usage local btn = list:add_btn(nil, "??")
+添加列表项按钮
+@param self 列表实例或指针
+@param img 图标(可选)
+@param txt 按钮文本
+@return userdata 按钮对象
+@usage local btn = list:add_btn(nil, "选项")
 */
 static int lvgl_list_add_btn(lua_State* L) {
     lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
@@ -96,9 +96,9 @@ static int lvgl_list_add_btn(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return userdata ????
+获取列表容器
+@param self 列表实例或指针
+@return userdata 容器对象
 @usage local cont = list:get_container()
 */
 static int lvgl_list_get_container(lua_State* L) {
@@ -108,9 +108,9 @@ static int lvgl_list_get_container(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@return userdata ?????nil
+获取选中的按钮
+@param self 列表实例或指针
+@return userdata 按钮对象或nil
 @usage local sel = list:get_selected_btn()
 */
 static int lvgl_list_get_selected_btn(lua_State* L) {
@@ -125,9 +125,9 @@ static int lvgl_list_get_selected_btn(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param dir ??(lvgl.DIR_TOP??
+设置列表方向
+@param self 列表实例或指针
+@param dir 方向(lvgl.DIR_TOP等)
 @return self
 @usage list:set_direction(lvgl.DIR_TOP)
 */
@@ -140,9 +140,9 @@ static int lvgl_list_set_direction(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param sel ????
+设置选中项
+@param self 列表实例或指针
+@param sel 按钮对象
 @return self
 @usage list:set_selected(btn)
 */
@@ -155,22 +155,22 @@ static int lvgl_list_set_selected(lua_State* L) {
     return 1;
 }
 
-/* ?? list ????*/
+/* 注册 list 子模块 */
 void lvgl_register_list(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "add_btn", lvgl_list_add_btn);
     REG_METHOD(L, "get_container", lvgl_list_get_container);
     REG_METHOD(L, "get_selected_btn", lvgl_list_get_selected_btn);
     REG_METHOD(L, "set_direction", lvgl_list_set_direction);
     REG_METHOD(L, "set_selected", lvgl_list_set_selected);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     list_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.list.add_btn(list, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.list.add_btn(list, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, list_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -181,6 +181,6 @@ void lvgl_register_list(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.list) */
+    /* 注册create函数到主表lvgl.list) */
     REG_METHOD(L, "create", lvgl_list_create);
 }

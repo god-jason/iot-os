@@ -70,7 +70,7 @@ static int lvgl_dropdown_set_options_static(lua_State* L) {
 æ·»å éé¡¹
 @param self ä¸æèåå®ä¾ææé?
 @param option éé¡¹ææ¬
-@param pos ä½ç½®(å¯é?é»è®¤æå?
+@param pos ä½ç½®(å¯é?é»è®¤æ后
 @return self
 @usage dd:add_option("Mango", 3)
 */
@@ -196,7 +196,7 @@ static int lvgl_dropdown_get_text(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å dropdown å­æ¨¡å?*/
+/* æ³¨å dropdown å­æ¨¡块*/
 void lvgl_register_dropdown(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

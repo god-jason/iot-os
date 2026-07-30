@@ -153,7 +153,7 @@ static int lvgl_bar_get_max_value(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å bar å­æ¨¡å?*/
+/* æ³¨å bar å­æ¨¡块*/
 void lvgl_register_bar(lua_State* L) {
     lua_newtable(L);
 

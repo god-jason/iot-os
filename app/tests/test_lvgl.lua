@@ -1,5 +1,5 @@
---- lvgl 模块验证 — 通过 SDL 窗口显示 LVGL 界面
--- require("lvgl") 时自动创建 SDL 窗口，通过 iot.setInterval 周期调用 lvgl.task_handler() 驱动
+--- lvgl 模块验证 — 大窗口综合组件测试
+-- 通过 lvgl.init(w, h) 创建大窗口，覆盖所有 LVGL 控件
 local T = dofile("app/tests/common.lua")
 
 return function()
@@ -17,6 +17,10 @@ return function()
         T.pass("lvgl.loaded")
     end
 
+    -- 初始化大窗口 1024x768
+    lv.init(1024, 768)
+    T.pass("lvgl.init", "1024x768")
+
     -- 获取活动屏幕
     local scr = lv.scr_act()
     if not scr then
@@ -25,27 +29,32 @@ return function()
     end
     T.pass("lvgl.scr_act")
 
-    -- 标题
-    local title = lv.label.create(scr)
-    title:set_text("IoT-OS LVGL Widgets Test")
-    title:align(lv.ALIGN_TOP_MID, 0, 10)
-    T.pass("lvgl.label", "title")
-
-    -- 底部状态（先创建，供回调使用）
+    -- 底部状态栏（先创建，供回调使用）
     local status = lv.label.create(scr)
-    status:set_text("Click buttons or drag sliders...")
+    status:set_text("Ready.")
+    status:set_width(1024)
     status:align(lv.ALIGN_BOTTOM_MID, 0, -10)
     T.pass("lvgl.label", "status")
 
+    -- 标题
+    local title = lv.label.create(scr)
+    title:set_text("IoT-OS LVGL All Widgets Test")
+    title:align(lv.ALIGN_TOP_MID, 0, 10)
+    T.pass("lvgl.label", "title")
+
+    -- ==================== 左列（基础控件） ====================
+    local COL1_X = 20
+    local col1_y = 60
+
     -- ---- btn ----
     local btn = lv.btn.create(scr)
-    btn:set_size(100, 40)
-    btn:align(lv.ALIGN_TOP_LEFT, 20, 50)
+    btn:set_size(120, 40)
+    btn:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y)
     local btn_lbl = lv.label.create(btn)
     btn_lbl:set_text("Button")
     btn_lbl:center()
     local btn_click_count = 0
-    btn:add_event_cb(function(e, code, target, cur_target)
+    btn:add_event_cb(function(e, code)
         if code == lv.EVENT_CLICKED then
             btn_click_count = btn_click_count + 1
             btn_lbl:set_text("Btn " .. btn_click_count)
@@ -56,11 +65,11 @@ return function()
 
     -- ---- switch ----
     local sw = lv.switch.create(scr)
-    sw:align(lv.ALIGN_TOP_LEFT, 20, 110)
+    sw:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 50)
     local sw_lbl = lv.label.create(scr)
     sw_lbl:set_text("Switch: OFF")
     sw_lbl:align_to(sw, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
-    sw:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+    sw:add_event_cb(function(e, code)
         if code == lv.EVENT_VALUE_CHANGED then
             local on = sw:has_state(lv.STATE_CHECKED)
             sw_lbl:set_text(on and "Switch: ON" or "Switch: OFF")
@@ -72,64 +81,192 @@ return function()
     -- ---- slider ----
     local slider = lv.slider.create(scr)
     slider:set_width(160)
-    slider:align(lv.ALIGN_TOP_LEFT, 20, 170)
+    slider:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 100)
     local sl_lbl = lv.label.create(scr)
     sl_lbl:set_text("Slider: 0")
     sl_lbl:align_to(slider, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
-    slider:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+    slider:add_event_cb(function(e, code)
         if code == lv.EVENT_VALUE_CHANGED then
             local v = slider:get_value()
             sl_lbl:set_text("Slider: " .. v)
+            status:set_text("Slider: " .. v)
         end
     end, lv.EVENT_VALUE_CHANGED)
     T.pass("lvgl.slider")
 
-    -- ---- 第二列 ----
-    local btn2 = lv.btn.create(scr)
-    btn2:set_size(100, 40)
-    btn2:align(lv.ALIGN_TOP_LEFT, 260, 50)
-    local btn2_lbl = lv.label.create(btn2)
-    btn2_lbl:set_text("Toggle")
-    btn2_lbl:center()
-    local btn2_on = false
-    btn2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
-        if code == lv.EVENT_CLICKED then
-            btn2_on = not btn2_on
-            if btn2_on then
-                btn2_lbl:set_text("Toggled")
-                btn2:add_state(lv.STATE_CHECKED)
-            else
-                btn2_lbl:set_text("Toggle")
-                btn2:clear_state(lv.STATE_CHECKED)
-            end
-            status:set_text("Toggle: " .. (btn2_on and "ON" or "OFF"))
-        end
-    end, lv.EVENT_CLICKED)
-
-    local sw2 = lv.switch.create(scr)
-    sw2:align(lv.ALIGN_TOP_LEFT, 260, 110)
-    local sw2_lbl = lv.label.create(scr)
-    sw2_lbl:set_text("SW2: OFF")
-    sw2_lbl:align_to(sw2, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
-    sw2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+    -- ---- checkbox ----
+    local cb = lv.checkbox.create(scr)
+    cb:set_text("Check me")
+    cb:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 150)
+    cb:add_event_cb(function(e, code)
         if code == lv.EVENT_VALUE_CHANGED then
-            local on = sw2:has_state(lv.STATE_CHECKED)
-            sw2_lbl:set_text(on and "SW2: ON" or "SW2: OFF")
+            local on = cb:is_checked()
+            status:set_text("Checkbox: " .. (on and "checked" or "unchecked"))
         end
     end, lv.EVENT_VALUE_CHANGED)
+    T.pass("lvgl.checkbox")
 
-    local slider2 = lv.slider.create(scr)
-    slider2:set_width(160)
-    slider2:align(lv.ALIGN_TOP_LEFT, 260, 170)
-    local sl2_lbl = lv.label.create(scr)
-    sl2_lbl:set_text("SL2: 0")
-    sl2_lbl:align_to(slider2, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
-    slider2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+    -- ---- dropdown ----
+    local dd = lv.dropdown.create(scr)
+    dd:set_options("Apple\nBanana\nCherry\nMango")
+    dd:set_text("Select fruit")
+    dd:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 200)
+    local dd_lbl = lv.label.create(scr)
+    dd_lbl:set_text("Fruit: Apple")
+    dd_lbl:align_to(dd, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    dd:add_event_cb(function(e, code)
         if code == lv.EVENT_VALUE_CHANGED then
-            local v = slider2:get_value()
-            sl2_lbl:set_text("SL2: " .. v)
+            local str = dd:get_selected_str()
+            dd_lbl:set_text("Fruit: " .. (str or "?"))
+            status:set_text("Dropdown: " .. (str or "?"))
         end
     end, lv.EVENT_VALUE_CHANGED)
+    T.pass("lvgl.dropdown")
+
+    -- ---- roller ----
+    local roller = lv.roller.create(scr)
+    roller:set_options("Mon\nTue\nWed\nThu\nFri\nSat\nSun")
+    roller:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 250)
+    T.pass("lvgl.roller")
+
+    -- ---- spinbox ----
+    local spin = lv.spinbox.create(scr)
+    spin:set_range(0, 100)
+    spin:set_value(50)
+    spin:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 400)
+    T.pass("lvgl.spinbox")
+
+    -- ==================== 中列（数据控件） ====================
+    local COL2_X = 360
+    local col2_y = 60
+
+    -- ---- arc ----
+    local arc = lv.arc.create(scr)
+    arc:set_size(120, 120)
+    arc:set_range(0, 100)
+    arc:set_value(40)
+    arc:align(lv.ALIGN_TOP_LEFT, COL2_X, col2_y)
+    local arc_lbl = lv.label.create(scr)
+    arc_lbl:set_text("Arc: 40")
+    arc_lbl:align_to(arc, lv.ALIGN_OUT_BOTTOM_MID, 0, 5)
+    arc:add_event_cb(function(e, code)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local v = arc:get_value()
+            arc_lbl:set_text("Arc: " .. v)
+            status:set_text("Arc: " .. v)
+        end
+    end, lv.EVENT_VALUE_CHANGED)
+    T.pass("lvgl.arc")
+
+    -- ---- bar ----
+    local bar = lv.bar.create(scr)
+    bar:set_range(0, 100)
+    bar:set_value(60)
+    bar:set_size(160, 20)
+    bar:align(lv.ALIGN_TOP_LEFT, COL2_X, col2_y + 170)
+    T.pass("lvgl.bar")
+
+    -- ---- chart ----
+    local chart = lv.chart.create(scr)
+    chart:set_size(280, 150)
+    chart:set_type(lv.CHART_TYPE_LINE)
+    chart:set_range(lv.CHART_AXIS_PRIMARY_Y, 0, 100)
+    chart:set_point_count(10)
+    chart:align(lv.ALIGN_TOP_LEFT, COL2_X, col2_y + 210)
+    local series = chart:add_series(lv.COLOR_RED, lv.CHART_AXIS_PRIMARY_Y)
+    for i = 0, 9 do
+        chart:set_value_by_id(series, i, math.random(0, 100))
+    end
+    T.pass("lvgl.chart")
+
+    -- ---- table ----
+    local tbl = lv.table.create(scr)
+    tbl:set_size(280, 120)
+    tbl:set_row_cnt(4)
+    tbl:set_col_cnt(3)
+    tbl:set_cell_value(0, 0, "Name")
+    tbl:set_cell_value(0, 1, "Age")
+    tbl:set_cell_value(0, 2, "City")
+    tbl:set_cell_value(1, 0, "Tom")
+    tbl:set_cell_value(1, 1, "25")
+    tbl:set_cell_value(1, 2, "Beijing")
+    tbl:set_cell_value(2, 0, "Lucy")
+    tbl:set_cell_value(2, 1, "30")
+    tbl:set_cell_value(2, 2, "Shanghai")
+    tbl:set_cell_value(3, 0, "Jack")
+    tbl:set_cell_value(3, 1, "28")
+    tbl:set_cell_value(3, 2, "Shenzhen")
+    tbl:align(lv.ALIGN_TOP_LEFT, COL2_X, col2_y + 380)
+    T.pass("lvgl.table")
+
+    -- ==================== 右列（高级控件） ====================
+    local COL3_X = 700
+    local col3_y = 60
+
+    -- ---- meter ----
+    local meter = lv.meter.create(scr)
+    meter:set_size(160, 160)
+    meter:align(lv.ALIGN_TOP_LEFT, COL3_X, col3_y)
+    local scale = meter:add_scale(270, 135)
+    meter:set_scale_ticks(scale, 11, 5, 2, 0x000000)
+    meter:set_scale_major_ticks(scale, 5, 10, 4, 0x000000, 0)
+    local needle = meter:add_indicator_needle(scale, lv.COLOR_RED, 4)
+    meter:set_indicator_value(needle, 50)
+    T.pass("lvgl.meter")
+
+    -- ---- tabview ----
+    local tv = lv.tabview.create(scr)
+    tv:set_size(300, 180)
+    tv:align(lv.ALIGN_TOP_LEFT, COL3_X, col3_y + 180)
+    local tab1 = tv:add_tab("Tab1")
+    local tab1_lbl = lv.label.create(tab1)
+    tab1_lbl:set_text("Content of Tab 1")
+    tab1_lbl:center()
+    local tab2 = tv:add_tab("Tab2")
+    local tab2_lbl = lv.label.create(tab2)
+    tab2_lbl:set_text("Content of Tab 2")
+    tab2_lbl:center()
+    T.pass("lvgl.tabview")
+
+    -- ---- list ----
+    local list = lv.list.create(scr)
+    list:set_size(180, 160)
+    list:align(lv.ALIGN_TOP_LEFT, COL3_X, col3_y + 380)
+    list:add_btn(nil, "Item 1")
+    list:add_btn(nil, "Item 2")
+    list:add_btn(nil, "Item 3")
+    list:add_btn(nil, "Item 4")
+    T.pass("lvgl.list")
+
+    -- ==================== 第四列（文本与杂项） ====================
+    local COL4_X = 20
+    local col4_y = 470
+
+    -- ---- textarea ----
+    local ta = lv.textarea.create(scr)
+    ta:set_size(280, 80)
+    ta:set_text("Edit me...")
+    ta:set_one_line(true)
+    ta:align(lv.ALIGN_TOP_LEFT, COL4_X, col4_y)
+    T.pass("lvgl.textarea")
+
+    -- ---- colorwheel ----
+    local cw = lv.colorwheel.create(scr)
+    cw:set_size(120, 120)
+    cw:align(lv.ALIGN_TOP_LEFT, COL4_X + 320, col4_y - 10)
+    T.pass("lvgl.colorwheel")
+
+    -- ---- spinner ----
+    local sp = lv.spinner.create(scr)
+    sp:set_size(100, 100)
+    sp:align(lv.ALIGN_TOP_LEFT, COL4_X + 480, col4_y - 5)
+    T.pass("lvgl.spinner")
+
+    -- ---- calendar ----
+    local cal = lv.calendar.create(scr)
+    cal:set_size(200, 180)
+    cal:align(lv.ALIGN_TOP_LEFT, COL4_X + 620, col4_y - 20)
+    T.pass("lvgl.calendar")
 
     -- 立即刷新
     lv.refr_now(nil)
@@ -140,10 +277,4 @@ return function()
         lv.task_handler()
     end, 10)
     T.pass("lvgl.task_handler", "interval started")
-
-    -- iot.setTimeout(function()
-    --     iot.clearInterval(timer_id)
-    --     T.pass("lvgl.timeout", "30s elapsed")
-    --     os.exit(0)
-    -- end, 5000)
 end

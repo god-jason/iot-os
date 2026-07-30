@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* calendar???metatable?? */
+/* calendar组件的metatable引用 */
 static int calendar_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_calendar_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -26,9 +26,9 @@ static int lvgl_calendar_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建日历控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的日历实例
 @usage local calendar = lvgl.calendar.create(scr)
 */
 static int lvgl_calendar_create(lua_State* L) {
@@ -36,11 +36,11 @@ static int lvgl_calendar_create(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param year ??
-@param month ??
-@param day ??
+设置今天的日期
+@param self 日历实例或指针
+@param year 年份
+@param month 月份
+@param day 日
 @return self
 @usage calendar:set_today_date(2026, 6, 18)
 */
@@ -55,10 +55,10 @@ static int lvgl_calendar_set_today_date(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param year ??
-@param month ??
+设置显示的日期
+@param self 日历实例或指针
+@param year 年份
+@param month 月份
 @return self
 @usage calendar:set_showed_date(2026, 6)
 */
@@ -72,9 +72,9 @@ static int lvgl_calendar_set_showed_date(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@return table ???{year,month,day}?nil
+获取按下的日期
+@param self 日历实例或指针
+@return table 日期表{year,month,day}或nil
 @usage local date = calendar:get_pressed_date()
 */
 static int lvgl_calendar_get_pressed_date(lua_State* L) {
@@ -95,24 +95,24 @@ static int lvgl_calendar_get_pressed_date(lua_State* L) {
 }
 
 /*
-??????(????)
-@param self ????????
-@param dates ????(????)
+设置高亮日期(暂未实现)
+@param self 日历实例或指针
+@param dates 日期数组(暂未实现)
 @return self
 @usage calendar:set_highlighted_dates(dates)
 */
 static int lvgl_calendar_set_highlighted_dates(lua_State* L) {
     lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
-    /* TODO: ???????? */
+    /* TODO: 实现日期数组处理 */
     (void)calendar;
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /*
-??????????
-@param self ????????
-@return table ???{year,month}
+获取当前显示的日期
+@param self 日历实例或指针
+@return table 日期表{year,month}
 @usage local showed = calendar:get_showed_date()
 */
 static int lvgl_calendar_get_showed_date(lua_State* L) {
@@ -130,22 +130,22 @@ static int lvgl_calendar_get_showed_date(lua_State* L) {
     return 1;
 }
 
-/* ?? calendar ????*/
+/* 注册 calendar 子模块 */
 void lvgl_register_calendar(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_today_date", lvgl_calendar_set_today_date);
     REG_METHOD(L, "set_showed_date", lvgl_calendar_set_showed_date);
     REG_METHOD(L, "get_pressed_date", lvgl_calendar_get_pressed_date);
     REG_METHOD(L, "set_highlighted_dates", lvgl_calendar_set_highlighted_dates);
     REG_METHOD(L, "get_showed_date", lvgl_calendar_get_showed_date);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     calendar_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.calendar.set_today_date(cal, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.calendar.set_today_date(cal, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, calendar_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -156,6 +156,6 @@ void lvgl_register_calendar(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.calendar) */
+    /* 注册create函数到主表lvgl.calendar) */
     REG_METHOD(L, "create", lvgl_calendar_create);
 }

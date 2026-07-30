@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* canvas???metatable?? */
+/* canvas组件的metatable引用 */
 static int canvas_metatable_ref = LUA_NOREF;
 
 static lv_coord_t lvgl_style_get_coord(const lv_style_t* style, lv_style_prop_t prop, lv_coord_t def)
@@ -109,7 +109,7 @@ static void lvgl_style_to_label_dsc(const lv_style_t* style, lv_draw_label_dsc_t
     dsc->line_space = lvgl_style_get_coord(style, LV_STYLE_TEXT_LINE_SPACE, dsc->line_space);
 }
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_canvas_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -121,9 +121,9 @@ static int lvgl_canvas_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建画布控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的画布实例
 @usage local canvas = lvgl.canvas.create(scr)
 */
 static int lvgl_canvas_create(lua_State* L) {
@@ -131,12 +131,12 @@ static int lvgl_canvas_create(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param w ??
-@param h ??
-@param buf ??????
-@param stride ??????????w)
+设置画布缓冲区
+@param self 画布实例或指针
+@param w 宽度
+@param h 高度
+@param buf 缓冲区指针
+@param stride 行跨度(可选,默认为w)
 @return self
 @usage canvas:set_buffer(buf, 200, 200)
 */
@@ -152,11 +152,11 @@ static int lvgl_canvas_set_buffer(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param x X??
-@param y Y??
-@param color ????
+设置像素颜色
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param color 颜色值
 @return self
 @usage canvas:set_px_color(10, 10, 0xFF0000)
 */
@@ -172,11 +172,11 @@ static int lvgl_canvas_set_px_color(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param x X??
-@param y Y??
-@param opa ?????0-255)
+设置像素透明度
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param opa 透明度值(0-255)
 @return self
 @usage canvas:set_px_opa(10, 10, 128)
 */
@@ -191,11 +191,11 @@ static int lvgl_canvas_set_px_opa(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param x X??
-@param y Y??
-@return integer ????
+获取像素颜色
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@return integer 颜色值
 @usage local color = canvas:get_px_color(10, 10)
 */
 static int lvgl_canvas_get_px_color(lua_State* L) {
@@ -208,11 +208,11 @@ static int lvgl_canvas_get_px_color(lua_State* L) {
 }
 
 /*
-????????
-@param self ????????
-@param x X??
-@param y Y??
-@return integer ?????
+获取像素透明度
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@return integer 透明度值
 @usage local opa = canvas:get_px_opa(10, 10)
 */
 static int lvgl_canvas_get_px_opa(lua_State* L) {
@@ -229,10 +229,10 @@ static int lvgl_canvas_get_px_opa(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param color ????
-@param opa ??????????255)
+填充背景
+@param self 画布实例或指针
+@param color 颜色值
+@param opa 透明度值(可选,默认255)
 @return self
 @usage canvas:fill_bg(0xFFFFFF, 255)
 */
@@ -247,13 +247,13 @@ static int lvgl_canvas_fill_bg(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x X??
-@param y Y??
-@param w ??
-@param h ??
-@param style ????
+绘制矩形
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param w 宽度
+@param h 高度
+@param style 样式指针
 @return self
 @usage canvas:draw_rect(10, 10, 50, 50, style)
 */
@@ -272,12 +272,12 @@ static int lvgl_canvas_draw_rect(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x ??X??
-@param y ??Y??
-@param r ??
-@param style ????
+绘制圆形
+@param self 画布实例或指针
+@param x 圆心X坐标
+@param y 圆心Y坐标
+@param r 半径
+@param style 样式指针
 @return self
 @usage canvas:draw_circle(100, 100, 30, style)
 */
@@ -296,16 +296,16 @@ static int lvgl_canvas_draw_circle(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param points ????{{x1,y1},{x2,y2},...})
-@param style ????
+绘制线条
+@param self 画布实例或指针
+@param points 点数组({{x1,y1},{x2,y2},...})
+@param style 样式指针
 @return self
 @usage canvas:draw_line({{0,0}, {100,100}}, style)
 */
 static int lvgl_canvas_draw_line(lua_State* L) {
     lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
-    /* points????: {{x1,y1}, {x2,y2}, ...} */
+    /* points参数为表: {{x1,y1}, {x2,y2}, ...} */
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
 
@@ -337,16 +337,16 @@ static int lvgl_canvas_draw_line(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param points ????
-@param style ????
+绘制多边形
+@param self 画布实例或指针
+@param points 点数组
+@param style 样式指针
 @return self
 @usage canvas:draw_polygon({{0,0}, {50,0}, {25,50}}, style)
 */
 static int lvgl_canvas_draw_polygon(lua_State* L) {
     lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
-    /* points???? */
+    /* points参数为表 */
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
 
@@ -378,14 +378,14 @@ static int lvgl_canvas_draw_polygon(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param center_x ??X??
-@param center_y ??Y??
-@param r ??
-@param start_angle ????
-@param end_angle ????
-@param style ????
+绘制弧线
+@param self 画布实例或指针
+@param center_x 圆心X坐标
+@param center_y 圆心Y坐标
+@param r 半径
+@param start_angle 起始角度
+@param end_angle 结束角度
+@param style 样式指针
 @return self
 @usage canvas:draw_arc(100, 100, 50, 0, 90, style)
 */
@@ -405,13 +405,13 @@ static int lvgl_canvas_draw_arc(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x X??
-@param y Y??
-@param max_width ?????
-@param style ????
-@param txt ????
+绘制文本
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param max_width 最大宽度
+@param style 样式指针
+@param txt 文本内容
 @return self
 @usage canvas:draw_text(10, 10, 100, style, "Hello")
 */
@@ -430,12 +430,12 @@ static int lvgl_canvas_draw_text(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x X??
-@param y Y??
-@param src ??????
-@param dsc ????????
+绘制图片
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param src 图片源指针
+@param dsc 图片描述符指针
 @return self
 @usage canvas:draw_img(10, 10, img_src, img_dsc)
 */
@@ -451,13 +451,13 @@ static int lvgl_canvas_draw_img(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x X??
-@param y Y??
-@param w ??
-@param h ??
-@param r ????
+水平模糊
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param w 宽度
+@param h 高度
+@param r 模糊半径
 @return self
 @usage canvas:blur_hor(10, 10, 50, 50, 5)
 */
@@ -475,13 +475,13 @@ static int lvgl_canvas_blur_hor(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param x X??
-@param y Y??
-@param w ??
-@param h ??
-@param r ????
+垂直模糊
+@param self 画布实例或指针
+@param x X坐标
+@param y Y坐标
+@param w 宽度
+@param h 高度
+@param r 模糊半径
 @return self
 @usage canvas:blur_ver(10, 10, 50, 50, 5)
 */
@@ -499,14 +499,14 @@ static int lvgl_canvas_blur_ver(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param src_buf ??????
-@param src_w ????
-@param src_h ????
-@param src_stride ????
-@param x ??X??
-@param y ??Y??
+复制缓冲区
+@param self 画布实例或指针
+@param src_buf 源缓冲区指针
+@param src_w 源宽度
+@param src_h 源高度
+@param src_stride 源行跨度
+@param x 目标X坐标
+@param y 目标Y坐标
 @return self
 @usage canvas:copy_buf(src_buf, 100, 100, 100, 10, 10)
 */
@@ -524,16 +524,16 @@ static int lvgl_canvas_copy_buf(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param src ????????
-@param angle ????
-@param zoom ????
-@param offset_x X??(???
-@param offset_y Y??(???
-@param pivot_x ????X(???
-@param pivot_y ????Y(???
-@param antialias ???????
+变换图片
+@param self 画布实例或指针
+@param src 源图片描述符指针
+@param angle 旋转角度
+@param zoom 缩放值
+@param offset_x X偏移(可选)
+@param offset_y Y偏移(可选)
+@param pivot_x 旋转中心X(可选)
+@param pivot_y 旋转中心Y(可选)
+@param antialias 抗锯齿(可选)
 @return self
 @usage canvas:transform(src, 90, 128)
 */
@@ -555,14 +555,14 @@ static int lvgl_canvas_transform(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param src ????????
-@param angle ????
-@param x X??(???
-@param y Y??(???
-@param pivot_x ????X(???
-@param pivot_y ????Y(???
+旋转图片
+@param self 画布实例或指针
+@param src 源图片描述符指针
+@param angle 旋转角度
+@param x X坐标(可选)
+@param y Y坐标(可选)
+@param pivot_x 旋转中心X(可选)
+@param pivot_y 旋转中心Y(可选)
 @return self
 @usage canvas:rotate(src, 90)
 */
@@ -582,9 +582,9 @@ static int lvgl_canvas_rotate(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@return userdata ????
+初始化图层
+@param self 画布实例或指针
+@return userdata 图层指针
 @usage local layer = canvas:init_layer()
 */
 static int lvgl_canvas_init_layer(lua_State* L) {
@@ -599,9 +599,9 @@ static int lvgl_canvas_init_layer(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param layer ????
+完成图层
+@param self 画布实例或指针
+@param layer 图层指针
 @return self
 @usage canvas:finish_layer(layer)
 */
@@ -613,9 +613,9 @@ static int lvgl_canvas_finish_layer(lua_State* L) {
 }
 
 /*
-????
-@param self ????????
-@param layer ????
+应用图层
+@param self 画布实例或指针
+@param layer 图层指针
 @return self
 @usage canvas:apply_layer(layer)
 */
@@ -628,10 +628,10 @@ static int lvgl_canvas_apply_layer(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param color ????
-@param opa ????????
+设置图层背景
+@param self 画布实例或指针
+@param color 颜色值
+@param opa 透明度值(可选)
 @return self
 @usage canvas:set_layer_bg(0xFFFFFF, 255)
 */
@@ -643,12 +643,12 @@ static int lvgl_canvas_set_layer_bg(lua_State* L) {
     return 1;
 }
 
-/* ?? canvas ????*/
+/* 注册 canvas 子模块 */
 void lvgl_register_canvas(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_buffer", lvgl_canvas_set_buffer);
     REG_METHOD(L, "set_px_color", lvgl_canvas_set_px_color);
     REG_METHOD(L, "set_px_opa", lvgl_canvas_set_px_opa);
@@ -672,10 +672,10 @@ void lvgl_register_canvas(lua_State* L) {
     REG_METHOD(L, "apply_layer", lvgl_canvas_apply_layer);
     REG_METHOD(L, "set_layer_bg", lvgl_canvas_set_layer_bg);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     canvas_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.canvas.set_buffer(canvas, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.canvas.set_buffer(canvas, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, canvas_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -686,6 +686,6 @@ void lvgl_register_canvas(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.canvas) */
+    /* 注册create函数到主表lvgl.canvas) */
     REG_METHOD(L, "create", lvgl_canvas_create);
 }

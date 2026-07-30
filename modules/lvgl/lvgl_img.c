@@ -157,7 +157,7 @@ static int lvgl_img_set_size_mode(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å img å­æ¨¡å?*/
+/* æ³¨å img å­æ¨¡块*/
 void lvgl_register_img(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

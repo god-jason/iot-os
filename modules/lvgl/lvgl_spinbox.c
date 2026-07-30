@@ -93,7 +93,7 @@ static int lvgl_spinbox_decrement(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å spinbox å­æ¨¡å?*/
+/* æ³¨å spinbox å­æ¨¡块*/
 void lvgl_register_spinbox(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

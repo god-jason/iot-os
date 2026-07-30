@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* line???metatable?? */
+/* line组件的metatable引用 */
 static int line_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_line_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -26,9 +26,9 @@ static int lvgl_line_create_internal(lua_State* L) {
 /* ==================== ??OO?? ==================== */
 
 /*
-??????(OO??)
-@param self ???????
-@return userdata ?metatable??????
+创建线条控件(OO风格)
+@param self 父对象(可选)
+@return userdata 带metatable的线条实例
 @usage local line = lvgl.line.create(scr)
 */
 static int lvgl_line_create(lua_State* L) {
@@ -36,9 +36,9 @@ static int lvgl_line_create(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param points ????????{{x1,y1},{x2,y2},...})
+设置线条点
+@param self 线条实例或指针
+@param points 点数组(表格式:{{x1,y1},{x2,y2},...})
 @return self
 @usage line:set_points({{0,0},{100,50}})
 */
@@ -73,9 +73,9 @@ static int lvgl_line_set_points(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param style ????
+设置线条样式
+@param self 线条实例或指针
+@param style 样式对象
 @return self
 @usage line:set_style(style)
 */
@@ -88,9 +88,9 @@ static int lvgl_line_set_style(lua_State* L) {
 }
 
 /*
-??????
-@param self ????????
-@param en ????????
+设置自动尺寸
+@param self 线条实例或指针
+@param en 是否启用自动尺寸
 @return self
 @usage line:set_auto_size(true)
 */
@@ -109,9 +109,9 @@ static int lvgl_line_set_auto_size(lua_State* L) {
 }
 
 /*
-??Y????
-@param self ????????
-@param en ????
+设置Y坐标反转
+@param self 线条实例或指针
+@param en 是否反转
 @return self
 @usage line:set_y_invert(true)
 */
@@ -124,9 +124,9 @@ static int lvgl_line_set_y_invert(lua_State* L) {
 }
 
 /*
-??Y??????
-@param self ????????
-@return boolean ????
+获取Y坐标是否反转
+@param self 线条实例或指针
+@return boolean 是否反转
 @usage local inverted = line:get_y_invert()
 */
 static int lvgl_line_get_y_invert(lua_State* L) {
@@ -136,22 +136,22 @@ static int lvgl_line_get_y_invert(lua_State* L) {
     return 1;
 }
 
-/* ?? line ????*/
+/* 注册 line 子模块 */
 void lvgl_register_line(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_points", lvgl_line_set_points);
     REG_METHOD(L, "set_style", lvgl_line_set_style);
     REG_METHOD(L, "set_auto_size", lvgl_line_set_auto_size);
     REG_METHOD(L, "set_y_invert", lvgl_line_set_y_invert);
     REG_METHOD(L, "get_y_invert", lvgl_line_get_y_invert);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     line_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.line.set_points(line, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.line.set_points(line, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, line_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -162,6 +162,6 @@ void lvgl_register_line(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.line) */
+    /* 注册create函数到主表lvgl.line) */
     REG_METHOD(L, "create", lvgl_line_create);
 }

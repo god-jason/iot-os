@@ -11,10 +11,10 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* spinner???metatable?? */
+/* spinner组件的metatable引用 */
 static int spinner_metatable_ref = LUA_NOREF;
 
-/* ==================== ?????? ==================== */
+/* ==================== 内部创建函数 ==================== */
 
 static int lvgl_spinner_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -25,7 +25,7 @@ static int lvgl_spinner_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== ???OO?? ==================== */
+/* ==================== 旋转器OO方法 ==================== */
 
 static int lvgl_spinner_create(lua_State* L) {
     return lvgl_obj_create_instance(L, lvgl_spinner_create_internal, spinner_metatable_ref);
@@ -65,21 +65,21 @@ static int lvgl_spinner_resume(lua_State* L) {
     return 1;
 }
 
-/* ?? spinner ????*/
+/* 注册 spinner 子模块 */
 void lvgl_register_spinner(lua_State* L) {
-    /* ??????????metatable??) */
+    /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
-    /* ??OO???? */
+    /* 注册OO风格方法 */
     REG_METHOD(L, "set_angle", lvgl_spinner_set_angle);
     REG_METHOD(L, "set_type", lvgl_spinner_set_type);
     REG_METHOD(L, "pause", lvgl_spinner_pause);
     REG_METHOD(L, "resume", lvgl_spinner_resume);
 
-    /* ????metatable??(????) */
+    /* 保存组件metatable引用(用于继承) */
     spinner_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* ??????????(?? lvgl.spinner.set_angle(sp, ...) ??) */
+    /* 将方法复制到组件子表(支持 lvgl.spinner.set_angle(sp, ...) 调用) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, spinner_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -90,6 +90,6 @@ void lvgl_register_spinner(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* ??create??????lvgl.spinner) */
+    /* 注册create函数到主表lvgl.spinner) */
     REG_METHOD(L, "create", lvgl_spinner_create);
 }

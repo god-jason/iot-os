@@ -103,7 +103,7 @@ static int lvgl_keyboard_get_mode(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å keyboard å­æ¨¡å?*/
+/* æ³¨å keyboard å­æ¨¡块*/
 void lvgl_register_keyboard(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);

@@ -201,20 +201,54 @@ static int lvgl_pct(lua_State* L) {
     return 1;
 }
 
+/*
+初始化 LVGL 显示与输入驱动
+@param width 窗口宽度（像素，可选，默认 800）
+@param height 窗口高度（像素，可选，默认 480）
+@return boolean 成功返回 true
+@usage lvgl.init(800, 480)
+@usage lvgl.init()  -- 使用默认 800x480
+*/
+static int lvgl_init(lua_State* L) {
+    int hor_res = (int)luaL_optinteger(L, 1, 800);
+    int ver_res = (int)luaL_optinteger(L, 2, 480);
+
+    /* lv_init 已在 luaopen_lvgl 中完成，此处幂等保证 */
+    lv_init();
+
+#ifdef LV_USE_SDL_DRV
+    if (!lv_sdl_drv_is_inited()) {
+        fprintf(stderr, "[lvgl] init: creating SDL window %dx%d\n", hor_res, ver_res);
+        fflush(stderr);
+        if (!lv_sdl_drv_init(hor_res, ver_res)) {
+            return luaL_error(L, "SDL driver init failed: %dx%d", hor_res, ver_res);
+        }
+        fprintf(stderr, "[lvgl] SDL window created\n");
+        fflush(stderr);
+    } else {
+        /* 已初始化，幂等返回成功 */
+        fprintf(stderr, "[lvgl] init: already initialized, skip\n");
+        fflush(stderr);
+    }
+#else
+    /* 非 SDL 平台：留作扩展点，目前无操作 */
+    (void)hor_res;
+    (void)ver_res;
+#endif
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
 /* 主模块注册 */
 
 LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
-    /* 初始化 LVGL（幂等，重复调用安全） */
+    /* 初始化 LVGL 核心（幂等，重复调用安全）
+     * 注意：SDL 显示驱动不再在此隐式启动，需由 lvgl.init(w, h) 显式创建，
+     *       以便 Lua 层控制窗口尺寸 */
     lv_init();
     fprintf(stderr, "[lvgl] lv_init done\n"); fflush(stderr);
-
-#ifdef LV_USE_SDL_DRV
-    /* 桌面平台：隐式创建 SDL 窗口并注册显示/输入驱动 */
-    fprintf(stderr, "[lvgl] creating SDL window...\n"); fflush(stderr);
-    lv_sdl_drv_init(480, 320);
-    fprintf(stderr, "[lvgl] SDL window created\n"); fflush(stderr);
-#endif
 
     /* 创建主表 */
 
@@ -547,6 +581,8 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
     lvgl_define_constants(L);
 
 
+
+    REG_METHOD(L, "init", lvgl_init);
 
     REG_METHOD(L, "scr_act", lvgl_scr_act);
 
