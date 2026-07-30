@@ -67,7 +67,7 @@ local MSG_TIMER_ID_MAX = 0x7FFFFF
 
 local timerId = 0
 local timerPool = {}       -- {id -> {co, callback, args, loop, tid}}
-local rtosTimerIdMap = {} -- {rtos_tid -> id}
+local osTimerIdMap = {} -- {os_tid -> id}
 local subscribers = {}     -- {topic -> {callback -> true}}
 local messageQueue = {}    -- {{topic, ...}}
 
@@ -100,9 +100,9 @@ local function removeTimer(id)
     local entry = timerPool[id]
     if entry then
         if entry.tid then
-            rtos.timer_stop(entry.tid)
-            rtos.timer_delete(entry.tid)
-            rtosTimerIdMap[entry.tid] = nil
+            iotos.timer_stop(entry.tid)
+            iotos.timer_delete(entry.tid)
+            osTimerIdMap[entry.tid] = nil
         end
         timerPool[id] = nil
     end
@@ -114,9 +114,9 @@ end
 local function createTimer(func, timeout, loop, ...)
     if timeout < 1 then timeout = 1 end
     local id = genTimerId()
-    local tid = rtos.timer_create(timeout, loop and 1 or 0)
+    local tid = iotos.timer_create(timeout, loop and 1 or 0)
     timerPool[id] = { callback = func, args = {...}, loop = loop, tid = tid }
-    rtosTimerIdMap[tid] = id
+    osTimerIdMap[tid] = id
     return id
 end
 
@@ -178,9 +178,9 @@ function iot.sleep(ms)
     ms = ms or 1
     local co = checkTask()
     local id = genTimerId()
-    local tid = rtos.timer_create(ms, 0)
+    local tid = iotos.timer_create(ms, 0)
     timerPool[id] = { co = co, tid = tid }
-    rtosTimerIdMap[tid] = id
+    osTimerIdMap[tid] = id
     local msg = {coroutine.yield()}
     removeTimer(id)
     if #msg ~= 0 then return unpack(msg) end
@@ -241,9 +241,9 @@ function iot.wait(topic, ms)
     local id
     if ms then
         id = genTimerId()
-        local tid = rtos.timer_create(ms, 0)
+        local tid = iotos.timer_create(ms, 0)
         timerPool[id] = { co = co, tid = tid }
-        rtosTimerIdMap[tid] = id
+        osTimerIdMap[tid] = id
     end
 
     local msg = {coroutine.yield()}
@@ -285,7 +285,7 @@ local function processCmsg(msg)
     if not msg then return end
 
     if msg.type == MSG_TIMEOUT then
-        local id = rtosTimerIdMap[msg.id]
+        local id = osTimerIdMap[msg.id]
         if id then
             local entry = timerPool[id]
             if entry then
@@ -330,7 +330,7 @@ end
 function iot.run()
     while true do
         dispatch()
-        local msg = rtos.recv(10)
+        local msg = iotos.recv(10)
         if msg then
             processCmsg(msg)
             dispatch()
@@ -341,7 +341,7 @@ end
 --- 安全运行一次调度
 function iot.safeRun()
     dispatch()
-    local msg = rtos.recv(0)
+    local msg = iotos.recv(0)
     if msg then
         processCmsg(msg)
         dispatch()

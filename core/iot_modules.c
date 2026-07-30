@@ -54,7 +54,7 @@ extern int luaopen_cjson(lua_State *l);
  *===========================================================*/
 
 static const luaL_Reg core_modules[] = {
-    {"os",     luaopen_os_register},       /* 实时操作系统接口 */
+    {"iotos",     luaopen_os_register},       /* 实时操作系统接口 */
     {"log",      luaopen_log_register},        /* 日志模块 */
     {"pack",     luaopen_pack_register},       /* 数据打包/解包 */
     {"wdt",      luaopen_wdt_register},        /* 看门狗模块 */

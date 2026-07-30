@@ -250,8 +250,8 @@ static void iot_log_output(lua_State* L, int level) {
     
     int offset = 0;
     
-    /* 日志级别前缀 + [iot] 标识 */
-    offset = log_buf_append(offset, "%s[iot] ", log_level_prefix[level]);
+    /* 日志级别前缀 + [lua] 标识 */
+    offset = log_buf_append(offset, "%s [lua] ", log_level_prefix[level]);
     
     int n = lua_gettop(L);
     int first = 1;
