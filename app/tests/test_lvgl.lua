@@ -31,6 +31,12 @@ return function()
     title:align(lv.ALIGN_TOP_MID, 0, 10)
     T.pass("lvgl.label", "title")
 
+    -- 底部状态（先创建，供回调使用）
+    local status = lv.label.create(scr)
+    status:set_text("Click buttons or drag sliders...")
+    status:align(lv.ALIGN_BOTTOM_MID, 0, -10)
+    T.pass("lvgl.label", "status")
+
     -- ---- btn ----
     local btn = lv.btn.create(scr)
     btn:set_size(100, 40)
@@ -38,14 +44,29 @@ return function()
     local btn_lbl = lv.label.create(btn)
     btn_lbl:set_text("Button")
     btn_lbl:center()
+    local btn_click_count = 0
+    btn:add_event_cb(function(e, code, target, cur_target)
+        if code == lv.EVENT_CLICKED then
+            btn_click_count = btn_click_count + 1
+            btn_lbl:set_text("Btn " .. btn_click_count)
+            status:set_text("Btn clicked: " .. btn_click_count)
+        end
+    end, lv.EVENT_CLICKED)
     T.pass("lvgl.btn")
 
     -- ---- switch ----
     local sw = lv.switch.create(scr)
     sw:align(lv.ALIGN_TOP_LEFT, 20, 110)
     local sw_lbl = lv.label.create(scr)
-    sw_lbl:set_text("Switch")
+    sw_lbl:set_text("Switch: OFF")
     sw_lbl:align_to(sw, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    sw:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local on = sw:has_state(lv.STATE_CHECKED)
+            sw_lbl:set_text(on and "Switch: ON" or "Switch: OFF")
+            status:set_text("Switch: " .. (on and "ON" or "OFF"))
+        end
+    end, lv.EVENT_VALUE_CHANGED)
     T.pass("lvgl.switch")
 
     -- ---- slider ----
@@ -55,6 +76,12 @@ return function()
     local sl_lbl = lv.label.create(scr)
     sl_lbl:set_text("Slider: 0")
     sl_lbl:align_to(slider, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    slider:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local v = slider:get_value()
+            sl_lbl:set_text("Slider: " .. v)
+        end
+    end, lv.EVENT_VALUE_CHANGED)
     T.pass("lvgl.slider")
 
     -- ---- 第二列 ----
@@ -64,19 +91,45 @@ return function()
     local btn2_lbl = lv.label.create(btn2)
     btn2_lbl:set_text("Toggle")
     btn2_lbl:center()
+    local btn2_on = false
+    btn2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+        if code == lv.EVENT_CLICKED then
+            btn2_on = not btn2_on
+            if btn2_on then
+                btn2_lbl:set_text("Toggled")
+                btn2:add_state(lv.STATE_CHECKED)
+            else
+                btn2_lbl:set_text("Toggle")
+                btn2:clear_state(lv.STATE_CHECKED)
+            end
+            status:set_text("Toggle: " .. (btn2_on and "ON" or "OFF"))
+        end
+    end, lv.EVENT_CLICKED)
 
     local sw2 = lv.switch.create(scr)
     sw2:align(lv.ALIGN_TOP_LEFT, 260, 110)
+    local sw2_lbl = lv.label.create(scr)
+    sw2_lbl:set_text("SW2: OFF")
+    sw2_lbl:align_to(sw2, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    sw2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local on = sw2:has_state(lv.STATE_CHECKED)
+            sw2_lbl:set_text(on and "SW2: ON" or "SW2: OFF")
+        end
+    end, lv.EVENT_VALUE_CHANGED)
 
     local slider2 = lv.slider.create(scr)
     slider2:set_width(160)
     slider2:align(lv.ALIGN_TOP_LEFT, 260, 170)
-
-    -- 底部状态
-    local status = lv.label.create(scr)
-    status:set_text("Close window to exit...")
-    status:align(lv.ALIGN_BOTTOM_MID, 0, -10)
-    T.pass("lvgl.label", "status")
+    local sl2_lbl = lv.label.create(scr)
+    sl2_lbl:set_text("SL2: 0")
+    sl2_lbl:align_to(slider2, lv.ALIGN_OUT_RIGHT_MID, 10, 0)
+    slider2:add_event_cb(function(e, code, target_ptr, cur_target_ptr)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local v = slider2:get_value()
+            sl2_lbl:set_text("SL2: " .. v)
+        end
+    end, lv.EVENT_VALUE_CHANGED)
 
     -- 立即刷新
     lv.refr_now(nil)

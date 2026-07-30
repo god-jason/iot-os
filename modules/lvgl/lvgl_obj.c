@@ -15,6 +15,11 @@
 
 static int obj_metatable_ref = LUA_NOREF;
 
+/* 前置声明（供 lvgl_register_obj 注册使用） */
+int lvgl_obj_has_state(lua_State* L);
+int lvgl_obj_add_state(lua_State* L);
+int lvgl_obj_clear_state(lua_State* L);
+
 lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx) {
     int abs_idx = idx > 0 ? idx : (lua_gettop(L) + idx + 1);
 
@@ -93,6 +98,9 @@ int lvgl_register_obj(lua_State* L) {
     REG_METHOD(L, "is_visible", lvgl_obj_is_visible);
     REG_METHOD(L, "is_clickable", lvgl_obj_is_clickable);
     REG_METHOD(L, "get_type", lvgl_obj_get_type);
+    REG_METHOD(L, "has_state", lvgl_obj_has_state);
+    REG_METHOD(L, "add_state", lvgl_obj_add_state);
+    REG_METHOD(L, "clear_state", lvgl_obj_clear_state);
 
     REG_METHOD(L, "add_event_cb", lvgl_obj_add_event_cb);
     REG_METHOD(L, "remove_event_cb", lvgl_obj_remove_event_cb);
@@ -417,6 +425,29 @@ int lvgl_obj_is_visible(lua_State* L) {
 int lvgl_obj_is_clickable(lua_State* L) {
     lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
     lua_pushboolean(L, lv_obj_has_flag(obj, LV_OBJ_FLAG_CLICKABLE));
+    return 1;
+}
+
+int lvgl_obj_has_state(lua_State* L) {
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
+    lua_pushboolean(L, lv_obj_has_state(obj, state));
+    return 1;
+}
+
+int lvgl_obj_add_state(lua_State* L) {
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
+    lv_obj_add_state(obj, state);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+int lvgl_obj_clear_state(lua_State* L) {
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
+    lv_obj_clear_state(obj, state);
+    lua_pushvalue(L, 1);
     return 1;
 }
 
