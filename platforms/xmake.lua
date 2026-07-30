@@ -38,7 +38,7 @@ if plat == "wasm" then
     add_ldflags("-s WEBSOCKET_SUBPROTOCOL='binary'")
     -- 启用文件系统
     add_ldflags("-s FORCE_FILESYSTEM=1")
-    add_deps("lua", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts")
+    add_deps("lua", "lua-cjson", "miniz", "iot_zlib", "iot_fs", "iot_lvgl", "iot_fonts", "iot_filters")
     add_deps("iot_core")
     set_default(true)
     return
@@ -47,7 +47,7 @@ end
 -- 桌面平台添加依赖和链接库
 if is_desktop_platform then
     add_deps("lua", "gmssl", "miniz", "iot_zlib", "lua-cjson")
-    add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_lvgl", "iot_fonts")
+    add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_lvgl", "iot_fonts", "iot_filters")
     add_deps("iot_core", "drivers")
 
     if plat == "windows" then
@@ -59,7 +59,7 @@ if is_desktop_platform then
     add_ldflags("-llua", "-lgmssl", "-llua-cjson",
         "-lminiz", "-liot_zlib", "-liot_crypto",
         "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_modbus", "-liot_net", "-liot_lvgl", "-llvgl",
-        "-liot_fonts", "-ldrivers", "-liot_core")
+        "-liot_fonts", "-liot_filters", "-ldrivers", "-liot_core")
     if plat == "windows" then
         add_ldflags("-lws2_32", "-lwinmm", "-lbcrypt")
     end

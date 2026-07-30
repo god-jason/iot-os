@@ -39,9 +39,57 @@ static const char* log_level_prefix[] = {
     "[T]"
 };
 
+/* 日志输出缓冲区（4KB） */
+#define LOG_BUFFER_SIZE 4096
+static char s_log_buffer[LOG_BUFFER_SIZE];
+
+/**
+ * @brief 向日志缓冲区追加格式化字符串
+ * @param offset 当前写入偏移
+ * @param fmt 格式字符串
+ * @param ... 可变参数
+ * @return 新的写入偏移
+ */
+static int log_buf_append(int offset, const char* fmt, ...) {
+    if (offset >= LOG_BUFFER_SIZE - 1) return LOG_BUFFER_SIZE - 1;
+    va_list args;
+    va_start(args, fmt);
+    int remaining = LOG_BUFFER_SIZE - offset;
+    int written = vsnprintf(s_log_buffer + offset, remaining, fmt, args);
+    va_end(args);
+    if (written < 0) return offset;
+    if (written >= remaining) {
+        /* 溢出截断 */
+        s_log_buffer[LOG_BUFFER_SIZE - 5] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 4] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 3] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 2] = '\0';
+        return LOG_BUFFER_SIZE - 1;
+    }
+    return offset + written;
+}
+
+/**
+ * @brief 向日志缓冲区追加字符串
+ */
+static int log_buf_str(int offset, const char* str, int len) {
+    if (offset >= LOG_BUFFER_SIZE - 1) return LOG_BUFFER_SIZE - 1;
+    int remaining = LOG_BUFFER_SIZE - offset;
+    if (len >= remaining) {
+        memcpy(s_log_buffer + offset, str, remaining - 1);
+        s_log_buffer[LOG_BUFFER_SIZE - 5] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 4] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 3] = '.';
+        s_log_buffer[LOG_BUFFER_SIZE - 2] = '\0';
+        return LOG_BUFFER_SIZE - 1;
+    }
+    memcpy(s_log_buffer + offset, str, len);
+    return offset + len;
+}
+
 /**
  * @brief 设置日志级别
- * @param level 日志级别 (0-4)
+ * @param level 日志级别 (0-5)
  */
 void iot_log_set_level(iot_log_level_t level) {
     if (level >= LOG_LEVEL_NONE && level <= LOG_LEVEL_TRACE) {
@@ -68,93 +116,128 @@ void iot_log_printf(iot_log_level_t level, const char* fmt, ...) {
         return; 
     }
     
-    /* 输出日志级别前缀 */
     const char* prefix = log_level_prefix[level];
-    
-    char buffer[512];
     int offset = 0;
     
     /* 添加级别前缀 */
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s ", prefix);
+    offset = log_buf_append(offset, "%s ", prefix);
     
     /* 格式化日志内容 */
     va_list args;
     va_start(args, fmt);
-    offset += vsnprintf(buffer + offset, sizeof(buffer) - offset, fmt, args);
+    int remaining = LOG_BUFFER_SIZE - offset;
+    int written = vsnprintf(s_log_buffer + offset, remaining, fmt, args);
     va_end(args);
+    if (written >= 0 && written < remaining) offset += written;
+    else if (written >= remaining) offset = LOG_BUFFER_SIZE - 2;
     
     /* 换行 */
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\r\n");
+    offset = log_buf_append(offset, "\r\n");
     
     /* 一次性输出 */
-    iot_puts(buffer);
+    iot_puts(s_log_buffer);
 }
 
 /**
- * @brief 将Lua值转换为字符串并输出（支持长字符串分块输出）
+ * @brief 将Lua值转换为字符串追加到缓冲区
  * @param L Lua状态机
  * @param idx 栈上的索引
+ * @param offset 缓冲区写入偏移
  * @param first 是否是第一个参数
+ * @return 新的写入偏移
  */
-static void value_to_string(lua_State* L, int idx, int* first) {
+static int value_to_string(lua_State* L, int idx, int offset, int* first) {
     const char* prefix = *first ? "" : " ";
     *first = 0;
     
     if (lua_isstring(L, idx)) {
         size_t len;
         const char* str = lua_tolstring(L, idx, &len);
-        /* 输出一段 */
-        iot_puts(prefix);
-        /* 分块输出长字符串 */
-        while (len > 0) {
-            size_t chunk = (len > 128) ? 128 : len;
-            char tmp[129];
-            memcpy(tmp, str, chunk);
-            tmp[chunk] = '\0';
-            iot_puts(tmp);
-            str += chunk;
-            len -= chunk;
-        }
+        offset = log_buf_str(offset, prefix, (int)strlen(prefix));
+        /* 追加字符串内容 */
+        offset = log_buf_str(offset, str, (int)len);
     } else if (lua_isnumber(L, idx)) {
-        char buffer[64];
         if (lua_isinteger(L, idx)) {
             int64_t v = lua_tointeger(L, idx);
-            snprintf(buffer, sizeof(buffer), "%s%lld", prefix, (long long)v);
+            offset = log_buf_append(offset, "%s%lld", prefix, (long long)v);
         } else {
             double v = lua_tonumber(L, idx);
-            snprintf(buffer, sizeof(buffer), "%s%f", prefix, v);
+            offset = log_buf_append(offset, "%s%g", prefix, v);
         }
-        iot_puts(buffer);
     } else if (lua_isboolean(L, idx)) {
         int v = lua_toboolean(L, idx);
-        char buffer[16];
-        snprintf(buffer, sizeof(buffer), "%s%s", prefix, v ? "true" : "false");
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%s%s", prefix, v ? "true" : "false");
     } else if (lua_isnil(L, idx)) {
-        char buffer[16];
-        snprintf(buffer, sizeof(buffer), "%snil", prefix);
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%snil", prefix);
     } else if (lua_istable(L, idx)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%stable: %p", prefix, lua_topointer(L, idx));
-        iot_puts(buffer);
+        /* 格式化table: table{key1=>val1, key2=>val2, ...} */
+        offset = log_buf_append(offset, "%stable{", prefix);
+        
+        int count = 0;
+        int max_entries = 20;
+        lua_pushnil(L);
+        while (lua_next(L, idx) != LUA_OK) {
+            if (count >= max_entries) {
+                offset = log_buf_append(offset, "...");
+                lua_pop(L, 2); /* 弹出 value 和 key */
+                break;
+            }
+            if (count > 0) {
+                offset = log_buf_append(offset, ", ");
+            }
+            
+            /* 处理key */
+            if (lua_isstring(L, -2)) {
+                const char* kstr = lua_tostring(L, -2);
+                offset = log_buf_append(offset, "%s=>", kstr);
+            } else if (lua_isnumber(L, -2)) {
+                if (lua_isinteger(L, -2)) {
+                    offset = log_buf_append(offset, "%lld=>", (long long)lua_tointeger(L, -2));
+                } else {
+                    offset = log_buf_append(offset, "%g=>", lua_tonumber(L, -2));
+                }
+            } else {
+                offset = log_buf_append(offset, "[%s]=>", luaL_typename(L, -2));
+            }
+            
+            /* 处理value（简化处理，嵌套table仅显示指针） */
+            if (lua_isstring(L, -1)) {
+                const char* vstr = lua_tostring(L, -1);
+                offset = log_buf_append(offset, "%s", vstr);
+            } else if (lua_isnumber(L, -1)) {
+                if (lua_isinteger(L, -1)) {
+                    offset = log_buf_append(offset, "%lld", (long long)lua_tointeger(L, -1));
+                } else {
+                    offset = log_buf_append(offset, "%g", lua_tonumber(L, -1));
+                }
+            } else if (lua_isboolean(L, -1)) {
+                offset = log_buf_append(offset, "%s", lua_toboolean(L, -1) ? "true" : "false");
+            } else if (lua_isnil(L, -1)) {
+                offset = log_buf_append(offset, "nil");
+            } else if (lua_istable(L, -1)) {
+                offset = log_buf_append(offset, "table:%p", lua_topointer(L, -1));
+            } else if (lua_isfunction(L, -1)) {
+                offset = log_buf_append(offset, "function:%p", lua_topointer(L, -1));
+            } else if (lua_isuserdata(L, -1)) {
+                offset = log_buf_append(offset, "userdata:%p", lua_topointer(L, -1));
+            } else {
+                offset = log_buf_append(offset, "%s", luaL_typename(L, -1));
+            }
+            
+            lua_pop(L, 1); /* 弹出 value，保留 key 以便继续遍历 */
+            count++;
+        }
+        offset = log_buf_append(offset, "}");
     } else if (lua_isfunction(L, idx)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%sfunction: %p", prefix, lua_topointer(L, idx));
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%sfunction: %p", prefix, lua_topointer(L, idx));
     } else if (lua_isuserdata(L, idx)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%suserdata: %p", prefix, lua_topointer(L, idx));
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%suserdata: %p", prefix, lua_topointer(L, idx));
     } else if (lua_isthread(L, idx)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%sthread: %p", prefix, lua_topointer(L, idx));
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%sthread: %p", prefix, lua_topointer(L, idx));
     } else {
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer), "%s%s", prefix, luaL_typename(L, idx));
-        iot_puts(buffer);
+        offset = log_buf_append(offset, "%s%s", prefix, luaL_typename(L, idx));
     }
+    return offset;
 }
 
 /**
@@ -165,18 +248,23 @@ static void iot_log_output(lua_State* L, int level) {
         return;
     }
     
-    /* 输出日志级别前缀 */
-    iot_puts(log_level_prefix[level]);
-    iot_puts("[iot] ");
+    int offset = 0;
+    
+    /* 日志级别前缀 + [iot] 标识 */
+    offset = log_buf_append(offset, "%s[iot] ", log_level_prefix[level]);
     
     int n = lua_gettop(L);
     int first = 1;
     
     for (int i = 1; i <= n; i++) {
-        value_to_string(L, i, &first);
+        offset = value_to_string(L, i, offset, &first);
     }
     
-    iot_puts("\r\n");
+    /* 换行 */
+    offset = log_buf_append(offset, "\r\n");
+    
+    /* 一次性输出 */
+    iot_puts(s_log_buffer);
 }
 
 /**

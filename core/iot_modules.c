@@ -40,6 +40,7 @@ extern int luaopen_net_register(lua_State* L);
 extern int luaopen_zlib_register(lua_State* L);
 extern int luaopen_modbus_register(lua_State* L);
 extern int luaopen_lvgl(lua_State* L);
+extern int luaopen_filters_register(lua_State* L);
 
 /* Vendor 模块 */
 extern int luaopen_gmssl_register(lua_State* L);
@@ -74,6 +75,7 @@ static const luaL_Reg modules_list[] = {
     {"zlib",     luaopen_zlib_register},       /* ZLIB 压缩模块 */
     {"modbus",   luaopen_modbus_register},     /* Modbus RTU 模块 */
     {"lvgl",     luaopen_lvgl},       /* LVGL 模块 */
+    {"filter",   luaopen_filters_register},    /* 数字滤波模块 */
     {NULL, NULL}
 };
 
