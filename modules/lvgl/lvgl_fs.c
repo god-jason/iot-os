@@ -1,29 +1,12 @@
-/*
-@module  lvgl.fs
-@summary LVGL??????
-@version 1.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??
-local lvgl = require("lvgl")
-
--- ????
-local f = lvgl.fs.open("test.txt", lvgl.FS_MODE_RD)
-
--- ????
-local data = f:read(1024)
-
--- ????
-f:close()
-
--- ????
-local files = lvgl.fs.dir("data/")
-for i, file in ipairs(files) do
-    print(file.name, file.size, file.type)
-end
-*/
+/**
+ * @file lvgl_fs.c
+ * @brief LVGL文件系统接口
+ *
+ * 实现LVGL文件系统的Lua绑定，包括文件打开/关闭/读取/写入、目录列表、文件信息获取等接口，支持只读/只写/读写等模式。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

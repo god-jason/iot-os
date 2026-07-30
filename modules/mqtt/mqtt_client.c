@@ -1,3 +1,14 @@
+/**
+ * @file mqtt_client.c
+ * @brief MQTT 客户端实现
+ *
+ * 实现 MQTT 客户端的核心功能，包括连接管理、消息收发、订阅处理、
+ * QoS 消息队列管理、自动重连机制等
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #include "mqtt_client.h"
 #include "mqtt_manager.h"
 #include "mqtt_packets.h"

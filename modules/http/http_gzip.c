@@ -1,6 +1,13 @@
 /**
  * @file http_gzip.c
- * @brief HTTP Gzip 压缩支持（基于 iot_zlib/miniz）
+ * @brief HTTP Gzip 压缩支持实现
+ *
+ * 基于 iot_zlib 模块的 gzip 压缩/解压实现，提供 gzip 上下文管理、数据压缩、
+ * 数据解压、内存自动分配版本的压缩/解压、HTTP 响应 gzip 检测、gzip 请求头
+ * 构建等功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_gzip.h"

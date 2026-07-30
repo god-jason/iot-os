@@ -1,10 +1,16 @@
-/*
-@module  rtos
-@summary RTOS消息队列
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file iot_rtos.c
+ * @brief RTOS消息队列与定时器实现
+ *
+ * 本文件实现RTOS消息队列管理及定时器功能，包括：
+ * - 消息队列创建与销毁
+ * - 消息发布（PUBLISH）、调用（CALL）、超时（TIMEOUT）机制
+ * - 最多8个定时器的创建、停止、删除
+ * - Lua接口实现（rtos.recv、rtos.timer_* 等）
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lua.h"
 #include "iot_base.h"

@@ -4,6 +4,10 @@
  *
  * 封装非阻塞 socket，实现异步网络接口
  * 支持 SSL/TLS（基于 GmSSL），支持 TLS 1.2/1.3 和 TLCP 协议
+ * 实现 socket 管理链表、网络轮询线程、SSL 握手处理等核心功能
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <stdio.h>

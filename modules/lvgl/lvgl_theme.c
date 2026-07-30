@@ -1,28 +1,12 @@
-/*
-@module  lvgl.theme
-@summary LVGL????
-@version 1.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??
-local lvgl = require("lvgl")
-
--- ????????? primary, secondary, dark?
-local theme = lvgl.theme.create(0x3366FF, 0x6633FF, false)
-
--- ??????
-theme:set_color(lvgl.THEME_COLOR_PRIMARY, 0x3366FF)
-theme:set_color(lvgl.THEME_COLOR_SECONDARY, 0x6633FF)
-
--- ??????????
-lvgl.theme.set(theme)
-
--- ????????
-local theme_default = lvgl.theme.default()
-lvgl.theme.set(theme_default)
-*/
+/**
+ * @file lvgl_theme.c
+ * @brief LVGL主题系统
+ *
+ * 实现LVGL主题系统的Lua绑定，包括主题创建（自定义主色/次色/暗色模式）、设置主题颜色、应用主题、恢复默认主题等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

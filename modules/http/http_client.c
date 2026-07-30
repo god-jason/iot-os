@@ -2,8 +2,13 @@
  * @file http_client.c
  * @brief HTTP 客户端实现
  *
- * 基于 net_socket 实现的 HTTP/1.1 客户端，支持 GET、POST、PUT、DELETE 等方法，
- * 支持文件下载、自定义头、超时配置、gzip 压缩等功能。
+ * 基于 net_socket 的 HTTP/1.1 客户端核心实现，包含请求构建、DNS 解析、TCP 连接、
+ * 数据收发、响应解析（状态行、头部、chunked 传输解码、gzip 解压）、自动重定向、
+ * 文件下载进度回调等功能。同时实现 http_get、http_post、http_put、http_delete、
+ * http_download 等便捷同步接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_client.h"

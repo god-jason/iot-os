@@ -1,8 +1,12 @@
 /**
- * @file lua_module.c
+ * @file zlib_module.c
  * @brief zlib Lua 模块封装
  *
  * 提供面向对象的压缩/解压接口，支持 DEFLATE、GZIP、ZIP、TAR 格式
+ * 实现压缩、解压、文件打包等功能的 Lua 绑定
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <stddef.h>

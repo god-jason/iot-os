@@ -1,40 +1,13 @@
-/*
-@module  lvgl.dropdown
-@summary LVGLä¸æèåæ§ä»¶
-@version 2.0
-@date    2026.06.18
-@author  æ°ç¥ & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Luaç¤ºä¾(OOé£æ ¼)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- åå»ºä¸æèå
-local dd = lvgl.dropdown.create(scr)
-dd:set_size(150, 40)
-dd:set_pos(50, 50)
-
--- è®¾ç½®éé¡¹(ç¨\nåé)
-dd:set_options("Apple\nBanana\nOrange\nMango")
-
--- è®¾ç½®éä¸­é¡?
-dd:set_selected(1)  -- éä¸­ç¬¬äºé¡?
-
--- è®¾ç½®ä¸ææ¹å
-dd:set_direction(lvgl.DIR_BOTTOM)
-
--- è·åéä¸­é¡?
-local sel = dd:get_selected()
-local sel_str = dd:get_selected_str()
-
--- æå¼/å³é­ä¸æåè¡¨
-dd:open()
-dd:close()
-
--- é¾å¼è°ç¨
-local dd2 = lvgl.dropdown.create(scr):set_size(150, 40):set_pos(50, 120):set_options("A\nB\nC"):set_selected(0)
-*/
+/**
+ * @file lvgl_dropdown.c
+ * @brief LVGL下拉菜单控件
+ *
+ * 实现LVGL下拉菜单控件的OO风格Lua绑定，包括下拉菜单创建、设置选项（用
+分隔）、设置/获取选中项、设置方向、打开/关闭下拉列表等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

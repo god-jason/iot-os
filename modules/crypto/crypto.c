@@ -2,7 +2,14 @@
  * @file crypto.c
  * @brief 加密算法库实现
  *
- * 基于 GmSSL 封装常用加密算法
+ * 基于 GmSSL 实现常用加密算法，包括哈希算法(MD5、SHA1、
+ * SHA224、SHA256、SHA384、SHA512、SM3)、HMAC 消息认证码、
+ * 对称加密(AES/SM4 的 ECB/CBC/CTR/GCM 模式，含 PKCS7 填充)、
+ * 随机数生成、Hex/Base64 编解码、X509 证书解析(mbedtls 可选)
+ * 和 PBKDF2-SHA256 密钥派生等功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "crypto.h"

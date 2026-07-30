@@ -1,42 +1,12 @@
-/*
-@module  lvgl.spinbox
-@summary LVGLæ°å¼æ¡æ§ä»¶
-@version 2.0
-@date    2026.06.18
-@author  æ°ç¥ & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Luaç¤ºä¾(OOé£æ ¼)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- åå»ºæ°å¼æ¡
-local spinbox = lvgl.spinbox.create(scr)
-spinbox:set_size(100, 40)
-spinbox:set_pos(110, 50)
-
--- è®¾ç½®èå´
-spinbox:set_range(0, 100)
-
--- è®¾ç½®å½åå?
-spinbox:set_value(50)
-
--- è®¾ç½®æ­¥è¿å?
-spinbox:set_step(1)
-
--- è®¾ç½®å°æ°ä½æ°
-spinbox:set_digit_format(2, 0)  -- 2ä½å°æ?0ä½ææ?
-
--- è·åå½åå?
-local value = spinbox:get_value()
-
--- å¢é/åé
-spinbox:increment()
-spinbox:decrement()
-
--- é¾å¼è°ç¨
-local sb = lvgl.spinbox.create(scr):set_size(120, 50):set_pos(50, 100):set_range(0, 255):set_value(128)
-*/
+/**
+ * @file lvgl_spinbox.c
+ * @brief LVGL数值框控件
+ *
+ * 实现LVGL数值框控件的OO风格Lua绑定，包括数值框创建、设置/获取值、设置范围、设置步进值、设置小数位数和整数位数、增量/减量操作等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

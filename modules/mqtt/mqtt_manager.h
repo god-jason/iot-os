@@ -3,6 +3,10 @@
  * @brief MQTT 管理器接口定义
  *
  * 管理 MQTT 客户端的生命周期，处理 keepalive、消息重传、事件处理等
+ * 提供客户端注册/注销、线程安全的管理器访问接口
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_MQTT_MANAGER_H

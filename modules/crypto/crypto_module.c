@@ -2,7 +2,13 @@
  * @file crypto_module.c
  * @brief 加密库的 Lua 模块封装
  *
- * 提供常用加密算法的 Lua 接口
+ * 提供常用加密算法的 Lua 接口封装，包括哈希计算、HMAC、
+ * 对称加解密(AES/SM4 多种模式)、随机数生成、Hex/Base64
+ * 编解码、X509 证书操作(解析/属性获取)和 PBKDF2-SHA256
+ * 密钥派生等功能，同时注册算法名称常量供 Lua 脚本使用。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #include <stddef.h>
 #include <stdint.h>

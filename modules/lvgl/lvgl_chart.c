@@ -1,47 +1,12 @@
-/*
-@module  lvgl.chart
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local chart = lvgl.chart.create(scr)
-chart:set_size(300, 200)
-chart:set_pos(10, 20)
-
--- ??????
-chart:set_type(lvgl.CHART_TYPE_LINE)
-
--- ??????
-chart:set_point_count(10)
-
--- ????
-chart:set_range(lvgl.CHART_AXIS_PRIMARY_Y, 0, 100)
-chart:set_range(lvgl.CHART_AXIS_PRIMARY_X, 0, 10)
-
--- ??????
-local series = chart:add_series(0xFF0000)  -- ??
-
--- ??????
-chart:set_all_value(series, 50)
-
--- ??????
-for i = 0, 9 do
-    chart:set_value_by_id(series, i, math.random(0, 100))
-end
-
--- ????
-chart:refresh()
-
--- ????
-local c = lvgl.chart.create(scr):set_size(200, 150):set_pos(50, 40):set_type(lvgl.CHART_TYPE_LINE)
-*/
+/**
+ * @file lvgl_chart.c
+ * @brief LVGL图表控件
+ *
+ * 实现LVGL图表控件的OO风格Lua绑定，包括图表创建、设置类型（折线/柱状/散点/面积）、设置点数、设置轴范围、添加数据系列、设置/获取系列值、刷新图表等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

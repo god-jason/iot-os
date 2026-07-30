@@ -1,22 +1,15 @@
-/*
-@module  font_builtin
-@summary 内置ASCII字体数据
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-
-本文件包含常用的ASCII点阵字体数据。
-
-支持的字体：
-- font_6x8   : 6x8像素紧凑字体
-- font_8x8   : 8x8像素字体
-- font_8x12  : 8x12像素字体
-- font_8x14  : 8x14像素字体
-- font_8x16  : 8x16像素字体
-- font_10x18 : 10x18像素字体
-- font_12x24 : 12x24像素字体
-- font_16x32 : 16x32像素字体
-*/
+/**
+ * @file font_builtin.h
+ * @brief 内置 ASCII 点阵字体数据声明
+ *
+ * 本文件声明了一系列内置的 ASCII 点阵字体数据，涵盖 6x8、8x8、8x12、
+ * 8x14、8x16、10x18、12x24、16x32 等多种尺寸规格。每个字体包含 0x20-0x7E
+ * 范围的 95 个标准 ASCII 字符，提供统一的 builtin_font_info_t 结构体供字体
+ * 引擎查询和使用。同时提供按名称和按索引获取字体信息的辅助函数。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef __FONT_BUILTIN_H__
 #define __FONT_BUILTIN_H__

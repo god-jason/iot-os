@@ -1,24 +1,12 @@
-/*
-@module  lvgl.font
-@summary LVGL字体工具
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例
-local lvgl = require("lvgl")
-
--- 获取内置字体
-local font12 = lvgl.font.get("montserrat_12")
-local font14 = lvgl.font.get("montserrat_14")
-local font16 = lvgl.font.get("montserrat_16")
-local font24 = lvgl.font.get("montserrat_24")
-local font48 = lvgl.font.get("montserrat_48")
-
--- 使用字体设置样式
-lvgl.style.set_text_font(my_style, font16)
-*/
+/**
+ * @file lvgl_font.c
+ * @brief LVGL字体工具
+ *
+ * 实现LVGL字体工具的Lua绑定，提供获取内置字体（Montserrat系列8-48号）的接口，用于样式设置中的字体指定。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

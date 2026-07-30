@@ -1,6 +1,13 @@
 /**
  * @file http_form.c
  * @brief HTTP 表单数据处理工具实现
+ *
+ * 实现 application/x-www-form-urlencoded 和 multipart/form-data 两种表单格式的
+ * 编码与解码功能。包括表单参数的 URL 编码/解码、multipart 表单构建（文本字段、
+ * 文件字段、文件路径字段）、Content-Type 生成、MIME 类型猜测等。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_form.h"

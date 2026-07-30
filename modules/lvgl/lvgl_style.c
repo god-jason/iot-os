@@ -1,49 +1,12 @@
-/*
-@module  lvgl.style
-@summary LVGLć ˇĺźçłťçť(OOéŁć ź)
-@version 2.0
-@date    2026.06.18
-@author  ć°çĽ & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Luaç¤şäž(OOéŁć ź)
-local lvgl = require("lvgl")
-
--- ĺĺťşć ˇĺź(äź çťćšĺź)
-local style1 = lvgl.style.create()
-
--- ĺĺťşć ˇĺź(ĺŻščąĄćšĺź,ćŻćčĄ¨ĺć?
-local style2 = lvgl.style.create({
-    width = 100,
-    height = 50,
-    radius = 10,
-    bg_color = 0x3366FF,
-    bg_opa = 255,
-    pad_all = 10,
-    border_width = 2,
-    border_color = 0x000000,
-    text_color = 0xFFFFFF,
-    text_align = lvgl.TEXT_ALIGN_CENTER,
-    shadow_width = 10,
-    shadow_color = 0x000000,
-    shadow_opa = 100
-})
-
--- ä˝żç¨OOéŁć źčŽžç˝Žĺąć?
-style1:set_width(100)
-style1:set_height(50)
-style1:set_radius(10)
-style1:set_bg_color(0x3366FF)
-
--- éžĺźč°ç¨
-style1:set_width(100):set_height(50):set_radius(10)
-
--- ĺ°ć ˇĺźĺşç¨ĺ°ĺŻščąĄ
-btn:add_style(style1)
-
--- ĺ é¤ć ˇĺź
-style1:delete()
-*/
+/**
+ * @file lvgl_style.c
+ * @brief LVGL样式系统（OO风格）
+ *
+ * 实现LVGL样式系统的OO风格Lua绑定，支持两种创建方式：空样式创建和表驱动样式创建。包括样式创建、删除、设置各种属性（尺寸、圆角、背景色、边框、阴影、文字等）、应用到对象等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

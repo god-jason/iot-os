@@ -1,8 +1,13 @@
 /**
  * @file http_gzip.h
- * @brief HTTP Gzip 压缩支持
+ * @brief HTTP Gzip 压缩支持接口
  *
- * 提供 HTTP 请求的 gzip 压缩和响应解压功能
+ * 提供 HTTP 请求的 gzip 压缩和响应解压功能。支持 gzip 上下文的创建/销毁/重置、
+ * 数据压缩（1-9 级别）、数据解压、HTTP 响应 gzip 检测、gzip 请求头构建等接口。
+ * 基于底层 zlib 模块实现。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_HTTP_GZIP_H
 #define IOT_HTTP_GZIP_H

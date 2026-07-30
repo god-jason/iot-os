@@ -1,45 +1,12 @@
-/*
-@module  lvgl.obj
-@summary LVGL????(OO??)
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????(??????)
-local btn = lvgl.btn.create(scr)
-
--- ??OO????????
-btn:set_size(100, 40)
-btn:set_pos(50, 50)
-btn:set_text("Click Me")
-btn:set_click(true)
-btn:center()
-
--- ??????
-local label = lvgl.label.create(scr)
-label:set_size(200, 30)
-label:set_pos(50, 120)
-label:set_text("Hello World")
-label:set_align(lvgl.TEXT_ALIGN_CENTER)
-
--- ??????
-local ptr = btn:get_ptr()
-
--- ????
-local style = lvgl.style.create()
-style:set_radius(10)
-style:set_bg_color(0x3366FF)
-btn:add_style(style)
-
--- ??????(????)
-lvgl.obj.set_x(btn, 10)
-lvgl.obj.set_y(btn, 20)
-*/
+/**
+ * @file lvgl_obj.c
+ * @brief LVGL对象系统实现（OO风格）
+ *
+ * 实现LVGL对象系统的核心功能，包括对象指针获取（支持userdata和table两种传参方式）、OO实例创建（绑定元表和方法）、对象metatable注册等，为所有控件提供统一的OO风格Lua绑定基础。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

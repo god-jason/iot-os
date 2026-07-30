@@ -1,37 +1,12 @@
-/*
-@module  lvgl.list
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local list = lvgl.list.create(scr)
-list:set_size(200, 300)
-list:set_pos(50, 50)
-
--- ????????
-local btn1 = list:add_btn(nil, "??")
-local btn2 = list:add_btn(nil, "??")
-local btn3 = list:add_btn(nil, "??")
-
--- ??????
-list:set_direction(lvgl.DIR_TOP)
-
--- ??????
-local sel = list:get_selected_btn()
-if sel then
-    print("????", sel:get_text())
-end
-
--- ????
-local list2 = lvgl.list.create(scr):set_size(150, 200):set_pos(280, 50):set_direction(lvgl.DIR_LEFT)
-*/
+/**
+ * @file lvgl_list.c
+ * @brief LVGL列表控件
+ *
+ * 实现LVGL列表控件的OO风格Lua绑定，包括列表创建、添加按钮项、设置方向、获取选中按钮等接口，支持单选模式。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

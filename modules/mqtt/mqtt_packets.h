@@ -3,6 +3,10 @@
  * @brief MQTT 3.1.1 协议包定义与编解码接口
  *
  * 定义 MQTT 协议的 14 种数据包类型，提供完整的协议包构建和解析功能
+ * 包括 CONNECT、PUBLISH、SUBSCRIBE 等数据包的编解码及主题匹配工具函数
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_MQTT_PACKETS_H
 #define IOT_MQTT_PACKETS_H

@@ -1,10 +1,15 @@
-/*
-@module  font_vector
-@summary 矢量字体支持实现
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_vector.c
+ * @brief 矢量字体支持实现
+ *
+ * 本文件实现了矢量字体子系统的基础框架，包括 UTF-8 解码辅助函数、字体
+ * 对象的创建与销毁、字符和字符串的尺寸测量、以及矢量字形路径的生成。
+ * 当前提供基础的几何轮廓实现（Move/Line 命令），可作为后续扩展真实矢量
+ * 字体（如 TrueType/OpenType）渲染的框架基础。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include <string.h>
 #include <stdlib.h>

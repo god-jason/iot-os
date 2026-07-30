@@ -1,6 +1,13 @@
 /**
  * @file modbus_rtu.h
- * @brief Modbus RTU 帧编解码与数据解析
+ * @brief Modbus RTU 帧编解码与数据解析接口
+ *
+ * 提供 Modbus RTU 协议的帧构建、解析、CRC16 校验功能
+ * 支持读写线圈、读写寄存器等常用功能码
+ * 提供寄存器数据类型转换工具（uint32/int32/float）
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef MODBUS_RTU_H

@@ -2,7 +2,12 @@
  * @file http_server.h
  * @brief HTTP 服务器接口定义
  *
- * 基于 net_socket 实现的 HTTP/1.1 服务器，支持路由注册、静态文件服务等功能。
+ * 基于 net_socket 实现的 HTTP/1.1 服务器头文件，提供服务器创建、启动、停止、
+ * 路由注册、静态文件服务、请求回调等接口。支持 GET、POST、PUT、DELETE、HEAD、
+ * OPTIONS 等 HTTP 方法的请求处理，以及 HTTP 响应的构建与发送。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_HTTP_SERVER_H

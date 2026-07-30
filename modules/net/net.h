@@ -4,6 +4,10 @@
  *
  * 封装 lwip 非阻塞 socket，提供异步网络接口
  * 支持 SSL/TLS（基于 GmSSL），支持 TLS 1.2/1.3 和 TLCP 协议
+ * 提供 socket 操作、DNS 解析、SSL 配置等完整网络功能
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_NET_H

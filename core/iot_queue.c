@@ -1,3 +1,14 @@
+/**
+ * @file iot_queue.c
+ * @brief 线程安全消息队列实现
+ *
+ * 本文件实现基于环形缓冲区、互斥锁和信号量的线程安全消息队列，
+ * 支持多任务间的异步消息传递，提供创建、发送、接收、删除、判空等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #include "iot_queue.h"
 #include "iot.h"
 #include "iot_log.h"

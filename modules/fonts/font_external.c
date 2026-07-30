@@ -1,10 +1,16 @@
-/*
-@module  font_external
-@summary 外部点阵字库支持实现
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_external.c
+ * @brief 外部字库加载实现
+ *
+ * 本文件实现了外部字库的加载与管理功能，支持 BDF 文本格式和 BIN/RAW
+ * 二进制格式的字体文件解析。通过引用计数机制管理字体对象的生命周期，
+ * 支持基于 CM-FS（启用 ENABLE_CM_FS 宏）或标准 C 库文件系统的文件读取
+ * 操作。提供统一的 font_external_load 入口函数，根据格式自动分派到对应
+ * 的解析器。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include <string.h>
 #include <stdlib.h>

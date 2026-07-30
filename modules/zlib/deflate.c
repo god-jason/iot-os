@@ -1,6 +1,12 @@
 /**
  * @file deflate.c
- * @brief DEFLATE 压缩/解压（miniz 封装）
+ * @brief DEFLATE 压缩/解压实现（miniz 封装）
+ *
+ * 基于 miniz 库实现 DEFLATE 格式的压缩和解压功能
+ * 提供原始 DEFLATE 数据压缩和解压的便捷接口
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "deflate.h"

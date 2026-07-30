@@ -1,43 +1,20 @@
-/*
-@module  lvgl.bar
-@summary LVGL进度条控�?
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建进度�?
-local bar = lvgl.bar.create(scr)
-bar:set_size(200, 20)
-bar:set_pos(50, 50)
-
--- 设置范围和�?
-bar:set_range(0, 100)
-bar:set_value(50, 0)  -- 无动�?
-
--- 设置模式
-bar:set_mode(lvgl.BAR_MODE_NORMAL)
-
--- 获取�?
-local value = bar:get_value()
-local min = bar:get_min_value()
-local max = bar:get_max_value()
-
--- 链式调用
-local bar2 = lvgl.bar.create(scr):set_size(200, 20):set_pos(50, 100):set_range(0, 100):set_value(75)
-*/
+/**
+ * @file lvgl_bar.c
+ * @brief LVGL进度条控件
+ *
+ * 实现LVGL进度条控件的OO风格Lua绑定，包括进度条创建、设置值（支持动画）、设置范围、设置模式（正常/反向/对称）、获取当前值/最小值/最大值等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* bar组件的metatable引用 */
+/* barç»ä»¶çmetatableå¼ç¨ */
 static int bar_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_bar_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -46,12 +23,12 @@ static int lvgl_bar_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 进度条OO方法 ==================== */
+/* ==================== è¿åº¦æ¡OOæ¹æ³ ==================== */
 
 /*
-创建进度条控�?OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的进度条实例
+åå»ºè¿åº¦æ¡æ§ä»?OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçè¿åº¦æ¡å®ä¾
 @usage local bar = lvgl.bar.create(scr)
 */
 static int lvgl_bar_create(lua_State* L) {
@@ -59,10 +36,10 @@ static int lvgl_bar_create(lua_State* L) {
 }
 
 /*
-设置进度条�?
-@param self 进度条实例或指针
-@param value �?
-@param anim 动画使能(可�?默认0=无动�?
+è®¾ç½®è¿åº¦æ¡å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@param value å?
+@param anim å¨ç»ä½¿è½(å¯é?é»è®¤0=æ å¨ç?
 @return self
 @usage bar:set_value(50, 0)
 */
@@ -76,10 +53,10 @@ static int lvgl_bar_set_value(lua_State* L) {
 }
 
 /*
-设置进度条范�?
-@param self 进度条实例或指针
-@param min 最小�?
-@param max 最大�?
+è®¾ç½®è¿åº¦æ¡èå?
+@param self è¿åº¦æ¡å®ä¾ææé
+@param min æå°å?
+@param max æå¤§å?
 @return self
 @usage bar:set_range(0, 100)
 */
@@ -93,9 +70,9 @@ static int lvgl_bar_set_range(lua_State* L) {
 }
 
 /*
-设置进度条模�?
-@param self 进度条实例或指针
-@param mode 模式: BAR_MODE_NORMAL, BAR_MODE_SYMMETRICAL, BAR_MODE_REVERSE
+è®¾ç½®è¿åº¦æ¡æ¨¡å¼?
+@param self è¿åº¦æ¡å®ä¾ææé
+@param mode æ¨¡å¼: BAR_MODE_NORMAL, BAR_MODE_SYMMETRICAL, BAR_MODE_REVERSE
 @return self
 @usage bar:set_mode(lvgl.BAR_MODE_NORMAL)
 */
@@ -108,10 +85,10 @@ static int lvgl_bar_set_mode(lua_State* L) {
 }
 
 /*
-设置进度条起始�?
-@param self 进度条实例或指针
-@param value 起始�?
-@param anim 动画使能(可�?默认0=无动�?
+è®¾ç½®è¿åº¦æ¡èµ·å§å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@param value èµ·å§å?
+@param anim å¨ç»ä½¿è½(å¯é?é»è®¤0=æ å¨ç?
 @return self
 @usage bar:set_start_value(20, 0)
 */
@@ -125,9 +102,9 @@ static int lvgl_bar_set_start_value(lua_State* L) {
 }
 
 /*
-获取进度条�?
-@param self 进度条实例或指针
-@return integer 当前�?
+è·åè¿åº¦æ¡å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@return integer å½åå?
 @usage local value = bar:get_value()
 */
 static int lvgl_bar_get_value(lua_State* L) {
@@ -138,9 +115,9 @@ static int lvgl_bar_get_value(lua_State* L) {
 }
 
 /*
-获取进度条起始�?
-@param self 进度条实例或指针
-@return integer 起始�?
+è·åè¿åº¦æ¡èµ·å§å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@return integer èµ·å§å?
 @usage local value = bar:get_start_value()
 */
 static int lvgl_bar_get_start_value(lua_State* L) {
@@ -151,9 +128,9 @@ static int lvgl_bar_get_start_value(lua_State* L) {
 }
 
 /*
-获取进度条最小�?
-@param self 进度条实例或指针
-@return integer 最小�?
+è·åè¿åº¦æ¡æå°å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@return integer æå°å?
 @usage local min = bar:get_min_value()
 */
 static int lvgl_bar_get_min_value(lua_State* L) {
@@ -164,9 +141,9 @@ static int lvgl_bar_get_min_value(lua_State* L) {
 }
 
 /*
-获取进度条最大�?
-@param self 进度条实例或指针
-@return integer 最大�?
+è·åè¿åº¦æ¡æå¤§å?
+@param self è¿åº¦æ¡å®ä¾ææé
+@return integer æå¤§å?
 @usage local max = bar:get_max_value()
 */
 static int lvgl_bar_get_max_value(lua_State* L) {
@@ -176,7 +153,7 @@ static int lvgl_bar_get_max_value(lua_State* L) {
     return 1;
 }
 
-/* 注册 bar 子模�?*/
+/* æ³¨å bar å­æ¨¡å?*/
 void lvgl_register_bar(lua_State* L) {
     lua_newtable(L);
 
@@ -201,6 +178,6 @@ void lvgl_register_bar(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.bar) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.bar) */
     REG_METHOD(L, "create", lvgl_bar_create);
 }

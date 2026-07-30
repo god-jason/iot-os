@@ -1,10 +1,15 @@
-/*
-@module  font_engine
-@summary 字体渲染引擎实现
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_engine.c
+ * @brief 字体渲染引擎核心实现
+ *
+ * 本文件实现了字体渲染引擎的核心逻辑，包括 UTF-8 到 Unicode 的转换、
+ * 点阵字体的逐像素渲染算法、单行与多行字符串的布局计算、自动换行和回车
+ * 处理等功能。引擎支持在指定缓冲区中以透明模式绘制文字像素，并提供字符
+ * 级和字符串级的尺寸测量接口，方便上层进行排版布局。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include <string.h>
 #include <stdlib.h>

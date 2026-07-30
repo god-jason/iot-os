@@ -1,10 +1,12 @@
-/*
-@module  lvgl.layout
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-*/
+/**
+ * @file lvgl_layout.c
+ * @brief LVGL布局系统
+ *
+ * 实现LVGL布局系统的Lua绑定，包括Flex布局初始化、设置Flex流/对齐/增长因子、Grid布局初始化、设置Grid单元格/对齐、设置对象布局类型等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

@@ -1,45 +1,12 @@
-/*
-@module  lvgl.tabview
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local tv = lvgl.tabview.create(scr)
-tv:set_size(320, 240)
-tv:set_pos(0, 0)
-
--- ??????
-tv:set_tab_bar_position(lvgl.TABVIEW_TAB_POS_TOP)
-
--- ????
-local tab1 = tv:add_tab("??1")
-local tab2 = tv:add_tab("??2")
-local tab3 = tv:add_tab("??3")
-
--- ??????
-local page0 = tv:get_tab(0)
-local page1 = tv:get_tab(1)
-
--- ????????
-local label1 = lvgl.label.create(page0)
-label1:set_text("????1????)
-
--- ??????
-tv:set_active(0, 0)  -- ????????????
-
--- ????????
-local active = tv:get_active()
-
--- ????
-local tv2 = lvgl.tabview.create(scr):set_size(240, 320):set_pos(40, 10):add_tab("Tab1")
-*/
+/**
+ * @file lvgl_tabview.c
+ * @brief LVGL选项卡控件
+ *
+ * 实现LVGL选项卡控件的OO风格Lua绑定，包括选项卡创建、添加标签页、获取标签页、设置活动标签、获取活动标签索引、设置标签栏位置等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

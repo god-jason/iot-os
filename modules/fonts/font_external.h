@@ -1,10 +1,14 @@
-/*
-@module  font_external
-@summary 外部点阵字库支持
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_external.h
+ * @brief 外部字库加载接口定义
+ *
+ * 本文件定义了外部字库加载模块的 API，支持 BDF、PCF、BIN、RAW 等多种
+ * 字体文件格式的解析与加载。提供外部字体对象的引用计数管理和信息查询
+ * 接口，允许用户从文件系统加载自定义字体以扩展内置字体库。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef __FONT_EXTERNAL_H__
 #define __FONT_EXTERNAL_H__

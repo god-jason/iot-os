@@ -1,3 +1,13 @@
+/**
+ * @file lvgl_port.h
+ * @brief LVGL端口层头文件
+ *
+ * 定义LVGL与IoT系统的端口层接口，包括内存管理宏映射（cm_malloc/cfree映射到iot_malloc/iot_free）、LVGL 7布局常量兼容定义、按钮辅助函数（文本设置/获取/状态切换）等，为LVGL 8 API提供向后兼容支持。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #ifndef LVGL_PORT_H
 #define LVGL_PORT_H
 

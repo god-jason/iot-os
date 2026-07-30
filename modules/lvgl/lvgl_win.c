@@ -1,40 +1,12 @@
-/*
-@module  lvgl.win
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local win = lvgl.win.create(scr)
-win:set_size(300, 200)
-win:set_pos(10, 10)
-
--- ??????
-win:set_title("??")
-
--- ????????
-local btn = win:add_btn(nil)  -- nil??????
-local btn2 = win:add_btn("OK")
-
--- ??????
-win:set_btn_title(btn, "X")
-
--- ??????
-local cont = win:get_content()
-
--- ????????
-local label = lvgl.label.create(cont)
-label:set_text("???????????")
-
--- ????
-local w = lvgl.win.create(scr):set_size(280, 180):set_pos(20, 30):set_title("MyWindow")
-*/
+/**
+ * @file lvgl_win.c
+ * @brief LVGL窗口控件
+ *
+ * 实现LVGL窗口控件的OO风格Lua绑定，包括窗口创建、设置标题、添加按钮、设置按钮标题、获取内容区域等接口，提供带标题栏和按钮的容器窗口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

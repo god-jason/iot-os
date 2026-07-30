@@ -1,6 +1,15 @@
 /**
  * @file fs_path.c
- * @brief 文件系统路径处理工具
+ * @brief 文件系统路径处理工具实现
+ *
+ * 实现跨平台的文件路径处理工具函数，支持 Unix 和 Windows
+ * 两种路径分隔符的识别与处理。提供 basename、dirname、extname、
+ * stem 提取，路径拼接 join、规范化 normalize、分割 split、
+ * 绝对路径判断 is_absolute、末尾分隔符清理等完整功能，
+ * 可独立于标准库使用，适用于资源受限的嵌入式环境。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <string.h>

@@ -1,3 +1,14 @@
+/**
+ * @file mqtt_module.c
+ * @brief MQTT Lua 模块封装
+ *
+ * 实现 MQTT 模块到 Lua 的接口封装，提供面向对象的 MQTT 客户端操作
+ * 支持连接、发布、订阅、断线重连等操作，事件通过回调机制传递到 Lua VM
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

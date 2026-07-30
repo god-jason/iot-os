@@ -1,8 +1,9 @@
 /**
- * @file iotos.h
- * @brief IoT核心调度头文件
+ * @file iot_task.h
+ * @brief IoT任务调度模块
  *
- * 本模块提供IoT核心调度接口，包括Lua任务启动、消息队列初始化等。
+ * 本模块提供IoT核心调度接口，包括Lua任务启动、消息队列初始化、
+ * Lua脚本加载（支持.luac字节码优先加载）、app升级包解压（zip/tar.gz）等功能。
  *
  * @author  杰神 & TRAE & ChatGPT
  * @date    2026.06.10

@@ -1,10 +1,16 @@
-/*
-@module  font_data
-@summary 字体数据定义
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_data.h
+ * @brief 字体数据类型定义与内置字体声明
+ *
+ * 本文件定义了字体格式枚举类型（FONT_FORMAT_BITMAP、FONT_FORMAT_VECTOR、
+ * FONT_FORMAT_COMPRESSED）和通用字体信息结构体 font_info_t，用于描述字体
+ * 的名称、尺寸、位深、字符范围和位图数据等属性。同时声明了多个预置的
+ * 点阵字体对象（font_6x8、font_6x10、font_7x14、font_8x8、font_8x13、
+ * font_8x16、font_10x20、font_12x24）以及全局字体列表数组。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef __FONT_DATA_H__
 #define __FONT_DATA_H__

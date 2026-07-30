@@ -1,10 +1,12 @@
-/*
-@module  lvgl.indev
-@summary LVGLčžĺĽčŽžĺ¤ćä˝
-@version 2.0
-@date    2026.06.18
-@author  ć°çĽ & TRAE & ChatGPT
-*/
+/**
+ * @file lvgl_indev.c
+ * @brief LVGL输入设备接口
+ *
+ * 实现LVGL输入设备的Lua绑定，包括获取活动输入设备、获取输入类型、获取触摸点坐标、获取按键值等接口，支持指针和按键两种输入模式。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

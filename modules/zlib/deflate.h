@@ -1,3 +1,14 @@
+/**
+ * @file deflate.h
+ * @brief DEFLATE 压缩/解压接口
+ *
+ * 提供基于 miniz 库的 DEFLATE 格式压缩和解压功能
+ * 支持原始 DEFLATE 数据的压缩和解压操作
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #ifndef DEFLATE_H
 #define DEFLATE_H
 

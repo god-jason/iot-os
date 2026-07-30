@@ -1,26 +1,12 @@
-/*
-@module  lvgl.color
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??
-local lvgl = require("lvgl")
-
--- ????
-local red = lvgl.color.make(255, 0, 0)
-local blue = lvgl.color.hex(0x0000FF)
-
--- ????
-local lighter = lvgl.color.lighten(red, 50)
-local darker = lvgl.color.darken(red, 50)
-local mixed = lvgl.color.mix(red, blue, 128)
-
--- ????
-local brightened = lvgl.color.change_brightness(red, 20)
-*/
+/**
+ * @file lvgl_color.c
+ * @brief LVGL颜色工具
+ *
+ * 实现LVGL颜色工具的Lua绑定，包括RGB颜色创建、十六进制颜色解析、颜色亮化/暗化/混合、亮度调整等接口，支持多种颜色空间转换。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

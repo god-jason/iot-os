@@ -1,10 +1,13 @@
-/*
-@module  log
-@summary 日志打印
-@version 1.0
-@date    2026.06.20
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file iot_log.c
+ * @brief IoT日志模块实现
+ *
+ * 本文件实现日志功能，支持多级别日志输出（ERROR/WARN/INFO/DEBUG/TRACE），
+ * 支持C函数调用和Lua脚本调用两种方式，日志输出带级别前缀和函数位置信息。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.20
+ */
 
 /*
 LOG参考示例

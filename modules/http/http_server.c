@@ -2,7 +2,12 @@
  * @file http_server.c
  * @brief HTTP 服务器实现
  *
- * 基于 net_socket 实现的 HTTP/1.1 服务器，支持路由注册和静态文件服务。
+ * 基于 net_socket 的 HTTP/1.1 服务器核心实现，包含监听 socket 创建、客户端连接管理、
+ * 请求解析（方法、路径、查询参数、头部、请求体）、路由匹配、自定义回调处理、
+ * 响应构建（状态行、头部、响应体）、静态文件服务等功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_server.h"

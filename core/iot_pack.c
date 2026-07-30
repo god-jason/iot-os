@@ -1,33 +1,37 @@
-/*
-@module  pack
-@summary 打包和解包格式串
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-@tag     PACK
-@usage
---[[
-'<' 设为小端编码
-'>' 设为大端编码
-'=' 大小端遵循本地设置
-'z' 空字符串,0字节
-'a' size_t字符串,用N字节表达长度,然后接着是N字节的数据
-'A' 指定长度字符串 例如A8, 代表8字节的数据
-'f' float, 4字节
-'d' double , 8字节
-'n' Lua number , 32bit固件4字节, 64bit固件8字节
-'c' char , 1字节
-'b' byte = unsigned char  , 1字节
-'h' short  , 2字节
-'H' unsigned short  , 2字节
-'i' int  , 4字节
-'I' unsigned int , 4字节
-'l' long , 8字节, 64bit固件能正确获取
-'L' unsigned long , 8字节, 64bit固件能正确获取
-]]
-
--- 详细用法请查看demo
-*/
+/**
+ * @file iot_pack.c
+ * @brief 数据打包/解包模块实现
+ *
+ * 本文件实现Lua字符串与C结构体之间的二进制数据打包/解包功能，
+ * 支持大小端编码、多种数据类型（z/a/A/f/d/n/c/b/h/H/i/I/l/L）的格式化处理。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ *
+ * @tag     PACK
+ * @usage
+ * --[[
+ * '<' 设为小端编码
+ * '>' 设为大端编码
+ * '=' 大小端遵循本地设置
+ * 'z' 空字符串,0字节
+ * 'a' size_t字符串,用N字节表达长度,然后接着是N字节的数据
+ * 'A' 指定长度字符串 例如A8, 代表8字节的数据
+ * 'f' float, 4字节
+ * 'd' double , 8字节
+ * 'n' Lua number , 32bit固件4字节, 64bit固件8字节
+ * 'c' char , 1字节
+ * 'b' byte = unsigned char  , 1字节
+ * 'h' short  , 2字节
+ * 'H' unsigned short  , 2字节
+ * 'i' int  , 4字节
+ * 'I' unsigned int , 4字节
+ * 'l' long , 8字节, 64bit固件能正确获取
+ * 'L' unsigned long , 8字节, 64bit固件能正确获取
+ * ]]
+ *
+ * -- 详细用法请查看demo
+ */
 
 #include "lua.h"
 #include "iot_base.h"

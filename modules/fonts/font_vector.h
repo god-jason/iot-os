@@ -1,10 +1,15 @@
-/*
-@module  font_vector
-@summary 矢量字体支持接口
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_vector.h
+ * @brief 矢量字体支持接口定义
+ *
+ * 本文件定义了矢量字体子系统的数据结构和 API，包括矢量点（vector_point_t）、
+ * 字形轮廓（vector_glyph_t）、字体对象（vector_font_t）等类型定义，以及字体
+ * 加载/卸载、字符尺寸测量、字形路径获取等操作接口。矢量字体使用贝塞尔曲线
+ * 描述字符轮廓，支持任意尺寸缩放，为高质量文字渲染提供基础支撑。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef __FONT_VECTOR_H__
 #define __FONT_VECTOR_H__

@@ -1,6 +1,12 @@
 /**
  * @file http_url.c
  * @brief HTTP URL 解析与编码工具实现
+ *
+ * 实现 URL 解析（协议、主机、端口、路径、查询参数、锚点的完整拆分）、
+ * URL 编码（百分号编码）、URL 解码、查询参数获取、URL 构建等功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_url.h"

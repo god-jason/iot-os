@@ -1,33 +1,12 @@
-/*
-@module  lvgl.arc
-@summary LVGLå¼§å½¢æ§ä»¶
-@version 2.0
-@date    2026.06.18
-@author  æ°ç¥ & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Luaç¤ºä¾(OOé£æ ¼)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- åå»ºå¼§å½¢æ§ä»¶
-local arc = lvgl.arc.create(scr)
-arc:set_size(150, 150)
-arc:set_pos(75, 75)
-
--- è®¾ç½®è§åº¦èå´
-arc:set_bg_angles(0, 270)
-arc:set_angles(0, 135)
-
--- è®¾ç½®å?
-arc:set_value(75)
-
--- è·åå?
-local value = arc:get_value()
-
--- é¾å¼è°ç¨
-local arc2 = lvgl.arc.create(scr):set_size(100, 100):set_pos(200, 100):set_bg_angles(0, 180):set_value(50)
-*/
+/**
+ * @file lvgl_arc.c
+ * @brief LVGL弧形控件
+ *
+ * 实现LVGL弧形控件的OO风格Lua绑定，包括弧形创建、设置起止角度范围、设置/获取当前值、设置背景角度、设置动画使能等接口，支持链式调用。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

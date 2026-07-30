@@ -1,8 +1,13 @@
 /**
  * @file http_form.h
- * @brief HTTP 表单数据处理工具
+ * @brief HTTP 表单数据处理工具接口
  *
- * 提供 application/x-www-form-urlencoded 和 multipart/form-data 编码/解码功能
+ * 提供 application/x-www-form-urlencoded 和 multipart/form-data 两种表单格式的
+ * 编码与解码工具接口。支持表单参数的 URL 编码/解码、multipart 表单的构建
+ * （含文本字段和文件字段）、MIME 类型自动猜测等功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_HTTP_FORM_H
 #define IOT_HTTP_FORM_H

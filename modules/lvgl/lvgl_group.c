@@ -1,10 +1,12 @@
-/*
-@module  lvgl.group
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-*/
+/**
+ * @file lvgl_group.c
+ * @brief LVGL对象分组
+ *
+ * 实现LVGL对象分组的Lua绑定，包括分组创建/删除、添加/移除对象、获取对象数量、获取聚焦对象、设置/获取默认分组等接口，用于焦点导航管理。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

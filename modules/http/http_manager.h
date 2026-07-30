@@ -2,7 +2,12 @@
  * @file http_manager.h
  * @brief HTTP 管理器接口定义
  *
- * 管理 HTTP 客户端的生命周期，处理超时、重试、事件处理等
+ * HTTP 管理器头文件，提供 HTTP 客户端的统一管理接口，包括管理器初始化/反初始化、
+ * 客户端注册与移除、互斥锁控制、默认超时配置等功能。管理器在独立线程中运行，
+ * 负责超时检查和重试逻辑处理。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_HTTP_MANAGER_H

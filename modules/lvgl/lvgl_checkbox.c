@@ -1,40 +1,20 @@
-/*
-@module  lvgl.checkbox
-@summary LVGL复选框控件
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建复选框
-local cb = lvgl.checkbox.create(scr)
-cb:set_pos(50, 50)
-cb:set_text("同意协议")
-
--- 设置状�?
-cb:set_checked(true)  -- 勾�?
-cb:set_state(lvgl.CHECKBOX_STATE_CHECKED)
-
--- 获取状�?
-local checked = cb:is_checked()
-local state = cb:get_state()
-local text = cb:get_text()
-
--- 链式调用
-local cb2 = lvgl.checkbox.create(scr):set_pos(50, 100):set_text("选项2"):set_checked(false)
-*/
+/**
+ * @file lvgl_checkbox.c
+ * @brief LVGL复选框控件
+ *
+ * 实现LVGL复选框控件的OO风格Lua绑定，包括复选框创建、设置/获取文本、设置/获取状态（未选中/选中/不确定）、设置静态文本等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* checkbox组件的metatable引用 */
+/* checkboxç»ä»¶çmetatableå¼ç¨ */
 static int checkbox_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_checkbox_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -43,12 +23,12 @@ static int lvgl_checkbox_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 复选框OO方法 ==================== */
+/* ==================== å¤éæ¡OOæ¹æ³ ==================== */
 
 /*
-创建复选框控件(OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的复选框实例
+åå»ºå¤éæ¡æ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçå¤éæ¡å®ä¾
 @usage local cb = lvgl.checkbox.create(scr)
 */
 static int lvgl_checkbox_create(lua_State* L) {
@@ -56,11 +36,11 @@ static int lvgl_checkbox_create(lua_State* L) {
 }
 
 /*
-设置复选框文本
-@param self 复选框实例或指�?
-@param text 文本内容
+è®¾ç½®å¤éæ¡ææ¬
+@param self å¤éæ¡å®ä¾ææé?
+@param text ææ¬åå®¹
 @return self
-@usage cb:set_text("同意协议")
+@usage cb:set_text("åæåè®®")
 */
 static int lvgl_checkbox_set_text(lua_State* L) {
     lv_obj_t* cb = lvgl_get_obj_ptr(L, 1);
@@ -71,11 +51,11 @@ static int lvgl_checkbox_set_text(lua_State* L) {
 }
 
 /*
-设置复选框静态文�?不拷贝字符串)
-@param self 复选框实例或指�?
-@param text 文本内容(必须保持有效)
+è®¾ç½®å¤éæ¡éæææ?ä¸æ·è´å­ç¬¦ä¸²)
+@param self å¤éæ¡å®ä¾ææé?
+@param text ææ¬åå®¹(å¿é¡»ä¿æææ)
 @return self
-@usage cb:set_text_static("选项")
+@usage cb:set_text_static("éé¡¹")
 */
 static int lvgl_checkbox_set_text_static(lua_State* L) {
     lv_obj_t* cb = lvgl_get_obj_ptr(L, 1);
@@ -86,9 +66,9 @@ static int lvgl_checkbox_set_text_static(lua_State* L) {
 }
 
 /*
-设置复选框选中状�?
-@param self 复选框实例或指�?
-@param checked 是否选中
+è®¾ç½®å¤éæ¡éä¸­ç¶æ?
+@param self å¤éæ¡å®ä¾ææé?
+@param checked æ¯å¦éä¸­
 @return self
 @usage cb:set_checked(true)
 */
@@ -101,9 +81,9 @@ static int lvgl_checkbox_set_checked(lua_State* L) {
 }
 
 /*
-设置复选框状�?
-@param self 复选框实例或指�?
-@param state 状态�? CHECKBOX_STATE_UNCHECKED, CHECKBOX_STATE_CHECKED, CHECKBOX_STATE_TRISTATE
+è®¾ç½®å¤éæ¡ç¶æ?
+@param self å¤éæ¡å®ä¾ææé?
+@param state ç¶æå? CHECKBOX_STATE_UNCHECKED, CHECKBOX_STATE_CHECKED, CHECKBOX_STATE_TRISTATE
 @return self
 @usage cb:set_state(lvgl.CHECKBOX_STATE_CHECKED)
 */
@@ -116,9 +96,9 @@ static int lvgl_checkbox_set_state(lua_State* L) {
 }
 
 /*
-获取复选框文本
-@param self 复选框实例或指�?
-@return string 文本内容
+è·åå¤éæ¡ææ¬
+@param self å¤éæ¡å®ä¾ææé?
+@return string ææ¬åå®¹
 @usage local text = cb:get_text()
 */
 static int lvgl_checkbox_get_text(lua_State* L) {
@@ -129,9 +109,9 @@ static int lvgl_checkbox_get_text(lua_State* L) {
 }
 
 /*
-检查复选框是否选中
-@param self 复选框实例或指�?
-@return boolean 是否选中
+æ£æ¥å¤éæ¡æ¯å¦éä¸­
+@param self å¤éæ¡å®ä¾ææé?
+@return boolean æ¯å¦éä¸­
 @usage local checked = cb:is_checked()
 */
 static int lvgl_checkbox_is_checked(lua_State* L) {
@@ -142,9 +122,9 @@ static int lvgl_checkbox_is_checked(lua_State* L) {
 }
 
 /*
-获取复选框状�?
-@param self 复选框实例或指�?
-@return integer 状态�?
+è·åå¤éæ¡ç¶æ?
+@param self å¤éæ¡å®ä¾ææé?
+@return integer ç¶æå?
 @usage local state = cb:get_state()
 */
 static int lvgl_checkbox_get_state(lua_State* L) {
@@ -154,7 +134,7 @@ static int lvgl_checkbox_get_state(lua_State* L) {
     return 1;
 }
 
-/* 注册 checkbox 子模�?*/
+/* æ³¨å checkbox å­æ¨¡å?*/
 void lvgl_register_checkbox(lua_State* L) {
     lua_newtable(L);
 
@@ -178,6 +158,6 @@ void lvgl_register_checkbox(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.checkbox) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.checkbox) */
     REG_METHOD(L, "create", lvgl_checkbox_create);
 }

@@ -1,6 +1,14 @@
 /**
  * @file fs_path.h
  * @brief 文件系统路径处理工具接口定义
+ *
+ * 提供跨平台的文件路径处理工具函数接口，支持路径的
+ * basename 提取、dirname 提取、扩展名获取、路径拼接、
+ * 绝对路径判断、路径规范化、路径分割、末尾分隔符清理等
+ * 常用操作。支持 Unix (/) 和 Windows (\) 两种路径分隔符。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_FS_PATH_H

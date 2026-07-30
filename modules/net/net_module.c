@@ -3,7 +3,11 @@
  * @brief 网络模块 Lua 绑定实现
  *
  * 实现网络模块到 Lua 的接口封装，提供异步网络操作能力
+ * 支持普通 socket 和 SSL socket 创建、连接、收发、DNS 解析等功能
  * 事件通过 iot_rtos_call 回传到 Lua VM 中
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <stddef.h>

@@ -1,3 +1,14 @@
+/**
+ * @file iot_queue.h
+ * @brief 线程安全消息队列模块
+ *
+ * 本模块提供基于互斥锁和信号量的线程安全消息队列实现，
+ * 支持多任务间的异步消息传递，提供创建、发送、接收、删除等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #ifndef IOT_QUEUE_H
 #define IOT_QUEUE_H
 

@@ -2,7 +2,15 @@
  * @file fs_module.c
  * @brief 基于 iot.h fs 适配层的 Lua 文件系统封装
  *
- * 提供面向对象的文件系统接口
+ * 提供面向对象的 Lua 文件系统模块封装，将底层 C 文件系统 API
+ * 映射为 Lua 脚本可调用的接口。支持文件打开/关闭/读写/seek/flush、
+ * 目录创建/删除/遍历、文件权限检查、路径操作等功能。
+ * 包含 fs.file 元表（面向对象文件操作）和 fs 模块（静态方法），
+ * 并注册了文件权限常量（R_OK/W_OK/X_OK/F_OK）和文件指针位置常量
+ * （SEEK_SET/SEEK_CUR/SEEK_END），实现完整的 Lua 文件系统 API。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <stddef.h>

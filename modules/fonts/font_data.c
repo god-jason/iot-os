@@ -1,10 +1,15 @@
-/*
-@module  font_data
-@summary 字体数据实现
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_data.c
+ * @brief 内置点阵字体数据实现
+ *
+ * 本文件实现了多种常用的 ASCII 点阵字体位图数据，包括 6x8（紧凑小字体）、
+ * 8x8（标准字体）和 8x16（标准大小字体）等规格。每个字体包含 0x20（空格）
+ * 至 0x7E（波浪号）共 95 个标准可打印字符的点阵数据。文件中同时定义了
+ * font_list 数组和 font_count 变量，用于注册所有内置字体供渲染引擎使用。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "font_data.h"
 

@@ -1,40 +1,12 @@
-/*
-@module  lvgl.tileview
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local tv = lvgl.tileview.create(scr)
-tv:set_size(320, 240)
-tv:set_pos(0, 0)
-
--- ??????????
-local tile1 = lvgl.obj.create(tv)
-tv:add_tile(0, 0, lvgl.DIR_RIGHT)
-tile1:set_size(320, 240)
-tile1:set_click(true)
-
-local tile2 = lvgl.obj.create(tv)
-tv:add_tile(1, 0, lvgl.DIR_LEFT)
-tile2:set_size(320, 240)
-tile2:set_click(true)
-
--- ??????
-tv:set_tile(tile1, 0)
-
--- ??????
-local cur = tv:get_tile_act()
-
--- ????
-local tv2 = lvgl.tileview.create(scr):set_size(240, 320):set_pos(40, 10)
-*/
+/**
+ * @file lvgl_tileview.c
+ * @brief LVGL平铺视图控件
+ *
+ * 实现LVGL平铺视图控件的OO风格Lua绑定，包括平铺视图创建、添加平铺块、设置活动平铺、获取活动平铺等接口，支持滑动切换页面。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

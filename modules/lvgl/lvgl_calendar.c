@@ -1,37 +1,12 @@
-/*
-@module  lvgl.calendar
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local calendar = lvgl.calendar.create(scr)
-calendar:set_size(300, 350)
-calendar:set_pos(10, 10)
-
--- ??????
-calendar:set_today_date(2026, 6, 18)
-calendar:set_showed_date(2026, 6)
-
--- ??????????
-local date = calendar:get_pressed_date()
-if date then
-    print("???? " .. date.year .. "-" .. date.month .. "-" .. date.day)
-end
-
--- ??????????
-local showed = calendar:get_showed_date()
-print("??: " .. showed.year .. "-" .. showed.month)
-
--- ????
-local cal = lvgl.calendar.create(scr):set_size(240, 320):set_pos(40, 10):set_today_date(2026, 6, 18)
-*/
+/**
+ * @file lvgl_calendar.c
+ * @brief LVGL日历控件
+ *
+ * 实现LVGL日历控件的OO风格Lua绑定，包括日历创建、设置今天日期、设置显示年月、获取按下日期、获取显示年月等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

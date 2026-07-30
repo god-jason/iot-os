@@ -3,6 +3,10 @@
  * @brief MQTT 客户端接口定义
  *
  * 提供 MQTT 3.1.1 协议客户端功能，支持连接、发布、订阅、QoS 等特性
+ * 定义客户端状态管理、事件回调、自动重连等完整功能接口
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_MQTT_CLIENT_H

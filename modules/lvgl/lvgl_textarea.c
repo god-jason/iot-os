@@ -1,52 +1,12 @@
-/*
-@module  lvgl.textarea
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local ta = lvgl.textarea.create(scr)
-ta:set_size(200, 100)
-ta:set_pos(50, 50)
-
--- ??????
-ta:set_text("Hello World!")
-
--- ??????
-local text = ta:get_text()
-
--- ??????
-ta:set_placeholder_text("????..")
-
--- ???????
-ta:set_max_length(100)
-
--- ????
-ta:set_one_line(false)
-
--- ????
-ta:set_password_mode(false)
-
--- ????????
-ta:add_char(string.byte("A"))
-ta:add_text(" appended")
-
--- ????
-ta:del_char()
-ta:del_char_forward()
-
--- ????
-ta:clear()
-
--- ????
-local ta2 = lvgl.textarea.create(scr):set_size(200, 50):set_pos(50, 170):set_text("Input"):set_max_length(50)
-*/
+/**
+ * @file lvgl_textarea.c
+ * @brief LVGL文本区域控件
+ *
+ * 实现LVGL文本区域控件的OO风格Lua绑定，包括文本区创建、设置/获取文本、设置占位符文本、设置最大长度、设置单行模式、设置密码模式、添加/删除字符、清空等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

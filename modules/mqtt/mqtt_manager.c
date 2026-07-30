@@ -1,3 +1,14 @@
+/**
+ * @file mqtt_manager.c
+ * @brief MQTT 管理器实现
+ *
+ * 实现 MQTT 管理器的核心功能，包括客户端链表管理、后台轮询线程、
+ * 心跳检测、QoS 消息重传、自动重连逻辑、协议包处理等
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
+
 #include "mqtt_manager.h"
 #include "mqtt_packets.h"
 

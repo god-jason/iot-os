@@ -1,44 +1,20 @@
-/*
-@module  lvgl.slider
-@summary LVGL滑块控件
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建滑块
-local slider = lvgl.slider.create(scr)
-slider:set_size(200, 20)
-slider:set_pos(50, 50)
-
--- 设置范围和�?
-slider:set_range(0, 100)
-slider:set_value(50, 0)  -- 设置�?0,无动�?
-
--- 设置模式
-slider:set_mode(lvgl.SLIDER_MODE_NORMAL)
-
--- 获取�?
-local value = slider:get_value()
-
--- 检查是否正在拖�?
-local dragging = slider:is_dragged()
-
--- 链式调用
-local slider2 = lvgl.slider.create(scr):set_size(200, 20):set_pos(50, 100):set_range(0, 100):set_value(25)
-*/
+/**
+ * @file lvgl_slider.c
+ * @brief LVGL滑块控件
+ *
+ * 实现LVGL滑块控件的OO风格Lua绑定，包括滑块创建、设置值（支持动画）、设置范围、设置模式、获取当前值、检查是否正在拖动等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* slider组件的metatable引用 */
+/* sliderç»ä»¶çmetatableå¼ç¨ */
 static int slider_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_slider_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -47,12 +23,12 @@ static int lvgl_slider_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 滑块OO方法 ==================== */
+/* ==================== æ»åOOæ¹æ³ ==================== */
 
 /*
-创建滑块控件(OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的滑块实�?
+åå»ºæ»åæ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçæ»åå®ä¾?
 @usage local slider = lvgl.slider.create(scr)
 */
 static int lvgl_slider_create(lua_State* L) {
@@ -60,10 +36,10 @@ static int lvgl_slider_create(lua_State* L) {
 }
 
 /*
-设置滑块�?
-@param self 滑块实例或指�?
-@param value �?
-@param anim 动画使能(可�?默认0=无动�?
+è®¾ç½®æ»åå?
+@param self æ»åå®ä¾ææé?
+@param value å?
+@param anim å¨ç»ä½¿è½(å¯é?é»è®¤0=æ å¨ç?
 @return self
 @usage slider:set_value(50, 0)
 */
@@ -77,10 +53,10 @@ static int lvgl_slider_set_value(lua_State* L) {
 }
 
 /*
-设置滑块范围
-@param self 滑块实例或指�?
-@param min 最小�?
-@param max 最大�?
+è®¾ç½®æ»åèå´
+@param self æ»åå®ä¾ææé?
+@param min æå°å?
+@param max æå¤§å?
 @return self
 @usage slider:set_range(0, 100)
 */
@@ -94,9 +70,9 @@ static int lvgl_slider_set_range(lua_State* L) {
 }
 
 /*
-设置滑块模式
-@param self 滑块实例或指�?
-@param mode 模式: SLIDER_MODE_NORMAL(0), SLIDER_MODE_SYMMETRICAL(1), SLIDER_MODE_REVERSE(2)
+è®¾ç½®æ»åæ¨¡å¼
+@param self æ»åå®ä¾ææé?
+@param mode æ¨¡å¼: SLIDER_MODE_NORMAL(0), SLIDER_MODE_SYMMETRICAL(1), SLIDER_MODE_REVERSE(2)
 @return self
 @usage slider:set_mode(lvgl.SLIDER_MODE_NORMAL)
 */
@@ -109,9 +85,9 @@ static int lvgl_slider_set_mode(lua_State* L) {
 }
 
 /*
-获取滑块�?
-@param self 滑块实例或指�?
-@return integer 当前�?
+è·åæ»åå?
+@param self æ»åå®ä¾ææé?
+@return integer å½åå?
 @usage local value = slider:get_value()
 */
 static int lvgl_slider_get_value(lua_State* L) {
@@ -122,9 +98,9 @@ static int lvgl_slider_get_value(lua_State* L) {
 }
 
 /*
-检查滑块是否正在拖�?
-@param self 滑块实例或指�?
-@return boolean 是否拖动�?
+æ£æ¥æ»åæ¯å¦æ­£å¨æå?
+@param self æ»åå®ä¾ææé?
+@return boolean æ¯å¦æå¨ä¸?
 @usage local dragging = slider:is_dragged()
 */
 static int lvgl_slider_is_dragged(lua_State* L) {
@@ -134,22 +110,22 @@ static int lvgl_slider_is_dragged(lua_State* L) {
     return 1;
 }
 
-/* 注册 slider 子模�?*/
+/* æ³¨å slider å­æ¨¡å?*/
 void lvgl_register_slider(lua_State* L) {
-    /* 创建组件方法�?用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "set_value", lvgl_slider_set_value);
     REG_METHOD(L, "get_value", lvgl_slider_get_value);
     REG_METHOD(L, "set_range", lvgl_slider_set_range);
     REG_METHOD(L, "set_mode", lvgl_slider_set_mode);
     REG_METHOD(L, "is_dragged", lvgl_slider_is_dragged);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     slider_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.slider.set_value(slider, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.slider.set_value(slider, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, slider_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -160,6 +136,6 @@ void lvgl_register_slider(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.slider) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.slider) */
     REG_METHOD(L, "create", lvgl_slider_create);
 }

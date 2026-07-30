@@ -2,8 +2,13 @@
  * @file http_client.h
  * @brief HTTP 客户端接口定义
  *
- * 基于 net_socket 实现的 HTTP/1.1 客户端，支持 GET、POST、PUT、DELETE 等方法，
- * 支持文件下载、自定义头、超时配置、gzip 压缩等功能。
+ * 基于 net_socket 实现的 HTTP/1.1 客户端头文件，提供客户端创建、销毁、请求执行、
+ * 响应解析等核心接口。支持 GET、POST、PUT、DELETE、HEAD、OPTIONS 等 HTTP 方法，
+ * 支持文件下载、自定义请求头、超时配置、自动重定向、gzip 压缩/解压等功能。
+ * 同时提供 http_get、http_post、http_put、http_delete、http_download 等便捷接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_HTTP_CLIENT_H
 #define IOT_HTTP_CLIENT_H

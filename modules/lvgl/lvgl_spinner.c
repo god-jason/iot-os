@@ -1,33 +1,12 @@
-/*
-@module  lvgl.spinner
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local spinner = lvgl.spinner.create(scr, 1000)
-spinner:set_size(50, 50)
-spinner:set_pos(135, 95)
-
--- ??????
-spinner:set_angle(60)
-
--- ????
-spinner:set_type(lvgl.SPINNER_TYPE_SPINNING)
-
--- ??/????
-spinner:pause()
-spinner:resume()
-
--- ????
-local s = lvgl.spinner.create(scr, 1000):set_size(40, 40):set_pos(140, 100):set_angle(60)
-*/
+/**
+ * @file lvgl_spinner.c
+ * @brief LVGL旋转器控件
+ *
+ * 实现LVGL旋转器控件的OO风格Lua绑定，包括旋转器创建、设置角度、设置类型、暂停/恢复等接口，用于显示加载状态。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

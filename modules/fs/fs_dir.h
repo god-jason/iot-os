@@ -1,6 +1,13 @@
 /**
  * @file fs_dir.h
  * @brief 文件系统目录操作接口定义
+ *
+ * 提供文件系统目录操作的抽象接口，包括目录打开、关闭、
+ * 读取目录条目、列出目录内容等功能。定义了目录条目结构体
+ * fs_dir_entry_t 和目录句柄 fs_dir_t，用于遍历和管理文件系统目录。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #ifndef IOT_FS_DIR_H

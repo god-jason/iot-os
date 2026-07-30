@@ -1,47 +1,12 @@
-/*
-@module  lvgl.meter
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local meter = lvgl.meter.create(scr)
-meter:set_size(200, 200)
-meter:set_pos(60, 20)
-
--- ????
-local scale = meter:add_scale(270, 0)  -- 270????
-
--- ??????
-meter:set_scale_range(scale, 0, 100, 270, 225)
-
--- ??????
-meter:set_scale_ticks(scale, 11, 2, 5, 0x000000)
-
--- ??????
-meter:set_scale_major_ticks(scale, 4, 2, 5, 0xFF0000)
-
--- ????????????
-local indic = meter:add_indicator_line(scale, 3, 0x0000FF, 10)
-
--- ??????
-meter:set_indicator_value(indic, 50)
-
--- ????????
-local arc_indic = meter:add_indicator_arc(scale, 10, 0x00FF00, 5)
-
--- ??????
-meter:set_indicator_value(arc_indic, 75)
-
--- ????
-local m = lvgl.meter.create(scr):set_size(150, 150):set_pos(80, 30)
-*/
+/**
+ * @file lvgl_meter.c
+ * @brief LVGL仪表盘控件
+ *
+ * 实现LVGL仪表盘控件的OO风格Lua绑定，包括仪表盘创建、添加刻度、设置刻度范围/刻度线/主刻度、添加指示器（线条/弧形）、设置指示器值等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

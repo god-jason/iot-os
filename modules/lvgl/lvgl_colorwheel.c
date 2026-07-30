@@ -1,33 +1,12 @@
-/*
-@module  lvgl.colorwheel
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ??????
-local cw = lvgl.colorwheel.create(scr)
-cw:set_size(200, 200)
-cw:set_pos(60, 20)
-
--- ????????
-cw:set_mode(lvgl.COLORWHEEL_MODE_SATURATION)
-
--- ??????
-local r, g, b = cw:get_rgb()
-print(string.format("????: RGB(%d, %d, %d)", r, g, b))
-
--- ????
-cw:set_rgb(255, 0, 0)  -- ??????
-
--- ????
-local c = lvgl.colorwheel.create(scr):set_size(150, 150):set_pos(85, 45):set_mode(lvgl.COLORWHEEL_MODE_HUE)
-*/
+/**
+ * @file lvgl_colorwheel.c
+ * @brief LVGL色轮控件
+ *
+ * 实现LVGL色轮控件的OO风格Lua绑定，包括色轮创建、设置模式（色相/饱和度/亮度）、设置RGB值、获取RGB值、设置角度偏移等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

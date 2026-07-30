@@ -2,7 +2,12 @@
  * @file http_manager.c
  * @brief HTTP 管理器实现
  *
- * 使用独立线程管理所有 HTTP 客户端，处理超时检查、重试逻辑、状态监控等
+ * HTTP 管理器核心实现，使用独立后台线程周期性遍历所有已注册的 HTTP 客户端，
+ * 执行超时检查和重试逻辑。提供客户端列表的增删操作、互斥锁同步以及默认
+ * 超时时间的配置与读取功能。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "http_manager.h"

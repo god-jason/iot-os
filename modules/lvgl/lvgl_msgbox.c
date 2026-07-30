@@ -1,33 +1,12 @@
-/*
-@module  lvgl.msgbox
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-
--- ??????
-local msgbox = lvgl.msgbox.create(nil)
-msgbox:set_text("????!")
-msgbox:add_button("??", 0)
-msgbox:add_button("??", 1)
-
--- ????
-msgbox:set_size(200, 100)
-
--- ??????
-local btn_index = msgbox:get_active_btn()
-local btn_text = msgbox:get_active_btn_text()
-
--- ??????
-msgbox:close()
-
--- ????
-local box = lvgl.msgbox.create(nil):set_text("Hello"):add_button("OK", 0):set_size(180, 80)
-*/
+/**
+ * @file lvgl_msgbox.c
+ * @brief LVGL消息框控件
+ *
+ * 实现LVGL消息框控件的OO风格Lua绑定，包括消息框创建、设置文本、添加按钮、设置尺寸、获取活动按钮索引/文本、关闭消息框等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

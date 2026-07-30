@@ -1,42 +1,20 @@
-/*
-@module  lvgl.led
-@summary LVGL LED控件
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建LED
-local led = lvgl.led.create(scr)
-led:set_size(30, 30)
-led:set_pos(50, 50)
-
--- 设置LED亮度(on/off中间的�?
-led:set_brightness(255)  -- 最�?
-led:set_brightness(0)    -- 熄灭
-
--- 点亮/熄灭
-led:on()
-led:off()
-
--- 获取LED当前亮度
-local bright = led:get_brightness()
-
--- 链式调用
-local led2 = lvgl.led.create(scr):set_size(20, 20):set_pos(100, 50):set_brightness(200):on()
-*/
+/**
+ * @file lvgl_led.c
+ * @brief LVGL LED控件
+ *
+ * 实现LVGL LED控件的OO风格Lua绑定，包括LED创建、点亮/熄灭、设置亮度、获取当前亮度等接口，用于状态指示显示。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* led组件的metatable引用 */
+/* ledç»ä»¶çmetatableå¼ç¨ */
 static int led_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_led_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -45,12 +23,12 @@ static int lvgl_led_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== LED OO方法 ==================== */
+/* ==================== LED OOæ¹æ³ ==================== */
 
 /*
-创建LED控件(OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的LED实例
+åå»ºLEDæ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçLEDå®ä¾
 @usage local led = lvgl.led.create(scr)
 */
 static int lvgl_led_create(lua_State* L) {
@@ -58,8 +36,8 @@ static int lvgl_led_create(lua_State* L) {
 }
 
 /*
-点亮LED
-@param self LED实例或指�?
+ç¹äº®LED
+@param self LEDå®ä¾ææé?
 @return self
 @usage led:on()
 */
@@ -71,8 +49,8 @@ static int lvgl_led_on(lua_State* L) {
 }
 
 /*
-熄灭LED
-@param self LED实例或指�?
+çç­LED
+@param self LEDå®ä¾ææé?
 @return self
 @usage led:off()
 */
@@ -84,9 +62,9 @@ static int lvgl_led_off(lua_State* L) {
 }
 
 /*
-设置LED亮度
-@param self LED实例或指�?
-@param bright 亮度�?0-255)
+è®¾ç½®LEDäº®åº¦
+@param self LEDå®ä¾ææé?
+@param bright äº®åº¦å?0-255)
 @return self
 @usage led:set_brightness(200)
 */
@@ -99,9 +77,9 @@ static int lvgl_led_set_brightness(lua_State* L) {
 }
 
 /*
-设置LED颜色
-@param self LED实例或指�?
-@param color 颜色�?
+è®¾ç½®LEDé¢è²
+@param self LEDå®ä¾ææé?
+@param color é¢è²å?
 @return self
 @usage led:set_color(0xFF0000)
 */
@@ -115,9 +93,9 @@ static int lvgl_led_set_color(lua_State* L) {
 }
 
 /*
-获取LED亮度
-@param self LED实例或指�?
-@return integer 亮度�?0-255)
+è·åLEDäº®åº¦
+@param self LEDå®ä¾ææé?
+@return integer äº®åº¦å?0-255)
 @usage local bright = led:get_brightness()
 */
 static int lvgl_led_get_brightness(lua_State* L) {
@@ -127,22 +105,22 @@ static int lvgl_led_get_brightness(lua_State* L) {
     return 1;
 }
 
-/* 注册 led 子模�?*/
+/* æ³¨å led å­æ¨¡å?*/
 void lvgl_register_led(lua_State* L) {
-    /* 创建组件方法�?用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "on", lvgl_led_on);
     REG_METHOD(L, "off", lvgl_led_off);
     REG_METHOD(L, "set_brightness", lvgl_led_set_brightness);
     REG_METHOD(L, "set_color", lvgl_led_set_color);
     REG_METHOD(L, "get_brightness", lvgl_led_get_brightness);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     led_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.led.on(led, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.led.on(led, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, led_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -153,6 +131,6 @@ void lvgl_register_led(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.led) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.led) */
     REG_METHOD(L, "create", lvgl_led_create);
 }

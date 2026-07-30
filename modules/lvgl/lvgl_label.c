@@ -1,33 +1,12 @@
-/*
-@module  lvgl.label
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local label = lvgl.label.create(scr)
-
--- ??OO??
-label:set_pos(10, 10)
-label:set_text("Hello World")
-label:set_align(lvgl.TEXT_ALIGN_CENTER)
-label:set_size(200, 30)
-
--- ??????
-label:set_long_mode(lvgl.LABEL_LONG_SCROLL_CIRCULAR)
-label:set_text_sel_start(0)
-label:set_text_sel_end(5)
-label:set_recolor(true)
-
--- ????
-local label2 = lvgl.label.create(scr):set_pos(10, 50):set_text("Another Label"):set_align(lvgl.TEXT_ALIGN_LEFT)
-*/
+/**
+ * @file lvgl_label.c
+ * @brief LVGL标签控件
+ *
+ * 实现LVGL标签控件的OO风格Lua绑定，包括标签创建、设置/获取文本、设置文本对齐、设置自动换行模式、设置长文本模式（滚动/省略/裁剪）、设置文本选择范围等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

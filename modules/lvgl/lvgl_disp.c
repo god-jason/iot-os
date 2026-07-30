@@ -1,10 +1,12 @@
-/*
-@module  lvgl.disp
-@summary LVGL??????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-*/
+/**
+ * @file lvgl_disp.c
+ * @brief LVGL显示设备接口
+ *
+ * 实现LVGL显示设备的Lua绑定，包括获取水平/垂直分辨率、获取物理分辨率、设置/获取显示旋转、设置背景颜色/背景图片等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

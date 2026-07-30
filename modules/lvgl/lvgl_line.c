@@ -1,34 +1,12 @@
-/*
-@module  lvgl.line
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local line = lvgl.line.create(scr)
-
--- ??????????{{x1,y1},{x2,y2},...})
-local points = {{0,0}, {100,50}, {50,100}}
-line:set_points(points)
-
--- ??????
-line:set_auto_size(true)
-
--- Y????(????)
-line:set_y_invert(true)
-
--- ??Y??????
-local inverted = line:get_y_invert()
-
--- ????
-local line2 = lvgl.line.create(scr):set_auto_size(true):set_y_invert(false)
-*/
+/**
+ * @file lvgl_line.c
+ * @brief LVGL线条控件
+ *
+ * 实现LVGL线条控件的OO风格Lua绑定，包括线条创建、设置坐标点数组、设置自动尺寸、设置Y轴翻转等接口，用于绘制折线图。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

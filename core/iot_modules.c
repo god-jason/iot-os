@@ -1,10 +1,14 @@
-/*
-@module  modules
-@summary Lua核心模块注册入口
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE
-*/
+/**
+ * @file iot_modules.c
+ * @brief Lua模块注册入口
+ *
+ * 本文件集中注册所有Lua模块，包括核心模块（rtos、log、pack、wdt）、
+ * 功能模块（crypto、fs、http、mqtt、net、zlib、modbus、lvgl）、
+ * 厂商模块（gmssl）以及平台模块（cjson）。
+ *
+ * @author  杰神 & TRAE
+ * @date    2026.06.10
+ */
 
 #include "iot_modules.h"
 #include "iot_log.h"

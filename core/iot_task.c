@@ -1,10 +1,16 @@
-/*
-@module iot
-@summary IoT核心调度
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file iot_task.c
+ * @brief IoT任务调度实现
+ *
+ * 本文件实现IoT核心调度逻辑，包括：
+ * - Lua任务创建与启动（iot_lua_task）
+ * - Lua脚本加载（优先加载.luac字节码，回退.lua源文件）
+ * - app升级包检查与解压（支持zip/tar.gz格式）
+ * - 递归目录删除功能
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include <stdio.h>
 #include <string.h>

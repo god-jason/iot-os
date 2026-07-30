@@ -1,10 +1,12 @@
-/*
-@module  lvgl
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-*/
+/**
+ * @file lvgl_constants.c
+ * @brief LVGL常量定义
+ *
+ * 实现LVGL常量注册函数，定义对齐常量、状态常量、部件常量、动画常量、动画路径常量、不透明度常量、文本对齐常量、边框常量、布局常量、方向常量、滑块模式、进度条模式、图表类型、滚轮模式等常用常量。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

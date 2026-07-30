@@ -1,6 +1,12 @@
 /**
  * @file mqtt_packets.c
  * @brief MQTT 3.1.1 协议包编解码实现
+ *
+ * 实现 MQTT 协议包的构建和解析功能，包括所有数据包类型的编码和解码
+ * 支持可变长度整数编解码、大端序整数编解码、字符串编解码等底层工具
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "mqtt_packets.h"

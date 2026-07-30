@@ -1,10 +1,15 @@
-/*
-@module  font_engine
-@summary 字体渲染引擎
-@version 1.0
-@date    2026.06.11
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file font_engine.h
+ * @brief 字体渲染引擎接口定义
+ *
+ * 本文件定义了字体渲染引擎的公开 API，包括引擎创建与销毁、字体与颜色
+ * 设置、字符与字符串尺寸测量、以及将字体位图渲染到帧缓冲区等功能。支持
+ * UTF-8 编码的多字节字符解析、字符间距和行高设置、自动换行等特性。
+ * 引擎可通过字体名称快速查找已注册字体，或通过枚举接口获取所有可用字体。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef __FONT_ENGINE_H__
 #define __FONT_ENGINE_H__

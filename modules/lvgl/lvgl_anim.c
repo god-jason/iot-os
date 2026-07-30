@@ -1,35 +1,21 @@
-/*
-@module  lvgl.anim
-@summary LVGL动画系统
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例
-local lvgl = require("lvgl")
-
--- 创建动画
-local anim = lvgl.anim.init()
-lvgl.anim.set_var(anim, some_object)
-lvgl.anim.set_values(anim, 0, 100)
-lvgl.anim.set_time(anim, 500)
-lvgl.anim.set_path_cb(anim, 3)  -- ease_in_out
-lvgl.anim.start(anim)
-
--- 删除动画
-lvgl.anim.del(some_object)
-lvgl.anim.del_all()
-*/
+/**
+ * @file lvgl_anim.c
+ * @brief LVGL动画系统
+ *
+ * 实现LVGL动画系统的Lua绑定，包括动画初始化、删除、变量绑定、起止值设置、时间设置、路径回调设置、动画启动/停止/删除等接口，支持多种动画缓动效果（线性、ease-in、ease-out、ease-in-out、overshoot、bounce、step）。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== 动画操作 ==================== */
+/* ==================== å¨ç»æä½ ==================== */
 
 /*
-初始化动�?
-@return userdata 动画指针
+åå§åå¨ç?
+@return userdata å¨ç»æé
 @usage local anim = lvgl.anim.init()
 */
 static int lvgl_anim_init(lua_State* L) {
@@ -44,8 +30,8 @@ static int lvgl_anim_init(lua_State* L) {
 }
 
 /*
-删除动画(仅释放内�?
-@param anim 动画指针
+å é¤å¨ç»(ä»éæ¾åå­?
+@param anim å¨ç»æé
 @usage lvgl.anim.delete(anim)
 */
 static int lvgl_anim_delete(lua_State* L) {
@@ -55,9 +41,9 @@ static int lvgl_anim_delete(lua_State* L) {
 }
 
 /*
-设置动画关联的对�?
-@param anim 动画指针
-@param var 对象指针
+è®¾ç½®å¨ç»å³èçå¯¹è±?
+@param anim å¨ç»æé
+@param var å¯¹è±¡æé
 @usage lvgl.anim.set_var(anim, btn)
 */
 static int lvgl_anim_set_var(lua_State* L) {
@@ -68,10 +54,10 @@ static int lvgl_anim_set_var(lua_State* L) {
 }
 
 /*
-设置动画值范�?
-@param anim 动画指针
-@param start 起始�?
-@param end 结束�?
+è®¾ç½®å¨ç»å¼èå?
+@param anim å¨ç»æé
+@param start èµ·å§å?
+@param end ç»æå?
 @usage lvgl.anim.set_values(anim, 0, 100)
 */
 static int lvgl_anim_set_values(lua_State* L) {
@@ -83,9 +69,9 @@ static int lvgl_anim_set_values(lua_State* L) {
 }
 
 /*
-设置动画持续时间
-@param anim 动画指针
-@param duration 持续时间(毫秒)
+è®¾ç½®å¨ç»æç»­æ¶é´
+@param anim å¨ç»æé
+@param duration æç»­æ¶é´(æ¯«ç§)
 @usage lvgl.anim.set_time(anim, 500)
 */
 static int lvgl_anim_set_time(lua_State* L) {
@@ -96,9 +82,9 @@ static int lvgl_anim_set_time(lua_State* L) {
 }
 
 /*
-设置动画延迟开始时�?
-@param anim 动画指针
-@param delay 延迟时间(毫秒)
+è®¾ç½®å¨ç»å»¶è¿å¼å§æ¶é?
+@param anim å¨ç»æé
+@param delay å»¶è¿æ¶é´(æ¯«ç§)
 @usage lvgl.anim.set_delay(anim, 1000)
 */
 static int lvgl_anim_set_delay(lua_State* L) {
@@ -109,9 +95,9 @@ static int lvgl_anim_set_delay(lua_State* L) {
 }
 
 /*
-设置动画回放时间
-@param anim 动画指针
-@param duration 回放持续时间(毫秒)
+è®¾ç½®å¨ç»åæ¾æ¶é´
+@param anim å¨ç»æé
+@param duration åæ¾æç»­æ¶é´(æ¯«ç§)
 @usage lvgl.anim.set_playback_time(anim, 300)
 */
 static int lvgl_anim_set_playback_time(lua_State* L) {
@@ -122,9 +108,9 @@ static int lvgl_anim_set_playback_time(lua_State* L) {
 }
 
 /*
-设置动画重复次数
-@param anim 动画指针
-@param count 重复次数(LV_ANIM_REPEAT_INFINITE表示无限)
+è®¾ç½®å¨ç»éå¤æ¬¡æ°
+@param anim å¨ç»æé
+@param count éå¤æ¬¡æ°(LV_ANIM_REPEAT_INFINITEè¡¨ç¤ºæ é)
 @usage lvgl.anim.set_repeat_count(anim, 3)
 */
 static int lvgl_anim_set_repeat_count(lua_State* L) {
@@ -135,9 +121,9 @@ static int lvgl_anim_set_repeat_count(lua_State* L) {
 }
 
 /*
-设置动画路径类型
-@param anim 动画指针
-@param path_type 路径类型: 0-linear, 1-ease_in, 2-ease_out, 3-ease_in_out, 4-overshoot, 5-bounce, 6-step
+è®¾ç½®å¨ç»è·¯å¾ç±»å
+@param anim å¨ç»æé
+@param path_type è·¯å¾ç±»å: 0-linear, 1-ease_in, 2-ease_out, 3-ease_in_out, 4-overshoot, 5-bounce, 6-step
 @usage lvgl.anim.set_path_cb(anim, 3)  -- ease_in_out
 */
 static int lvgl_anim_set_path_cb(lua_State* L) {
@@ -160,8 +146,8 @@ static int lvgl_anim_set_path_cb(lua_State* L) {
 }
 
 /*
-启动动画
-@param anim 动画指针
+å¯å¨å¨ç»
+@param anim å¨ç»æé
 @usage lvgl.anim.start(anim)
 */
 static int lvgl_anim_start(lua_State* L) {
@@ -171,8 +157,8 @@ static int lvgl_anim_start(lua_State* L) {
 }
 
 /*
-删除指定对象的动�?
-@param var 对象指针
+å é¤æå®å¯¹è±¡çå¨ç?
+@param var å¯¹è±¡æé
 @usage lvgl.anim.del(some_object)
 */
 static int lvgl_anim_del(lua_State* L) {
@@ -182,7 +168,7 @@ static int lvgl_anim_del(lua_State* L) {
 }
 
 /*
-删除所有动�?
+å é¤ææå¨ç?
 @usage lvgl.anim.del_all()
 */
 static int lvgl_anim_del_all(lua_State* L) {
@@ -190,7 +176,7 @@ static int lvgl_anim_del_all(lua_State* L) {
     return 0;
 }
 
-/* 注册 anim 子模�?*/
+/* æ³¨å anim å­æ¨¡å?*/
 void lvgl_register_anim(lua_State* L) {
     REG_METHOD(L, "init", lvgl_anim_init);
     REG_METHOD(L, "delete", lvgl_anim_delete);

@@ -1,45 +1,12 @@
-/*
-@module  lvgl.obj
-@summary LVGL对象系统(OO风格)
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建按钮(返回实例对象)
-local btn = lvgl.btn.create(scr)
-
--- 使用OO风格的方法调用
-btn:set_size(100, 40)
-btn:set_pos(50, 50)
-btn:set_text("Click Me")
-btn:set_click(true)
-btn:center()
-
--- 链式调用示例
-local label = lvgl.label.create(scr)
-label:set_size(200, 30)
-label:set_pos(50, 120)
-label:set_text("Hello World")
-label:set_align(lvgl.TEXT_ALIGN_CENTER)
-
--- 获取对象指针
-local ptr = btn:get_ptr()
-
--- 添加样式
-local style = lvgl.style.create()
-style:set_radius(10)
-style:set_bg_color(0x3366FF)
-btn:add_style(style)
-
--- 模块方式调用(直接操作)
-lvgl.obj.set_x(btn, 10)
-lvgl.obj.set_y(btn, 20)
-*/
+/**
+ * @file lvgl_obj.h
+ * @brief LVGL对象系统头文件（OO风格）
+ *
+ * 定义LVGL对象系统的核心宏和函数声明，包括方法注册宏（REG_METHOD）、只读属性注册宏（REG_READONLY）、常量注册宏（REG_CONSTANT）、对象指针获取函数（lvgl_get_obj_ptr）、OO实例创建函数（lvgl_obj_create_instance）、元表设置等，为所有控件的OO风格Lua绑定提供基础框架。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #ifndef LVGL_OBJ_H
 #define LVGL_OBJ_H

@@ -1,50 +1,12 @@
-/*
-@module  lvgl.table
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local table = lvgl.table.create(scr)
-table:set_size(300, 200)
-table:set_pos(50, 50)
-
--- ??????
-table:set_row_cnt(3)
-table:set_col_cnt(3)
-
--- ????????
-table:set_cell_value(0, 0, "Name")
-table:set_cell_value(0, 1, "Age")
-table:set_cell_value(0, 2, "City")
-table:set_cell_value(1, 0, "Tom")
-table:set_cell_value(1, 1, "25")
-table:set_cell_value(1, 2, "Beijing")
-
--- ????
-table:set_col_width(0, 80)
-table:set_col_width(1, 80)
-table:set_col_width(2, 140)
-
--- ????
-table:set_cell_align(0, 0, lvgl.TEXT_ALIGN_CENTER)
-
--- ????????
-local text = table:get_cell_value(0, 0)
-
--- ????????
-local row = table:get_selected_row()
-local col = table:get_selected_col()
-
--- ????
-local tbl = lvgl.table.create(scr):set_size(200, 150):set_row_cnt(3):set_col_cnt(3)
-*/
+/**
+ * @file lvgl_table.c
+ * @brief LVGL表格控件
+ *
+ * 实现LVGL表格控件的OO风格Lua绑定，包括表格创建、设置行列数、设置/获取单元格值、设置列宽、设置单元格对齐、获取选中行列等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

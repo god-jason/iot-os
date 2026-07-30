@@ -1,44 +1,20 @@
-/*
-@module  lvgl.keyboard
-@summary LVGL键盘控件
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建键盘
-local kb = lvgl.keyboard.create(scr)
-kb:set_size(300, 200)
-kb:set_pos(0, 200)
-
--- 设置关联的文本区�?
-local ta = lvgl.textarea.create(scr)
-ta:set_size(280, 50)
-ta:set_pos(10, 10)
-kb:set_textarea(ta)
-
--- 设置键盘模式
-kb:set_mode(lvgl.KEYBOARD_MODE_TEXT)
-
--- 获取关联的文本区�?
-local ta2 = kb:get_textarea()
-local mode = kb:get_mode()
-
--- 链式调用
-local kb2 = lvgl.keyboard.create(scr):set_size(300, 150):set_pos(0, 250):set_mode(lvgl.KEYBOARD_MODE_NUMBER)
-*/
+/**
+ * @file lvgl_keyboard.c
+ * @brief LVGL键盘控件
+ *
+ * 实现LVGL键盘控件的OO风格Lua绑定，包括键盘创建、设置关联文本区、设置键盘模式（文本/数字/用户）、获取关联文本区等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* keyboard组件的metatable引用 */
+/* keyboardç»ä»¶çmetatableå¼ç¨ */
 static int keyboard_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_keyboard_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -47,12 +23,12 @@ static int lvgl_keyboard_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 键盘OO方法 ==================== */
+/* ==================== é®çOOæ¹æ³ ==================== */
 
 /*
-创建键盘控件(OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的键盘实�?
+åå»ºé®çæ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçé®çå®ä¾?
 @usage local kb = lvgl.keyboard.create(scr)
 */
 static int lvgl_keyboard_create(lua_State* L) {
@@ -60,9 +36,9 @@ static int lvgl_keyboard_create(lua_State* L) {
 }
 
 /*
-设置关联的文本区�?
-@param self 键盘实例或指�?
-@param ta 文本区域对象
+è®¾ç½®å³èçææ¬åºå?
+@param self é®çå®ä¾ææé?
+@param ta ææ¬åºåå¯¹è±¡
 @return self
 @usage kb:set_textarea(ta)
 */
@@ -75,9 +51,9 @@ static int lvgl_keyboard_set_textarea(lua_State* L) {
 }
 
 /*
-设置键盘模式
-@param self 键盘实例或指�?
-@param mode 键盘模式(lvgl.KEYBOARD_MODE_TEXT�?
+è®¾ç½®é®çæ¨¡å¼
+@param self é®çå®ä¾ææé?
+@param mode é®çæ¨¡å¼(lvgl.KEYBOARD_MODE_TEXTç­?
 @return self
 @usage kb:set_mode(lvgl.KEYBOARD_MODE_TEXT)
 */
@@ -90,8 +66,8 @@ static int lvgl_keyboard_set_mode(lua_State* L) {
 }
 
 /*
-设置键盘映射(暂未实现)
-@param self 键盘实例或指�?
+è®¾ç½®é®çæ å°(ææªå®ç°)
+@param self é®çå®ä¾ææé?
 @return self
 @usage kb:set_map(map)
 */
@@ -102,9 +78,9 @@ static int lvgl_keyboard_set_map(lua_State* L) {
 }
 
 /*
-获取关联的文本区�?
-@param self 键盘实例或指�?
-@return userdata 文本区域对象
+è·åå³èçææ¬åºå?
+@param self é®çå®ä¾ææé?
+@return userdata ææ¬åºåå¯¹è±¡
 @usage local ta = kb:get_textarea()
 */
 static int lvgl_keyboard_get_textarea(lua_State* L) {
@@ -115,9 +91,9 @@ static int lvgl_keyboard_get_textarea(lua_State* L) {
 }
 
 /*
-获取键盘模式
-@param self 键盘实例或指�?
-@return integer 键盘模式
+è·åé®çæ¨¡å¼
+@param self é®çå®ä¾ææé?
+@return integer é®çæ¨¡å¼
 @usage local mode = kb:get_mode()
 */
 static int lvgl_keyboard_get_mode(lua_State* L) {
@@ -127,22 +103,22 @@ static int lvgl_keyboard_get_mode(lua_State* L) {
     return 1;
 }
 
-/* 注册 keyboard 子模�?*/
+/* æ³¨å keyboard å­æ¨¡å?*/
 void lvgl_register_keyboard(lua_State* L) {
-    /* 创建组件方法�?用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "set_textarea", lvgl_keyboard_set_textarea);
     REG_METHOD(L, "set_mode", lvgl_keyboard_set_mode);
     REG_METHOD(L, "set_map", lvgl_keyboard_set_map);
     REG_METHOD(L, "get_textarea", lvgl_keyboard_get_textarea);
     REG_METHOD(L, "get_mode", lvgl_keyboard_get_mode);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     keyboard_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.keyboard.set_textarea(kb, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.keyboard.set_textarea(kb, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, keyboard_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -153,6 +129,6 @@ void lvgl_register_keyboard(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.keyboard) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.keyboard) */
     REG_METHOD(L, "create", lvgl_keyboard_create);
 }

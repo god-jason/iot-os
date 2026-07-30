@@ -1,8 +1,12 @@
 /**
  * @file http_url.h
- * @brief HTTP URL 解析与编码工具
+ * @brief HTTP URL 解析与编码工具接口
  *
- * 提供 URL 解析、URL 编码/解码等功能
+ * 提供 URL 解析（协议、主机、端口、路径、查询参数、锚点）、URL 编码/解码、
+ * 查询参数提取、URL 构建等工具接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_HTTP_URL_H
 #define IOT_HTTP_URL_H

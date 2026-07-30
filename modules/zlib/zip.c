@@ -1,6 +1,12 @@
 /**
  * @file zip.c
- * @brief ZIP 归档（miniz 封装）
+ * @brief ZIP 归档文件处理实现（miniz 封装）
+ *
+ * 基于 miniz 库实现 ZIP 格式的归档和解压功能
+ * 支持 ZIP 文件的压缩和解压操作，提供便捷的文件处理接口
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "zip.h"

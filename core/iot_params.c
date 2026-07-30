@@ -1,10 +1,13 @@
-/*
-@module  params
-@summary 参数列表操作
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file iot_params.c
+ * @brief 参数列表操作实现
+ *
+ * 本文件实现动态参数列表的创建、销毁、扩容、添加（nil/bool/int/number/string/ptr）
+ * 以及将参数列表转换为Lua table的功能，用于异步消息传递时的参数打包。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "iot_base.h"
 #include "iot_params.h"

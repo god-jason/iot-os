@@ -1,47 +1,12 @@
-/*
-@module  lvgl.canvas
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local canvas = lvgl.canvas.create(scr)
-canvas:set_size(200, 200)
-canvas:set_pos(50, 50)
-
--- ?????????????
--- canvas:set_buffer(buf, 200, 200, LV_CF_TRUE_COLOR)
-
--- ??????
-canvas:set_px_color(10, 10, 0xFF0000)
-
--- ????
-canvas:fill_bg(0xFFFFFF, 255)
-
--- ????
-canvas:draw_rect(10, 10, 50, 50, style)
-
--- ????
-canvas:draw_circle(100, 100, 30, style)
-
--- ????
-canvas:draw_line({{0,0}, {100,100}}, style)
-
--- ????
-canvas:draw_arc(100, 100, 50, 0, 90, style)
-
--- ????
-canvas:draw_text(10, 10, 100, style, "Hello")
-
--- ????
-local c = lvgl.canvas.create(scr):set_size(150, 150):set_pos(80, 30)
-*/
+/**
+ * @file lvgl_canvas.c
+ * @brief LVGL画布控件
+ *
+ * 实现LVGL画布控件的OO风格Lua绑定，包括画布创建、设置缓冲区、设置像素颜色、填充背景、绘制矩形/圆形/线条/弧形/文本等图元，支持样式属性转换。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

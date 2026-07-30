@@ -1,6 +1,12 @@
 /**
  * @file gzip.c
- * @brief GZIP 压缩/解压（miniz 封装）
+ * @brief GZIP 压缩/解压实现（miniz 封装）
+ *
+ * 基于 miniz 库实现 GZIP 格式的压缩和解压功能
+ * 支持 GZIP 数据的内存压缩/解压和文件压缩/解压操作
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include "gzip.h"

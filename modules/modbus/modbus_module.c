@@ -1,6 +1,13 @@
 /**
  * @file modbus_module.c
- * @brief Modbus RTU Lua 模块
+ * @brief Modbus RTU Lua 模块封装
+ *
+ * 实现 Modbus RTU 协议到 Lua 的接口封装
+ * 提供 CRC16 计算、帧构建、帧解析、数据解码等完整功能
+ * 支持线圈读写、寄存器读写、多字节数据类型转换等操作
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 
 #include <stddef.h>

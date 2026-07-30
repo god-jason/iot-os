@@ -1,42 +1,12 @@
-/*
-@module  lvgl.menu
-@summary LVGL????
-@version 2.0
-@date    2026.06.18
-@author  ?? & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua??(OO??)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- ????
-local menu = lvgl.menu.create(scr)
-menu:set_size(320, 240)
-menu:set_pos(0, 0)
-
--- ??????
-local main_page = menu:page_create(nil)
-menu:set_page(main_page)
-
--- ??????
-local item1 = main_page:add_item(nil, "??")
-local item2 = main_page:add_item(nil, "??")
-
--- ??????
-local settings_page = menu:page_create("??")
-settings_page:add_item(nil, "WiFi")
-settings_page:add_item(nil, "??")
-
--- ??????????
-item1:set_page(settings_page)
-
--- ??????
-local cur_page = menu:get_cur_page()
-
--- ????
-local m = lvgl.menu.create(scr):set_size(240, 320):set_pos(40, 10):set_title("????)
-*/
+/**
+ * @file lvgl_menu.c
+ * @brief LVGL菜单控件
+ *
+ * 实现LVGL菜单控件的OO风格Lua绑定，包括菜单创建、页面创建、添加菜单项、设置子页面、获取当前页面等接口，支持多级菜单导航。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"

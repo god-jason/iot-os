@@ -1,15 +1,15 @@
 /**
  * @file crypto.h
- * @brief 加密算法库
+ * @brief 加密算法库头文件
  *
- * 基于 GmSSL 封装常用加密算法，包括：
- * - 哈希算法: MD5, SHA1, SHA224, SHA256, SHA384, SHA512, SM3
- * - HMAC: 基于各种哈希算法的消息认证码
- * - 对称加密: AES, SM4 (ECB, CBC, CTR, GCM 模式)
- * - 编码转换: Hex, Base64
- * - 证书操作: X509 证书解析和验证
- * - 密钥派生: PBKDF2
- * - 随机数生成
+ * 基于 GmSSL 封装常用加密算法的接口声明，提供哈希算法
+ * (MD5、SHA1、SHA224、SHA256、SHA384、SHA512、SM3)、
+ * HMAC 消息认证码、对称加密(AES/SM4 的 ECB/CBC/CTR/GCM 模式)、
+ * Hex/Base64 编码转换、X509 证书解析与验证、PBKDF2 密钥派生
+ * 以及随机数生成等功能的 C 语言 API。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #ifndef IOT_CRYPTO_H
 #define IOT_CRYPTO_H

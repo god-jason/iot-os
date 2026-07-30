@@ -1,45 +1,20 @@
-/*
-@module  lvgl.img
-@summary LVGL图片控件
-@version 2.0
-@date    2026.06.18
-@author  杰神 & TRAE & ChatGPT
-@tag     Graphics
-@usage
--- Lua示例(OO风格)
-local lvgl = require("lvgl")
-local scr = lvgl.scr_act()
-
--- 创建图片控件
-local img = lvgl.img.create(scr)
-img:set_size(100, 100)
-img:set_pos(50, 50)
-img:set_src("/�?bin")
-
--- 图片变换
-img:set_zoom(200)      -- 放大2�?
-img:set_angle(900)    -- 旋转90�?
-img:set_pivot(50, 50) -- 设置旋转中心
-
--- 图片偏移(用于大图滚动)
-img:set_offset_x(0)
-img:set_offset_y(0)
-
--- 抗锯齿设�?
-img:set_antialias(true)
-img:set_size_mode(lvgl.IMG_SIZE_MODE_REAL)
-
--- 链式调用
-local img2 = lvgl.img.create(scr):set_pos(160, 50):set_size(80, 80):set_src("/图标.bin"):set_zoom(128)
-*/
+/**
+ * @file lvgl_img.c
+ * @brief LVGL图片控件
+ *
+ * 实现LVGL图片控件的OO风格Lua绑定，包括图片创建、设置图片源、设置缩放/旋转角度/旋转中心、设置偏移、设置抗锯齿、设置尺寸模式等接口。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* img组件的metatable引用 */
+/* imgç»ä»¶çmetatableå¼ç¨ */
 static int img_metatable_ref = LUA_NOREF;
 
-/* ==================== 内部创建函数 ==================== */
+/* ==================== åé¨åå»ºå½æ° ==================== */
 
 static int lvgl_img_create_internal(lua_State* L) {
     lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
@@ -48,12 +23,12 @@ static int lvgl_img_create_internal(lua_State* L) {
     return 1;
 }
 
-/* ==================== 图片OO方法 ==================== */
+/* ==================== å¾çOOæ¹æ³ ==================== */
 
 /*
-创建图片控件(OO风格)
-@param self 父对�?可�?
-@return userdata 带metatable的图片实�?
+åå»ºå¾çæ§ä»¶(OOé£æ ¼)
+@param self ç¶å¯¹è±?å¯é?
+@return userdata å¸¦metatableçå¾çå®ä¾?
 @usage local img = lvgl.img.create(scr)
 */
 static int lvgl_img_create(lua_State* L) {
@@ -61,11 +36,11 @@ static int lvgl_img_create(lua_State* L) {
 }
 
 /*
-设置图片�?
-@param self 图片实例或指�?
-@param src 图片路径或符号名�?
+è®¾ç½®å¾çæº?
+@param self å¾çå®ä¾ææé?
+@param src å¾çè·¯å¾æç¬¦å·åç§?
 @return self
-@usage img:set_src("/�?bin")
+@usage img:set_src("/ç©?bin")
 */
 static int lvgl_img_set_src(lua_State* L) {
     lv_obj_t* img = lvgl_get_obj_ptr(L, 1);
@@ -76,9 +51,9 @@ static int lvgl_img_set_src(lua_State* L) {
 }
 
 /*
-设置图片X轴偏�?
-@param self 图片实例或指�?
-@param offset X轴偏移量
+è®¾ç½®å¾çXè½´åç§?
+@param self å¾çå®ä¾ææé?
+@param offset Xè½´åç§»é
 @return self
 @usage img:set_offset_x(10)
 */
@@ -91,9 +66,9 @@ static int lvgl_img_set_offset_x(lua_State* L) {
 }
 
 /*
-设置图片Y轴偏�?
-@param self 图片实例或指�?
-@param offset Y轴偏移量
+è®¾ç½®å¾çYè½´åç§?
+@param self å¾çå®ä¾ææé?
+@param offset Yè½´åç§»é
 @return self
 @usage img:set_offset_y(10)
 */
@@ -106,11 +81,11 @@ static int lvgl_img_set_offset_y(lua_State* L) {
 }
 
 /*
-设置图片缩放
-@param self 图片实例或指�?
-@param zoom 缩放�?128=1�?256=2�?64=0.5�?
+è®¾ç½®å¾çç¼©æ¾
+@param self å¾çå®ä¾ææé?
+@param zoom ç¼©æ¾å?128=1å?256=2å?64=0.5å?
 @return self
-@usage img:set_zoom(128)  -- 原始大小
+@usage img:set_zoom(128)  -- åå§å¤§å°
 */
 static int lvgl_img_set_zoom(lua_State* L) {
     lv_obj_t* img = lvgl_get_obj_ptr(L, 1);
@@ -121,11 +96,11 @@ static int lvgl_img_set_zoom(lua_State* L) {
 }
 
 /*
-设置图片旋转角度
-@param self 图片实例或指�?
-@param angle 角度�?0-3600,实际为角�?10)
+è®¾ç½®å¾çæè½¬è§åº¦
+@param self å¾çå®ä¾ææé?
+@param angle è§åº¦å?0-3600,å®éä¸ºè§åº?10)
 @return self
-@usage img:set_angle(900)  -- 90�?
+@usage img:set_angle(900)  -- 90åº?
 */
 static int lvgl_img_set_angle(lua_State* L) {
     lv_obj_t* img = lvgl_get_obj_ptr(L, 1);
@@ -136,10 +111,10 @@ static int lvgl_img_set_angle(lua_State* L) {
 }
 
 /*
-设置图片旋转中心�?
-@param self 图片实例或指�?
-@param x 中心点X坐标
-@param y 中心点Y坐标
+è®¾ç½®å¾çæè½¬ä¸­å¿ç?
+@param self å¾çå®ä¾ææé?
+@param x ä¸­å¿ç¹Xåæ 
+@param y ä¸­å¿ç¹Yåæ 
 @return self
 @usage img:set_pivot(50, 50)
 */
@@ -153,9 +128,9 @@ static int lvgl_img_set_pivot(lua_State* L) {
 }
 
 /*
-设置抗锯�?
-@param self 图片实例或指�?
-@param en 是否启用抗锯�?
+è®¾ç½®æé¯é½?
+@param self å¾çå®ä¾ææé?
+@param en æ¯å¦å¯ç¨æé¯é½?
 @return self
 @usage img:set_antialias(true)
 */
@@ -168,9 +143,9 @@ static int lvgl_img_set_antialias(lua_State* L) {
 }
 
 /*
-设置图片尺寸模式
-@param self 图片实例或指�?
-@param mode 尺寸模式
+è®¾ç½®å¾çå°ºå¯¸æ¨¡å¼
+@param self å¾çå®ä¾ææé?
+@param mode å°ºå¯¸æ¨¡å¼
 @return self
 @usage img:set_size_mode(lvgl.IMG_SIZE_MODE_REAL)
 */
@@ -182,12 +157,12 @@ static int lvgl_img_set_size_mode(lua_State* L) {
     return 1;
 }
 
-/* 注册 img 子模�?*/
+/* æ³¨å img å­æ¨¡å?*/
 void lvgl_register_img(lua_State* L) {
-    /* 创建组件方法�?用于metatable继承) */
+    /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
-    /* 注册OO风格方法 */
+    /* æ³¨åOOé£æ ¼æ¹æ³ */
     REG_METHOD(L, "set_src", lvgl_img_set_src);
     REG_METHOD(L, "set_offset_x", lvgl_img_set_offset_x);
     REG_METHOD(L, "set_offset_y", lvgl_img_set_offset_y);
@@ -197,10 +172,10 @@ void lvgl_register_img(lua_State* L) {
     REG_METHOD(L, "set_antialias", lvgl_img_set_antialias);
     REG_METHOD(L, "set_size_mode", lvgl_img_set_size_mode);
 
-    /* 保存组件metatable引用(用于继承) */
+    /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     img_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    /* 将方法复制到组件子表(支持 lvgl.img.set_src(img, ...) 调用) */
+    /* å°æ¹æ³å¤å¶å°ç»ä»¶å­è¡¨(æ¯æ lvgl.img.set_src(img, ...) è°ç¨) */
     lua_rawgeti(L, LUA_REGISTRYINDEX, img_metatable_ref);
     lua_pushnil(L);
     while (lua_next(L, -2) != 0) {
@@ -211,6 +186,6 @@ void lvgl_register_img(lua_State* L) {
     }
     lua_pop(L, 1);
 
-    /* 注册create函数到主�?lvgl.img) */
+    /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.img) */
     REG_METHOD(L, "create", lvgl_img_create);
 }

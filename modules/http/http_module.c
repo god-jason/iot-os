@@ -31,6 +31,9 @@
  *       res:end("Hello World")
  *   end)
  *   server:listen()
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
  */
 #include <stddef.h>
 #include <stdint.h>

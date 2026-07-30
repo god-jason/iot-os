@@ -1,10 +1,14 @@
-/*
-@module  callback
-@summary 回调函数管理模块
-@version 1.0
-@date    2026.06.10
-@author  杰神 & TRAE & ChatGPT
-*/
+/**
+ * @file iot_callback.c
+ * @brief 回调函数管理模块实现
+ *
+ * 本文件实现Lua回调函数的保存、释放和调用功能，
+ * 通过Lua注册表（REGISTRYINDEX）保存回调引用，
+ * 支持C代码安全地调用Lua闭包函数。
+ *
+ * @author  杰神 & TRAE & ChatGPT
+ * @date    2026.06.10
+ */
 
 #include "iot_base.h"
 #include "iot_callback.h"
