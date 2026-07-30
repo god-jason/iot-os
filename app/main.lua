@@ -29,4 +29,5 @@ local ok, err = pcall(function()
 end)
 if not ok then
     log.error("tests", err)
+    os.exit(1)
 end

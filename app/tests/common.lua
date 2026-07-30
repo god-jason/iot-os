@@ -29,6 +29,7 @@ end
 function M.fail(name, detail)
     M.results[#M.results + 1] = { name = name, ok = false, detail = detail or "failed" }
     log.error("[FAIL]", name, detail or "")
+    error(detail or "failed")
 end
 
 function M.skip(name, detail)

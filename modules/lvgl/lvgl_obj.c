@@ -124,7 +124,7 @@ int lvgl_register_obj(lua_State* L) {
     while (lua_next(L, -2) != 0) {
         lua_pushvalue(L, -2);
         lua_insert(L, -2);
-        lua_setfield(L, -4, lua_tostring(L, -2));
+        lua_setfield(L, -5, lua_tostring(L, -2));
         lua_pop(L, 1);
     }
     lua_pop(L, 1);
