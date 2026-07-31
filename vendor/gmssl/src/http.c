@@ -108,7 +108,7 @@ int http_parse_response(char *buf, size_t buflen, uint8_t **content, size_t *con
 
 #define HTTP_GET_TEMPLATE "GET %s HTTP/1.1\r\n" "Host: %s\r\n" "\r\n\r\n"
 
-int http_get(const char *uri, uint8_t *buf, size_t *contentlen, size_t buflen)
+int gmssl_http_get(const char *uri, uint8_t *buf, size_t *contentlen, size_t buflen)
 {
 	int ret = -1;
 	char host[128];

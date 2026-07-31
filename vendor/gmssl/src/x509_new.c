@@ -144,7 +144,7 @@ int x509_crl_new_from_uri(uint8_t **crl, size_t *crl_len, const char *uri, size_
 	memcpy(uristr, uri, urilen);
 	uristr[urilen] = 0;
 
-	if (http_get(uristr, NULL, &buflen, 0) < 0) {
+	if (gmssl_http_get(uristr, NULL, &buflen, 0) < 0) {
 		error_print();
 		goto end;
 	}
@@ -156,7 +156,7 @@ int x509_crl_new_from_uri(uint8_t **crl, size_t *crl_len, const char *uri, size_
 		error_print();
 		goto end;
 	}
-	if (http_get(uristr, buf, &buflen, buflen) != 1) {
+	if (gmssl_http_get(uristr, buf, &buflen, buflen) != 1) {
 		error_print();
 		goto end;
 	}

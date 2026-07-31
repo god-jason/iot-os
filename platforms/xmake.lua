@@ -48,7 +48,7 @@ end
 if is_desktop_platform then
     add_deps("lua", "gmssl", "miniz", "iot_zlib", "lua-cjson")
     add_deps("iot_crypto", "iot_fs", "iot_http", "iot_mqtt", "iot_modbus", "iot_net", "iot_lvgl", "iot_fonts", "iot_filters", "iot_pack", "iot_wdt")
-    add_deps("iot_core", "drivers")
+    add_deps("iot_core", "drivers", "ai")
 
     -- 桌面平台引入 SDL2（供 LVGL 窗口驱动使用）
     if plat ~= "wasm" then
@@ -70,7 +70,7 @@ if is_desktop_platform then
     add_ldflags("-llua", "-lgmssl", "-llua-cjson",
         "-lminiz", "-liot_zlib", "-liot_crypto",
         "-liot_fs", "-liot_http", "-liot_mqtt", "-liot_modbus", "-liot_net", "-liot_lvgl", "-llvgl",
-        "-liot_fonts", "-liot_filters", "-liot_pack", "-liot_wdt", "-ldrivers", "-liot_core")
+        "-liot_fonts", "-liot_filters", "-liot_pack", "-liot_wdt", "-ldrivers", "-liot_core", "-lai")
     if plat == "windows" then
         -- SDL2 静态链接，系统库必须在 SDL2 之后
         add_ldflags("-Wl,-Bstatic", "-lSDL2", "-lSDL2main", "-Wl,-Bdynamic")
