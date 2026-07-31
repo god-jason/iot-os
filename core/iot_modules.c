@@ -42,6 +42,9 @@ extern int luaopen_modbus_register(lua_State* L);
 extern int luaopen_lvgl(lua_State* L);
 extern int luaopen_filters_register(lua_State* L);
 
+/* AI 模块 */
+extern void ai_modules_register(lua_State* L);
+
 /* Vendor 模块 */
 extern int luaopen_gmssl_register(lua_State* L);
 
@@ -160,6 +163,9 @@ void modules_register(lua_State* L)
 
     // 注册平台模块
     platform_modules_register(L);
+
+    /* 注册 AI 模块 (model, llm, stt, tts) */
+    ai_modules_register(L);
 
     LOG_DEBUG("Modules registered: success=%d, failed=%d", success_count, fail_count);
 }

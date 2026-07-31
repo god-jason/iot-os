@@ -14,7 +14,7 @@
 #include "http_client.h"
 #include "http_gzip.h"
 #include "http_url.h"
-#include "net.h"
+//#include "net.h"
 #include "iot.h"
 #include "iot_list.h"
 #include "iot_log.h"
