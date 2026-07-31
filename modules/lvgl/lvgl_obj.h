@@ -152,6 +152,10 @@ int lvgl_obj_add_event_cb(lua_State* L);
 int lvgl_obj_remove_event_cb(lua_State* L);
 /* 设置事件回调 */
 int lvgl_obj_set_event_cb(lua_State* L);
+/* 注册事件监听器(按事件名称) */
+int lvgl_obj_on(lua_State* L);
+/* 移除事件监听器 */
+int lvgl_obj_off(lua_State* L);
 
 /* 滚动操作 */
 int lvgl_obj_scroll_to_x(lua_State* L);

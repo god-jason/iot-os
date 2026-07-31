@@ -105,6 +105,8 @@ int lvgl_register_obj(lua_State* L) {
     REG_METHOD(L, "add_event_cb", lvgl_obj_add_event_cb);
     REG_METHOD(L, "remove_event_cb", lvgl_obj_remove_event_cb);
     REG_METHOD(L, "set_event_cb", lvgl_obj_set_event_cb);
+    REG_METHOD(L, "on", lvgl_obj_on);
+    REG_METHOD(L, "off", lvgl_obj_off);
 
     REG_METHOD(L, "scroll_to_x", lvgl_obj_scroll_to_x);
     REG_METHOD(L, "scroll_to_y", lvgl_obj_scroll_to_y);
@@ -491,6 +493,52 @@ int lvgl_obj_get_type(lua_State* L) {
 
 /* ==================== 事件回调相关 ==================== */
 
+/* 将事件名称字符串映射为LVGL事件码 */
+static lv_event_code_t lvgl_event_name_to_code(const char* name) {
+    if (!name) return LV_EVENT_ALL;
+
+    /* 按压相关 */
+    if (strcmp(name, "press") == 0) return LV_EVENT_PRESSED;
+    if (strcmp(name, "pressing") == 0) return LV_EVENT_PRESSING;
+    if (strcmp(name, "press_lost") == 0) return LV_EVENT_PRESS_LOST;
+    if (strcmp(name, "click") == 0) return LV_EVENT_CLICKED;
+    if (strcmp(name, "long_press") == 0) return LV_EVENT_LONG_PRESSED;
+    if (strcmp(name, "long_press_repeat") == 0) return LV_EVENT_LONG_PRESSED_REPEAT;
+    if (strcmp(name, "release") == 0) return LV_EVENT_RELEASED;
+
+    /* 滚动相关 */
+    if (strcmp(name, "scroll") == 0) return LV_EVENT_SCROLL;
+    if (strcmp(name, "scroll_begin") == 0) return LV_EVENT_SCROLL_BEGIN;
+    if (strcmp(name, "scroll_end") == 0) return LV_EVENT_SCROLL_END;
+
+    /* 通用事件 */
+    if (strcmp(name, "change") == 0) return LV_EVENT_VALUE_CHANGED;
+    if (strcmp(name, "insert") == 0) return LV_EVENT_INSERT;
+    if (strcmp(name, "refresh") == 0) return LV_EVENT_REFRESH;
+    if (strcmp(name, "ready") == 0) return LV_EVENT_READY;
+    if (strcmp(name, "cancel") == 0) return LV_EVENT_CANCEL;
+    if (strcmp(name, "delete") == 0) return LV_EVENT_DELETE;
+    if (strcmp(name, "resize") == 0) return LV_EVENT_SIZE_CHANGED;
+
+    /* 焦点相关 */
+    if (strcmp(name, "focus") == 0) return LV_EVENT_FOCUSED;
+    if (strcmp(name, "defocus") == 0) return LV_EVENT_DEFOCUSED;
+    if (strcmp(name, "leave") == 0) return LV_EVENT_LEAVE;
+
+    /* 按键相关 */
+    if (strcmp(name, "key") == 0) return LV_EVENT_KEY;
+    if (strcmp(name, "enter") == 0) return LV_EVENT_KEY;
+    if (strcmp(name, "focus_key") == 0) return LV_EVENT_FOCUS_KEY;
+
+    /* 手势 */
+    if (strcmp(name, "gesture") == 0) return LV_EVENT_GESTURE;
+
+    /* 所有事件 */
+    if (strcmp(name, "all") == 0) return LV_EVENT_ALL;
+
+    return LV_EVENT_ALL;
+}
+
 static void lvgl_event_handler(lv_event_t* e) {
     void* ud = lv_event_get_user_data(e);
     if (!ud) return;
@@ -562,6 +610,56 @@ int lvgl_obj_set_event_cb(lua_State* L) {
     }
 
     lv_obj_add_event_cb(obj, lvgl_event_handler, LV_EVENT_ALL, ud);
+
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+注册事件监听器(按事件名称)
+@param self 对象实例或指针
+@param event_name 事件名称: press/pressing/press_lost/click/long_press/long_press_repeat/release/scroll/scroll_begin/scroll_end/change/insert/refresh/ready/cancel/delete/resize/focus/defocus/leave/key/enter/focus_key/gesture/all
+@param callback 回调函数 function(e, code, target, current_target)
+@return lightuserdata callback_id(用于off移除回调)
+@usage local id = btn:on("click", function(e, code) ... end)
+*/
+int lvgl_obj_on(lua_State* L) {
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    const char* event_name = luaL_checkstring(L, 2);
+    if (!lua_isfunction(L, 3)) {
+        luaL_error(L, "event callback must be a function");
+        return 0;
+    }
+
+    lv_event_code_t event_code = lvgl_event_name_to_code(event_name);
+
+    void* ud = iot_callback_save(L, 3);
+    if (!ud) {
+        luaL_error(L, "failed to save callback");
+        return 0;
+    }
+
+    lv_obj_add_event_cb(obj, lvgl_event_handler, event_code, ud);
+
+    lua_pushlightuserdata(L, ud);
+    return 1;
+}
+
+/*
+移除事件监听器
+@param self 对象实例或指针
+@param callback_id on返回的callback_id(lightuserdata)
+@return self
+@usage btn:off(id)
+*/
+int lvgl_obj_off(lua_State* L) {
+    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    void* ud = (void*)lua_touserdata(L, 2);
+
+    if (ud) {
+        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, ud);
+        iot_callback_free(ud);
+    }
 
     lua_pushvalue(L, 1);
     return 1;
