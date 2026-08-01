@@ -11,18 +11,18 @@
 
 #include "filters.h"
 
-int filter_ema_init(filter_ema_t* f, float alpha)
+int iot_filter_ema_init(iot_filter_ema_t* f, float alpha)
 {
-    if (!f || alpha < 0.0f || alpha > 1.0f) return FILTER_ERR;
+    if (!f || alpha < 0.0f || alpha > 1.0f) return IOT_FILTER_ERR;
     f->alpha       = alpha;
     f->value       = 0.0f;
     f->initialized = false;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_ema_update(filter_ema_t* f, float input, float* output)
+int iot_filter_ema_update(iot_filter_ema_t* f, float input, float* output)
 {
-    if (!f || !output) return FILTER_ERR;
+    if (!f || !output) return IOT_FILTER_ERR;
 
     if (!f->initialized) {
         f->value       = input;
@@ -31,17 +31,17 @@ int filter_ema_update(filter_ema_t* f, float input, float* output)
         f->value = f->alpha * input + (1.0f - f->alpha) * f->value;
     }
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_ema_get(const filter_ema_t* f, float* output)
+int iot_filter_ema_get(const iot_filter_ema_t* f, float* output)
 {
-    if (!f || !output || !f->initialized) return FILTER_ERR;
+    if (!f || !output || !f->initialized) return IOT_FILTER_ERR;
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_ema_reset(filter_ema_t* f)
+void iot_filter_ema_reset(iot_filter_ema_t* f)
 {
     if (f) {
         f->value       = 0.0f;

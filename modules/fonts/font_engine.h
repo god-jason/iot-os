@@ -11,8 +11,8 @@
  * @date    2026.06.10
  */
 
-#ifndef __FONT_ENGINE_H__
-#define __FONT_ENGINE_H__
+#ifndef __IOT_FONT_ENGINE_H__
+#define __IOT_FONT_ENGINE_H__
 
 #include <stdint.h>
 #include <stddef.h>
@@ -23,58 +23,58 @@ extern "C" {
 #endif
 
 typedef struct {
-    const font_info_t* font;        /* 当前字体 */
+    const iot_font_info_t* font;        /* 当前字体 */
     uint32_t color;                 /* 字体颜色 */
     uint32_t bg_color;              /* 背景颜色 */
     int spacing;                    /* 字符间距 */
     int line_height;                /* 行高 */
     uint8_t antialias;              /* 抗锯齿标志 */
-} font_engine_t;
+} iot_font_engine_t;
 
 /****************************************************************************
  * 初始化/销毁函数
  ****************************************************************************/
 
-font_engine_t* font_engine_create(void);
-void font_engine_destroy(font_engine_t* engine);
+iot_font_engine_t* iot_font_engine_create(void);
+void iot_font_engine_destroy(iot_font_engine_t* engine);
 
 /****************************************************************************
  * 字体设置函数
  ****************************************************************************/
 
-int font_engine_set_font(font_engine_t* engine, const font_info_t* font);
-int font_engine_set_font_by_name(font_engine_t* engine, const char* name);
-int font_engine_set_color(font_engine_t* engine, uint32_t color);
-int font_engine_set_bg_color(font_engine_t* engine, uint32_t bg_color);
-int font_engine_set_spacing(font_engine_t* engine, int spacing);
-int font_engine_set_line_height(font_engine_t* engine, int line_height);
+int iot_font_engine_set_font(iot_font_engine_t* engine, const iot_font_info_t* font);
+int iot_font_engine_set_font_by_name(iot_font_engine_t* engine, const char* name);
+int iot_font_engine_set_color(iot_font_engine_t* engine, uint32_t color);
+int iot_font_engine_set_bg_color(iot_font_engine_t* engine, uint32_t bg_color);
+int iot_font_engine_set_spacing(iot_font_engine_t* engine, int spacing);
+int iot_font_engine_set_line_height(iot_font_engine_t* engine, int line_height);
 
 /****************************************************************************
  * 文字测量函数
  ****************************************************************************/
 
-int font_engine_measure_char(font_engine_t* engine, uint32_t ch, int* width, int* height);
-int font_engine_measure_string(font_engine_t* engine, const char* str, int* width, int* height);
-int font_engine_measure_string_len(font_engine_t* engine, const char* str, size_t len, int* width, int* height);
+int iot_font_engine_measure_char(iot_font_engine_t* engine, uint32_t ch, int* width, int* height);
+int iot_font_engine_measure_string(iot_font_engine_t* engine, const char* str, int* width, int* height);
+int iot_font_engine_measure_string_len(iot_font_engine_t* engine, const char* str, size_t len, int* width, int* height);
 
 /****************************************************************************
  * 文字渲染函数
  ****************************************************************************/
 
-int font_engine_render_char(font_engine_t* engine, uint32_t ch, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
-int font_engine_render_string(font_engine_t* engine, const char* str, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
-int font_engine_render_string_len(font_engine_t* engine, const char* str, size_t len, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
+int iot_font_engine_render_char(iot_font_engine_t* engine, uint32_t ch, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
+int iot_font_engine_render_string(iot_font_engine_t* engine, const char* str, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
+int iot_font_engine_render_string_len(iot_font_engine_t* engine, const char* str, size_t len, uint8_t* buffer, int buf_width, int buf_height, int x, int y);
 
 /****************************************************************************
  * 字体管理函数
  ****************************************************************************/
 
-const font_info_t* font_engine_get_font(font_engine_t* engine);
-const font_info_t* font_find_by_name(const char* name);
-void font_list_all(const font_info_t*** fonts, int* count);
+const iot_font_info_t* iot_font_engine_get_font(iot_font_engine_t* engine);
+const iot_font_info_t* iot_font_find_by_name(const char* name);
+void iot_font_list_all(const iot_font_info_t*** fonts, int* count);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __FONT_ENGINE_H__ */
+#endif /* __IOT_FONT_ENGINE_H__ */

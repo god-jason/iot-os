@@ -1,5 +1,5 @@
-/**
- * @file lvgl_port.h
+﻿/**
+ * @file iot_lvgl_port.h
  * @brief LVGL端口层头文件
  *
  * 定义LVGL与IoT系统的端口层接口，包括内存管理宏映射（cm_malloc/cfree映射到iot_malloc/iot_free）、LVGL 7布局常量兼容定义、按钮辅助函数（文本设置/获取/状态切换）等，为LVGL 8 API提供向后兼容支持。
@@ -8,8 +8,8 @@
  * @date    2026.06.10
  */
 
-#ifndef LVGL_PORT_H
-#define LVGL_PORT_H
+#ifndef IOT_LVGL_PORT_H
+#define IOT_LVGL_PORT_H
 
 #include "iot.h"
 
@@ -40,9 +40,9 @@
 #endif
 
 /* LVGL 7 button helpers (LVGL 8 compatibility) */
-typedef lv_state_t lv_btn_state_t;
+typedef lv_state_t iot_lv_btn_state_t;
 
-static inline lv_obj_t* lvgl_btn_find_label(lv_obj_t* btn)
+static inline lv_obj_t* iot_lvgl_btn_find_label(lv_obj_t* btn)
 {
     uint32_t i;
     uint32_t cnt = lv_obj_get_child_cnt(btn);
@@ -55,9 +55,9 @@ static inline lv_obj_t* lvgl_btn_find_label(lv_obj_t* btn)
     return NULL;
 }
 
-static inline void lv_btn_set_text(lv_obj_t* btn, const char* text)
+static inline void iot_lv_btn_set_text(lv_obj_t* btn, const char* text)
 {
-    lv_obj_t* label = lvgl_btn_find_label(btn);
+    lv_obj_t* label = iot_lvgl_btn_find_label(btn);
     if (!label) {
         label = lv_label_create(btn);
         lv_obj_center(label);
@@ -65,23 +65,23 @@ static inline void lv_btn_set_text(lv_obj_t* btn, const char* text)
     lv_label_set_text(label, text);
 }
 
-static inline const char* lv_btn_get_text(lv_obj_t* btn)
+static inline const char* iot_lv_btn_get_text(lv_obj_t* btn)
 {
-    lv_obj_t* label = lvgl_btn_find_label(btn);
+    lv_obj_t* label = iot_lvgl_btn_find_label(btn);
     return label ? lv_label_get_text(label) : "";
 }
 
-static inline void lv_btn_set_state(lv_obj_t* btn, lv_btn_state_t state)
+static inline void iot_lv_btn_set_state(lv_obj_t* btn, iot_lv_btn_state_t state)
 {
     lv_obj_add_state(btn, state);
 }
 
-static inline lv_btn_state_t lv_btn_get_state(lv_obj_t* btn)
+static inline iot_lv_btn_state_t iot_lv_btn_get_state(lv_obj_t* btn)
 {
     return lv_obj_get_state(btn);
 }
 
-static inline void lv_btn_toggle(lv_obj_t* btn)
+static inline void iot_lv_btn_toggle(lv_obj_t* btn)
 {
     if (lv_obj_has_state(btn, LV_STATE_CHECKED)) {
         lv_obj_clear_state(btn, LV_STATE_CHECKED);
@@ -90,7 +90,7 @@ static inline void lv_btn_toggle(lv_obj_t* btn)
     }
 }
 
-static inline void lv_btn_set_checkable(lv_obj_t* btn, bool en)
+static inline void iot_lv_btn_set_checkable(lv_obj_t* btn, bool en)
 {
     if (en) {
         lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
@@ -99,13 +99,13 @@ static inline void lv_btn_set_checkable(lv_obj_t* btn, bool en)
     }
 }
 
-static inline void lv_btn_set_layout(lv_obj_t* btn, uint32_t layout)
+static inline void iot_lv_btn_set_layout(lv_obj_t* btn, uint32_t layout)
 {
     lv_obj_set_layout(btn, layout);
 }
 
 /* LVGL 7 input device helper (LVGL 8 compatibility) */
-static inline lv_indev_t* lv_indev_get_default(void)
+static inline lv_indev_t* iot_lv_indev_get_default(void)
 {
     return lv_indev_get_next(NULL);
 }
@@ -116,9 +116,9 @@ static inline lv_indev_t* lv_indev_get_default(void)
 #define LV_CHECKBOX_STATE_DISABLED        LV_STATE_DISABLED
 #define LV_CHECKBOX_STATE_INDETERMINATE   0
 
-typedef lv_state_t lv_checkbox_state_t;
+typedef lv_state_t iot_lv_checkbox_state_t;
 
-static inline void lv_checkbox_set_checked(lv_obj_t* obj, bool checked)
+static inline void iot_lv_checkbox_set_checked(lv_obj_t* obj, bool checked)
 {
     if (checked) {
         lv_obj_add_state(obj, LV_STATE_CHECKED);
@@ -127,12 +127,12 @@ static inline void lv_checkbox_set_checked(lv_obj_t* obj, bool checked)
     }
 }
 
-static inline bool lv_checkbox_is_checked(const lv_obj_t* obj)
+static inline bool iot_lv_checkbox_is_checked(const lv_obj_t* obj)
 {
     return lv_obj_has_state(obj, LV_STATE_CHECKED);
 }
 
-static inline void lv_checkbox_set_state(lv_obj_t* obj, lv_checkbox_state_t state)
+static inline void iot_lv_checkbox_set_state(lv_obj_t* obj, iot_lv_checkbox_state_t state)
 {
     lv_obj_clear_state(obj, LV_STATE_CHECKED | LV_STATE_DISABLED);
     if (state & LV_STATE_CHECKED) {
@@ -143,7 +143,7 @@ static inline void lv_checkbox_set_state(lv_obj_t* obj, lv_checkbox_state_t stat
     }
 }
 
-static inline lv_checkbox_state_t lv_checkbox_get_state(const lv_obj_t* obj)
+static inline iot_lv_checkbox_state_t iot_lv_checkbox_get_state(const lv_obj_t* obj)
 {
     lv_state_t state = lv_obj_get_state(obj);
     if (state & LV_STATE_DISABLED) {
@@ -156,7 +156,7 @@ static inline lv_checkbox_state_t lv_checkbox_get_state(const lv_obj_t* obj)
 }
 
 /* LVGL 7 switch helpers (LVGL 8 compatibility) */
-static inline void lvgl_switch_apply_state(lv_obj_t* sw, bool checked, lv_anim_enable_t anim)
+static inline void iot_lvgl_switch_apply_state(lv_obj_t* sw, bool checked, lv_anim_enable_t anim)
 {
     uint32_t anim_time = lv_obj_get_style_anim_time(sw, LV_PART_MAIN);
     if (anim == LV_ANIM_OFF) {
@@ -172,22 +172,22 @@ static inline void lvgl_switch_apply_state(lv_obj_t* sw, bool checked, lv_anim_e
     }
 }
 
-static inline void lv_switch_on(lv_obj_t* sw, lv_anim_enable_t anim)
+static inline void iot_lv_switch_on(lv_obj_t* sw, lv_anim_enable_t anim)
 {
-    lvgl_switch_apply_state(sw, true, anim);
+    iot_lvgl_switch_apply_state(sw, true, anim);
 }
 
-static inline void lv_switch_off(lv_obj_t* sw, lv_anim_enable_t anim)
+static inline void iot_lv_switch_off(lv_obj_t* sw, lv_anim_enable_t anim)
 {
-    lvgl_switch_apply_state(sw, false, anim);
+    iot_lvgl_switch_apply_state(sw, false, anim);
 }
 
-static inline void lv_switch_toggle(lv_obj_t* sw, lv_anim_enable_t anim)
+static inline void iot_lv_switch_toggle(lv_obj_t* sw, lv_anim_enable_t anim)
 {
-    lvgl_switch_apply_state(sw, !lv_obj_has_state(sw, LV_STATE_CHECKED), anim);
+    iot_lvgl_switch_apply_state(sw, !lv_obj_has_state(sw, LV_STATE_CHECKED), anim);
 }
 
-static inline bool lv_switch_get_state(const lv_obj_t* sw)
+static inline bool iot_lv_switch_get_state(const lv_obj_t* sw)
 {
     return lv_obj_has_state(sw, LV_STATE_CHECKED);
 }
@@ -274,4 +274,4 @@ static inline bool lv_switch_get_state(const lv_obj_t* sw)
 #define LV_THEME_SIZE_SLIDER_HEIGHT     2
 #endif
 
-#endif /* LVGL_PORT_H */
+#endif /* IOT_LVGL_PORT_H */

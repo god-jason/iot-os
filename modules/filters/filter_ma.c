@@ -13,24 +13,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-int filter_ma_init(filter_ma_t* f, int window)
+int iot_filter_ma_init(iot_filter_ma_t* f, int window)
 {
-    if (!f || window < 2) return FILTER_ERR;
+    if (!f || window < 2) return IOT_FILTER_ERR;
 
     f->buffer = (float*)calloc((size_t)window, sizeof(float));
-    if (!f->buffer) return FILTER_ERR;
+    if (!f->buffer) return IOT_FILTER_ERR;
 
     f->size      = window;
     f->index     = 0;
     f->count     = 0;
     f->sum       = 0.0f;
     f->need_free = true;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_ma_update(filter_ma_t* f, float input, float* output)
+int iot_filter_ma_update(iot_filter_ma_t* f, float input, float* output)
 {
-    if (!f || !f->buffer || !output) return FILTER_ERR;
+    if (!f || !f->buffer || !output) return IOT_FILTER_ERR;
 
     /* 窗口未满：追加 */
     if (f->count < f->size) {
@@ -38,7 +38,7 @@ int filter_ma_update(filter_ma_t* f, float input, float* output)
         f->sum   += input;
         f->count++;
         *output   = f->sum / (float)f->count;
-        return FILTER_OK;
+        return IOT_FILTER_OK;
     }
 
     /* 窗口已满：滚动 */
@@ -48,17 +48,17 @@ int filter_ma_update(filter_ma_t* f, float input, float* output)
 
     f->index = (f->index + 1) % f->size;
     *output  = f->sum / (float)f->size;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_ma_get(const filter_ma_t* f, float* output)
+int iot_filter_ma_get(const iot_filter_ma_t* f, float* output)
 {
-    if (!f || !output || !f->buffer || f->count == 0) return FILTER_ERR;
+    if (!f || !output || !f->buffer || f->count == 0) return IOT_FILTER_ERR;
     *output = f->sum / (float)f->count;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_ma_reset(filter_ma_t* f)
+void iot_filter_ma_reset(iot_filter_ma_t* f)
 {
     if (!f || !f->buffer) return;
     memset(f->buffer, 0, (size_t)f->size * sizeof(float));
@@ -67,7 +67,7 @@ void filter_ma_reset(filter_ma_t* f)
     f->sum   = 0.0f;
 }
 
-void filter_ma_deinit(filter_ma_t* f)
+void iot_filter_ma_deinit(iot_filter_ma_t* f)
 {
     if (!f) return;
     if (f->buffer && f->need_free) {

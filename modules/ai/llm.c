@@ -6,7 +6,7 @@
  *
  * 架构:
  *   1. 请求构建: JSON 消息体手动拼接 (避免对外部 JSON 库的依赖)
- *   2. HTTP 通信: 通过 http_client.h 提供的 http_post 接口
+ *   2. HTTP 通信: 通过 http_client.h 提供的 iot_http_post 接口
  *   3. 响应解析: 简单的字符串解析提取 content / tool_calls
  *   4. 异步: 参考 http_client 的任务回调模型，在工作线程中执行
  *   5. 流式: 解析 SSE (Server-Sent Events) 数据流
@@ -36,7 +36,7 @@
 #define LLM_DEFAULT_TIMEOUT_MS   30000
 #define LLM_DEFAULT_MAX_TOKENS   1024
 #define LLM_DEFAULT_TEMPERATURE  0.7f
-#define LLM_JSON_BUF_SIZE        8192
+#define IOT_LLM_JSON_BUF_SIZE        8192
 #define LLM_RESP_BUF_SIZE        16384
 #define LLM_MAX_CONV_TURNS       20
 
@@ -126,11 +126,11 @@ static int json_builder_append_string(json_builder_t* jb, const char* str)
  *===========================================================*/
 
 typedef struct {
-    llm_role_t role;
+    iot_llm_message_role_t role;
     char*      content;
 } conv_turn_t;
 
-struct llm_conversation_ctx {
+struct iot_llm_conversation_ctx {
     conv_turn_t turns[LLM_MAX_CONV_TURNS];
     int         turn_count;
     int         max_turns;
@@ -141,7 +141,7 @@ struct llm_conversation_ctx {
  * 客户端结构定义
  *===========================================================*/
 
-struct llm_client_ctx {
+struct iot_llm_client_ctx {
     char    base_url[256];
     char    api_key[128];
     char    model[64];
@@ -158,14 +158,14 @@ struct llm_client_ctx {
  * 角色名称
  *===========================================================*/
 
-const char* llm_role_name(llm_role_t role)
+const char* llm_role_name(iot_llm_message_role_t role)
 {
     static const char* names[] = { "system", "user", "assistant", "tool" };
-    if (role > LLM_ROLE_TOOL) return "unknown";
+    if (role > IOT_LLM_ROLE_TOOL) return "unknown";
     return names[role];
 }
 
-int llm_message_to_json(llm_role_t role, const char* content,
+int iot_llm_message_to_json(iot_llm_message_role_t role, const char* content,
                          char* buf, size_t bufsize)
 {
     if (!buf || bufsize == 0) return -1;
@@ -241,11 +241,11 @@ static int json_extract_int(const char* json, const char* key, int default_val)
  * 请求构建
  *===========================================================*/
 
-static char* llm_build_request_body(llm_client_t* client,
+static char* iot_llm_build_request_body(iot_llm_client_t* client,
                                      const char* messages_json,
-                                     const llm_tool_t* tools, int tool_count)
+                                     const iot_llm_tool_t* tools, int tool_count)
 {
-    json_builder_t* jb = json_builder_create(LLM_JSON_BUF_SIZE);
+    json_builder_t* jb = json_builder_create(IOT_LLM_JSON_BUF_SIZE);
     if (!jb) return NULL;
 
     json_builder_append(jb, "{");
@@ -267,7 +267,7 @@ static char* llm_build_request_body(llm_client_t* client,
         json_builder_append(jb, "\"top_p\":%.2f,", client->top_p);
     }
 
-    /* stream (默认不流式, 流式由 llm_chat_stream 单独处理) */
+    /* stream (默认不流式, 流式由 iot_llm_chat_stream 单独处理) */
     json_builder_append(jb, "\"stream\":false,");
 
     /* JSON mode */
@@ -310,8 +310,8 @@ static char* llm_build_request_body(llm_client_t* client,
  * 请求执行
  *===========================================================*/
 
-static int llm_execute_request(llm_client_t* client, const char* body,
-                                http_response_t* http_resp)
+static int iot_llm_execute_request(iot_llm_client_t* client, const char* body,
+                                iot_http_response_t* http_resp)
 {
     if (!client || !body || !http_resp) return -1;
 
@@ -327,7 +327,7 @@ static int llm_execute_request(llm_client_t* client, const char* body,
     LOG_DEBUG("llm", "POST => %s (model=%s)", url, client->model);
     LOG_DEBUG("llm", "Request body: %.*s...", 300, body);
 
-    int result = http_post(url, body, strlen(body),
+    int result = iot_http_post(url, body, strlen(body),
                            "application/json", http_resp);
 
     if (result != 0 || http_resp->error) {
@@ -345,12 +345,12 @@ static int llm_execute_request(llm_client_t* client, const char* body,
  * 响应解析
  *===========================================================*/
 
-static void llm_parse_response(const http_response_t* http_resp,
-                                llm_response_t* response)
+static void iot_llm_parse_response(const iot_http_response_t* http_resp,
+                                iot_llm_response_t* response)
 {
     if (!http_resp || !response) return;
 
-    memset(response, 0, sizeof(llm_response_t));
+    memset(response, 0, sizeof(iot_llm_response_t));
     response->status_code = http_resp->status_code;
 
     /* 检查 HTTP 状态码 */
@@ -427,9 +427,9 @@ static void llm_parse_response(const http_response_t* http_resp,
  * 公共 API - 客户端管理
  *===========================================================*/
 
-static llm_config_t default_cfg;
+static iot_llm_config_t default_cfg;
 
-const llm_config_t* llm_default_config(const char* api_key, const char* model)
+const iot_llm_config_t* llm_default_config(const char* api_key, const char* model)
 {
     memset(&default_cfg, 0, sizeof(default_cfg));
     default_cfg.api_key      = (char*)api_key;
@@ -443,12 +443,12 @@ const llm_config_t* llm_default_config(const char* api_key, const char* model)
     return &default_cfg;
 }
 
-llm_client_t* llm_client_create(const llm_config_t* config)
+iot_llm_client_t* iot_llm_client_create(const iot_llm_config_t* config)
 {
     if (!config || !config->api_key || !config->model)
         return NULL;
 
-    llm_client_t* client = (llm_client_t*)calloc(1, sizeof(llm_client_t));
+    iot_llm_client_t* client = (iot_llm_client_t*)calloc(1, sizeof(iot_llm_client_t));
     if (!client) return NULL;
 
     strncpy(client->base_url, config->base_url ? config->base_url
@@ -470,7 +470,7 @@ llm_client_t* llm_client_create(const llm_config_t* config)
     return client;
 }
 
-int llm_client_set_config(llm_client_t* client, const llm_config_t* config)
+int iot_llm_client_set_config(iot_llm_client_t* client, const iot_llm_config_t* config)
 {
     if (!client || !config) return -1;
 
@@ -496,7 +496,7 @@ int llm_client_set_config(llm_client_t* client, const llm_config_t* config)
     return 0;
 }
 
-void llm_client_free(llm_client_t* client)
+void iot_llm_client_free(iot_llm_client_t* client)
 {
     if (!client) return;
     free(client->json_schema);
@@ -504,24 +504,24 @@ void llm_client_free(llm_client_t* client)
     free(client);
 }
 
-int llm_client_list_models(llm_client_t* client, char** models_json)
+int iot_llm_client_list_models(iot_llm_client_t* client, char** models_json)
 {
     if (!client || !models_json) return -1;
 
     char url[512];
     snprintf(url, sizeof(url), "%s/models", client->base_url);
 
-    http_response_t http_resp;
+    iot_http_response_t http_resp;
     memset(&http_resp, 0, sizeof(http_resp));
 
-    int result = http_get(url, &http_resp);
+    int result = iot_http_get(url, &http_resp);
     if (result != 0 || !http_resp.body) {
-        http_response_free(&http_resp);
+        iot_http_response_free(&http_resp);
         return -1;
     }
 
     *models_json = iot_strdup(http_resp.body);
-    http_response_free(&http_resp);
+    iot_http_response_free(&http_resp);
     return (*models_json) ? 0 : -1;
 }
 
@@ -529,9 +529,9 @@ int llm_client_list_models(llm_client_t* client, char** models_json)
  * 公共 API - 对话管理
  *===========================================================*/
 
-llm_conversation_t* llm_conversation_create(int max_turns)
+iot_llm_conversation_t* iot_llm_conversation_create(int max_turns)
 {
-    llm_conversation_t* conv = (llm_conversation_t*)calloc(1, sizeof(llm_conversation_t));
+    iot_llm_conversation_t* conv = (iot_llm_conversation_t*)calloc(1, sizeof(iot_llm_conversation_t));
     if (!conv) return NULL;
 
     conv->max_turns = (max_turns > 0 && max_turns <= LLM_MAX_CONV_TURNS)
@@ -540,7 +540,7 @@ llm_conversation_t* llm_conversation_create(int max_turns)
     return conv;
 }
 
-int llm_conversation_add(llm_conversation_t* conv, llm_role_t role,
+int iot_llm_conversation_add(iot_llm_conversation_t* conv, iot_llm_message_role_t role,
                           const char* content)
 {
     if (!conv || !content) return -1;
@@ -548,7 +548,7 @@ int llm_conversation_add(llm_conversation_t* conv, llm_role_t role,
     /* 如果已达上限，移除最早的非 system 消息 */
     if (conv->turn_count >= conv->max_turns) {
         int remove_at = 0;
-        if (conv->turns[0].role == LLM_ROLE_SYSTEM) remove_at = 1;
+        if (conv->turns[0].role == IOT_LLM_ROLE_SYSTEM) remove_at = 1;
 
         free(conv->turns[remove_at].content);
         memmove(&conv->turns[remove_at], &conv->turns[remove_at + 1],
@@ -563,20 +563,20 @@ int llm_conversation_add(llm_conversation_t* conv, llm_role_t role,
     return 0;
 }
 
-const char* llm_conversation_get_messages_json(llm_conversation_t* conv,
+const char* iot_llm_conversation_get_messages_json(iot_llm_conversation_t* conv,
                                                 bool include_system)
 {
     if (!conv) return NULL;
 
     /* 使用静态缓冲区 (内部接口, 调用者不可长期持有) */
-    static char buf[LLM_JSON_BUF_SIZE];
+    static char buf[IOT_LLM_JSON_BUF_SIZE];
     int offset = 0;
 
     offset += snprintf(buf + offset, sizeof(buf) - offset, "[");
     int first = 1;
 
     for (int i = 0; i < conv->turn_count; i++) {
-        if (!include_system && conv->turns[i].role == LLM_ROLE_SYSTEM)
+        if (!include_system && conv->turns[i].role == IOT_LLM_ROLE_SYSTEM)
             continue;
 
         if (!first) offset += snprintf(buf + offset, sizeof(buf) - offset, ",");
@@ -592,18 +592,18 @@ const char* llm_conversation_get_messages_json(llm_conversation_t* conv,
     return buf;
 }
 
-void llm_conversation_clear(llm_conversation_t* conv)
+void iot_llm_conversation_clear(iot_llm_conversation_t* conv)
 {
     if (!conv) return;
 
     for (int i = 0; i < conv->turn_count; i++) {
         /* 保留 system prompt */
-        if (conv->turns[i].role == LLM_ROLE_SYSTEM) continue;
+        if (conv->turns[i].role == IOT_LLM_ROLE_SYSTEM) continue;
         free(conv->turns[i].content);
     }
 
     int sys_count = 0;
-    if (conv->turn_count > 0 && conv->turns[0].role == LLM_ROLE_SYSTEM) {
+    if (conv->turn_count > 0 && conv->turns[0].role == IOT_LLM_ROLE_SYSTEM) {
         sys_count = 1;
     }
 
@@ -621,7 +621,7 @@ void llm_conversation_clear(llm_conversation_t* conv)
     }
 }
 
-void llm_conversation_free(llm_conversation_t* conv)
+void iot_llm_conversation_free(iot_llm_conversation_t* conv)
 {
     if (!conv) return;
     for (int i = 0; i < conv->turn_count; i++) {
@@ -635,71 +635,71 @@ void llm_conversation_free(llm_conversation_t* conv)
  * 公共 API - 同步聊天
  *===========================================================*/
 
-int llm_chat(llm_client_t* client, const char* messages_json,
-             const llm_tool_t* tools, int tool_count,
-             llm_response_t* response)
+int iot_llm_chat(iot_llm_client_t* client, const char* messages_json,
+             const iot_llm_tool_t* tools, int tool_count,
+             iot_llm_response_t* response)
 {
     if (!client || !messages_json || !response) return -1;
 
-    char* body = llm_build_request_body(client, messages_json,
+    char* body = iot_llm_build_request_body(client, messages_json,
                                          tools, tool_count);
     if (!body) {
         response->error = iot_strdup("Failed to build request body");
         return -1;
     }
 
-    http_response_t http_resp;
+    iot_http_response_t http_resp;
     memset(&http_resp, 0, sizeof(http_resp));
 
-    int result = llm_execute_request(client, body, &http_resp);
+    int result = iot_llm_execute_request(client, body, &http_resp);
     free(body); /* 请求体构建的临时内存 */
 
     if (result != 0) {
         response->error = iot_strdup(http_resp.error ? http_resp.error : "HTTP error");
-        http_response_free(&http_resp);
+        iot_http_response_free(&http_resp);
         return -1;
     }
 
-    llm_parse_response(&http_resp, response);
-    http_response_free(&http_resp);
+    iot_llm_parse_response(&http_resp, response);
+    iot_http_response_free(&http_resp);
 
     return response->error ? -1 : 0;
 }
 
-int llm_chat_with_context(llm_client_t* client, llm_conversation_t* conv,
-                           const llm_tool_t* tools, int tool_count,
-                           llm_response_t* response)
+int iot_llm_chat_with_context(iot_llm_client_t* client, iot_llm_conversation_t* conv,
+                           const iot_llm_tool_t* tools, int tool_count,
+                           iot_llm_response_t* response)
 {
     if (!client || !conv || !response) return -1;
 
-    const char* messages = llm_conversation_get_messages_json(conv, true);
+    const char* messages = iot_llm_conversation_get_messages_json(conv, true);
     if (!messages) {
         response->error = iot_strdup("No messages in conversation");
         return -1;
     }
 
-    int result = llm_chat(client, messages, tools, tool_count, response);
+    int result = iot_llm_chat(client, messages, tools, tool_count, response);
 
     /* 将 assistant 回复添加到对话历史 */
     if (result == 0 && response->content) {
-        llm_conversation_add(conv, LLM_ROLE_ASSISTANT, response->content);
+        iot_llm_conversation_add(conv, IOT_LLM_ROLE_ASSISTANT, response->content);
     }
 
     return result;
 }
 
-int llm_ask(llm_client_t* client, const char* user_message,
-            llm_response_t* response)
+int iot_llm_ask(iot_llm_client_t* client, const char* user_message,
+            iot_llm_response_t* response)
 {
     if (!client || !user_message || !response) return -1;
 
     /* 手动构建单条消息 */
-    char messages[LLM_JSON_BUF_SIZE];
+    char messages[IOT_LLM_JSON_BUF_SIZE];
     snprintf(messages, sizeof(messages),
              "[{\"role\":\"user\",\"content\":\"%s\"}]",
              user_message ? user_message : "");
 
-    return llm_chat(client, messages, NULL, 0, response);
+    return iot_llm_chat(client, messages, NULL, 0, response);
 }
 
 /*===========================================================
@@ -712,32 +712,32 @@ int llm_ask(llm_client_t* client, const char* user_message,
 static void async_llm_task(void* arg)
 {
     struct {
-        llm_client_t* client;
+        iot_llm_client_t* client;
         char*         messages_json;
-        llm_tool_t*   tools;
+        iot_llm_tool_t*   tools;
         int           tool_count;
-        llm_callback_t callback;
+        iot_llm_callback_t callback;
         void*         user_data;
     } *ctx = (void*)arg;
 
-    llm_response_t response;
+    iot_llm_response_t response;
     memset(&response, 0, sizeof(response));
 
-    llm_chat(ctx->client, ctx->messages_json,
+    iot_llm_chat(ctx->client, ctx->messages_json,
              ctx->tools, ctx->tool_count, &response);
 
     if (ctx->callback) {
         ctx->callback(&response, ctx->user_data);
     }
 
-    llm_response_free(&response);
+    iot_llm_response_free(&response);
     free(ctx->messages_json);
     free(ctx);
 }
 
-int llm_chat_async(llm_client_t* client, const char* messages_json,
-                    const llm_tool_t* tools, int tool_count,
-                    llm_callback_t callback, void* user_data)
+int iot_llm_chat_async(iot_llm_client_t* client, const char* messages_json,
+                    const iot_llm_tool_t* tools, int tool_count,
+                    iot_llm_callback_t callback, void* user_data)
 {
     if (!client || !messages_json || !callback) return -1;
 
@@ -761,15 +761,15 @@ int llm_chat_async(llm_client_t* client, const char* messages_json,
  * SSE 解析: 每行 data: {"choices":[{"delta":{"content":"..."}}]}
  *===========================================================*/
 
-int llm_chat_stream(llm_client_t* client, const char* messages_json,
-                     const llm_tool_t* tools, int tool_count,
+int iot_llm_chat_stream(iot_llm_client_t* client, const char* messages_json,
+                     const iot_llm_tool_t* tools, int tool_count,
                      llm_stream_callback_t stream_cb, void* user_data)
 {
     if (!client || !messages_json || !stream_cb) return -1;
 
     /*
      * TODO: 流式实现需要:
-     *   1. 使用 http_post 的底层 socket API 发送请求 (stream=true)
+     *   1. 使用 iot_http_post 的底层 socket API 发送请求 (stream=true)
      *   2. 持续读取 SSE 数据流
      *   3. 每解析到 content delta 就调用 stream_cb
      *   4. 收到 [DONE] 时结束
@@ -778,11 +778,11 @@ int llm_chat_stream(llm_client_t* client, const char* messages_json,
      */
     LOG_INFO("llm", "Streaming requested (model=%s), using fallback", client->model);
 
-    llm_response_t response;
+    iot_llm_response_t response;
     memset(&response, 0, sizeof(response));
 
     /* 使用非流式请求，然后一次性回调 (模拟流式) */
-    int result = llm_chat(client, messages_json, tools, tool_count, &response);
+    int result = iot_llm_chat(client, messages_json, tools, tool_count, &response);
     if (result == 0 && response.content) {
         /* 模拟流式: 按字符发送 */
         for (char* p = response.content; *p; p++) {
@@ -792,20 +792,20 @@ int llm_chat_stream(llm_client_t* client, const char* messages_json,
     }
     stream_cb("", response.finish_reason, 1, user_data);
 
-    llm_response_free(&response);
+    iot_llm_response_free(&response);
     return result;
 }
 
-int llm_chat_stream_with_context(llm_client_t* client, llm_conversation_t* conv,
-                                  const llm_tool_t* tools, int tool_count,
+int iot_llm_chat_stream_with_context(iot_llm_client_t* client, iot_llm_conversation_t* conv,
+                                  const iot_llm_tool_t* tools, int tool_count,
                                   llm_stream_callback_t stream_cb, void* user_data)
 {
     if (!client || !conv) return -1;
 
-    const char* messages = llm_conversation_get_messages_json(conv, true);
+    const char* messages = iot_llm_conversation_get_messages_json(conv, true);
     if (!messages) return -1;
 
-    return llm_chat_stream(client, messages, tools, tool_count,
+    return iot_llm_chat_stream(client, messages, tools, tool_count,
                             stream_cb, user_data);
 }
 
@@ -813,12 +813,12 @@ int llm_chat_stream_with_context(llm_client_t* client, llm_conversation_t* conv,
  * 公共 API - 释放
  *===========================================================*/
 
-void llm_response_free(llm_response_t* response)
+void iot_llm_response_free(iot_llm_response_t* response)
 {
     if (!response) return;
     free(response->content);
     free(response->finish_reason);
     free(response->tool_calls);
     free(response->error);
-    memset(response, 0, sizeof(llm_response_t));
+    memset(response, 0, sizeof(iot_llm_response_t));
 }

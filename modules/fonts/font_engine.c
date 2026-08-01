@@ -36,12 +36,12 @@ static inline uint32_t utf8_to_unicode(const char** str) {
     return code;
 }
 
-font_engine_t* font_engine_create(void) {
-    font_engine_t* engine = (font_engine_t*)malloc(sizeof(font_engine_t));
+iot_font_engine_t* iot_font_engine_create(void) {
+    iot_font_engine_t* engine = (iot_font_engine_t*)malloc(sizeof(iot_font_engine_t));
     if (!engine) return NULL;
     
-    memset(engine, 0, sizeof(font_engine_t));
-    engine->font = &font_8x8;
+    memset(engine, 0, sizeof(iot_font_engine_t));
+    engine->font = &iot_font_8x8;
     engine->color = 0xFFFFFFFF;
     engine->bg_color = 0x00000000;
     engine->spacing = 0;
@@ -50,56 +50,56 @@ font_engine_t* font_engine_create(void) {
     return engine;
 }
 
-void font_engine_destroy(font_engine_t* engine) {
+void iot_font_engine_destroy(iot_font_engine_t* engine) {
     if (engine) {
         free(engine);
     }
 }
 
-int font_engine_set_font(font_engine_t* engine, const font_info_t* font) {
+int iot_font_engine_set_font(iot_font_engine_t* engine, const iot_font_info_t* font) {
     if (!engine || !font) return -1;
     engine->font = font;
     return 0;
 }
 
-int font_engine_set_font_by_name(font_engine_t* engine, const char* name) {
+int iot_font_engine_set_font_by_name(iot_font_engine_t* engine, const char* name) {
     if (!engine || !name) return -1;
     
-    const font_info_t* font = font_find_by_name(name);
+    const iot_font_info_t* font = iot_font_find_by_name(name);
     if (!font) return -1;
     
     engine->font = font;
     return 0;
 }
 
-int font_engine_set_color(font_engine_t* engine, uint32_t color) {
+int iot_font_engine_set_color(iot_font_engine_t* engine, uint32_t color) {
     if (!engine) return -1;
     engine->color = color;
     return 0;
 }
 
-int font_engine_set_bg_color(font_engine_t* engine, uint32_t bg_color) {
+int iot_font_engine_set_bg_color(iot_font_engine_t* engine, uint32_t bg_color) {
     if (!engine) return -1;
     engine->bg_color = bg_color;
     return 0;
 }
 
-int font_engine_set_spacing(font_engine_t* engine, int spacing) {
+int iot_font_engine_set_spacing(iot_font_engine_t* engine, int spacing) {
     if (!engine) return -1;
     engine->spacing = spacing;
     return 0;
 }
 
-int font_engine_set_line_height(font_engine_t* engine, int line_height) {
+int iot_font_engine_set_line_height(iot_font_engine_t* engine, int line_height) {
     if (!engine) return -1;
     engine->line_height = line_height;
     return 0;
 }
 
-int font_engine_measure_char(font_engine_t* engine, uint32_t ch, int* width, int* height) {
+int iot_font_engine_measure_char(iot_font_engine_t* engine, uint32_t ch, int* width, int* height) {
     if (!engine || !engine->font) return -1;
     
-    const font_info_t* font = engine->font;
+    const iot_font_info_t* font = engine->font;
     
     if (ch < font->first_char || ch > font->last_char) {
         ch = '?';
@@ -115,15 +115,15 @@ int font_engine_measure_char(font_engine_t* engine, uint32_t ch, int* width, int
     return 0;
 }
 
-int font_engine_measure_string(font_engine_t* engine, const char* str, int* width, int* height) {
+int iot_font_engine_measure_string(iot_font_engine_t* engine, const char* str, int* width, int* height) {
     if (!engine || !str) return -1;
-    return font_engine_measure_string_len(engine, str, strlen(str), width, height);
+    return iot_font_engine_measure_string_len(engine, str, strlen(str), width, height);
 }
 
-int font_engine_measure_string_len(font_engine_t* engine, const char* str, size_t len, int* width, int* height) {
+int iot_font_engine_measure_string_len(iot_font_engine_t* engine, const char* str, size_t len, int* width, int* height) {
     if (!engine || !str || !engine->font) return -1;
     
-    const font_info_t* font = engine->font;
+    const iot_font_info_t* font = engine->font;
     int total_width = 0;
     int max_height = font->height;
     
@@ -154,10 +154,10 @@ int font_engine_measure_string_len(font_engine_t* engine, const char* str, size_
     return 0;
 }
 
-int font_engine_render_char(font_engine_t* engine, uint32_t ch, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
+int iot_font_engine_render_char(iot_font_engine_t* engine, uint32_t ch, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
     if (!engine || !buffer || !engine->font) return -1;
     
-    const font_info_t* font = engine->font;
+    const iot_font_info_t* font = engine->font;
     
     if (ch < font->first_char || ch > font->last_char) {
         ch = '?';
@@ -194,15 +194,15 @@ int font_engine_render_char(font_engine_t* engine, uint32_t ch, uint8_t* buffer,
     return 0;
 }
 
-int font_engine_render_string(font_engine_t* engine, const char* str, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
+int iot_font_engine_render_string(iot_font_engine_t* engine, const char* str, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
     if (!engine || !str) return -1;
-    return font_engine_render_string_len(engine, str, strlen(str), buffer, buf_width, buf_height, x, y);
+    return iot_font_engine_render_string_len(engine, str, strlen(str), buffer, buf_width, buf_height, x, y);
 }
 
-int font_engine_render_string_len(font_engine_t* engine, const char* str, size_t len, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
+int iot_font_engine_render_string_len(iot_font_engine_t* engine, const char* str, size_t len, uint8_t* buffer, int buf_width, int buf_height, int x, int y) {
     if (!engine || !str || !buffer || !engine->font) return -1;
     
-    const font_info_t* font = engine->font;
+    const iot_font_info_t* font = engine->font;
     int current_x = x;
     int current_y = y;
     int line_h = engine->line_height > 0 ? engine->line_height : font->height;
@@ -224,7 +224,7 @@ int font_engine_render_string_len(font_engine_t* engine, const char* str, size_t
             continue;
         }
         
-        font_engine_render_char(engine, ch, buffer, buf_width, buf_height, current_x, current_y);
+        iot_font_engine_render_char(engine, ch, buffer, buf_width, buf_height, current_x, current_y);
         current_x += font->width + engine->spacing;
         
         if (current_x >= buf_width) {
@@ -240,28 +240,28 @@ int font_engine_render_string_len(font_engine_t* engine, const char* str, size_t
     return 0;
 }
 
-const font_info_t* font_engine_get_font(font_engine_t* engine) {
+const iot_font_info_t* iot_font_engine_get_font(iot_font_engine_t* engine) {
     if (!engine) return NULL;
     return engine->font;
 }
 
-const font_info_t* font_find_by_name(const char* name) {
+const iot_font_info_t* iot_font_find_by_name(const char* name) {
     if (!name) return NULL;
     
-    for (int i = 0; i < font_count; i++) {
-        if (strcmp(font_list[i]->name, name) == 0) {
-            return font_list[i];
+    for (int i = 0; i < iot_font_count; i++) {
+        if (strcmp(iot_font_list[i]->name, name) == 0) {
+            return iot_font_list[i];
         }
     }
     
     return NULL;
 }
 
-void font_list_all(const font_info_t*** fonts, int* count) {
+void iot_font_list_all(const iot_font_info_t*** fonts, int* count) {
     if (fonts) {
-        *fonts = font_list;
+        *fonts = iot_font_list;
     }
     if (count) {
-        *count = font_count;
+        *count = iot_font_count;
     }
 }

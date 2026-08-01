@@ -30,15 +30,15 @@
  * 常量
  *===========================================================*/
 
-#define TTS_JSON_BUF_SIZE   4096
-#define TTS_AUDIO_MAX_SIZE  (512 * 1024)  /* 单次合成最大 512KB */
+#define IOT_TTS_JSON_BUF_SIZE   4096
+#define IOT_TTS_AUDIO_MAX_SIZE  (512 * 1024)  /* 单次合成最大 512KB */
 
 /*===========================================================
  * 内部结构
  *===========================================================*/
 
 typedef struct {
-    tts_config_t config;
+    iot_tts_config_t config;
     bool         is_speaking;
 
     /* 播放回调 */
@@ -91,12 +91,12 @@ static char* json_extract_string(const char* json, const char* key)
  * 提供者名称
  *===========================================================*/
 
-const char* tts_provider_name(tts_provider_t provider)
+const char* iot_tts_provider_name(iot_tts_provider_t provider)
 {
     static const char* names[] = {
         "openai", "baidu", "iflytek", "aliyun", "tencent", "edge"
     };
-    if (provider > TTS_PROVIDER_EDGE) return "unknown";
+    if (provider > IOT_TTS_PROVIDER_EDGE) return "unknown";
     return names[provider];
 }
 
@@ -104,40 +104,40 @@ const char* tts_provider_name(tts_provider_t provider)
  * 音色映射
  *===========================================================*/
 
-const char* tts_voice_id_for_provider(tts_voice_t voice, tts_provider_t provider)
+const char* iot_tts_voice_id_for_provider(iot_tts_voice_t voice, iot_tts_provider_t provider)
 {
     /* OpenAI 音色映射 */
     static const char* openai_voices[] = {
-        [TTS_VOICE_DEFAULT]     = "alloy",
-        [TTS_VOICE_FEMALE_ZH]   = "nova",
-        [TTS_VOICE_MALE_ZH]     = "onyx",
-        [TTS_VOICE_FEMALE_EN]   = "shimmer",
-        [TTS_VOICE_MALE_EN]     = "echo",
-        [TTS_VOICE_GENTLE]      = "nova",
-        [TTS_VOICE_STANDARD]    = "alloy",
-        [TTS_VOICE_CHILD]       = "fable",
-        [TTS_VOICE_ELDER]       = "onyx",
+        [IOT_TTS_VOICE_DEFAULT]     = "alloy",
+        [IOT_TTS_VOICE_FEMALE_ZH]   = "nova",
+        [IOT_TTS_VOICE_MALE_ZH]     = "onyx",
+        [IOT_TTS_VOICE_FEMALE_EN]   = "shimmer",
+        [IOT_TTS_VOICE_MALE_EN]     = "echo",
+        [IOT_TTS_VOICE_GENTLE]      = "nova",
+        [IOT_TTS_VOICE_STANDARD]    = "alloy",
+        [IOT_TTS_VOICE_CHILD]       = "fable",
+        [IOT_TTS_VOICE_ELDER]       = "onyx",
     };
 
     /* Edge TTS 音色映射 (免费) */
     static const char* edge_voices[] = {
-        [TTS_VOICE_DEFAULT]     = "zh-CN-XiaoxiaoNeural",
-        [TTS_VOICE_FEMALE_ZH]   = "zh-CN-XiaoxiaoNeural",
-        [TTS_VOICE_MALE_ZH]     = "zh-CN-YunxiNeural",
-        [TTS_VOICE_FEMALE_EN]   = "en-US-JennyNeural",
-        [TTS_VOICE_MALE_EN]     = "en-US-GuyNeural",
-        [TTS_VOICE_GENTLE]      = "zh-CN-XiaohanNeural",
-        [TTS_VOICE_STANDARD]    = "zh-CN-YunyangNeural",
-        [TTS_VOICE_CHILD]       = "zh-CN-XiaoyiNeural",
-        [TTS_VOICE_ELDER]       = "zh-CN-YunfengNeural",
+        [IOT_TTS_VOICE_DEFAULT]     = "zh-CN-XiaoxiaoNeural",
+        [IOT_TTS_VOICE_FEMALE_ZH]   = "zh-CN-XiaoxiaoNeural",
+        [IOT_TTS_VOICE_MALE_ZH]     = "zh-CN-YunxiNeural",
+        [IOT_TTS_VOICE_FEMALE_EN]   = "en-US-JennyNeural",
+        [IOT_TTS_VOICE_MALE_EN]     = "en-US-GuyNeural",
+        [IOT_TTS_VOICE_GENTLE]      = "zh-CN-XiaohanNeural",
+        [IOT_TTS_VOICE_STANDARD]    = "zh-CN-YunyangNeural",
+        [IOT_TTS_VOICE_CHILD]       = "zh-CN-XiaoyiNeural",
+        [IOT_TTS_VOICE_ELDER]       = "zh-CN-YunfengNeural",
     };
 
-    if (voice > TTS_VOICE_ELDER) return "alloy";
+    if (voice > IOT_TTS_VOICE_ELDER) return "alloy";
 
     switch (provider) {
-    case TTS_PROVIDER_OPENAI:
+    case IOT_TTS_PROVIDER_OPENAI:
         return openai_voices[voice] ? openai_voices[voice] : "alloy";
-    case TTS_PROVIDER_EDGE:
+    case IOT_TTS_PROVIDER_EDGE:
         return edge_voices[voice] ? edge_voices[voice] : "zh-CN-XiaoxiaoNeural";
     default:
         return "default";
@@ -148,20 +148,20 @@ const char* tts_voice_id_for_provider(tts_voice_t voice, tts_provider_t provider
  * 获取 API URL
  *===========================================================*/
 
-static const char* tts_get_api_url(tts_provider_t provider)
+static const char* iot_tts_get_api_url(iot_tts_provider_t provider)
 {
     switch (provider) {
-    case TTS_PROVIDER_OPENAI:
+    case IOT_TTS_PROVIDER_OPENAI:
         return "https://api.openai.com/v1/audio/speech";
-    case TTS_PROVIDER_BAIDU:
+    case IOT_TTS_PROVIDER_BAIDU:
         return "https://tsn.baidu.com/text2audio";
-    case TTS_PROVIDER_ALIYUN:
+    case IOT_TTS_PROVIDER_ALIYUN:
         return "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts";
-    case TTS_PROVIDER_TENCENT:
+    case IOT_TTS_PROVIDER_TENCENT:
         return "https://tts.tencentcloudapi.com";
-    case TTS_PROVIDER_EDGE:
+    case IOT_TTS_PROVIDER_EDGE:
         return "https://eastus.tts.speech.microsoft.com/cognitiveservices/v1";
-    case TTS_PROVIDER_IFLYTEK:
+    case IOT_TTS_PROVIDER_IFLYTEK:
         return "wss://tts-api.xfyun.cn/v2/tts";
     default:
         return NULL;
@@ -172,28 +172,28 @@ static const char* tts_get_api_url(tts_provider_t provider)
  * OpenAI TTS 实现
  *===========================================================*/
 
-static int tts_openai_synthesize(tts_t* tts, const char* text, const char* ssml,
-                                  tts_result_t* result)
+static int iot_tts_openai_synthesize(iot_tts_t* tts, const char* text, const char* ssml,
+                                  iot_tts_result_t* result)
 {
     tts_impl_t* impl = (tts_impl_t*)tts;
 
     /* 构建请求 JSON body */
     const char* voice_id = impl->config.voice_id[0]
                          ? impl->config.voice_id
-                         : tts_voice_id_for_provider(impl->config.voice, TTS_PROVIDER_OPENAI);
+                         : iot_tts_voice_id_for_provider(impl->config.voice, IOT_TTS_PROVIDER_OPENAI);
 
     char format_str[16];
     switch (impl->config.audio_format) {
-    case TTS_FORMAT_MP3:  strncpy(format_str, "mp3",  sizeof(format_str)); break;
-    case TTS_FORMAT_OPUS: strncpy(format_str, "opus", sizeof(format_str)); break;
-    case TTS_FORMAT_AAC:  strncpy(format_str, "aac",  sizeof(format_str)); break;
-    case TTS_FORMAT_FLAC: strncpy(format_str, "flac", sizeof(format_str)); break;
-    case TTS_FORMAT_WAV:
-    case TTS_FORMAT_PCM:
+    case IOT_TTS_FORMAT_MP3:  strncpy(format_str, "mp3",  sizeof(format_str)); break;
+    case IOT_TTS_FORMAT_OPUS: strncpy(format_str, "opus", sizeof(format_str)); break;
+    case IOT_TTS_FORMAT_AAC:  strncpy(format_str, "aac",  sizeof(format_str)); break;
+    case IOT_TTS_FORMAT_FLAC: strncpy(format_str, "flac", sizeof(format_str)); break;
+    case IOT_TTS_FORMAT_WAV:
+    case IOT_TTS_FORMAT_PCM:
     default:              strncpy(format_str, "mp3",  sizeof(format_str)); break;
     }
 
-    char json_body[TTS_JSON_BUF_SIZE];
+    char json_body[IOT_TTS_JSON_BUF_SIZE];
     if (ssml) {
         /* SSML 模式 */
         snprintf(json_body, sizeof(json_body),
@@ -207,7 +207,7 @@ static int tts_openai_synthesize(tts_t* tts, const char* text, const char* ssml,
             ssml, voice_id, format_str, impl->config.speed);
     } else {
         /* 纯文本模式 */
-        char escaped_text[TTS_JSON_BUF_SIZE / 2];
+        char escaped_text[IOT_TTS_JSON_BUF_SIZE / 2];
         char* p = escaped_text;
         for (const char* s = text; *s && (p - escaped_text) < (int)sizeof(escaped_text) - 3; s++) {
             switch (*s) {
@@ -236,19 +236,19 @@ static int tts_openai_synthesize(tts_t* tts, const char* text, const char* ssml,
               voice_id, format_str, impl->config.speed, strlen(text));
 
     /* HTTP POST */
-    http_response_t http_resp;
+    iot_http_response_t http_resp;
     memset(&http_resp, 0, sizeof(http_resp));
 
-    int ret = http_post(tts_get_api_url(TTS_PROVIDER_OPENAI),
+    int ret = iot_http_post(iot_tts_get_api_url(IOT_TTS_PROVIDER_OPENAI),
                         json_body, strlen(json_body),
                         "application/json", &http_resp);
 
-    memset(result, 0, sizeof(tts_result_t));
+    memset(result, 0, sizeof(iot_tts_result_t));
 
     if (ret != 0) {
         result->error = iot_strdup(http_resp.error ? http_resp.error : "HTTP error");
         result->status_code = http_resp.status_code;
-        http_response_free(&http_resp);
+        iot_http_response_free(&http_resp);
         return -1;
     }
 
@@ -271,7 +271,7 @@ static int tts_openai_synthesize(tts_t* tts, const char* text, const char* ssml,
                                    : "Empty response");
     }
 
-    http_response_free(&http_resp);
+    iot_http_response_free(&http_resp);
     return result->error ? -1 : 0;
 }
 
@@ -287,17 +287,17 @@ static int tts_openai_synthesize(tts_t* tts, const char* text, const char* ssml,
  *   Body: SSML XML
  *===========================================================*/
 
-static int tts_edge_synthesize(tts_t* tts, const char* text, const char* ssml,
-                                tts_result_t* result)
+static int iot_tts_edge_synthesize(iot_tts_t* tts, const char* text, const char* ssml,
+                                iot_tts_result_t* result)
 {
     tts_impl_t* impl = (tts_impl_t*)tts;
 
     const char* voice_id = impl->config.voice_id[0]
                          ? impl->config.voice_id
-                         : tts_voice_id_for_provider(impl->config.voice, TTS_PROVIDER_EDGE);
+                         : iot_tts_voice_id_for_provider(impl->config.voice, IOT_TTS_PROVIDER_EDGE);
 
     /* 构建 SSML */
-    char ssml_body[TTS_JSON_BUF_SIZE];
+    char ssml_body[IOT_TTS_JSON_BUF_SIZE];
     const char* actual_text = ssml ? ssml : text;
 
     /* 如果是纯文本, 包装为 SSML */
@@ -323,19 +323,19 @@ static int tts_edge_synthesize(tts_t* tts, const char* text, const char* ssml,
 
     LOG_DEBUG("tts", "Edge TTS: voice=%s, rate=%.2f", voice_id, impl->config.speed);
 
-    http_response_t http_resp;
+    iot_http_response_t http_resp;
     memset(&http_resp, 0, sizeof(http_resp));
 
-    int ret = http_post(tts_get_api_url(TTS_PROVIDER_EDGE),
+    int ret = iot_http_post(iot_tts_get_api_url(IOT_TTS_PROVIDER_EDGE),
                         ssml_body, strlen(ssml_body),
                         "application/ssml+xml", &http_resp);
 
-    memset(result, 0, sizeof(tts_result_t));
+    memset(result, 0, sizeof(iot_tts_result_t));
 
     if (ret != 0) {
         result->error = iot_strdup(http_resp.error ? http_resp.error : "HTTP error");
         result->status_code = http_resp.status_code;
-        http_response_free(&http_resp);
+        iot_http_response_free(&http_resp);
         return -1;
     }
 
@@ -353,7 +353,7 @@ static int tts_edge_synthesize(tts_t* tts, const char* text, const char* ssml,
         result->error = iot_strdup(http_resp.body ? http_resp.body : "Empty response");
     }
 
-    http_response_free(&http_resp);
+    iot_http_response_free(&http_resp);
     return result->error ? -1 : 0;
 }
 
@@ -361,25 +361,25 @@ static int tts_edge_synthesize(tts_t* tts, const char* text, const char* ssml,
  * 统一合成入口
  *===========================================================*/
 
-static int tts_do_synthesize(tts_t* tts, const char* text, const char* ssml,
-                              tts_result_t* result)
+static int iot_tts_do_synthesize(iot_tts_t* tts, const char* text, const char* ssml,
+                              iot_tts_result_t* result)
 {
     tts_impl_t* impl = (tts_impl_t*)tts;
     if (!tts || (!text && !ssml) || !result) return -1;
 
-    memset(result, 0, sizeof(tts_result_t));
+    memset(result, 0, sizeof(iot_tts_result_t));
 
     switch (impl->config.provider) {
-    case TTS_PROVIDER_OPENAI:
-        return tts_openai_synthesize(tts, text, ssml, result);
-    case TTS_PROVIDER_EDGE:
-        return tts_edge_synthesize(tts, text, ssml, result);
-    case TTS_PROVIDER_BAIDU:
-    case TTS_PROVIDER_IFLYTEK:
-    case TTS_PROVIDER_ALIYUN:
-    case TTS_PROVIDER_TENCENT:
+    case IOT_TTS_PROVIDER_OPENAI:
+        return iot_tts_openai_synthesize(tts, text, ssml, result);
+    case IOT_TTS_PROVIDER_EDGE:
+        return iot_tts_edge_synthesize(tts, text, ssml, result);
+    case IOT_TTS_PROVIDER_BAIDU:
+    case IOT_TTS_PROVIDER_IFLYTEK:
+    case IOT_TTS_PROVIDER_ALIYUN:
+    case IOT_TTS_PROVIDER_TENCENT:
         LOG_WARN("tts", "Provider %s: not yet implemented",
-                 tts_provider_name(impl->config.provider));
+                 iot_tts_provider_name(impl->config.provider));
         result->error = iot_strdup("Provider not yet implemented");
         return -1;
     default:
@@ -392,14 +392,14 @@ static int tts_do_synthesize(tts_t* tts, const char* text, const char* ssml,
  * 公共 API - 生命周期
  *===========================================================*/
 
-tts_t* tts_create(const tts_config_t* config)
+iot_tts_t* iot_tts_create(const iot_tts_config_t* config)
 {
     if (!config) return NULL;
 
     tts_impl_t* impl = (tts_impl_t*)calloc(1, sizeof(tts_impl_t));
     if (!impl) return NULL;
 
-    memcpy(&impl->config, config, sizeof(tts_config_t));
+    memcpy(&impl->config, config, sizeof(iot_tts_config_t));
 
     /* 默认值 */
     if (impl->config.speed <= 0.0f)  impl->config.speed = 1.0f;
@@ -411,21 +411,21 @@ tts_t* tts_create(const tts_config_t* config)
     impl->is_speaking = false;
 
     LOG_INFO("tts", "Created: provider=%s, voice=%d",
-             tts_provider_name(impl->config.provider),
+             iot_tts_provider_name(impl->config.provider),
              impl->config.voice);
 
-    return (tts_t*)impl;
+    return (iot_tts_t*)impl;
 }
 
-int tts_set_config(tts_t* tts, const tts_config_t* config)
+int iot_tts_set_config(iot_tts_t* tts, const iot_tts_config_t* config)
 {
     if (!tts || !config) return -1;
     tts_impl_t* impl = (tts_impl_t*)tts;
-    memcpy(&impl->config, config, sizeof(tts_config_t));
+    memcpy(&impl->config, config, sizeof(iot_tts_config_t));
     return 0;
 }
 
-void tts_free(tts_t* tts)
+void iot_tts_free(iot_tts_t* tts)
 {
     if (!tts) return;
     free(tts);
@@ -435,37 +435,37 @@ void tts_free(tts_t* tts)
  * 公共 API - 同步合成
  *===========================================================*/
 
-int tts_synthesize(tts_t* tts, const char* text, tts_result_t* result)
+int iot_tts_synthesize(iot_tts_t* tts, const char* text, iot_tts_result_t* result)
 {
-    return tts_do_synthesize(tts, text, NULL, result);
+    return iot_tts_do_synthesize(tts, text, NULL, result);
 }
 
-int tts_synthesize_ssml(tts_t* tts, const char* ssml, tts_result_t* result)
+int iot_tts_synthesize_ssml(iot_tts_t* tts, const char* ssml, iot_tts_result_t* result)
 {
-    return tts_do_synthesize(tts, NULL, ssml, result);
+    return iot_tts_do_synthesize(tts, NULL, ssml, result);
 }
 
-int tts_synthesize_to_file(tts_t* tts, const char* text, const char* file_path)
+int iot_tts_synthesize_to_file(iot_tts_t* tts, const char* text, const char* file_path)
 {
     if (!tts || !text || !file_path) return -1;
 
-    tts_result_t result;
+    iot_tts_result_t result;
     memset(&result, 0, sizeof(result));
 
-    if (tts_synthesize(tts, text, &result) != 0) {
-        tts_result_free(&result);
+    if (iot_tts_synthesize(tts, text, &result) != 0) {
+        iot_tts_result_free(&result);
         return -1;
     }
 
     if (!result.audio_data) {
-        tts_result_free(&result);
+        iot_tts_result_free(&result);
         return -1;
     }
 
     FILE* fp = fopen(file_path, "wb");
     if (!fp) {
         LOG_ERROR("tts", "Cannot write: %s", file_path);
-        tts_result_free(&result);
+        iot_tts_result_free(&result);
         return -1;
     }
 
@@ -473,7 +473,7 @@ int tts_synthesize_to_file(tts_t* tts, const char* text, const char* file_path)
     fclose(fp);
 
     LOG_INFO("tts", "Saved: %s (%zu bytes)", file_path, result.audio_len);
-    tts_result_free(&result);
+    iot_tts_result_free(&result);
     return 0;
 }
 
@@ -481,7 +481,7 @@ int tts_synthesize_to_file(tts_t* tts, const char* text, const char* file_path)
  * 公共 API - 流式合成
  *===========================================================*/
 
-int tts_synthesize_stream(tts_t* tts, const char* text,
+int iot_tts_synthesize_stream(iot_tts_t* tts, const char* text,
                            void (*data_cb)(const uint8_t*, size_t, void*),
                            void (*done_cb)(bool, void*),
                            void* user_data)
@@ -504,12 +504,12 @@ int tts_synthesize_stream(tts_t* tts, const char* text,
      */
     LOG_INFO("tts", "Stream synthesis (fallback mode)");
 
-    tts_result_t result;
+    iot_tts_result_t result;
     memset(&result, 0, sizeof(result));
 
-    if (tts_synthesize(tts, text, &result) != 0) {
+    if (iot_tts_synthesize(tts, text, &result) != 0) {
         if (done_cb) done_cb(false, user_data);
-        tts_result_free(&result);
+        iot_tts_result_free(&result);
         return -1;
     }
 
@@ -523,7 +523,7 @@ int tts_synthesize_stream(tts_t* tts, const char* text,
 
     if (done_cb) done_cb(true, user_data);
 
-    tts_result_free(&result);
+    iot_tts_result_free(&result);
     return 0;
 }
 
@@ -531,8 +531,8 @@ int tts_synthesize_stream(tts_t* tts, const char* text,
  * 公共 API - 异步合成
  *===========================================================*/
 
-int tts_synthesize_async(tts_t* tts, const char* text,
-                          tts_callback_t callback, void* user_data)
+int iot_tts_synthesize_async(iot_tts_t* tts, const char* text,
+                          iot_tts_callback_t callback, void* user_data)
 {
     if (!tts || !text || !callback) return -1;
 
@@ -543,11 +543,11 @@ int tts_synthesize_async(tts_t* tts, const char* text,
      * iot_task_create("tts_async", tts_async_task, ...);
      */
     LOG_WARN("tts", "Async not available, falling back to sync");
-    tts_result_t result;
+    iot_tts_result_t result;
     memset(&result, 0, sizeof(result));
-    tts_synthesize(tts, text, &result);
+    iot_tts_synthesize(tts, text, &result);
     callback(&result, user_data);
-    tts_result_free(&result);
+    iot_tts_result_free(&result);
     return 0;
 }
 
@@ -560,25 +560,25 @@ int tts_synthesize_async(tts_t* tts, const char* text,
  *   - iot_audio_stop()
  *===========================================================*/
 
-int tts_speak(tts_t* tts, const char* text)
+int iot_tts_speak(iot_tts_t* tts, const char* text)
 {
     if (!tts || !text) return -1;
     tts_impl_t* impl = (tts_impl_t*)tts;
 
-    tts_result_t result;
+    iot_tts_result_t result;
     memset(&result, 0, sizeof(result));
 
-    if (tts_synthesize(tts, text, &result) != 0) {
-        tts_result_free(&result);
+    if (iot_tts_synthesize(tts, text, &result) != 0) {
+        iot_tts_result_free(&result);
         return -1;
     }
 
-    int ret = tts_play_audio(tts, result.audio_data, result.audio_len);
-    tts_result_free(&result);
+    int ret = iot_tts_play_audio(tts, result.audio_data, result.audio_len);
+    iot_tts_result_free(&result);
     return ret;
 }
 
-int tts_stop_speaking(tts_t* tts)
+int iot_tts_stop_speaking(iot_tts_t* tts)
 {
     if (!tts) return -1;
     tts_impl_t* impl = (tts_impl_t*)tts;
@@ -587,13 +587,13 @@ int tts_stop_speaking(tts_t* tts)
     return 0;
 }
 
-bool tts_is_speaking(tts_t* tts)
+bool iot_tts_is_speaking(iot_tts_t* tts)
 {
     if (!tts) return false;
     return ((tts_impl_t*)tts)->is_speaking;
 }
 
-int tts_play_audio(tts_t* tts, const uint8_t* audio_data, size_t audio_len)
+int iot_tts_play_audio(iot_tts_t* tts, const uint8_t* audio_data, size_t audio_len)
 {
     (void)tts;
     if (!audio_data || audio_len == 0) return -1;
@@ -620,16 +620,16 @@ int tts_play_audio(tts_t* tts, const uint8_t* audio_data, size_t audio_len)
  * 公共 API - 辅助
  *===========================================================*/
 
-void tts_result_free(tts_result_t* result)
+void iot_tts_result_free(iot_tts_result_t* result)
 {
     if (!result) return;
     free(result->audio_data);
     free(result->format);
     free(result->error);
-    memset(result, 0, sizeof(tts_result_t));
+    memset(result, 0, sizeof(iot_tts_result_t));
 }
 
-int tts_text_to_ssml(const char* text, char* buf, size_t bufsize)
+int iot_tts_text_to_ssml(const char* text, char* buf, size_t bufsize)
 {
     if (!text || !buf || bufsize == 0) return -1;
 

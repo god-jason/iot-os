@@ -1,5 +1,5 @@
-/**
- * @file lvgl_list.c
+﻿/**
+ * @file iot_lvgl_list.c
  * @brief LVGL列表控件
  *
  * 实现LVGL列表控件的OO风格Lua绑定，包括列表创建、添加按钮项、设置方向、获取选中按钮等接口，支持单选模式。
@@ -14,7 +14,7 @@
 /* list组件的metatable引用 */
 static int list_metatable_ref = LUA_NOREF;
 
-static lv_obj_t* lvgl_list_find_selected_btn(lv_obj_t* list)
+static lv_obj_t* iot_lvgl_list_find_selected_btn(lv_obj_t* list)
 {
     uint32_t i;
     uint32_t cnt = lv_obj_get_child_cnt(list);
@@ -29,7 +29,7 @@ static lv_obj_t* lvgl_list_find_selected_btn(lv_obj_t* list)
     return NULL;
 }
 
-static void lvgl_list_clear_selected(lv_obj_t* list)
+static void iot_lvgl_list_clear_selected(lv_obj_t* list)
 {
     uint32_t i;
     uint32_t cnt = lv_obj_get_child_cnt(list);
@@ -42,7 +42,7 @@ static void lvgl_list_clear_selected(lv_obj_t* list)
     }
 }
 
-static lv_flex_flow_t lvgl_list_dir_to_flex(lv_dir_t dir)
+static lv_flex_flow_t iot_lvgl_list_dir_to_flex(lv_dir_t dir)
 {
     switch (dir) {
         case LV_DIR_LEFT:
@@ -59,8 +59,8 @@ static lv_flex_flow_t lvgl_list_dir_to_flex(lv_dir_t dir)
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_list_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_list_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* list = lv_list_create(parent);
     lua_pushlightuserdata(L, list);
     return 1;
@@ -74,8 +74,8 @@ static int lvgl_list_create_internal(lua_State* L) {
 @return userdata 带metatable的列表实例
 @usage local list = lvgl.list.create(scr)
 */
-static int lvgl_list_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_list_create_internal, list_metatable_ref);
+static int iot_lvgl_list_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_list_create_internal, list_metatable_ref);
 }
 
 /*
@@ -86,8 +86,8 @@ static int lvgl_list_create(lua_State* L) {
 @return userdata 按钮对象
 @usage local btn = list:add_btn(nil, "选项")
 */
-static int lvgl_list_add_btn(lua_State* L) {
-    lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_list_add_btn(lua_State* L) {
+    lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* img = (lv_obj_t*)luaL_optlightuserdata(L, 2, NULL);
     const char* txt = luaL_checkstring(L, 3);
     lv_obj_t* btn = lv_list_add_btn(list, img, txt);
@@ -101,8 +101,8 @@ static int lvgl_list_add_btn(lua_State* L) {
 @return userdata 容器对象
 @usage local cont = list:get_container()
 */
-static int lvgl_list_get_container(lua_State* L) {
-    lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_list_get_container(lua_State* L) {
+    lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushlightuserdata(L, list);
     return 1;
 }
@@ -113,9 +113,9 @@ static int lvgl_list_get_container(lua_State* L) {
 @return userdata 按钮对象或nil
 @usage local sel = list:get_selected_btn()
 */
-static int lvgl_list_get_selected_btn(lua_State* L) {
-    lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* btn = lvgl_list_find_selected_btn(list);
+static int iot_lvgl_list_get_selected_btn(lua_State* L) {
+    lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* btn = iot_lvgl_list_find_selected_btn(list);
     if (btn) {
         lua_pushlightuserdata(L, btn);
     } else {
@@ -131,10 +131,10 @@ static int lvgl_list_get_selected_btn(lua_State* L) {
 @return self
 @usage list:set_direction(lvgl.DIR_TOP)
 */
-static int lvgl_list_set_direction(lua_State* L) {
-    lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_list_set_direction(lua_State* L) {
+    lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
     lv_dir_t dir = (lv_dir_t)luaL_checkinteger(L, 2);
-    lv_obj_set_flex_flow(list, lvgl_list_dir_to_flex(dir));
+    lv_obj_set_flex_flow(list, iot_lvgl_list_dir_to_flex(dir));
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -146,26 +146,26 @@ static int lvgl_list_set_direction(lua_State* L) {
 @return self
 @usage list:set_selected(btn)
 */
-static int lvgl_list_set_selected(lua_State* L) {
-    lv_obj_t* list = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_list_set_selected(lua_State* L) {
+    lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* sel = (lv_obj_t*)luaL_checklightuserdata(L, 2);
-    lvgl_list_clear_selected(list);
+    iot_lvgl_list_clear_selected(list);
     lv_obj_add_state(sel, LV_STATE_CHECKED);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /* 注册 list 子模块 */
-void lvgl_register_list(lua_State* L) {
+void iot_lvgl_register_list(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "add_btn", lvgl_list_add_btn);
-    REG_METHOD(L, "get_container", lvgl_list_get_container);
-    REG_METHOD(L, "get_selected_btn", lvgl_list_get_selected_btn);
-    REG_METHOD(L, "set_direction", lvgl_list_set_direction);
-    REG_METHOD(L, "set_selected", lvgl_list_set_selected);
+    REG_METHOD(L, "add_btn", iot_lvgl_list_add_btn);
+    REG_METHOD(L, "get_container", iot_lvgl_list_get_container);
+    REG_METHOD(L, "get_selected_btn", iot_lvgl_list_get_selected_btn);
+    REG_METHOD(L, "set_direction", iot_lvgl_list_set_direction);
+    REG_METHOD(L, "set_selected", iot_lvgl_list_set_selected);
 
     /* 保存组件metatable引用(用于继承) */
     list_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -182,5 +182,5 @@ void lvgl_register_list(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.list) */
-    REG_METHOD(L, "create", lvgl_list_create);
+    REG_METHOD(L, "create", iot_lvgl_list_create);
 }

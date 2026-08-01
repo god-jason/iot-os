@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file lvgl.c
  * @brief LVGL图形库主入口模块实现
  *
@@ -19,7 +19,7 @@
 
 
 
-static int lvgl_scr_act(lua_State* L) {
+static int iot_lvgl_scr_act(lua_State* L) {
 
     lv_obj_t* scr = lv_scr_act();
 
@@ -31,9 +31,9 @@ static int lvgl_scr_act(lua_State* L) {
 
 
 
-static int lvgl_scr_load(lua_State* L) {
+static int iot_lvgl_scr_load(lua_State* L) {
 
-    lv_obj_t* scr = lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* scr = iot_lvgl_get_obj_ptr(L, 1);
 
     lv_scr_load(scr);
 
@@ -43,7 +43,7 @@ static int lvgl_scr_load(lua_State* L) {
 
 
 
-static int lvgl_tick_inc(lua_State* L) {
+static int iot_lvgl_tick_inc(lua_State* L) {
 
     uint32_t tick_ms = (uint32_t)luaL_checkinteger(L, 1);
 
@@ -55,13 +55,13 @@ static int lvgl_tick_inc(lua_State* L) {
 
 
 
-static int lvgl_task_handler(lua_State* L) {
+static int iot_lvgl_task_handler(lua_State* L) {
 
 #ifdef LV_USE_SDL_DRV
     /* 桌面平台：先处理 SDL 事件，窗口关闭则退出 */
-    if (lv_sdl_drv_is_inited()) {
-        if (!lv_sdl_drv_loop()) {
-            lv_sdl_drv_deinit();
+    if (iot_lv_sdl_drv_is_inited()) {
+        if (!iot_lv_sdl_drv_loop()) {
+            iot_lv_sdl_drv_deinit();
             exit(0);
         }
     }
@@ -75,7 +75,7 @@ static int lvgl_task_handler(lua_State* L) {
 
 
 
-static int lvgl_flush_ready(lua_State* L) {
+static int iot_lvgl_flush_ready(lua_State* L) {
 
     lv_disp_t* disp = lv_disp_get_default();
 
@@ -93,7 +93,7 @@ static int lvgl_flush_ready(lua_State* L) {
 
 
 
-static int lvgl_refr_now(lua_State* L) {
+static int iot_lvgl_refr_now(lua_State* L) {
 
     lv_refr_now((lv_disp_t*)luaL_optlightuserdata(L, 1, NULL));
 
@@ -103,7 +103,7 @@ static int lvgl_refr_now(lua_State* L) {
 
 
 
-static int lvgl_debug_info_print(lua_State* L) {
+static int iot_lvgl_debug_info_print(lua_State* L) {
 
     /* lv_debug_info_print() was removed in LVGL 8 */
 
@@ -115,7 +115,7 @@ static int lvgl_debug_info_print(lua_State* L) {
 
 
 
-static int lvgl_version_get(lua_State* L) {
+static int iot_lvgl_version_get(lua_State* L) {
 
     lua_newtable(L);
 
@@ -141,7 +141,7 @@ static int lvgl_version_get(lua_State* L) {
 
 
 
-static int lvgl_tick_get(lua_State* L) {
+static int iot_lvgl_tick_get(lua_State* L) {
 
     lua_pushinteger(L, lv_tick_get());
 
@@ -151,7 +151,7 @@ static int lvgl_tick_get(lua_State* L) {
 
 
 
-static int lvgl_disp_get_default(lua_State* L) {
+static int iot_lvgl_disp_get_default(lua_State* L) {
 
     lua_pushlightuserdata(L, lv_disp_get_default());
 
@@ -161,7 +161,7 @@ static int lvgl_disp_get_default(lua_State* L) {
 
 
 
-static int lvgl_disp_get_scr_act(lua_State* L) {
+static int iot_lvgl_disp_get_scr_act(lua_State* L) {
 
     lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
 
@@ -173,9 +173,9 @@ static int lvgl_disp_get_scr_act(lua_State* L) {
 
 
 
-static int lvgl_disp_load_scr(lua_State* L) {
+static int iot_lvgl_disp_load_scr(lua_State* L) {
 
-    lv_obj_t* scr = lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* scr = iot_lvgl_get_obj_ptr(L, 1);
 
     lv_disp_load_scr(scr);
 
@@ -185,9 +185,9 @@ static int lvgl_disp_load_scr(lua_State* L) {
 
 
 
-static int lvgl_indev_get_default(lua_State* L) {
+static int iot_lvgl_indev_get_default(lua_State* L) {
 
-    lua_pushlightuserdata(L, lv_indev_get_default());
+    lua_pushlightuserdata(L, iot_lv_indev_get_default());
 
     return 1;
 
@@ -195,7 +195,7 @@ static int lvgl_indev_get_default(lua_State* L) {
 
 
 
-static int lvgl_pct(lua_State* L) {
+static int iot_lvgl_pct(lua_State* L) {
     int x = (int)luaL_checkinteger(L, 1);
     lua_pushinteger(L, LV_PCT(x));
     return 1;
@@ -209,7 +209,7 @@ static int lvgl_pct(lua_State* L) {
 @usage lvgl.init(800, 480)
 @usage lvgl.init()  -- 使用默认 800x480
 */
-static int lvgl_init(lua_State* L) {
+static int iot_lvgl_init(lua_State* L) {
     int hor_res = (int)luaL_optinteger(L, 1, 800);
     int ver_res = (int)luaL_optinteger(L, 2, 480);
 
@@ -217,10 +217,10 @@ static int lvgl_init(lua_State* L) {
     lv_init();
 
 #ifdef LV_USE_SDL_DRV
-    if (!lv_sdl_drv_is_inited()) {
+    if (!iot_lv_sdl_drv_is_inited()) {
         fprintf(stderr, "[lvgl] init: creating SDL window %dx%d\n", hor_res, ver_res);
         fflush(stderr);
-        if (!lv_sdl_drv_init(hor_res, ver_res)) {
+        if (!iot_lv_sdl_drv_init(hor_res, ver_res)) {
             return luaL_error(L, "SDL driver init failed: %dx%d", hor_res, ver_res);
         }
         fprintf(stderr, "[lvgl] SDL window created\n");
@@ -258,7 +258,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     /* 注册基础对象系统(必须在组件之前) */
 
-    lvgl_register_obj(L);
+    iot_lvgl_register_obj(L);
 
     lua_setfield(L, -2, "obj");
 
@@ -268,7 +268,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* style 子表 */
 
-    lvgl_register_style(L);
+    iot_lvgl_register_style(L);
 
     lua_setfield(L, -2, "style");
 
@@ -276,7 +276,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* anim 子表 */
 
-    lvgl_register_anim(L);
+    iot_lvgl_register_anim(L);
 
     lua_setfield(L, -2, "anim");
 
@@ -284,7 +284,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* color 子表 */
 
-    lvgl_register_color(L);
+    iot_lvgl_register_color(L);
 
     lua_setfield(L, -2, "color");
 
@@ -292,7 +292,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* font 子表 */
 
-    lvgl_register_font(L);
+    iot_lvgl_register_font(L);
 
     lua_setfield(L, -2, "font");
 
@@ -300,7 +300,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* disp 子表 */
 
-    lvgl_register_disp(L);
+    iot_lvgl_register_disp(L);
 
     lua_setfield(L, -2, "disp");
 
@@ -308,7 +308,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* indev 子表 */
 
-    lvgl_register_indev(L);
+    iot_lvgl_register_indev(L);
 
     lua_setfield(L, -2, "indev");
 
@@ -316,7 +316,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* timer 子表 */
 
-    lvgl_register_timer(L);
+    iot_lvgl_register_timer(L);
 
     lua_setfield(L, -2, "timer");
 
@@ -324,7 +324,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* theme 子表 */
 
-    lvgl_register_theme(L);
+    iot_lvgl_register_theme(L);
 
     lua_setfield(L, -2, "theme");
 
@@ -332,7 +332,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* fs 子表 */
 
-    lvgl_register_fs(L);
+    iot_lvgl_register_fs(L);
 
     lua_setfield(L, -2, "fs");
 
@@ -342,7 +342,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* btn 子表 */
 
-    lvgl_register_btn(L);
+    iot_lvgl_register_btn(L);
 
     lua_setfield(L, -2, "btn");
 
@@ -350,7 +350,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* label 子表 */
 
-    lvgl_register_label(L);
+    iot_lvgl_register_label(L);
 
     lua_setfield(L, -2, "label");
 
@@ -358,7 +358,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* img 子表 */
 
-    lvgl_register_img(L);
+    iot_lvgl_register_img(L);
 
     lua_setfield(L, -2, "img");
 
@@ -366,7 +366,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* line 子表 */
 
-    lvgl_register_line(L);
+    iot_lvgl_register_line(L);
 
     lua_setfield(L, -2, "line");
 
@@ -374,7 +374,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* arc 子表 */
 
-    lvgl_register_arc(L);
+    iot_lvgl_register_arc(L);
 
     lua_setfield(L, -2, "arc");
 
@@ -382,7 +382,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* bar 子表 */
 
-    lvgl_register_bar(L);
+    iot_lvgl_register_bar(L);
 
     lua_setfield(L, -2, "bar");
 
@@ -392,7 +392,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* slider 子表 */
 
-    lvgl_register_slider(L);
+    iot_lvgl_register_slider(L);
 
     lua_setfield(L, -2, "slider");
 
@@ -400,7 +400,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* checkbox 子表 */
 
-    lvgl_register_checkbox(L);
+    iot_lvgl_register_checkbox(L);
 
     lua_setfield(L, -2, "checkbox");
 
@@ -408,7 +408,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* switch 子表 */
 
-    lvgl_register_switch(L);
+    iot_lvgl_register_switch(L);
 
     lua_setfield(L, -2, "switch");
 
@@ -416,7 +416,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* dropdown 子表 */
 
-    lvgl_register_dropdown(L);
+    iot_lvgl_register_dropdown(L);
 
     lua_setfield(L, -2, "dropdown");
 
@@ -424,7 +424,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* roller 子表 */
 
-    lvgl_register_roller(L);
+    iot_lvgl_register_roller(L);
 
     lua_setfield(L, -2, "roller");
 
@@ -432,7 +432,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* textarea 子表 */
 
-    lvgl_register_textarea(L);
+    iot_lvgl_register_textarea(L);
 
     lua_setfield(L, -2, "textarea");
 
@@ -440,7 +440,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* keyboard 子表 */
 
-    lvgl_register_keyboard(L);
+    iot_lvgl_register_keyboard(L);
 
     lua_setfield(L, -2, "keyboard");
 
@@ -448,7 +448,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* spinbox 子表 */
 
-    lvgl_register_spinbox(L);
+    iot_lvgl_register_spinbox(L);
 
     lua_setfield(L, -2, "spinbox");
 
@@ -458,7 +458,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* chart 子表 */
 
-    lvgl_register_chart(L);
+    iot_lvgl_register_chart(L);
 
     lua_setfield(L, -2, "chart");
 
@@ -466,7 +466,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* table 子表 */
 
-    lvgl_register_table(L);
+    iot_lvgl_register_table(L);
 
     lua_setfield(L, -2, "table");
 
@@ -474,7 +474,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* meter 子表 */
 
-    lvgl_register_meter(L);
+    iot_lvgl_register_meter(L);
 
     lua_setfield(L, -2, "meter");
 
@@ -482,7 +482,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* list 子表 */
 
-    lvgl_register_list(L);
+    iot_lvgl_register_list(L);
 
     lua_setfield(L, -2, "list");
 
@@ -490,7 +490,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* menu 子表 */
 
-    lvgl_register_menu(L);
+    iot_lvgl_register_menu(L);
 
     lua_setfield(L, -2, "menu");
 
@@ -498,7 +498,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* win 子表 */
 
-    lvgl_register_win(L);
+    iot_lvgl_register_win(L);
 
     lua_setfield(L, -2, "win");
 
@@ -506,7 +506,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* tabview 子表 */
 
-    lvgl_register_tabview(L);
+    iot_lvgl_register_tabview(L);
 
     lua_setfield(L, -2, "tabview");
 
@@ -514,7 +514,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* tileview 子表 */
 
-    lvgl_register_tileview(L);
+    iot_lvgl_register_tileview(L);
 
     lua_setfield(L, -2, "tileview");
 
@@ -522,7 +522,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* calendar 子表 */
 
-    lvgl_register_calendar(L);
+    iot_lvgl_register_calendar(L);
 
     lua_setfield(L, -2, "calendar");
 
@@ -530,7 +530,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* colorwheel 子表 */
 
-    lvgl_register_colorwheel(L);
+    iot_lvgl_register_colorwheel(L);
 
     lua_setfield(L, -2, "colorwheel");
 
@@ -538,7 +538,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* msgbox 子表 */
 
-    lvgl_register_msgbox(L);
+    iot_lvgl_register_msgbox(L);
 
     lua_setfield(L, -2, "msgbox");
 
@@ -546,7 +546,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* spinner 子表 */
 
-    lvgl_register_spinner(L);
+    iot_lvgl_register_spinner(L);
 
     lua_setfield(L, -2, "spinner");
 
@@ -554,7 +554,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* canvas 子表 */
 
-    lvgl_register_canvas(L);
+    iot_lvgl_register_canvas(L);
 
     lua_setfield(L, -2, "canvas");
 
@@ -562,7 +562,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* layout 子表 */
 
-    lvgl_register_layout(L);
+    iot_lvgl_register_layout(L);
 
     lua_setfield(L, -2, "layout");
 
@@ -570,7 +570,7 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     lua_newtable(L);  /* group 子表 */
 
-    lvgl_register_group(L);
+    iot_lvgl_register_group(L);
 
     lua_setfield(L, -2, "group");
 
@@ -578,39 +578,39 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     /* 定义常量 */
 
-    lvgl_define_constants(L);
+    iot_lvgl_define_constants(L);
 
 
 
-    REG_METHOD(L, "init", lvgl_init);
+    REG_METHOD(L, "init", iot_lvgl_init);
 
-    REG_METHOD(L, "scr_act", lvgl_scr_act);
+    REG_METHOD(L, "scr_act", iot_lvgl_scr_act);
 
-    REG_METHOD(L, "scr_load", lvgl_scr_load);
+    REG_METHOD(L, "scr_load", iot_lvgl_scr_load);
 
-    REG_METHOD(L, "tick_inc", lvgl_tick_inc);
+    REG_METHOD(L, "tick_inc", iot_lvgl_tick_inc);
 
-    REG_METHOD(L, "task_handler", lvgl_task_handler);
+    REG_METHOD(L, "task_handler", iot_lvgl_task_handler);
 
-    REG_METHOD(L, "flush_ready", lvgl_flush_ready);
+    REG_METHOD(L, "flush_ready", iot_lvgl_flush_ready);
 
-    REG_METHOD(L, "refr_now", lvgl_refr_now);
+    REG_METHOD(L, "refr_now", iot_lvgl_refr_now);
 
-    REG_METHOD(L, "debug_info_print", lvgl_debug_info_print);
+    REG_METHOD(L, "debug_info_print", iot_lvgl_debug_info_print);
 
-    REG_METHOD(L, "version_get", lvgl_version_get);
+    REG_METHOD(L, "version_get", iot_lvgl_version_get);
 
-    REG_METHOD(L, "tick_get", lvgl_tick_get);
+    REG_METHOD(L, "tick_get", iot_lvgl_tick_get);
 
-    REG_METHOD(L, "disp_get_default", lvgl_disp_get_default);
+    REG_METHOD(L, "disp_get_default", iot_lvgl_disp_get_default);
 
-    REG_METHOD(L, "disp_get_scr_act", lvgl_disp_get_scr_act);
+    REG_METHOD(L, "disp_get_scr_act", iot_lvgl_disp_get_scr_act);
 
-    REG_METHOD(L, "disp_load_scr", lvgl_disp_load_scr);
+    REG_METHOD(L, "disp_load_scr", iot_lvgl_disp_load_scr);
 
-    REG_METHOD(L, "indev_get_default", lvgl_indev_get_default);
+    REG_METHOD(L, "indev_get_default", iot_lvgl_indev_get_default);
 
-    REG_METHOD(L, "pct", lvgl_pct);
+    REG_METHOD(L, "pct", iot_lvgl_pct);
 
     return 1;
 }

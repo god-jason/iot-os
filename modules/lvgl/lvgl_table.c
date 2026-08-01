@@ -1,5 +1,5 @@
-/**
- * @file lvgl_table.c
+﻿/**
+ * @file iot_lvgl_table.c
  * @brief LVGL表格控件
  *
  * 实现LVGL表格控件的OO风格Lua绑定，包括表格创建、设置行列数、设置/获取单元格值、设置列宽、设置单元格对齐、获取选中行列等接口。
@@ -16,8 +16,8 @@ static int table_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_table_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* table = lv_table_create(parent);
     lua_pushlightuserdata(L, table);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_table_create_internal(lua_State* L) {
 @return userdata 带metatable的表格实例
 @usage local table = lvgl.table.create(scr)
 */
-static int lvgl_table_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_table_create_internal, table_metatable_ref);
+static int iot_lvgl_table_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_table_create_internal, table_metatable_ref);
 }
 
 /*
@@ -42,8 +42,8 @@ static int lvgl_table_create(lua_State* L) {
 @return self
 @usage table:set_row_cnt(3)
 */
-static int lvgl_table_set_row_cnt(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_set_row_cnt(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row_cnt = (uint16_t)luaL_checkinteger(L, 2);
     lv_table_set_row_cnt(table, row_cnt);
     lua_pushvalue(L, 1);
@@ -57,8 +57,8 @@ static int lvgl_table_set_row_cnt(lua_State* L) {
 @return self
 @usage table:set_col_cnt(3)
 */
-static int lvgl_table_set_col_cnt(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_set_col_cnt(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t col_cnt = (uint16_t)luaL_checkinteger(L, 2);
     lv_table_set_col_cnt(table, col_cnt);
     lua_pushvalue(L, 1);
@@ -74,8 +74,8 @@ static int lvgl_table_set_col_cnt(lua_State* L) {
 @return self
 @usage table:set_cell_value(0, 0, "Name")
 */
-static int lvgl_table_set_cell_value(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_set_cell_value(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
     const char* txt = luaL_checkstring(L, 4);
@@ -92,8 +92,8 @@ static int lvgl_table_set_cell_value(lua_State* L) {
 @return self
 @usage table:set_col_width(0, 80)
 */
-static int lvgl_table_set_col_width(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_set_col_width(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 2);
     int16_t width = (int16_t)luaL_checkinteger(L, 3);
     lv_table_set_col_width(table, col, width);
@@ -110,8 +110,8 @@ static int lvgl_table_set_col_width(lua_State* L) {
 @return self
 @usage table:set_cell_align(0, 0, lvgl.TEXT_ALIGN_CENTER)
 */
-static int lvgl_table_set_cell_align(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_set_cell_align(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checkinteger(L, 2);
     (void)luaL_checkinteger(L, 3);
     (void)luaL_checkinteger(L, 4);
@@ -129,8 +129,8 @@ static int lvgl_table_set_cell_align(lua_State* L) {
 @return string 文本内容
 @usage local text = table:get_cell_value(0, 0)
 */
-static int lvgl_table_get_cell_value(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_get_cell_value(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
     const char* txt = lv_table_get_cell_value(table, row, col);
@@ -144,8 +144,8 @@ static int lvgl_table_get_cell_value(lua_State* L) {
 @return integer 选中行索引
 @usage local row = table:get_selected_row()
 */
-static int lvgl_table_get_selected_row(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_get_selected_row(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = LV_TABLE_CELL_NONE;
     uint16_t col = LV_TABLE_CELL_NONE;
     lv_table_get_selected_cell(table, &row, &col);
@@ -159,8 +159,8 @@ static int lvgl_table_get_selected_row(lua_State* L) {
 @return integer 选中列索引
 @usage local col = table:get_selected_col()
 */
-static int lvgl_table_get_selected_col(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_get_selected_col(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = LV_TABLE_CELL_NONE;
     uint16_t col = LV_TABLE_CELL_NONE;
     lv_table_get_selected_cell(table, &row, &col);
@@ -177,8 +177,8 @@ static int lvgl_table_get_selected_col(lua_State* L) {
 @return self
 @usage table:add_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_NONE)
 */
-static int lvgl_table_add_cell_ctrl(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_add_cell_ctrl(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
     uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
@@ -196,8 +196,8 @@ static int lvgl_table_add_cell_ctrl(lua_State* L) {
 @return self
 @usage table:remove_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_NONE)
 */
-static int lvgl_table_remove_cell_ctrl(lua_State* L) {
-    lv_obj_t* table = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_table_remove_cell_ctrl(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
     uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
@@ -207,19 +207,19 @@ static int lvgl_table_remove_cell_ctrl(lua_State* L) {
 }
 
 /* 注册 table 子模块 */
-void lvgl_register_table(lua_State* L) {
+void iot_lvgl_register_table(lua_State* L) {
     lua_newtable(L);
 
-    REG_METHOD(L, "set_row_cnt", lvgl_table_set_row_cnt);
-    REG_METHOD(L, "set_col_cnt", lvgl_table_set_col_cnt);
-    REG_METHOD(L, "set_cell_value", lvgl_table_set_cell_value);
-    REG_METHOD(L, "set_col_width", lvgl_table_set_col_width);
-    REG_METHOD(L, "set_cell_align", lvgl_table_set_cell_align);
-    REG_METHOD(L, "get_cell_value", lvgl_table_get_cell_value);
-    REG_METHOD(L, "get_selected_row", lvgl_table_get_selected_row);
-    REG_METHOD(L, "get_selected_col", lvgl_table_get_selected_col);
-    REG_METHOD(L, "add_cell_ctrl", lvgl_table_add_cell_ctrl);
-    REG_METHOD(L, "remove_cell_ctrl", lvgl_table_remove_cell_ctrl);
+    REG_METHOD(L, "set_row_cnt", iot_lvgl_table_set_row_cnt);
+    REG_METHOD(L, "set_col_cnt", iot_lvgl_table_set_col_cnt);
+    REG_METHOD(L, "set_cell_value", iot_lvgl_table_set_cell_value);
+    REG_METHOD(L, "set_col_width", iot_lvgl_table_set_col_width);
+    REG_METHOD(L, "set_cell_align", iot_lvgl_table_set_cell_align);
+    REG_METHOD(L, "get_cell_value", iot_lvgl_table_get_cell_value);
+    REG_METHOD(L, "get_selected_row", iot_lvgl_table_get_selected_row);
+    REG_METHOD(L, "get_selected_col", iot_lvgl_table_get_selected_col);
+    REG_METHOD(L, "add_cell_ctrl", iot_lvgl_table_add_cell_ctrl);
+    REG_METHOD(L, "remove_cell_ctrl", iot_lvgl_table_remove_cell_ctrl);
 
     table_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -234,5 +234,5 @@ void lvgl_register_table(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.table) */
-    REG_METHOD(L, "create", lvgl_table_create);
+    REG_METHOD(L, "create", iot_lvgl_table_create);
 }

@@ -21,20 +21,20 @@
 extern "C" {
 #endif
 
-typedef struct fs_dir_entry {
+typedef struct iot_fs_dir_entry {
     char name[256];
     int is_dir;
     long size;
     long mtime;
-} fs_dir_entry_t;
+} iot_fs_dir_entry_t;
 
-typedef struct fs_dir fs_dir_t;
+typedef struct iot_fs_dir iot_fs_dir_handle_t;
 
-fs_dir_t* fs_dir_open(const char* path);
-void fs_dir_close(fs_dir_t* dir);
-int fs_dir_read(fs_dir_t* dir, fs_dir_entry_t* entry);
-int fs_dir_list(const char* path, fs_dir_entry_t** entries, int* count);
-void fs_dir_free_list(fs_dir_entry_t* entries);
+iot_fs_dir_handle_t* iot_fs_dir_open(const char* path);
+void iot_fs_dir_close(iot_fs_dir_handle_t* dir);
+int iot_fs_dir_read(iot_fs_dir_handle_t* dir, iot_fs_dir_entry_t* entry);
+int iot_fs_dir_list(const char* path, iot_fs_dir_entry_t** entries, int* count);
+void iot_fs_dir_free_list(iot_fs_dir_entry_t* entries);
 
 #ifdef __cplusplus
 }

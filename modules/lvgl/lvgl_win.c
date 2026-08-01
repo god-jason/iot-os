@@ -1,5 +1,5 @@
-/**
- * @file lvgl_win.c
+﻿/**
+ * @file iot_lvgl_win.c
  * @brief LVGL窗口控件
  *
  * 实现LVGL窗口控件的OO风格Lua绑定，包括窗口创建、设置标题、添加按钮、设置按钮标题、获取内容区域等接口，提供带标题栏和按钮的容器窗口。
@@ -14,7 +14,7 @@
 /* win组件的metatable引用 */
 static int win_metatable_ref = LUA_NOREF;
 
-static lv_obj_t* lvgl_win_find_title(lv_obj_t* win)
+static lv_obj_t* iot_lvgl_win_find_title(lv_obj_t* win)
 {
     lv_obj_t* header = lv_win_get_header(win);
     uint32_t i;
@@ -35,8 +35,8 @@ static lv_obj_t* lvgl_win_find_title(lv_obj_t* win)
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_win_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_coord_t header_height = (lv_coord_t)luaL_optinteger(L, 2, 40);
     lv_obj_t* win = lv_win_create(parent, header_height);
     lua_pushlightuserdata(L, win);
@@ -51,8 +51,8 @@ static int lvgl_win_create_internal(lua_State* L) {
 @return userdata 带metatable的窗口实例
 @usage local win = lvgl.win.create(scr)
 */
-static int lvgl_win_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_win_create_internal, win_metatable_ref);
+static int iot_lvgl_win_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_win_create_internal, win_metatable_ref);
 }
 
 /*
@@ -62,10 +62,10 @@ static int lvgl_win_create(lua_State* L) {
 @return self
 @usage win:set_title("设置")
 */
-static int lvgl_win_set_title(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_set_title(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     const char* title = luaL_checkstring(L, 2);
-    lv_obj_t* label = lvgl_win_find_title(win);
+    lv_obj_t* label = iot_lvgl_win_find_title(win);
     if (label) {
         lv_label_set_text(label, title);
     } else {
@@ -82,8 +82,8 @@ static int lvgl_win_set_title(lua_State* L) {
 @return userdata 按钮对象
 @usage local btn = win:add_btn(nil)
 */
-static int lvgl_win_add_btn(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_add_btn(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     const void* icon = NULL;
     if (!lua_isnoneornil(L, 2)) {
         if (lua_isstring(L, 2)) {
@@ -106,12 +106,12 @@ static int lvgl_win_add_btn(lua_State* L) {
 @return self
 @usage win:set_btn_title(btn, "X")
 */
-static int lvgl_win_set_btn_title(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_set_btn_title(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* btn = (lv_obj_t*)luaL_checklightuserdata(L, 2);
     const char* title = luaL_checkstring(L, 3);
     (void)win;
-    lv_btn_set_text(btn, title);
+    iot_lv_btn_set_text(btn, title);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -122,8 +122,8 @@ static int lvgl_win_set_btn_title(lua_State* L) {
 @return userdata 内容区域对象
 @usage local cont = win:get_content()
 */
-static int lvgl_win_get_content(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_get_content(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* cont = lv_win_get_content(win);
     lua_pushlightuserdata(L, cont);
     return 1;
@@ -136,8 +136,8 @@ static int lvgl_win_get_content(lua_State* L) {
 @return self
 @usage win:set_title_height(40)
 */
-static int lvgl_win_set_title_height(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_set_title_height(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     lv_coord_t height = (lv_coord_t)luaL_checkinteger(L, 2);
     lv_obj_t* header = lv_win_get_header(win);
     if (header) {
@@ -154,8 +154,8 @@ static int lvgl_win_set_title_height(lua_State* L) {
 @return self
 @usage win:set_flags(lvgl.WIN_FLAG_HEADER)
 */
-static int lvgl_win_set_flags(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_set_flags(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checkinteger(L, 2);
     /* lv_win_set_flags() was removed in LVGL 8 */
     (void)win;
@@ -170,8 +170,8 @@ static int lvgl_win_set_flags(lua_State* L) {
 @return self
 @usage win:clear_flags(lvgl.WIN_FLAG_HEADER)
 */
-static int lvgl_win_clear_flags(lua_State* L) {
-    lv_obj_t* win = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_win_clear_flags(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checkinteger(L, 2);
     /* lv_win_clear_flags() was removed in LVGL 8 */
     (void)win;
@@ -180,18 +180,18 @@ static int lvgl_win_clear_flags(lua_State* L) {
 }
 
 /* 注册 win 子模块 */
-void lvgl_register_win(lua_State* L) {
+void iot_lvgl_register_win(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_title", lvgl_win_set_title);
-    REG_METHOD(L, "add_btn", lvgl_win_add_btn);
-    REG_METHOD(L, "set_btn_title", lvgl_win_set_btn_title);
-    REG_METHOD(L, "get_content", lvgl_win_get_content);
-    REG_METHOD(L, "set_title_height", lvgl_win_set_title_height);
-    REG_METHOD(L, "set_flags", lvgl_win_set_flags);
-    REG_METHOD(L, "clear_flags", lvgl_win_clear_flags);
+    REG_METHOD(L, "set_title", iot_lvgl_win_set_title);
+    REG_METHOD(L, "add_btn", iot_lvgl_win_add_btn);
+    REG_METHOD(L, "set_btn_title", iot_lvgl_win_set_btn_title);
+    REG_METHOD(L, "get_content", iot_lvgl_win_get_content);
+    REG_METHOD(L, "set_title_height", iot_lvgl_win_set_title_height);
+    REG_METHOD(L, "set_flags", iot_lvgl_win_set_flags);
+    REG_METHOD(L, "clear_flags", iot_lvgl_win_clear_flags);
 
     /* 保存组件metatable引用(用于继承) */
     win_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -208,5 +208,5 @@ void lvgl_register_win(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.win) */
-    REG_METHOD(L, "create", lvgl_win_create);
+    REG_METHOD(L, "create", iot_lvgl_win_create);
 }

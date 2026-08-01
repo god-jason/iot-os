@@ -115,9 +115,9 @@ static const uint8_t font_6x8_data[] = {
     0x10, // ~
 };
 
-const font_info_t font_6x8 = {
+const iot_font_info_t font_6x8 = {
     .name = "font_6x8",
-    .format = FONT_FORMAT_BITMAP,
+    .format = IOT_FONT_FORMAT_BITMAP,
     .width = 6,
     .height = 8,
     .bpp = 1,
@@ -230,9 +230,9 @@ static const uint8_t font_8x8_data[] = {
     0x10,0x00, // ~
 };
 
-const font_info_t font_8x8 = {
+const iot_font_info_t font_8x8 = {
     .name = "font_8x8",
-    .format = FONT_FORMAT_BITMAP,
+    .format = IOT_FONT_FORMAT_BITMAP,
     .width = 8,
     .height = 8,
     .bpp = 1,
@@ -345,9 +345,9 @@ static const uint8_t font_8x16_data[] = {
     0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00, // ~
 };
 
-const font_info_t font_8x16 = {
+const iot_font_info_t font_8x16 = {
     .name = "font_8x16",
-    .format = FONT_FORMAT_BITMAP,
+    .format = IOT_FONT_FORMAT_BITMAP,
     .width = 8,
     .height = 16,
     .bpp = 1,
@@ -362,7 +362,7 @@ const font_info_t font_8x16 = {
  * 字体列表
  ****************************************************************************/
 
-const font_info_t* font_list[] = {
+const iot_font_info_t* font_list[] = {
     &font_6x8,
     &font_8x8,
     &font_8x16,

@@ -1,5 +1,5 @@
-/**
- * @file lvgl_obj.c
+﻿/**
+ * @file iot_lvgl_obj.c
  * @brief LVGL对象系统实现（OO风格）
  *
  * 实现LVGL对象系统的核心功能，包括对象指针获取（支持userdata和table两种传参方式）、OO实例创建（绑定元表和方法）、对象metatable注册等，为所有控件提供统一的OO风格Lua绑定基础。
@@ -15,12 +15,12 @@
 
 static int obj_metatable_ref = LUA_NOREF;
 
-/* 前置声明（供 lvgl_register_obj 注册使用） */
-int lvgl_obj_has_state(lua_State* L);
-int lvgl_obj_add_state(lua_State* L);
-int lvgl_obj_clear_state(lua_State* L);
+/* 前置声明（供 iot_lvgl_register_obj 注册使用） */
+int iot_lvgl_obj_has_state(lua_State* L);
+int iot_lvgl_obj_add_state(lua_State* L);
+int iot_lvgl_obj_clear_state(lua_State* L);
 
-lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx) {
+lv_obj_t* iot_lvgl_get_obj_ptr(lua_State* L, int idx) {
     int abs_idx = idx > 0 ? idx : (lua_gettop(L) + idx + 1);
 
     if (lua_isuserdata(L, abs_idx)) {
@@ -62,61 +62,61 @@ lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx) {
     return NULL;
 }
 
-int lvgl_register_obj(lua_State* L) {
+int iot_lvgl_register_obj(lua_State* L) {
     lua_newtable(L);
 
-    REG_METHOD(L, "delete", lvgl_obj_delete);
-    REG_METHOD(L, "clean", lvgl_obj_clean);
-    REG_METHOD(L, "get_parent", lvgl_obj_get_parent);
-    REG_METHOD(L, "get_child_cnt", lvgl_obj_get_child_cnt);
+    REG_METHOD(L, "delete", iot_lvgl_obj_delete);
+    REG_METHOD(L, "clean", iot_lvgl_obj_clean);
+    REG_METHOD(L, "get_parent", iot_lvgl_obj_get_parent);
+    REG_METHOD(L, "get_child_cnt", iot_lvgl_obj_get_child_cnt);
 
-    REG_METHOD(L, "set_pos", lvgl_obj_set_pos);
-    REG_METHOD(L, "set_size", lvgl_obj_set_size);
-    REG_METHOD(L, "set_width", lvgl_obj_set_width);
-    REG_METHOD(L, "set_height", lvgl_obj_set_height);
-    REG_METHOD(L, "set_x", lvgl_obj_set_x);
-    REG_METHOD(L, "set_y", lvgl_obj_set_y);
-    REG_METHOD(L, "align", lvgl_obj_align);
-    REG_METHOD(L, "align_to", lvgl_obj_align_to);
-    REG_METHOD(L, "center", lvgl_obj_center);
+    REG_METHOD(L, "set_pos", iot_lvgl_obj_set_pos);
+    REG_METHOD(L, "set_size", iot_lvgl_obj_set_size);
+    REG_METHOD(L, "set_width", iot_lvgl_obj_set_width);
+    REG_METHOD(L, "set_height", iot_lvgl_obj_set_height);
+    REG_METHOD(L, "set_x", iot_lvgl_obj_set_x);
+    REG_METHOD(L, "set_y", iot_lvgl_obj_set_y);
+    REG_METHOD(L, "align", iot_lvgl_obj_align);
+    REG_METHOD(L, "align_to", iot_lvgl_obj_align_to);
+    REG_METHOD(L, "center", iot_lvgl_obj_center);
 
-    REG_METHOD(L, "set_click", lvgl_obj_set_click);
-    REG_METHOD(L, "set_hidden", lvgl_obj_set_hidden);
-    REG_METHOD(L, "set_user_data", lvgl_obj_set_user_data);
-    REG_METHOD(L, "add_style", lvgl_obj_add_style);
+    REG_METHOD(L, "set_click", iot_lvgl_obj_set_click);
+    REG_METHOD(L, "set_hidden", iot_lvgl_obj_set_hidden);
+    REG_METHOD(L, "set_user_data", iot_lvgl_obj_set_user_data);
+    REG_METHOD(L, "add_style", iot_lvgl_obj_add_style);
 
-    REG_METHOD(L, "add_to", lvgl_obj_add_to);
-    REG_METHOD(L, "move_foreground", lvgl_obj_move_foreground);
-    REG_METHOD(L, "move_background", lvgl_obj_move_background);
+    REG_METHOD(L, "add_to", iot_lvgl_obj_add_to);
+    REG_METHOD(L, "move_foreground", iot_lvgl_obj_move_foreground);
+    REG_METHOD(L, "move_background", iot_lvgl_obj_move_background);
 
-    REG_METHOD(L, "get_ptr", lvgl_obj_get_ptr);
-    REG_METHOD(L, "get_x", lvgl_obj_get_x);
-    REG_METHOD(L, "get_y", lvgl_obj_get_y);
-    REG_METHOD(L, "get_width", lvgl_obj_get_width);
-    REG_METHOD(L, "get_height", lvgl_obj_get_height);
-    REG_METHOD(L, "get_pos", lvgl_obj_get_pos);
-    REG_METHOD(L, "is_visible", lvgl_obj_is_visible);
-    REG_METHOD(L, "is_clickable", lvgl_obj_is_clickable);
-    REG_METHOD(L, "get_type", lvgl_obj_get_type);
-    REG_METHOD(L, "has_state", lvgl_obj_has_state);
-    REG_METHOD(L, "add_state", lvgl_obj_add_state);
-    REG_METHOD(L, "clear_state", lvgl_obj_clear_state);
+    REG_METHOD(L, "get_ptr", iot_lvgl_obj_get_ptr);
+    REG_METHOD(L, "get_x", iot_lvgl_obj_get_x);
+    REG_METHOD(L, "get_y", iot_lvgl_obj_get_y);
+    REG_METHOD(L, "get_width", iot_lvgl_obj_get_width);
+    REG_METHOD(L, "get_height", iot_lvgl_obj_get_height);
+    REG_METHOD(L, "get_pos", iot_lvgl_obj_get_pos);
+    REG_METHOD(L, "is_visible", iot_lvgl_obj_is_visible);
+    REG_METHOD(L, "is_clickable", iot_lvgl_obj_is_clickable);
+    REG_METHOD(L, "get_type", iot_lvgl_obj_get_type);
+    REG_METHOD(L, "has_state", iot_lvgl_obj_has_state);
+    REG_METHOD(L, "add_state", iot_lvgl_obj_add_state);
+    REG_METHOD(L, "clear_state", iot_lvgl_obj_clear_state);
 
-    REG_METHOD(L, "add_event_cb", lvgl_obj_add_event_cb);
-    REG_METHOD(L, "remove_event_cb", lvgl_obj_remove_event_cb);
-    REG_METHOD(L, "set_event_cb", lvgl_obj_set_event_cb);
-    REG_METHOD(L, "on", lvgl_obj_on);
-    REG_METHOD(L, "off", lvgl_obj_off);
+    REG_METHOD(L, "add_event_cb", iot_lvgl_obj_add_event_cb);
+    REG_METHOD(L, "remove_event_cb", iot_lvgl_obj_remove_event_cb);
+    REG_METHOD(L, "set_event_cb", iot_lvgl_obj_set_event_cb);
+    REG_METHOD(L, "on", iot_lvgl_obj_on);
+    REG_METHOD(L, "off", iot_lvgl_obj_off);
 
-    REG_METHOD(L, "scroll_to_x", lvgl_obj_scroll_to_x);
-    REG_METHOD(L, "scroll_to_y", lvgl_obj_scroll_to_y);
-    REG_METHOD(L, "scroll_to", lvgl_obj_scroll_to);
-    REG_METHOD(L, "scroll_by", lvgl_obj_scroll_by);
-    REG_METHOD(L, "scroll_to_view", lvgl_obj_scroll_to_view);
-    REG_METHOD(L, "get_scroll_x", lvgl_obj_get_scroll_x);
-    REG_METHOD(L, "get_scroll_y", lvgl_obj_get_scroll_y);
-    REG_METHOD(L, "set_scrollbar_mode", lvgl_obj_set_scrollbar_mode);
-    REG_METHOD(L, "set_scroll_dir", lvgl_obj_set_scroll_dir);
+    REG_METHOD(L, "scroll_to_x", iot_lvgl_obj_scroll_to_x);
+    REG_METHOD(L, "scroll_to_y", iot_lvgl_obj_scroll_to_y);
+    REG_METHOD(L, "scroll_to", iot_lvgl_obj_scroll_to);
+    REG_METHOD(L, "scroll_by", iot_lvgl_obj_scroll_by);
+    REG_METHOD(L, "scroll_to_view", iot_lvgl_obj_scroll_to_view);
+    REG_METHOD(L, "get_scroll_x", iot_lvgl_obj_get_scroll_x);
+    REG_METHOD(L, "get_scroll_y", iot_lvgl_obj_get_scroll_y);
+    REG_METHOD(L, "set_scrollbar_mode", iot_lvgl_obj_set_scrollbar_mode);
+    REG_METHOD(L, "set_scroll_dir", iot_lvgl_obj_set_scroll_dir);
 
     obj_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -134,11 +134,11 @@ int lvgl_register_obj(lua_State* L) {
     return obj_metatable_ref;
 }
 
-int lvgl_get_obj_metatable_ref(void) {
+int iot_lvgl_get_obj_metatable_ref(void) {
     return obj_metatable_ref;
 }
 
-int lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref) {
+int iot_lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref) {
     /* 1. 调用 create_func 创建对象，push lightuserdata */
     create_func(L);
     /* 栈: [lightud] */
@@ -212,35 +212,35 @@ int lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metata
     return 1;
 }
 
-int lvgl_obj_delete(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_delete(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_del(obj);
     return 0;
 }
 
-int lvgl_obj_clean(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_clean(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_clean(obj);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_get_parent(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_parent(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* parent = lv_obj_get_parent(obj);
     lua_pushlightuserdata(L, parent);
     return 1;
 }
 
-int lvgl_obj_get_child_cnt(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_child_cnt(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t cnt = lv_obj_get_child_cnt(obj);
     lua_pushinteger(L, cnt);
     return 1;
 }
 
-int lvgl_obj_set_pos(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_pos(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_obj_set_pos(obj, x, y);
@@ -248,8 +248,8 @@ int lvgl_obj_set_pos(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_set_size(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_size(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t w = (int32_t)luaL_checkinteger(L, 2);
     int32_t h = (int32_t)luaL_checkinteger(L, 3);
     lv_obj_set_size(obj, w, h);
@@ -257,40 +257,40 @@ int lvgl_obj_set_size(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_set_width(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_width(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t w = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_set_width(obj, w);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_height(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_height(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t h = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_set_height(obj, h);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_x(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_x(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_set_x(obj, x);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_y(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_y(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t y = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_set_y(obj, y);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_align(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_align(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_align_t align = (lv_align_t)luaL_checkinteger(L, 2);
     int32_t x_ofs = (int32_t)luaL_optinteger(L, 3, 0);
     int32_t y_ofs = (int32_t)luaL_optinteger(L, 4, 0);
@@ -299,9 +299,9 @@ int lvgl_obj_align(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_align_to(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* ref = lvgl_get_obj_ptr(L, 2);
+int iot_lvgl_obj_align_to(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* ref = iot_lvgl_get_obj_ptr(L, 2);
     lv_align_t align = (lv_align_t)luaL_checkinteger(L, 3);
     int32_t x_ofs = (int32_t)luaL_optinteger(L, 4, 0);
     int32_t y_ofs = (int32_t)luaL_optinteger(L, 5, 0);
@@ -310,15 +310,15 @@ int lvgl_obj_align_to(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_center(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_center(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_center(obj);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_click(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_click(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     if (en) {
         lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
@@ -329,8 +329,8 @@ int lvgl_obj_set_click(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_set_hidden(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_hidden(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     if (en) {
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
@@ -341,8 +341,8 @@ int lvgl_obj_set_hidden(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_set_user_data(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_user_data(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     if (lua_gettop(L) >= 2) {
         void* data = (void*)lua_touserdata(L, 2);
         lv_obj_set_user_data(obj, data);
@@ -351,8 +351,8 @@ int lvgl_obj_set_user_data(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_add_style(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_add_style(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 2);
     lv_part_t selector = (lv_part_t)luaL_optinteger(L, 3, LV_PART_MAIN);
     lv_obj_add_style(obj, style, selector);
@@ -360,141 +360,141 @@ int lvgl_obj_add_style(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_add_to(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 2);
+int iot_lvgl_obj_add_to(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 2);
     lv_obj_set_parent(obj, parent);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_move_foreground(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_move_foreground(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_move_foreground(obj);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_move_background(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_move_background(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_move_background(obj);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_get_ptr(lua_State* L) {
+int iot_lvgl_obj_get_ptr(lua_State* L) {
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_get_x(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_x(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_x(obj));
     return 1;
 }
 
-int lvgl_obj_get_y(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_y(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_y(obj));
     return 1;
 }
 
-int lvgl_obj_get_width(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_width(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_width(obj));
     return 1;
 }
 
-int lvgl_obj_get_height(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_height(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_height(obj));
     return 1;
 }
 
-int lvgl_obj_get_pos(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_pos(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_x(obj));
     lua_pushinteger(L, lv_obj_get_y(obj));
     return 2;
 }
 
-int lvgl_obj_is_visible(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_is_visible(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushboolean(L, lv_obj_is_visible(obj));
     return 1;
 }
 
-int lvgl_obj_is_clickable(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_is_clickable(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushboolean(L, lv_obj_has_flag(obj, LV_OBJ_FLAG_CLICKABLE));
     return 1;
 }
 
-int lvgl_obj_has_state(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_has_state(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
     lua_pushboolean(L, lv_obj_has_state(obj, state));
     return 1;
 }
 
-int lvgl_obj_add_state(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_add_state(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
     lv_obj_add_state(obj, state);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_clear_state(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_clear_state(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_state_t state = (lv_state_t)luaL_checkinteger(L, 2);
     lv_obj_clear_state(obj, state);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static const char* lvgl_obj_type_name(lv_obj_t* obj)
+static const char* iot_lvgl_obj_type_name(lv_obj_t* obj)
 {
-#define LVGL_IF_TYPE(cls, name) \
+#define iot_lvgl_IF_TYPE(cls, name) \
     if (lv_obj_check_type(obj, &cls)) return name;
 
-    LVGL_IF_TYPE(lv_btn_class, "btn")
-    LVGL_IF_TYPE(lv_label_class, "label")
-    LVGL_IF_TYPE(lv_img_class, "img")
-    LVGL_IF_TYPE(lv_line_class, "line")
-    LVGL_IF_TYPE(lv_arc_class, "arc")
-    LVGL_IF_TYPE(lv_bar_class, "bar")
-    LVGL_IF_TYPE(lv_slider_class, "slider")
-    LVGL_IF_TYPE(lv_switch_class, "switch")
-    LVGL_IF_TYPE(lv_dropdown_class, "dropdown")
-    LVGL_IF_TYPE(lv_roller_class, "roller")
-    LVGL_IF_TYPE(lv_textarea_class, "textarea")
-    LVGL_IF_TYPE(lv_chart_class, "chart")
-    LVGL_IF_TYPE(lv_table_class, "table")
-    LVGL_IF_TYPE(lv_meter_class, "meter")
-    LVGL_IF_TYPE(lv_checkbox_class, "checkbox")
-    LVGL_IF_TYPE(lv_canvas_class, "canvas")
-    LVGL_IF_TYPE(lv_list_class, "list")
-    LVGL_IF_TYPE(lv_keyboard_class, "keyboard")
-    LVGL_IF_TYPE(lv_calendar_class, "calendar")
-    LVGL_IF_TYPE(lv_msgbox_class, "msgbox")
-    LVGL_IF_TYPE(lv_spinner_class, "spinner")
-    LVGL_IF_TYPE(lv_obj_class, "obj")
+    iot_lvgl_IF_TYPE(lv_btn_class, "btn")
+    iot_lvgl_IF_TYPE(lv_label_class, "label")
+    iot_lvgl_IF_TYPE(lv_img_class, "img")
+    iot_lvgl_IF_TYPE(lv_line_class, "line")
+    iot_lvgl_IF_TYPE(lv_arc_class, "arc")
+    iot_lvgl_IF_TYPE(lv_bar_class, "bar")
+    iot_lvgl_IF_TYPE(lv_slider_class, "slider")
+    iot_lvgl_IF_TYPE(lv_switch_class, "switch")
+    iot_lvgl_IF_TYPE(lv_dropdown_class, "dropdown")
+    iot_lvgl_IF_TYPE(lv_roller_class, "roller")
+    iot_lvgl_IF_TYPE(lv_textarea_class, "textarea")
+    iot_lvgl_IF_TYPE(lv_chart_class, "chart")
+    iot_lvgl_IF_TYPE(lv_table_class, "table")
+    iot_lvgl_IF_TYPE(lv_meter_class, "meter")
+    iot_lvgl_IF_TYPE(lv_checkbox_class, "checkbox")
+    iot_lvgl_IF_TYPE(lv_canvas_class, "canvas")
+    iot_lvgl_IF_TYPE(lv_list_class, "list")
+    iot_lvgl_IF_TYPE(lv_keyboard_class, "keyboard")
+    iot_lvgl_IF_TYPE(lv_calendar_class, "calendar")
+    iot_lvgl_IF_TYPE(lv_msgbox_class, "msgbox")
+    iot_lvgl_IF_TYPE(lv_spinner_class, "spinner")
+    iot_lvgl_IF_TYPE(lv_obj_class, "obj")
 
-#undef LVGL_IF_TYPE
+#undef iot_lvgl_IF_TYPE
     return "unknown";
 }
 
-int lvgl_obj_get_type(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
-    lua_pushstring(L, lvgl_obj_type_name(obj));
+int iot_lvgl_obj_get_type(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
+    lua_pushstring(L, iot_lvgl_obj_type_name(obj));
     return 1;
 }
 
 /* ==================== 事件回调相关 ==================== */
 
 /* 将事件名称字符串映射为LVGL事件码 */
-static lv_event_code_t lvgl_event_name_to_code(const char* name) {
+static lv_event_code_t iot_lvgl_event_name_to_code(const char* name) {
     if (!name) return LV_EVENT_ALL;
 
     /* 按压相关 */
@@ -539,7 +539,7 @@ static lv_event_code_t lvgl_event_name_to_code(const char* name) {
     return LV_EVENT_ALL;
 }
 
-static void lvgl_event_handler(lv_event_t* e) {
+static void iot_lvgl_event_handler(lv_event_t* e) {
     void* ud = lv_event_get_user_data(e);
     if (!ud) return;
 
@@ -554,8 +554,8 @@ static void lvgl_event_handler(lv_event_t* e) {
     iot_callback_call(ud, params);
 }
 
-int lvgl_obj_add_event_cb(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_add_event_cb(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     if (!lua_isfunction(L, 2)) {
         luaL_error(L, "event callback must be a function");
         return 0;
@@ -569,37 +569,37 @@ int lvgl_obj_add_event_cb(lua_State* L) {
         return 0;
     }
 
-    lv_obj_add_event_cb(obj, lvgl_event_handler, event_code, ud);
+    lv_obj_add_event_cb(obj, iot_lvgl_event_handler, event_code, ud);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_remove_event_cb(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_remove_event_cb(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     void* ud = (void*)lua_touserdata(L, 2);
 
     if (ud) {
-        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, ud);
+        lv_obj_remove_event_cb_with_user_data(obj, iot_lvgl_event_handler, ud);
         iot_callback_free(ud);
     } else {
-        lv_obj_remove_event_cb(obj, lvgl_event_handler);
+        lv_obj_remove_event_cb(obj, iot_lvgl_event_handler);
     }
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_event_cb(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_event_cb(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     if (!lua_isfunction(L, 2)) {
         luaL_error(L, "event callback must be a function");
         return 0;
     }
 
-    void* old_ud = lv_obj_get_event_user_data(obj, lvgl_event_handler);
+    void* old_ud = lv_obj_get_event_user_data(obj, iot_lvgl_event_handler);
     if (old_ud) {
-        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, old_ud);
+        lv_obj_remove_event_cb_with_user_data(obj, iot_lvgl_event_handler, old_ud);
         iot_callback_free(old_ud);
     }
 
@@ -609,7 +609,7 @@ int lvgl_obj_set_event_cb(lua_State* L) {
         return 0;
     }
 
-    lv_obj_add_event_cb(obj, lvgl_event_handler, LV_EVENT_ALL, ud);
+    lv_obj_add_event_cb(obj, iot_lvgl_event_handler, LV_EVENT_ALL, ud);
 
     lua_pushvalue(L, 1);
     return 1;
@@ -623,15 +623,15 @@ int lvgl_obj_set_event_cb(lua_State* L) {
 @return lightuserdata callback_id(用于off移除回调)
 @usage local id = btn:on("click", function(e, code) ... end)
 */
-int lvgl_obj_on(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_on(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     const char* event_name = luaL_checkstring(L, 2);
     if (!lua_isfunction(L, 3)) {
         luaL_error(L, "event callback must be a function");
         return 0;
     }
 
-    lv_event_code_t event_code = lvgl_event_name_to_code(event_name);
+    lv_event_code_t event_code = iot_lvgl_event_name_to_code(event_name);
 
     void* ud = iot_callback_save(L, 3);
     if (!ud) {
@@ -639,7 +639,7 @@ int lvgl_obj_on(lua_State* L) {
         return 0;
     }
 
-    lv_obj_add_event_cb(obj, lvgl_event_handler, event_code, ud);
+    lv_obj_add_event_cb(obj, iot_lvgl_event_handler, event_code, ud);
 
     lua_pushlightuserdata(L, ud);
     return 1;
@@ -652,12 +652,12 @@ int lvgl_obj_on(lua_State* L) {
 @return self
 @usage btn:off(id)
 */
-int lvgl_obj_off(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_off(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     void* ud = (void*)lua_touserdata(L, 2);
 
     if (ud) {
-        lv_obj_remove_event_cb_with_user_data(obj, lvgl_event_handler, ud);
+        lv_obj_remove_event_cb_with_user_data(obj, iot_lvgl_event_handler, ud);
         iot_callback_free(ud);
     }
 
@@ -667,24 +667,24 @@ int lvgl_obj_off(lua_State* L) {
 
 /* ==================== 滚动操作 ==================== */
 
-int lvgl_obj_scroll_to_x(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_scroll_to_x(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_scroll_to_x(obj, x, LV_ANIM_ON);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_scroll_to_y(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_scroll_to_y(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t y = (int32_t)luaL_checkinteger(L, 2);
     lv_obj_scroll_to_y(obj, y, LV_ANIM_ON);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_scroll_to(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_scroll_to(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_obj_scroll_to(obj, x, y, LV_ANIM_ON);
@@ -692,8 +692,8 @@ int lvgl_obj_scroll_to(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_scroll_by(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_scroll_by(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     int32_t dx = (int32_t)luaL_checkinteger(L, 2);
     int32_t dy = (int32_t)luaL_checkinteger(L, 3);
     lv_obj_scroll_by(obj, dx, dy, LV_ANIM_ON);
@@ -701,36 +701,36 @@ int lvgl_obj_scroll_by(lua_State* L) {
     return 1;
 }
 
-int lvgl_obj_scroll_to_view(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_scroll_to_view(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 2, LV_ANIM_ON);
     lv_obj_scroll_to_view(obj, anim);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_get_scroll_x(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_scroll_x(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_scroll_x(obj));
     return 1;
 }
 
-int lvgl_obj_get_scroll_y(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_get_scroll_y(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, lv_obj_get_scroll_y(obj));
     return 1;
 }
 
-int lvgl_obj_set_scrollbar_mode(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_scrollbar_mode(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_scrollbar_mode_t mode = (lv_scrollbar_mode_t)luaL_checkinteger(L, 2);
     lv_obj_set_scrollbar_mode(obj, mode);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-int lvgl_obj_set_scroll_dir(lua_State* L) {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+int iot_lvgl_obj_set_scroll_dir(lua_State* L) {
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_dir_t dir = (lv_dir_t)luaL_checkinteger(L, 2);
     lv_obj_set_scroll_dir(obj, dir);
     lua_pushvalue(L, 1);

@@ -1,5 +1,5 @@
-/**
- * @file lvgl_menu.c
+﻿/**
+ * @file iot_lvgl_menu.c
  * @brief LVGL菜单控件
  *
  * 实现LVGL菜单控件的OO风格Lua绑定，包括菜单创建、页面创建、添加菜单项、设置子页面、获取当前页面等接口，支持多级菜单导航。
@@ -14,7 +14,7 @@
 /* menu组件的metatable引用 */
 static int menu_metatable_ref = LUA_NOREF;
 
-static lv_obj_t* lvgl_menu_find_menu(lv_obj_t* obj)
+static lv_obj_t* iot_lvgl_menu_find_menu(lv_obj_t* obj)
 {
     lv_obj_t* cur = obj;
     while (cur) {
@@ -28,8 +28,8 @@ static lv_obj_t* lvgl_menu_find_menu(lv_obj_t* obj)
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_menu_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* menu = lv_menu_create(parent);
     lua_pushlightuserdata(L, menu);
     return 1;
@@ -43,8 +43,8 @@ static int lvgl_menu_create_internal(lua_State* L) {
 @return userdata 带metatable的菜单实例
 @usage local menu = lvgl.menu.create(scr)
 */
-static int lvgl_menu_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_menu_create_internal, menu_metatable_ref);
+static int iot_lvgl_menu_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_menu_create_internal, menu_metatable_ref);
 }
 
 /*
@@ -54,8 +54,8 @@ static int lvgl_menu_create(lua_State* L) {
 @return userdata 页面对象
 @usage local page = menu:page_create("设置")
 */
-static int lvgl_menu_page_create(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_page_create(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     const char* title = lua_isnoneornil(L, 2) ? NULL : luaL_checkstring(L, 2);
     lv_obj_t* page = lv_menu_page_create(menu, title ? (char*)title : NULL);
     lua_pushlightuserdata(L, page);
@@ -70,8 +70,8 @@ static int lvgl_menu_page_create(lua_State* L) {
 @return userdata 菜单项对象
 @usage local item = page:add_item(nil, "设置")
 */
-static int lvgl_menu_add_item(lua_State* L) {
-    lv_obj_t* page = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_add_item(lua_State* L) {
+    lv_obj_t* page = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* icon = (lv_obj_t*)luaL_optlightuserdata(L, 2, NULL);
     const char* text = luaL_checkstring(L, 3);
     lv_obj_t* cont = lv_menu_cont_create(page);
@@ -91,8 +91,8 @@ static int lvgl_menu_add_item(lua_State* L) {
 @return self
 @usage menu:set_page(main_page)
 */
-static int lvgl_menu_set_page(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_set_page(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* page = (lv_obj_t*)luaL_checklightuserdata(L, 2);
     lv_menu_set_page(menu, page);
     lua_pushvalue(L, 1);
@@ -106,10 +106,10 @@ static int lvgl_menu_set_page(lua_State* L) {
 @return self
 @usage item:set_page(settings_page)
 */
-static int lvgl_menu_set_item_page(lua_State* L) {
-    lv_obj_t* item = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_set_item_page(lua_State* L) {
+    lv_obj_t* item = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* page = (lv_obj_t*)luaL_checklightuserdata(L, 2);
-    lv_obj_t* menu = lvgl_menu_find_menu(item);
+    lv_obj_t* menu = iot_lvgl_menu_find_menu(item);
     if (menu) {
         lv_menu_set_load_page_event(menu, item, page);
     }
@@ -123,8 +123,8 @@ static int lvgl_menu_set_item_page(lua_State* L) {
 @return userdata 页面对象
 @usage local cur = menu:get_cur_page()
 */
-static int lvgl_menu_get_cur_page(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_get_cur_page(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* page = lv_menu_get_cur_main_page(menu);
     lua_pushlightuserdata(L, page);
     return 1;
@@ -137,8 +137,8 @@ static int lvgl_menu_get_cur_page(lua_State* L) {
 @return self
 @usage menu:set_width(200)
 */
-static int lvgl_menu_set_width(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_set_width(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     lv_coord_t width = (lv_coord_t)luaL_checkinteger(L, 2);
     lv_obj_set_width(menu, width);
     lua_pushvalue(L, 1);
@@ -152,8 +152,8 @@ static int lvgl_menu_set_width(lua_State* L) {
 @return self
 @usage menu:set_title("主菜单")
 */
-static int lvgl_menu_set_title(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_set_title(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     const char* title = luaL_checkstring(L, 2);
     lv_obj_t* page = lv_menu_get_cur_main_page(menu);
     if (page) {
@@ -177,27 +177,27 @@ static int lvgl_menu_set_title(lua_State* L) {
 @return self
 @usage menu:clear()
 */
-static int lvgl_menu_clear(lua_State* L) {
-    lv_obj_t* menu = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_menu_clear(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
     lv_menu_set_page(menu, NULL);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /* 注册 menu 子模块 */
-void lvgl_register_menu(lua_State* L) {
+void iot_lvgl_register_menu(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "page_create", lvgl_menu_page_create);
-    REG_METHOD(L, "add_item", lvgl_menu_add_item);
-    REG_METHOD(L, "set_page", lvgl_menu_set_page);
-    REG_METHOD(L, "set_item_page", lvgl_menu_set_item_page);
-    REG_METHOD(L, "get_cur_page", lvgl_menu_get_cur_page);
-    REG_METHOD(L, "set_width", lvgl_menu_set_width);
-    REG_METHOD(L, "set_title", lvgl_menu_set_title);
-    REG_METHOD(L, "clear", lvgl_menu_clear);
+    REG_METHOD(L, "page_create", iot_lvgl_menu_page_create);
+    REG_METHOD(L, "add_item", iot_lvgl_menu_add_item);
+    REG_METHOD(L, "set_page", iot_lvgl_menu_set_page);
+    REG_METHOD(L, "set_item_page", iot_lvgl_menu_set_item_page);
+    REG_METHOD(L, "get_cur_page", iot_lvgl_menu_get_cur_page);
+    REG_METHOD(L, "set_width", iot_lvgl_menu_set_width);
+    REG_METHOD(L, "set_title", iot_lvgl_menu_set_title);
+    REG_METHOD(L, "clear", iot_lvgl_menu_clear);
 
     /* 保存组件metatable引用(用于继承) */
     menu_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -214,5 +214,5 @@ void lvgl_register_menu(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.menu) */
-    REG_METHOD(L, "create", lvgl_menu_create);
+    REG_METHOD(L, "create", iot_lvgl_menu_create);
 }

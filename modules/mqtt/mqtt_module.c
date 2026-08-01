@@ -33,7 +33,7 @@ typedef struct mqtt_route_entry {
 } mqtt_route_entry_t;
 
 typedef struct {
-    mqtt_client_t* client;
+    iot_mqtt_client_t* client;
     void* connect_callback_ud;
     void* close_callback_ud;
     mqtt_route_entry_t* routes;
@@ -41,7 +41,7 @@ typedef struct {
     int inited;
 } mqtt_lua_ctx_t;
 
-#define MQTT_CTX_METATABLE "mqtt.client"
+#define IOT_MQTT_CTX_METATABLE "mqtt.client"
 
 static mqtt_lua_ctx_t* mqtt_get_ctx(lua_State* L, int idx) {
     if (lua_type(L, idx) != LUA_TUSERDATA) {
@@ -113,7 +113,7 @@ static mqtt_lua_ctx_t* mqtt_ctx_create(void) {
     if (!ctx) return NULL;
     
     memset(ctx, 0, sizeof(mqtt_lua_ctx_t));
-    ctx->client = mqtt_client_create();
+    ctx->client = iot_mqtt_client_create();
     if (!ctx->client) {
         iot_free(ctx);
         return NULL;
@@ -133,26 +133,26 @@ static void mqtt_ctx_destroy(mqtt_lua_ctx_t* ctx) {
     }
     
     if (ctx->client) {
-        mqtt_client_destroy(ctx->client);
+        iot_mqtt_client_destroy(ctx->client);
     }
     
     iot_free(ctx);
 }
 
-static void mqtt_event_callback(mqtt_client_t* client, mqtt_event_type_t event, void* user_data) {
+static void mqtt_event_callback(iot_mqtt_client_t* client, iot_mqtt_event_type_t event, void* user_data) {
     mqtt_lua_ctx_t* ctx = (mqtt_lua_ctx_t*)user_data;
     if (!ctx) return;
     
     params_t* params = params_create(1);
     if (!params) return;
     
-    if (event == MQTT_EVENT_CONNECTED) {
+    if (event == IOT_MQTT_EVENT_CONNECTED) {
         params_push_int(params, 1);
         if (ctx->connect_callback_ud) {
             iot_os_call(ctx->connect_callback_ud, params);
             params = NULL;
         }
-    } else if (event == MQTT_EVENT_DISCONNECTED || event == MQTT_EVENT_ERROR) {
+    } else if (event == IOT_MQTT_EVENT_DISCONNECTED || event == IOT_MQTT_EVENT_ERROR) {
         params_push_int(params, 0);
         if (ctx->close_callback_ud) {
             iot_os_call(ctx->close_callback_ud, params);
@@ -166,13 +166,13 @@ static void mqtt_event_callback(mqtt_client_t* client, mqtt_event_type_t event, 
 }
 
 static void mqtt_message_callback(const char* topic, const uint8_t* payload,
-                                  size_t payload_len, mqtt_qos_t qos, bool retain, void* user_data) {
+                                  size_t payload_len, iot_mqtt_qos_t qos, bool retain, void* user_data) {
     mqtt_lua_ctx_t* ctx = (mqtt_lua_ctx_t*)user_data;
     if (!ctx) return;
     
     mqtt_route_entry_t* entry = ctx->routes;
     while (entry) {
-        if (mqtt_topic_match(entry->topic_filter, topic)) {
+        if (iot_mqtt_topic_match(entry->topic_filter, topic)) {
             params_t* params = params_create(4);
             if (!params) continue;
             
@@ -208,7 +208,7 @@ static int luaopen_mqtt_new(lua_State* L) {
     mqtt_lua_ctx_t** ctx_ptr = (mqtt_lua_ctx_t**)lua_newuserdata(L, sizeof(mqtt_lua_ctx_t*));
     *ctx_ptr = ctx;
     
-    luaL_getmetatable(L, MQTT_CTX_METATABLE);
+    luaL_getmetatable(L, IOT_MQTT_CTX_METATABLE);
     lua_setmetatable(L, -2);
     
     return 1;
@@ -224,7 +224,7 @@ static int luaopen_mqtt_connect(lua_State* L) {
     
     luaL_checktype(L, 2, LUA_TTABLE);
     
-    mqtt_connect_options_t options = {0};
+    iot_mqtt_connect_options_t options = {0};
     
     lua_getfield(L, 2, "host");
     if (lua_type(L, -1) == LUA_TSTRING) {
@@ -288,7 +288,7 @@ static int luaopen_mqtt_connect(lua_State* L) {
     lua_pop(L, 1);
     
     lua_getfield(L, 2, "will_qos");
-    options.will_qos = (mqtt_qos_t)luaL_optinteger(L, -1, MQTT_QOS_0);
+    options.will_qos = (iot_mqtt_qos_t)luaL_optinteger(L, -1, IOT_MQTT_QOS_0);
     lua_pop(L, 1);
     
     lua_getfield(L, 2, "will_retain");
@@ -303,9 +303,9 @@ static int luaopen_mqtt_connect(lua_State* L) {
     options.use_ssl = luaL_optboolean(L, -1, 0);
     lua_pop(L, 1);
     
-    mqtt_client_set_event_callback(ctx->client, mqtt_event_callback, ctx);
+    iot_mqtt_client_set_event_callback(ctx->client, mqtt_event_callback, ctx);
     
-    int ret = mqtt_client_connect(ctx->client, &options);
+    int ret = iot_mqtt_client_connect(ctx->client, &options);
     if (ret != 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "connect failed");
@@ -324,7 +324,7 @@ static int luaopen_mqtt_disconnect(lua_State* L) {
         return 2;
     }
     
-    int ret = mqtt_client_disconnect(ctx->client);
+    int ret = iot_mqtt_client_disconnect(ctx->client);
     
     lua_pushboolean(L, ret == 0);
     return 1;
@@ -351,10 +351,10 @@ static int luaopen_mqtt_publish(lua_State* L) {
     size_t payload_len = 0;
     const char* payload = luaL_optlstring(L, 3, "", &payload_len);
     
-    mqtt_qos_t qos = (mqtt_qos_t)luaL_optinteger(L, 4, MQTT_QOS_0);
+    iot_mqtt_qos_t qos = (iot_mqtt_qos_t)luaL_optinteger(L, 4, IOT_MQTT_QOS_0);
     bool retain = luaL_optboolean(L, 5, false);
     
-    int ret = mqtt_client_publish(ctx->client, topic, (const uint8_t*)payload, payload_len, qos, retain);
+    int ret = iot_mqtt_client_publish(ctx->client, topic, (const uint8_t*)payload, payload_len, qos, retain);
     if (ret != 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "publish failed");
@@ -374,7 +374,7 @@ static int luaopen_mqtt_subscribe(lua_State* L) {
     }
     
     const char* topic_filter = luaL_checkstring(L, 2);
-    mqtt_qos_t qos = (mqtt_qos_t)luaL_optinteger(L, 3, MQTT_QOS_0);
+    iot_mqtt_qos_t qos = (iot_mqtt_qos_t)luaL_optinteger(L, 3, IOT_MQTT_QOS_0);
     
     if (lua_type(L, 4) != LUA_TFUNCTION) {
         lua_pushboolean(L, 0);
@@ -400,7 +400,7 @@ static int luaopen_mqtt_subscribe(lua_State* L) {
         }
     }
     
-    int ret = mqtt_client_subscribe(ctx->client, topic_filter, qos, mqtt_message_callback, ctx);
+    int ret = iot_mqtt_client_subscribe(ctx->client, topic_filter, qos, mqtt_message_callback, ctx);
     if (ret != 0) {
         mqtt_route_remove(ctx, topic_filter);
         lua_pushboolean(L, 0);
@@ -422,7 +422,7 @@ static int luaopen_mqtt_unsubscribe(lua_State* L) {
     
     const char* topic_filter = luaL_checkstring(L, 2);
     
-    int ret = mqtt_client_unsubscribe(ctx->client, topic_filter);
+    int ret = iot_mqtt_client_unsubscribe(ctx->client, topic_filter);
     if (ret != 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "unsubscribe failed");
@@ -453,7 +453,7 @@ static int luaopen_mqtt_on(lua_State* L) {
     
     if (strcmp(event, "connect") == 0) {
         ctx->connect_callback_ud = iot_callback_save(L, 3);
-        mqtt_client_set_event_callback(ctx->client, mqtt_event_callback, ctx);
+        iot_mqtt_client_set_event_callback(ctx->client, mqtt_event_callback, ctx);
     } else if (strcmp(event, "close") == 0) {
         ctx->close_callback_ud = iot_callback_save(L, 3);
     } else {
@@ -469,11 +469,11 @@ static int luaopen_mqtt_on(lua_State* L) {
 static int luaopen_mqtt_state(lua_State* L) {
     mqtt_lua_ctx_t* ctx = mqtt_get_ctx(L, 1);
     if (!ctx || !ctx->client) {
-        lua_pushinteger(L, MQTT_STATE_DISCONNECTED);
+        lua_pushinteger(L, IOT_MQTT_STATE_DISCONNECTED);
         return 1;
     }
     
-    mqtt_state_t state = mqtt_client_get_state(ctx->client);
+    iot_mqtt_state_t state = iot_mqtt_client_get_state(ctx->client);
     lua_pushinteger(L, state);
     return 1;
 }
@@ -488,7 +488,7 @@ static int luaopen_mqtt_enable_auto_reconnect(lua_State* L) {
     
     int interval_ms = (int)luaL_optinteger(L, 2, 5000);
     
-    mqtt_client_enable_auto_reconnect(ctx->client, interval_ms);
+    iot_mqtt_client_enable_auto_reconnect(ctx->client, interval_ms);
     
     lua_pushboolean(L, 1);
     return 1;
@@ -502,7 +502,7 @@ static int luaopen_mqtt_disable_auto_reconnect(lua_State* L) {
         return 2;
     }
     
-    mqtt_client_disable_auto_reconnect(ctx->client);
+    iot_mqtt_client_disable_auto_reconnect(ctx->client);
     
     lua_pushboolean(L, 1);
     return 1;
@@ -515,7 +515,7 @@ static int luaopen_mqtt_is_connected(lua_State* L) {
         return 1;
     }
     
-    lua_pushboolean(L, mqtt_client_is_connected(ctx->client));
+    lua_pushboolean(L, iot_mqtt_client_is_connected(ctx->client));
     return 1;
 }
 
@@ -529,7 +529,7 @@ static int luaopen_mqtt_tostring(lua_State* L) {
     return 1;
 }
 
-static const luaL_Reg mqtt_client_methods[] = {
+static const luaL_Reg iot_mqtt_client_methods[] = {
     { "connect",               luaopen_mqtt_connect },
     { "disconnect",            luaopen_mqtt_disconnect },
     { "close",                 luaopen_mqtt_close },
@@ -554,7 +554,7 @@ static const luaL_Reg mqtt_module_methods[] = {
 LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
     static int s_mqtt_manager_started = 0;
     if (!s_mqtt_manager_started) {
-        if (mqtt_manager_start() == 0) {
+        if (iot_mqtt_manager_start() == 0) {
             s_mqtt_manager_started = 1;
         }
     }
@@ -562,40 +562,40 @@ LUAMOD_API int luaopen_mqtt_register(lua_State* L) {
     luaL_newlib(L, mqtt_module_methods);
     
     /* 注册常量 - MQTT QoS 级别 */
-    lua_pushinteger(L, MQTT_QOS_0); lua_setfield(L, -2, "QOS_0");
-    lua_pushinteger(L, MQTT_QOS_1); lua_setfield(L, -2, "QOS_1");
-    lua_pushinteger(L, MQTT_QOS_2); lua_setfield(L, -2, "QOS_2");
+    lua_pushinteger(L, IOT_MQTT_QOS_0); lua_setfield(L, -2, "QOS_0");
+    lua_pushinteger(L, IOT_MQTT_QOS_1); lua_setfield(L, -2, "QOS_1");
+    lua_pushinteger(L, IOT_MQTT_QOS_2); lua_setfield(L, -2, "QOS_2");
     
     /* 注册常量 - MQTT 连接状态 */
-    lua_pushinteger(L, MQTT_STATE_DISCONNECTED); lua_setfield(L, -2, "STATE_DISCONNECTED");
-    lua_pushinteger(L, MQTT_STATE_CONNECTING);   lua_setfield(L, -2, "STATE_CONNECTING");
-    lua_pushinteger(L, MQTT_STATE_CONNECTED);     lua_setfield(L, -2, "STATE_CONNECTED");
-    lua_pushinteger(L, MQTT_STATE_ERROR);         lua_setfield(L, -2, "STATE_ERROR");
+    lua_pushinteger(L, IOT_MQTT_STATE_DISCONNECTED); lua_setfield(L, -2, "STATE_DISCONNECTED");
+    lua_pushinteger(L, IOT_MQTT_STATE_CONNECTING);   lua_setfield(L, -2, "STATE_CONNECTING");
+    lua_pushinteger(L, IOT_MQTT_STATE_CONNECTED);     lua_setfield(L, -2, "STATE_CONNECTED");
+    lua_pushinteger(L, IOT_MQTT_STATE_ERROR);         lua_setfield(L, -2, "STATE_ERROR");
     
     /* 注册常量 - MQTT 错误码 */
-    lua_pushinteger(L, MQTT_ERR_SUCCESS);   lua_setfield(L, -2, "ERR_SUCCESS");
-    lua_pushinteger(L, MQTT_ERR_CONNECT);   lua_setfield(L, -2, "ERR_CONNECT");
-    lua_pushinteger(L, MQTT_ERR_SEND);      lua_setfield(L, -2, "ERR_SEND");
-    lua_pushinteger(L, MQTT_ERR_RECV);      lua_setfield(L, -2, "ERR_RECV");
-    lua_pushinteger(L, MQTT_ERR_TIMEOUT);   lua_setfield(L, -2, "ERR_TIMEOUT");
-    lua_pushinteger(L, MQTT_ERR_PROTOCOL);  lua_setfield(L, -2, "ERR_PROTOCOL");
-    lua_pushinteger(L, MQTT_ERR_QOS);       lua_setfield(L, -2, "ERR_QOS");
-    lua_pushinteger(L, MQTT_ERR_KEEPALIVE); lua_setfield(L, -2, "ERR_KEEPALIVE");
-    lua_pushinteger(L, MQTT_ERR_MEMORY);    lua_setfield(L, -2, "ERR_MEMORY");
-    lua_pushinteger(L, MQTT_ERR_PARAM);     lua_setfield(L, -2, "ERR_PARAM");
+    lua_pushinteger(L, IOT_MQTT_ERR_SUCCESS);   lua_setfield(L, -2, "ERR_SUCCESS");
+    lua_pushinteger(L, IOT_MQTT_ERR_CONNECT);   lua_setfield(L, -2, "ERR_CONNECT");
+    lua_pushinteger(L, IOT_MQTT_ERR_SEND);      lua_setfield(L, -2, "ERR_SEND");
+    lua_pushinteger(L, IOT_MQTT_ERR_RECV);      lua_setfield(L, -2, "ERR_RECV");
+    lua_pushinteger(L, IOT_MQTT_ERR_TIMEOUT);   lua_setfield(L, -2, "ERR_TIMEOUT");
+    lua_pushinteger(L, IOT_MQTT_ERR_PROTOCOL);  lua_setfield(L, -2, "ERR_PROTOCOL");
+    lua_pushinteger(L, IOT_MQTT_ERR_QOS);       lua_setfield(L, -2, "ERR_QOS");
+    lua_pushinteger(L, IOT_MQTT_ERR_KEEPALIVE); lua_setfield(L, -2, "ERR_KEEPALIVE");
+    lua_pushinteger(L, IOT_MQTT_ERR_MEMORY);    lua_setfield(L, -2, "ERR_MEMORY");
+    lua_pushinteger(L, IOT_MQTT_ERR_PARAM);     lua_setfield(L, -2, "ERR_PARAM");
     
     /* 注册常量 - MQTT CONNACK 码 */
-    lua_pushinteger(L, MQTT_CONNACK_ACCEPTED);            lua_setfield(L, -2, "CONNACK_ACCEPTED");
-    lua_pushinteger(L, MQTT_CONNACK_UNACCEPTABLE_PROTO);  lua_setfield(L, -2, "CONNACK_UNACCEPTABLE_PROTO");
-    lua_pushinteger(L, MQTT_CONNACK_IDENTIFIER_REJECTED); lua_setfield(L, -2, "CONNACK_IDENTIFIER_REJECTED");
-    lua_pushinteger(L, MQTT_CONNACK_SERVER_UNAVAILABLE);  lua_setfield(L, -2, "CONNACK_SERVER_UNAVAILABLE");
-    lua_pushinteger(L, MQTT_CONNACK_BAD_AUTH);            lua_setfield(L, -2, "CONNACK_BAD_AUTH");
-    lua_pushinteger(L, MQTT_CONNACK_NOT_AUTHORIZED);      lua_setfield(L, -2, "CONNACK_NOT_AUTHORIZED");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_ACCEPTED);            lua_setfield(L, -2, "CONNACK_ACCEPTED");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_UNACCEPTABLE_PROTO);  lua_setfield(L, -2, "CONNACK_UNACCEPTABLE_PROTO");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_IDENTIFIER_REJECTED); lua_setfield(L, -2, "CONNACK_IDENTIFIER_REJECTED");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_SERVER_UNAVAILABLE);  lua_setfield(L, -2, "CONNACK_SERVER_UNAVAILABLE");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_BAD_AUTH);            lua_setfield(L, -2, "CONNACK_BAD_AUTH");
+    lua_pushinteger(L, IOT_MQTT_CONNACK_NOT_AUTHORIZED);      lua_setfield(L, -2, "CONNACK_NOT_AUTHORIZED");
     
-    luaL_newmetatable(L, MQTT_CTX_METATABLE);
+    luaL_newmetatable(L, IOT_MQTT_CTX_METATABLE);
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
-    luaL_setfuncs(L, mqtt_client_methods, 0);
+    luaL_setfuncs(L, iot_mqtt_client_methods, 0);
     lua_pop(L, 1);
 
     return 1;

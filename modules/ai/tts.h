@@ -42,54 +42,54 @@ extern "C" {
 
 /* TTS 服务商 */
 typedef enum {
-    TTS_PROVIDER_OPENAI   = 0,   /* OpenAI TTS */
-    TTS_PROVIDER_BAIDU    = 1,   /* 百度语音 */
-    TTS_PROVIDER_IFLYTEK  = 2,   /* 讯飞语音 */
-    TTS_PROVIDER_ALIYUN   = 3,   /* 阿里云 */
-    TTS_PROVIDER_TENCENT  = 4,   /* 腾讯云 */
-    TTS_PROVIDER_EDGE     = 5,   /* Microsoft Edge TTS (免费) */
-} tts_provider_t;
+    IOT_TTS_PROVIDER_OPENAI   = 0,   /* OpenAI TTS */
+    IOT_TTS_PROVIDER_BAIDU    = 1,   /* 百度语音 */
+    IOT_TTS_PROVIDER_IFLYTEK  = 2,   /* 讯飞语音 */
+    IOT_TTS_PROVIDER_ALIYUN   = 3,   /* 阿里云 */
+    IOT_TTS_PROVIDER_TENCENT  = 4,   /* 腾讯云 */
+    IOT_TTS_PROVIDER_EDGE     = 5,   /* Microsoft Edge TTS (免费) */
+} iot_tts_provider_t;
 
 /* TTS 音频格式 */
 typedef enum {
-    TTS_FORMAT_MP3        = 0,   /* MP3 */
-    TTS_FORMAT_WAV        = 1,   /* WAV */
-    TTS_FORMAT_OPUS       = 2,   /* Opus */
-    TTS_FORMAT_AAC        = 3,   /* AAC */
-    TTS_FORMAT_FLAC       = 4,   /* FLAC */
-    TTS_FORMAT_PCM        = 5,   /* PCM 16-bit */
-} tts_audio_format_t;
+    IOT_TTS_FORMAT_MP3        = 0,   /* MP3 */
+    IOT_TTS_FORMAT_WAV        = 1,   /* WAV */
+    IOT_TTS_FORMAT_OPUS       = 2,   /* Opus */
+    IOT_TTS_FORMAT_AAC        = 3,   /* AAC */
+    IOT_TTS_FORMAT_FLAC       = 4,   /* FLAC */
+    IOT_TTS_FORMAT_PCM        = 5,   /* PCM 16-bit */
+} iot_tts_audio_format_t;
 
 /* TTS 音色 */
 typedef enum {
-    TTS_VOICE_DEFAULT     = 0,   /* 默认音色 */
-    TTS_VOICE_FEMALE_ZH   = 1,   /* 中文女声 */
-    TTS_VOICE_MALE_ZH     = 2,   /* 中文男声 */
-    TTS_VOICE_FEMALE_EN   = 3,   /* 英文女声 */
-    TTS_VOICE_MALE_EN     = 4,   /* 英文男声 */
-    TTS_VOICE_GENTLE      = 5,   /* 温柔女声 */
-    TTS_VOICE_STANDARD    = 6,   /* 标准播音 */
-    TTS_VOICE_CHILD       = 7,   /* 童声 */
-    TTS_VOICE_ELDER       = 8,   /* 老年声 */
-    TTS_VOICE_CUSTOM      = 99,  /* 自定义 (需提供 voice_id) */
-} tts_voice_t;
+    IOT_TTS_VOICE_DEFAULT     = 0,   /* 默认音色 */
+    IOT_TTS_VOICE_FEMALE_ZH   = 1,   /* 中文女声 */
+    IOT_TTS_VOICE_MALE_ZH     = 2,   /* 中文男声 */
+    IOT_TTS_VOICE_FEMALE_EN   = 3,   /* 英文女声 */
+    IOT_TTS_VOICE_MALE_EN     = 4,   /* 英文男声 */
+    IOT_TTS_VOICE_GENTLE      = 5,   /* 温柔女声 */
+    IOT_TTS_VOICE_STANDARD    = 6,   /* 标准播音 */
+    IOT_TTS_VOICE_CHILD       = 7,   /* 童声 */
+    IOT_TTS_VOICE_ELDER       = 8,   /* 老年声 */
+    IOT_TTS_VOICE_CUSTOM      = 99,  /* 自定义 (需提供 voice_id) */
+} iot_tts_voice_t;
 
 /* TTS 配置 */
 typedef struct {
-    tts_provider_t   provider;       /* 服务商 */
+    iot_tts_provider_t   provider;       /* 服务商 */
     char             api_key[128];   /* API 密钥 */
     char             api_secret[128];/* API 密钥 */
     char             app_id[64];     /* App ID */
     char             voice_id[64];   /* 音色 ID (如 "alloy", "echo", "fable") */
-    tts_voice_t      voice;          /* 预设音色 */
-    tts_audio_format_t audio_format; /* 输出格式 */
+    iot_tts_voice_t      voice;          /* 预设音色 */
+    iot_tts_audio_format_t audio_format; /* 输出格式 */
     float            speed;          /* 语速 (0.25 ~ 4.0, 默认 1.0) */
     float            volume;         /* 音量 (0.0 ~ 1.0, 默认 1.0) */
     float            pitch;          /* 音调 (-20.0 ~ 20.0, 默认 0.0) */
     char             language[8];    /* 语言: zh-CN / en-US / ja-JP */
     int              timeout_ms;     /* HTTP 超时 (ms) */
     char             cache_dir[128]; /* 缓存目录 (空=不缓存) */
-} tts_config_t;
+} iot_tts_config_t;
 
 /* TTS 结果 */
 typedef struct {
@@ -99,13 +99,13 @@ typedef struct {
     char*    format;         /* 格式 (如 "mp3") */
     int      status_code;    /* HTTP 状态码 */
     char*    error;          /* 错误信息 (NULL=成功) */
-} tts_result_t;
+} iot_tts_result_t;
 
 /* TTS 句柄 */
-typedef struct tts_ctx tts_t;
+typedef struct iot_tts_ctx iot_tts_t;
 
 /* 异步回调 */
-typedef void (*tts_callback_t)(tts_result_t* result, void* user_data);
+typedef void (*iot_tts_callback_t)(iot_tts_result_t* result, void* user_data);
 
 /*===========================================================
  * 生命周期
@@ -116,7 +116,7 @@ typedef void (*tts_callback_t)(tts_result_t* result, void* user_data);
  * @param config 配置参数
  * @return TTS 句柄
  */
-tts_t* tts_create(const tts_config_t* config);
+iot_tts_t* iot_tts_create(const iot_tts_config_t* config);
 
 /**
  * @brief 更新配置
@@ -124,20 +124,20 @@ tts_t* tts_create(const tts_config_t* config);
  * @param config 新配置
  * @return 0 成功, -1 失败
  */
-int tts_set_config(tts_t* tts, const tts_config_t* config);
+int iot_tts_set_config(iot_tts_t* tts, const iot_tts_config_t* config);
 
 /**
  * @brief 释放 TTS 实例
  * @param tts TTS 句柄
  */
-void tts_free(tts_t* tts);
+void iot_tts_free(iot_tts_t* tts);
 
 /**
  * @brief 获取服务商名称
  * @param provider 服务商枚举
  * @return 名称字符串
  */
-const char* tts_provider_name(tts_provider_t provider);
+const char* iot_tts_provider_name(iot_tts_provider_t provider);
 
 /*===========================================================
  * 同步合成
@@ -147,10 +147,10 @@ const char* tts_provider_name(tts_provider_t provider);
  * @brief 文本转语音 (同步)
  * @param tts TTS 句柄
  * @param text 待合成文本
- * @param result 输出结果 (调用者需 tts_result_free)
+ * @param result 输出结果 (调用者需 iot_tts_result_free)
  * @return 0 成功, -1 失败
  */
-int tts_synthesize(tts_t* tts, const char* text, tts_result_t* result);
+int iot_tts_synthesize(iot_tts_t* tts, const char* text, iot_tts_result_t* result);
 
 /**
  * @brief SSML 合成 (支持 XML 标记控制发音)
@@ -159,7 +159,7 @@ int tts_synthesize(tts_t* tts, const char* text, tts_result_t* result);
  * @param result 输出结果
  * @return 0 成功
  */
-int tts_synthesize_ssml(tts_t* tts, const char* ssml, tts_result_t* result);
+int iot_tts_synthesize_ssml(iot_tts_t* tts, const char* ssml, iot_tts_result_t* result);
 
 /**
  * @brief 文本转语音并保存到文件
@@ -168,7 +168,7 @@ int tts_synthesize_ssml(tts_t* tts, const char* ssml, tts_result_t* result);
  * @param file_path 保存路径 (如 "/app/tts/output.mp3")
  * @return 0 成功, -1 失败
  */
-int tts_synthesize_to_file(tts_t* tts, const char* text, const char* file_path);
+int iot_tts_synthesize_to_file(iot_tts_t* tts, const char* text, const char* file_path);
 
 /*===========================================================
  * 流式合成
@@ -187,7 +187,7 @@ int tts_synthesize_to_file(tts_t* tts, const char* text, const char* file_path);
  * @param user_data 用户数据
  * @return 0 已启动
  */
-int tts_synthesize_stream(tts_t* tts, const char* text,
+int iot_tts_synthesize_stream(iot_tts_t* tts, const char* text,
                            void (*data_cb)(const uint8_t* chunk, size_t len, void* ud),
                            void (*done_cb)(bool success, void* ud),
                            void* user_data);
@@ -204,8 +204,8 @@ int tts_synthesize_stream(tts_t* tts, const char* text,
  * @param user_data 用户数据
  * @return 0 已提交
  */
-int tts_synthesize_async(tts_t* tts, const char* text,
-                          tts_callback_t callback, void* user_data);
+int iot_tts_synthesize_async(iot_tts_t* tts, const char* text,
+                          iot_tts_callback_t callback, void* user_data);
 
 /*===========================================================
  * 播放控制
@@ -217,21 +217,21 @@ int tts_synthesize_async(tts_t* tts, const char* text,
  * @param text 文本
  * @return 0 成功
  */
-int tts_speak(tts_t* tts, const char* text);
+int iot_tts_speak(iot_tts_t* tts, const char* text);
 
 /**
  * @brief 停止播放
  * @param tts TTS 句柄
  * @return 0 成功
  */
-int tts_stop_speaking(tts_t* tts);
+int iot_tts_stop_speaking(iot_tts_t* tts);
 
 /**
  * @brief 是否正在播放
  * @param tts TTS 句柄
  * @return true 播放中
  */
-bool tts_is_speaking(tts_t* tts);
+bool iot_tts_is_speaking(iot_tts_t* tts);
 
 /**
  * @brief 播放音频数据
@@ -244,7 +244,7 @@ bool tts_is_speaking(tts_t* tts);
  * @param audio_len 数据长度
  * @return 0 成功
  */
-int tts_play_audio(tts_t* tts, const uint8_t* audio_data, size_t audio_len);
+int iot_tts_play_audio(iot_tts_t* tts, const uint8_t* audio_data, size_t audio_len);
 
 /*===========================================================
  * 辅助
@@ -254,7 +254,7 @@ int tts_play_audio(tts_t* tts, const uint8_t* audio_data, size_t audio_len);
  * @brief 释放合成结果
  * @param result 结果指针
  */
-void tts_result_free(tts_result_t* result);
+void iot_tts_result_free(iot_tts_result_t* result);
 
 /**
  * @brief 获取音色映射表 (方便 Lua 层使用)
@@ -262,7 +262,7 @@ void tts_result_free(tts_result_t* result);
  * @param provider 服务商
  * @return 该服务商对应的音色 ID 字符串
  */
-const char* tts_voice_id_for_provider(tts_voice_t voice, tts_provider_t provider);
+const char* iot_tts_voice_id_for_provider(iot_tts_voice_t voice, iot_tts_provider_t provider);
 
 /**
  * @brief SSML 辅助: 包装文本为 SSML
@@ -271,7 +271,7 @@ const char* tts_voice_id_for_provider(tts_voice_t voice, tts_provider_t provider
  * @param bufsize 缓冲区大小
  * @return 0 成功
  */
-int tts_text_to_ssml(const char* text, char* buf, size_t bufsize);
+int iot_tts_text_to_ssml(const char* text, char* buf, size_t bufsize);
 
 #ifdef __cplusplus
 }

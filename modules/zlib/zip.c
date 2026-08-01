@@ -127,7 +127,7 @@ static const char *zip_basename(const char *path)
     return name ? (name + 1) : path;
 }
 
-int zip_decompress_file(const char *zip_path, const char *dest_dir)
+int iot_zip_decompress_file(const char *zip_path, const char *dest_dir)
 {
     uint8_t *data = NULL;
     size_t size = 0;
@@ -136,17 +136,17 @@ int zip_decompress_file(const char *zip_path, const char *dest_dir)
     mz_uint i;
 
     if (!zip_path || !dest_dir) {
-        return ZIP_ERR_FORMAT;
+        return IOT_ZIP_ERR_FORMAT;
     }
 
     if (zip_read_file(zip_path, &data, &size) != 0) {
-        return ZIP_ERR_FILE;
+        return IOT_ZIP_ERR_FILE;
     }
 
     memset(&zip, 0, sizeof(zip));
     if (!mz_zip_reader_init_mem(&zip, data, size, 0)) {
         iot_free(data);
-        return ZIP_ERR_FORMAT;
+        return IOT_ZIP_ERR_FORMAT;
     }
 
     num = mz_zip_reader_get_num_files(&zip);
@@ -177,14 +177,14 @@ int zip_decompress_file(const char *zip_path, const char *dest_dir)
             if (!uncomp) {
                 mz_zip_reader_end(&zip);
                 iot_free(data);
-                return ZIP_ERR_FILE;
+                return IOT_ZIP_ERR_FILE;
             }
 
             if (zip_write_file(outpath, uncomp, uncomp_size) != 0) {
                 mz_free(uncomp);
                 mz_zip_reader_end(&zip);
                 iot_free(data);
-                return ZIP_ERR_FILE;
+                return IOT_ZIP_ERR_FILE;
             }
             mz_free(uncomp);
         }
@@ -192,10 +192,10 @@ int zip_decompress_file(const char *zip_path, const char *dest_dir)
 
     mz_zip_reader_end(&zip);
     iot_free(data);
-    return ZIP_OK;
+    return IOT_ZIP_OK;
 }
 
-int zip_compress_file(const char *zip_path, const char **files, int file_count, int level)
+int iot_zip_compress_file(const char *zip_path, const char **files, int file_count, int level)
 {
     mz_zip_archive zip;
     void *archive_buf = NULL;
@@ -203,7 +203,7 @@ int zip_compress_file(const char *zip_path, const char **files, int file_count, 
     int i;
 
     if (!zip_path || !files || file_count <= 0) {
-        return ZIP_ERR_FORMAT;
+        return IOT_ZIP_ERR_FORMAT;
     }
 
     if (level < 0) {
@@ -215,7 +215,7 @@ int zip_compress_file(const char *zip_path, const char **files, int file_count, 
 
     memset(&zip, 0, sizeof(zip));
     if (!mz_zip_writer_init_heap(&zip, 0, 1024 * 1024)) {
-        return ZIP_ERR_MEM;
+        return IOT_ZIP_ERR_MEM;
     }
 
     for (i = 0; i < file_count; i++) {
@@ -225,111 +225,111 @@ int zip_compress_file(const char *zip_path, const char **files, int file_count, 
 
         if (zip_read_file(files[i], &file_data, &file_size) != 0) {
             mz_zip_writer_end(&zip);
-            return ZIP_ERR_FILE;
+            return IOT_ZIP_ERR_FILE;
         }
 
         if (!mz_zip_writer_add_mem(&zip, entry_name, file_data, file_size, (mz_uint)level)) {
             iot_free(file_data);
             mz_zip_writer_end(&zip);
-            return ZIP_ERR_FILE;
+            return IOT_ZIP_ERR_FILE;
         }
         iot_free(file_data);
     }
 
     if (!mz_zip_writer_finalize_heap_archive(&zip, &archive_buf, &archive_size)) {
         mz_zip_writer_end(&zip);
-        return ZIP_ERR_FILE;
+        return IOT_ZIP_ERR_FILE;
     }
 
     if (zip_write_file(zip_path, archive_buf, archive_size) != 0) {
         mz_free(archive_buf);
         mz_zip_writer_end(&zip);
-        return ZIP_ERR_FILE;
+        return IOT_ZIP_ERR_FILE;
     }
 
     mz_free(archive_buf);
     mz_zip_writer_end(&zip);
-    return ZIP_OK;
+    return IOT_ZIP_OK;
 }
 
-int zip_open(zip_t *zip, const char *zip_path)
+int iot_zip_open(iot_zip_t *zip, const char *zip_path)
 {
     (void)zip;
     (void)zip_path;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-void zip_close(zip_t *zip)
+void iot_zip_close(iot_zip_t *zip)
 {
     (void)zip;
 }
 
-int zip_get_entry_count(zip_t *zip)
+int iot_zip_get_entry_count(iot_zip_t *zip)
 {
     (void)zip;
     return -1;
 }
 
-int zip_get_entry(zip_t *zip, int index, zip_entry_t *entry)
+int iot_zip_get_entry(iot_zip_t *zip, int index, iot_zip_entry_t *entry)
 {
     (void)zip;
     (void)index;
     (void)entry;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_extract_entry_to_memory(zip_t *zip, int index, uint8_t *buf, size_t buf_size)
+int iot_zip_extract_entry_to_memory(iot_zip_t *zip, int index, uint8_t *buf, size_t buf_size)
 {
     (void)zip;
     (void)index;
     (void)buf;
     (void)buf_size;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_extract_entry_to_file(zip_t *zip, int index, const char *output_path)
+int iot_zip_extract_entry_to_file(iot_zip_t *zip, int index, const char *output_path)
 {
     (void)zip;
     (void)index;
     (void)output_path;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_extract_all(zip_t *zip, const char *base_path)
+int iot_zip_extract_all(iot_zip_t *zip, const char *base_path)
 {
     (void)zip;
     (void)base_path;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_create(zip_t *zip, const char *zip_path)
+int iot_zip_create(iot_zip_t *zip, const char *zip_path)
 {
     (void)zip;
     (void)zip_path;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_add_file(zip_t *zip, const char *file_path, const char *entry_name, int level)
+int iot_zip_add_file(iot_zip_t *zip, const char *file_path, const char *entry_name, int level)
 {
     (void)zip;
     (void)file_path;
     (void)entry_name;
     (void)level;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_add_memory(zip_t *zip, const uint8_t *data, size_t data_len, const char *entry_name, int level)
+int iot_zip_add_memory(iot_zip_t *zip, const uint8_t *data, size_t data_len, const char *entry_name, int level)
 {
     (void)zip;
     (void)data;
     (void)data_len;
     (void)entry_name;
     (void)level;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }
 
-int zip_finish(zip_t *zip)
+int iot_zip_finish(iot_zip_t *zip)
 {
     (void)zip;
-    return ZIP_ERR_FORMAT;
+    return IOT_ZIP_ERR_FORMAT;
 }

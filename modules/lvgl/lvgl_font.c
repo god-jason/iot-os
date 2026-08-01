@@ -1,5 +1,5 @@
-/**
- * @file lvgl_font.c
+﻿/**
+ * @file iot_lvgl_font.c
  * @brief LVGL字体工具
  *
  * 实现LVGL字体工具的Lua绑定，提供获取内置字体（Montserrat系列8-48号）的接口，用于样式设置中的字体指定。
@@ -19,7 +19,7 @@
 @return userdata 字体指针
 @usage local font = lvgl.font.get("montserrat_14")
 */
-static int lvgl_font_get(lua_State* L) {
+static int iot_lvgl_font_get(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     const lv_font_t* font = NULL;
 
@@ -117,6 +117,6 @@ static int lvgl_font_get(lua_State* L) {
 }
 
 /* 注册 font 子模块 */
-void lvgl_register_font(lua_State* L) {
-    REG_METHOD(L, "get", lvgl_font_get);
+void iot_lvgl_register_font(lua_State* L) {
+    REG_METHOD(L, "get", iot_lvgl_font_get);
 }

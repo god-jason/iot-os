@@ -27,64 +27,64 @@
 #define HTTP_SERVER_BACKLOG         10
 
 struct http_server_route {
-    http_server_method_t method;
+    iot_http_server_method_t method;
     char* path;
-    http_server_handler_t handler;
+    iot_http_server_handler_t handler;
     list_head_t list_node;
 };
 
 struct http_server_client {
-    net_socket_t* sock;
-    http_server_t* server;
+    iot_net_socket_t* sock;
+    iot_http_server_t* server;
     char* recv_buf;
     size_t recv_len;
     size_t recv_capacity;
     list_head_t list_node;
 };
 
-struct http_server {
-    net_socket_t* listen_sock;
+struct iot_http_server {
+    iot_net_socket_t* listen_sock;
     uint16_t port;
     list_head_t routes;
     list_head_t clients;
     char* static_dir;
-    http_server_request_callback_t request_callback;
+    iot_http_server_request_callback_t request_callback;
     void* request_callback_data;
 };
 
-static const char* http_server_method_to_string(http_server_method_t method);
-static int http_server_parse_request(const char* buf, size_t len, http_server_request_t* req);
-static int http_server_build_response(const http_server_response_t* resp, char* buf, size_t buf_len);
-static void http_server_client_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
-static void http_server_listen_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
-static struct http_server_route* http_server_find_route(http_server_t* server,
+static const char* iot_http_server_method_to_string(iot_http_server_method_t method);
+static int http_server_parse_request(const char* buf, size_t len, iot_http_server_request_t* req);
+static int http_server_build_response(const iot_http_server_response_t* resp, char* buf, size_t buf_len);
+static void http_server_client_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data);
+static void http_server_listen_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data);
+static struct http_server_route* http_server_find_route(iot_http_server_t* server,
                                                         const char* method, const char* path);
 
-static const char* http_server_method_to_string(http_server_method_t method) {
+static const char* iot_http_server_method_to_string(iot_http_server_method_t method) {
     switch (method) {
-        case HTTP_SERVER_METHOD_GET:     return "GET";
-        case HTTP_SERVER_METHOD_POST:    return "POST";
-        case HTTP_SERVER_METHOD_PUT:     return "PUT";
-        case HTTP_SERVER_METHOD_DELETE:  return "DELETE";
-        case HTTP_SERVER_METHOD_HEAD:    return "HEAD";
-        case HTTP_SERVER_METHOD_OPTIONS: return "OPTIONS";
-        case HTTP_SERVER_METHOD_ALL:     return "*";
+        case IOT_HTTP_SERVER_METHOD_GET:     return "GET";
+        case IOT_HTTP_SERVER_METHOD_POST:    return "POST";
+        case IOT_HTTP_SERVER_METHOD_PUT:     return "PUT";
+        case IOT_HTTP_SERVER_METHOD_DELETE:  return "DELETE";
+        case IOT_HTTP_SERVER_METHOD_HEAD:    return "HEAD";
+        case IOT_HTTP_SERVER_METHOD_OPTIONS: return "OPTIONS";
+        case IOT_HTTP_SERVER_METHOD_ALL:     return "*";
         default:                         return "GET";
     }
 }
 
-static http_server_method_t http_server_string_to_method(const char* str) {
-    if (!str) return HTTP_SERVER_METHOD_GET;
-    if (strcmp(str, "GET") == 0)     return HTTP_SERVER_METHOD_GET;
-    if (strcmp(str, "POST") == 0)    return HTTP_SERVER_METHOD_POST;
-    if (strcmp(str, "PUT") == 0)     return HTTP_SERVER_METHOD_PUT;
-    if (strcmp(str, "DELETE") == 0)  return HTTP_SERVER_METHOD_DELETE;
-    if (strcmp(str, "HEAD") == 0)    return HTTP_SERVER_METHOD_HEAD;
-    if (strcmp(str, "OPTIONS") == 0) return HTTP_SERVER_METHOD_OPTIONS;
-    return HTTP_SERVER_METHOD_GET;
+static iot_http_server_method_t http_server_string_to_method(const char* str) {
+    if (!str) return IOT_HTTP_SERVER_METHOD_GET;
+    if (strcmp(str, "GET") == 0)     return IOT_HTTP_SERVER_METHOD_GET;
+    if (strcmp(str, "POST") == 0)    return IOT_HTTP_SERVER_METHOD_POST;
+    if (strcmp(str, "PUT") == 0)     return IOT_HTTP_SERVER_METHOD_PUT;
+    if (strcmp(str, "DELETE") == 0)  return IOT_HTTP_SERVER_METHOD_DELETE;
+    if (strcmp(str, "HEAD") == 0)    return IOT_HTTP_SERVER_METHOD_HEAD;
+    if (strcmp(str, "OPTIONS") == 0) return IOT_HTTP_SERVER_METHOD_OPTIONS;
+    return IOT_HTTP_SERVER_METHOD_GET;
 }
 
-static int http_server_parse_request(const char* buf, size_t len, http_server_request_t* req) {
+static int http_server_parse_request(const char* buf, size_t len, iot_http_server_request_t* req) {
     if (!buf || !req || len < 4) return -1;
     
     memset(req, 0, sizeof(*req));
@@ -146,7 +146,7 @@ static int http_server_parse_request(const char* buf, size_t len, http_server_re
     return 0;
 }
 
-static int http_server_build_response(const http_server_response_t* resp, char* buf, size_t buf_len) {
+static int http_server_build_response(const iot_http_server_response_t* resp, char* buf, size_t buf_len) {
     if (!resp || !buf) return -1;
     
     const char* status_text = "OK";
@@ -199,15 +199,15 @@ static int http_server_build_response(const http_server_response_t* resp, char* 
     return len;
 }
 
-static struct http_server_route* http_server_find_route(http_server_t* server,
+static struct http_server_route* http_server_find_route(iot_http_server_t* server,
                                                         const char* method, const char* path) {
     if (!server || !method || !path) return NULL;
     
-    http_server_method_t req_method = http_server_string_to_method(method);
+    iot_http_server_method_t req_method = http_server_string_to_method(method);
     
     struct http_server_route* route;
     list_for_each_entry(route, &server->routes, list_node, struct http_server_route) {
-        if (route->method == HTTP_SERVER_METHOD_ALL || route->method == req_method) {
+        if (route->method == IOT_HTTP_SERVER_METHOD_ALL || route->method == req_method) {
             if (strcmp(route->path, path) == 0) {
                 return route;
             }
@@ -218,33 +218,33 @@ static struct http_server_route* http_server_find_route(http_server_t* server,
 }
 
 static void http_server_send_response(struct http_server_client* client,
-                                      const http_server_response_t* resp) {
+                                      const iot_http_server_response_t* resp) {
     if (!client || !client->sock || !resp) return;
     
     char buf[8192];
     int len = http_server_build_response(resp, buf, sizeof(buf));
     if (len > 0) {
-        net_socket_send((sock_t)client->sock, buf, len);
+        iot_net_socket_send((sock_t)client->sock, buf, len);
     }
 }
 
 static void http_server_handle_request(struct http_server_client* client) {
     if (!client || !client->recv_buf || client->recv_len < 4) return;
     
-    http_server_request_t req;
+    iot_http_server_request_t req;
     if (http_server_parse_request(client->recv_buf, client->recv_len, &req) != 0) {
-        http_server_response_t resp = {0};
-        http_server_response_write_head(&resp, 400, "text/plain", NULL);
-        http_server_response_end(&resp, "Bad Request", 11);
+        iot_http_server_response_t resp = {0};
+        iot_http_server_response_write_head(&resp, 400, "text/plain", NULL);
+        iot_http_server_response_end(&resp, "Bad Request", 11);
         
         http_server_send_response(client, &resp);
-        http_server_response_free(&resp);
+        iot_http_server_response_free(&resp);
         return;
     }
     
-    http_server_response_t resp = {0};
-    http_server_response_write_head(&resp, 404, "text/plain", NULL);
-    http_server_response_end(&resp, "Not Found", 9);
+    iot_http_server_response_t resp = {0};
+    iot_http_server_response_write_head(&resp, 404, "text/plain", NULL);
+    iot_http_server_response_end(&resp, "Not Found", 9);
     
     if (client->server->request_callback) {
         client->server->request_callback(client->server, &req, &resp, 
@@ -257,19 +257,19 @@ static void http_server_handle_request(struct http_server_client* client) {
     }
     
     http_server_send_response(client, &resp);
-    http_server_response_free(&resp);
+    iot_http_server_response_free(&resp);
 }
 
-static void http_server_client_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
+static void http_server_client_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data) {
     struct http_server_client* client = (struct http_server_client*)user_data;
     if (!client) return;
     
     switch (event) {
-        case NET_EVENT_RECV: {
+        case IOT_NET_EVENT_RECV: {
             char buf[4096];
             int len;
             
-            while ((len = net_socket_recv((sock_t)sock, buf, sizeof(buf))) > 0) {
+            while ((len = iot_net_socket_recv((sock_t)sock, buf, sizeof(buf))) > 0) {
                 if (client->recv_len + len > client->recv_capacity) {
                     size_t new_cap = client->recv_capacity + HTTP_SERVER_MAX_HEADER_SIZE;
                     char* new_buf = (char*)iot_realloc(client->recv_buf, new_cap);
@@ -290,8 +290,8 @@ static void http_server_client_callback(net_socket_t* sock, net_event_type_t eve
             }
             break;
         }
-        case NET_EVENT_DISCONNECTED:
-        case NET_EVENT_ERROR: {
+        case IOT_NET_EVENT_DISCONNECTED:
+        case IOT_NET_EVENT_ERROR: {
             if (client->recv_buf) {
                 iot_free(client->recv_buf);
             }
@@ -304,11 +304,11 @@ static void http_server_client_callback(net_socket_t* sock, net_event_type_t eve
     }
 }
 
-static void http_server_listen_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
-    http_server_t* server = (http_server_t*)user_data;
+static void http_server_listen_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data) {
+    iot_http_server_t* server = (iot_http_server_t*)user_data;
     if (!server) return;
     
-    if (event == NET_EVENT_ACCEPT) {
+    if (event == IOT_NET_EVENT_ACCEPT) {
         struct http_server_client* client = (struct http_server_client*)iot_malloc(sizeof(struct http_server_client));
         if (!client) return;
         
@@ -322,9 +322,9 @@ static void http_server_listen_callback(net_socket_t* sock, net_event_type_t eve
         }
         list_init(&client->list_node);
         
-        sock_t client_sock = net_socket_accept((sock_t)sock, http_server_client_callback, client);
+        sock_t client_sock = iot_net_socket_accept((sock_t)sock, http_server_client_callback, client);
         if (client_sock != INVALID_SOCKET) {
-            client->sock = (net_socket_t*)client_sock;
+            client->sock = (iot_net_socket_t*)client_sock;
             list_add_tail(&client->list_node, &server->clients);
         } else {
             iot_free(client->recv_buf);
@@ -333,8 +333,8 @@ static void http_server_listen_callback(net_socket_t* sock, net_event_type_t eve
     }
 }
 
-http_server_t* http_server_create(void) {
-    http_server_t* server = (http_server_t*)iot_malloc(sizeof(http_server_t));
+iot_http_server_t* iot_http_server_create(void) {
+    iot_http_server_t* server = (iot_http_server_t*)iot_malloc(sizeof(iot_http_server_t));
     if (!server) return NULL;
     
     memset(server, 0, sizeof(*server));
@@ -343,10 +343,10 @@ http_server_t* http_server_create(void) {
     return server;
 }
 
-void http_server_destroy(http_server_t* server) {
+void iot_http_server_destroy(iot_http_server_t* server) {
     if (!server) return;
     
-    http_server_stop(server);
+    iot_http_server_stop(server);
     
     struct http_server_route* route;
     struct http_server_route* tmp;
@@ -363,21 +363,21 @@ void http_server_destroy(http_server_t* server) {
     iot_free(server);
 }
 
-int http_server_start(http_server_t* server, uint16_t port) {
+int iot_http_server_start(iot_http_server_t* server, uint16_t port) {
     if (!server) return -1;
     
-    server->listen_sock = (net_socket_t*)net_socket_create(SOCK_TYPE_STREAM, NULL,
+    server->listen_sock = (iot_net_socket_t*)iot_net_socket_create(IOT_NET_SOCK_STREAM, NULL,
                                                            http_server_listen_callback, server);
     if (!server->listen_sock) return -1;
     
-    if (net_socket_bind((sock_t)server->listen_sock, "0.0.0.0", port) != 0) {
-        net_socket_close((sock_t)server->listen_sock);
+    if (iot_net_socket_bind((sock_t)server->listen_sock, "0.0.0.0", port) != 0) {
+        iot_net_socket_close((sock_t)server->listen_sock);
         server->listen_sock = NULL;
         return -1;
     }
     
-    if (net_socket_listen((sock_t)server->listen_sock, HTTP_SERVER_BACKLOG) != 0) {
-        net_socket_close((sock_t)server->listen_sock);
+    if (iot_net_socket_listen((sock_t)server->listen_sock, HTTP_SERVER_BACKLOG) != 0) {
+        iot_net_socket_close((sock_t)server->listen_sock);
         server->listen_sock = NULL;
         return -1;
     }
@@ -386,11 +386,11 @@ int http_server_start(http_server_t* server, uint16_t port) {
     return 0;
 }
 
-void http_server_stop(http_server_t* server) {
+void iot_http_server_stop(iot_http_server_t* server) {
     if (!server) return;
     
     if (server->listen_sock) {
-        net_socket_close((sock_t)server->listen_sock);
+        iot_net_socket_close((sock_t)server->listen_sock);
         server->listen_sock = NULL;
     }
     
@@ -398,7 +398,7 @@ void http_server_stop(http_server_t* server) {
     struct http_server_client* tmp;
     list_for_each_entry_safe(client, tmp, &server->clients, list_node, struct http_server_client) {
         if (client->sock) {
-            net_socket_close((sock_t)client->sock);
+            iot_net_socket_close((sock_t)client->sock);
         }
         if (client->recv_buf) {
             iot_free(client->recv_buf);
@@ -408,8 +408,8 @@ void http_server_stop(http_server_t* server) {
     }
 }
 
-int http_server_register_handler(http_server_t* server, http_server_method_t method,
-                                 const char* path, http_server_handler_t handler) {
+int iot_http_server_register_handler(iot_http_server_t* server, iot_http_server_method_t method,
+                                 const char* path, iot_http_server_handler_t handler) {
     if (!server || !path || !handler) return -1;
     
     struct http_server_route* route = (struct http_server_route*)iot_malloc(sizeof(struct http_server_route));
@@ -430,7 +430,7 @@ int http_server_register_handler(http_server_t* server, http_server_method_t met
     return 0;
 }
 
-int http_server_set_static_dir(http_server_t* server, const char* dir) {
+int iot_http_server_set_static_dir(iot_http_server_t* server, const char* dir) {
     if (!server) return -1;
     
     if (server->static_dir) {
@@ -449,8 +449,8 @@ int http_server_set_static_dir(http_server_t* server, const char* dir) {
     return 0;
 }
 
-void http_server_set_request_callback(http_server_t* server, 
-                                      http_server_request_callback_t callback,
+void iot_http_server_set_request_callback(iot_http_server_t* server, 
+                                      iot_http_server_request_callback_t callback,
                                       void* user_data) {
     if (!server) return;
     
@@ -458,7 +458,7 @@ void http_server_set_request_callback(http_server_t* server,
     server->request_callback_data = user_data;
 }
 
-void http_server_response_write_head(http_server_response_t* resp, int status_code, 
+void iot_http_server_response_write_head(iot_http_server_response_t* resp, int status_code, 
                                      const char* content_type, const char* headers) {
     if (!resp) return;
     
@@ -493,7 +493,7 @@ void http_server_response_write_head(http_server_response_t* resp, int status_co
     }
 }
 
-void http_server_response_set_header(http_server_response_t* resp, const char* key, const char* value) {
+void iot_http_server_response_set_header(iot_http_server_response_t* resp, const char* key, const char* value) {
     if (!resp || !key || !value) return;
     
     size_t new_len = strlen(key) + strlen(value) + 4;
@@ -519,7 +519,7 @@ void http_server_response_set_header(http_server_response_t* resp, const char* k
     resp->headers_len = strlen(new_headers);
 }
 
-void http_server_response_end(http_server_response_t* resp, const char* body, size_t body_len) {
+void iot_http_server_response_end(iot_http_server_response_t* resp, const char* body, size_t body_len) {
     if (!resp) return;
     
     if (resp->body) {
@@ -538,7 +538,7 @@ void http_server_response_end(http_server_response_t* resp, const char* body, si
     }
 }
 
-void http_server_response_free(http_server_response_t* resp) {
+void iot_http_server_response_free(iot_http_server_response_t* resp) {
     if (!resp) return;
     
     if (resp->content_type) {

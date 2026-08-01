@@ -1,5 +1,5 @@
-/**
- * @file lvgl_msgbox.c
+﻿/**
+ * @file iot_lvgl_msgbox.c
  * @brief LVGL消息框控件
  *
  * 实现LVGL消息框控件的OO风格Lua绑定，包括消息框创建、设置文本、添加按钮、设置尺寸、获取活动按钮索引/文本、关闭消息框等接口。
@@ -19,9 +19,9 @@ typedef struct {
     char** texts;
     char** map;
     uint32_t count;
-} lvgl_msgbox_btns_t;
+} iot_lvgl_msgbox_btns_t;
 
-static void lvgl_msgbox_btns_free(lvgl_msgbox_btns_t* btns)
+static void iot_lvgl_msgbox_btns_free(iot_lvgl_msgbox_btns_t* btns)
 {
     uint32_t i;
 
@@ -36,12 +36,12 @@ static void lvgl_msgbox_btns_free(lvgl_msgbox_btns_t* btns)
     cm_free(btns);
 }
 
-static lvgl_msgbox_btns_t* lvgl_msgbox_btns_get(lv_obj_t* msgbox)
+static iot_lvgl_msgbox_btns_t* iot_lvgl_msgbox_btns_get(lv_obj_t* msgbox)
 {
-    return (lvgl_msgbox_btns_t*)lv_obj_get_user_data(msgbox);
+    return (iot_lvgl_msgbox_btns_t*)lv_obj_get_user_data(msgbox);
 }
 
-static char* lvgl_msgbox_strdup(const char* src)
+static char* iot_lvgl_msgbox_strdup(const char* src)
 {
     size_t len = strlen(src) + 1;
     char* dst = (char*)cm_malloc(len);
@@ -51,7 +51,7 @@ static char* lvgl_msgbox_strdup(const char* src)
     return dst;
 }
 
-static lv_obj_t* lvgl_msgbox_ensure_title(lv_obj_t* msgbox)
+static lv_obj_t* iot_lvgl_msgbox_ensure_title(lv_obj_t* msgbox)
 {
     lv_obj_t* title = lv_msgbox_get_title(msgbox);
     if (title) {
@@ -65,7 +65,7 @@ static lv_obj_t* lvgl_msgbox_ensure_title(lv_obj_t* msgbox)
     return mbox->title;
 }
 
-static lv_obj_t* lvgl_msgbox_ensure_text(lv_obj_t* msgbox)
+static lv_obj_t* iot_lvgl_msgbox_ensure_text(lv_obj_t* msgbox)
 {
     lv_obj_t* text = lv_msgbox_get_text(msgbox);
     if (text) {
@@ -83,7 +83,7 @@ static lv_obj_t* lvgl_msgbox_ensure_text(lv_obj_t* msgbox)
     return mbox->text;
 }
 
-static void lvgl_msgbox_refresh_btns(lv_obj_t* msgbox, lvgl_msgbox_btns_t* store)
+static void iot_lvgl_msgbox_refresh_btns(lv_obj_t* msgbox, iot_lvgl_msgbox_btns_t* store)
 {
     lv_msgbox_t* mbox = (lv_msgbox_t*)msgbox;
 
@@ -108,10 +108,10 @@ static void lvgl_msgbox_refresh_btns(lv_obj_t* msgbox, lvgl_msgbox_btns_t* store
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_msgbox_create_internal(lua_State* L) {
+static int iot_lvgl_msgbox_create_internal(lua_State* L) {
     lv_obj_t* parent = NULL;
     if (!lua_isnoneornil(L, 1)) {
-        parent = lvgl_get_obj_ptr(L, 1);
+        parent = iot_lvgl_get_obj_ptr(L, 1);
     }
     lv_obj_t* msgbox = lv_msgbox_create(parent, "", "", NULL, false);
     lua_pushlightuserdata(L, msgbox);
@@ -126,8 +126,8 @@ static int lvgl_msgbox_create_internal(lua_State* L) {
 @return userdata 带metatable的消息框实例
 @usage local msgbox = lvgl.msgbox.create(nil)
 */
-static int lvgl_msgbox_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_msgbox_create_internal, msgbox_metatable_ref);
+static int iot_lvgl_msgbox_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_msgbox_create_internal, msgbox_metatable_ref);
 }
 
 /*
@@ -137,10 +137,10 @@ static int lvgl_msgbox_create(lua_State* L) {
 @return self
 @usage msgbox:set_title("提示")
 */
-static int lvgl_msgbox_set_title(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_msgbox_set_title(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     const char* title = luaL_checkstring(L, 2);
-    lv_label_set_text(lvgl_msgbox_ensure_title(msgbox), title);
+    lv_label_set_text(iot_lvgl_msgbox_ensure_title(msgbox), title);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -152,10 +152,10 @@ static int lvgl_msgbox_set_title(lua_State* L) {
 @return self
 @usage msgbox:set_text("操作成功")
 */
-static int lvgl_msgbox_set_text(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_msgbox_set_text(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     const char* text = luaL_checkstring(L, 2);
-    lv_label_set_text(lvgl_msgbox_ensure_text(msgbox), text);
+    lv_label_set_text(iot_lvgl_msgbox_ensure_text(msgbox), text);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -167,11 +167,11 @@ static int lvgl_msgbox_set_text(lua_State* L) {
 @return self
 @usage msgbox:add_button("确定")
 */
-static int lvgl_msgbox_add_button(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_msgbox_add_button(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = luaL_checkstring(L, 2);
-    lvgl_msgbox_btns_t* old = lvgl_msgbox_btns_get(msgbox);
-    lvgl_msgbox_btns_t* store = (lvgl_msgbox_btns_t*)cm_malloc(sizeof(lvgl_msgbox_btns_t));
+    iot_lvgl_msgbox_btns_t* old = iot_lvgl_msgbox_btns_get(msgbox);
+    iot_lvgl_msgbox_btns_t* store = (iot_lvgl_msgbox_btns_t*)cm_malloc(sizeof(iot_lvgl_msgbox_btns_t));
     uint32_t i;
 
     if (!store) {
@@ -191,15 +191,15 @@ static int lvgl_msgbox_add_button(lua_State* L) {
     }
 
     for (i = 0; i < store->count - 1; i++) {
-        store->texts[i] = lvgl_msgbox_strdup(old->texts[i]);
+        store->texts[i] = iot_lvgl_msgbox_strdup(old->texts[i]);
         store->map[i] = store->texts[i];
     }
-    store->texts[store->count - 1] = lvgl_msgbox_strdup(txt);
+    store->texts[store->count - 1] = iot_lvgl_msgbox_strdup(txt);
     store->map[store->count - 1] = store->texts[store->count - 1];
     store->map[store->count] = (char*)"";
 
-    lvgl_msgbox_refresh_btns(msgbox, store);
-    lvgl_msgbox_btns_free(old);
+    iot_lvgl_msgbox_refresh_btns(msgbox, store);
+    iot_lvgl_msgbox_btns_free(old);
     lv_obj_set_user_data(msgbox, store);
 
     lua_pushvalue(L, 1);
@@ -212,8 +212,8 @@ static int lvgl_msgbox_add_button(lua_State* L) {
 @return integer 按钮索引
 @usage local btn_index = msgbox:get_active_btn()
 */
-static int lvgl_msgbox_get_active_btn(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_msgbox_get_active_btn(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     int16_t btn = lv_msgbox_get_active_btn(msgbox);
     lua_pushinteger(L, btn);
     return 1;
@@ -225,8 +225,8 @@ static int lvgl_msgbox_get_active_btn(lua_State* L) {
 @return string 按钮文本
 @usage local btn_text = msgbox:get_active_btn_text()
 */
-static int lvgl_msgbox_get_active_btn_text(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_msgbox_get_active_btn_text(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = lv_msgbox_get_active_btn_text(msgbox);
     lua_pushstring(L, txt);
     return 1;
@@ -238,9 +238,9 @@ static int lvgl_msgbox_get_active_btn_text(lua_State* L) {
 @return self
 @usage msgbox:close()
 */
-static int lvgl_msgbox_close(lua_State* L) {
-    lv_obj_t* msgbox = lvgl_get_obj_ptr(L, 1);
-    lvgl_msgbox_btns_free(lvgl_msgbox_btns_get(msgbox));
+static int iot_lvgl_msgbox_close(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    iot_lvgl_msgbox_btns_free(iot_lvgl_msgbox_btns_get(msgbox));
     lv_obj_set_user_data(msgbox, NULL);
     lv_msgbox_close(msgbox);
     lua_pushvalue(L, 1);
@@ -248,17 +248,17 @@ static int lvgl_msgbox_close(lua_State* L) {
 }
 
 /* 注册 msgbox 子模块 */
-void lvgl_register_msgbox(lua_State* L) {
+void iot_lvgl_register_msgbox(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_title", lvgl_msgbox_set_title);
-    REG_METHOD(L, "set_text", lvgl_msgbox_set_text);
-    REG_METHOD(L, "add_button", lvgl_msgbox_add_button);
-    REG_METHOD(L, "get_active_btn", lvgl_msgbox_get_active_btn);
-    REG_METHOD(L, "get_active_btn_text", lvgl_msgbox_get_active_btn_text);
-    REG_METHOD(L, "close", lvgl_msgbox_close);
+    REG_METHOD(L, "set_title", iot_lvgl_msgbox_set_title);
+    REG_METHOD(L, "set_text", iot_lvgl_msgbox_set_text);
+    REG_METHOD(L, "add_button", iot_lvgl_msgbox_add_button);
+    REG_METHOD(L, "get_active_btn", iot_lvgl_msgbox_get_active_btn);
+    REG_METHOD(L, "get_active_btn_text", iot_lvgl_msgbox_get_active_btn_text);
+    REG_METHOD(L, "close", iot_lvgl_msgbox_close);
 
     /* 保存组件metatable引用(用于继承) */
     msgbox_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -275,5 +275,5 @@ void lvgl_register_msgbox(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.msgbox) */
-    REG_METHOD(L, "create", lvgl_msgbox_create);
+    REG_METHOD(L, "create", iot_lvgl_msgbox_create);
 }

@@ -21,13 +21,13 @@
 #define strncasecmp _strnicmp
 #endif
 
-struct http_gzip_ctx {
+struct iot_http_gzip_ctx {
     int initialized;
 };
 
-http_gzip_ctx_t* http_gzip_create(void)
+iot_http_gzip_ctx_t* iot_http_gzip_create(void)
 {
-    http_gzip_ctx_t* ctx = (http_gzip_ctx_t*)malloc(sizeof(http_gzip_ctx_t));
+    iot_http_gzip_ctx_t* ctx = (iot_http_gzip_ctx_t*)malloc(sizeof(iot_http_gzip_ctx_t));
     if (!ctx) {
         return NULL;
     }
@@ -35,12 +35,12 @@ http_gzip_ctx_t* http_gzip_create(void)
     return ctx;
 }
 
-void http_gzip_destroy(http_gzip_ctx_t* ctx)
+void iot_http_gzip_destroy(iot_http_gzip_ctx_t* ctx)
 {
     free(ctx);
 }
 
-int http_gzip_reset(http_gzip_ctx_t* ctx)
+int iot_http_gzip_reset(iot_http_gzip_ctx_t* ctx)
 {
     if (!ctx) {
         return -1;
@@ -49,7 +49,7 @@ int http_gzip_reset(http_gzip_ctx_t* ctx)
     return 0;
 }
 
-int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_len,
+int iot_http_iot_gzip_decompress(iot_http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_len,
                          uint8_t* dst, size_t dst_cap, size_t* produced)
 {
     size_t out_len;
@@ -59,7 +59,7 @@ int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_le
     }
 
     out_len = dst_cap;
-    if (gzip_decompress(src, src_len, dst, &out_len) != GZIP_OK) {
+    if (iot_gzip_decompress(src, src_len, dst, &out_len) != IOT_GZIP_OK) {
         return -1;
     }
 
@@ -69,7 +69,7 @@ int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_le
     return 0;
 }
 
-uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len)
+uint8_t* iot_http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len)
 {
     size_t bound;
     uint8_t* dst;
@@ -90,7 +90,7 @@ uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* 
     }
 
     dst_len = bound;
-    if (gzip_decompress(src, src_len, dst, &dst_len) != GZIP_OK) {
+    if (iot_gzip_decompress(src, src_len, dst, &dst_len) != IOT_GZIP_OK) {
         free(dst);
         return NULL;
     }
@@ -105,7 +105,7 @@ uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* 
     }
 }
 
-int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level)
+int iot_http_iot_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level)
 {
     size_t dst_len;
 
@@ -114,14 +114,14 @@ int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t 
     }
 
     dst_len = dst_cap;
-    if (gzip_compress(src, src_len, dst, &dst_len, level) != GZIP_OK) {
+    if (iot_gzip_compress(src, src_len, dst, &dst_len, level) != IOT_GZIP_OK) {
         return -1;
     }
 
     return (int)dst_len;
 }
 
-uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len)
+uint8_t* iot_http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len)
 {
     size_t bound;
     uint8_t* dst;
@@ -138,7 +138,7 @@ uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level,
     }
 
     dst_len = bound;
-    if (gzip_compress(src, src_len, dst, &dst_len, level) != GZIP_OK) {
+    if (iot_gzip_compress(src, src_len, dst, &dst_len, level) != IOT_GZIP_OK) {
         free(dst);
         return NULL;
     }
@@ -153,7 +153,7 @@ uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level,
     }
 }
 
-bool http_gzip_check_response(const char* header)
+bool iot_http_gzip_check_response(const char* header)
 {
     const char* p;
 
@@ -186,7 +186,7 @@ bool http_gzip_check_response(const char* header)
     return false;
 }
 
-int http_gzip_build_request_header(char* buf, size_t buf_len)
+int iot_http_gzip_build_request_header(char* buf, size_t buf_len)
 {
     if (!buf || buf_len == 0) {
         return -1;

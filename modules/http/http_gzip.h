@@ -24,7 +24,7 @@ extern "C" {
  * 类型定义
  *===========================================================*/
 
-typedef struct http_gzip_ctx http_gzip_ctx_t;
+typedef struct iot_http_gzip_ctx iot_http_gzip_ctx_t;
 
 /*===========================================================
  * Gzip 上下文操作
@@ -34,20 +34,20 @@ typedef struct http_gzip_ctx http_gzip_ctx_t;
  * @brief 创建 gzip 解压上下文
  * @return 解压上下文，失败返回 NULL
  */
-http_gzip_ctx_t* http_gzip_create(void);
+iot_http_gzip_ctx_t* iot_http_gzip_create(void);
 
 /**
  * @brief 销毁 gzip 解压上下文
  * @param ctx gzip 上下文
  */
-void http_gzip_destroy(http_gzip_ctx_t* ctx);
+void iot_http_gzip_destroy(iot_http_gzip_ctx_t* ctx);
 
 /**
  * @brief 重置 gzip 解压上下文
  * @param ctx gzip 上下文
  * @return 0 成功，-1 失败
  */
-int http_gzip_reset(http_gzip_ctx_t* ctx);
+int iot_http_gzip_reset(iot_http_gzip_ctx_t* ctx);
 
 /*===========================================================
  * Gzip 解压接口
@@ -63,7 +63,7 @@ int http_gzip_reset(http_gzip_ctx_t* ctx);
  * @param produced 输出实际解压数据大小
  * @return 0 成功，-1 失败
  */
-int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_len,
+int iot_http_gzip_decompress(iot_http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_len,
                         uint8_t* dst, size_t dst_cap, size_t* produced);
 
 /**
@@ -73,7 +73,7 @@ int http_gzip_decompress(http_gzip_ctx_t* ctx, const uint8_t* src, size_t src_le
  * @param out_len 输出解压后数据长度
  * @return 解压后数据，失败返回 NULL，使用完后需 free
  */
-uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len);
+uint8_t* iot_http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* out_len);
 
 /*===========================================================
  * Gzip 压缩接口
@@ -88,7 +88,7 @@ uint8_t* http_gzip_decompress_alloc(const uint8_t* src, size_t src_len, size_t* 
  * @param level 压缩级别（1-9）
  * @return 压缩后数据大小，失败返回 -1
  */
-int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level);
+int iot_http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_cap, int level);
 
 /**
  * @brief 压缩数据为 gzip 格式（分配内存版本）
@@ -98,7 +98,7 @@ int http_gzip_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t 
  * @param out_len 输出压缩后数据长度
  * @return 压缩后数据，失败返回 NULL，使用完后需 free
  */
-uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len);
+uint8_t* iot_http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level, size_t* out_len);
 
 /*===========================================================
  * HTTP 头处理
@@ -109,7 +109,7 @@ uint8_t* http_gzip_compress_alloc(const uint8_t* src, size_t src_len, int level,
  * @param header 响应头
  * @return true 使用 gzip，false 未使用
  */
-bool http_gzip_check_response(const char* header);
+bool iot_http_gzip_check_response(const char* header);
 
 /**
  * @brief 构建 gzip 请求头
@@ -117,7 +117,7 @@ bool http_gzip_check_response(const char* header);
  * @param buf_len 缓冲区大小
  * @return 0 成功，-1 失败
  */
-int http_gzip_build_request_header(char* buf, size_t buf_len);
+int iot_http_gzip_build_request_header(char* buf, size_t buf_len);
 
 #ifdef __cplusplus
 }

@@ -116,23 +116,23 @@ static uint32_t decode_remaining_length(const uint8_t* buf, uint16_t* consumed) 
  * 协议包构建实现
  *===========================================================*/
 
-int mqtt_packet_encode_connect(const mqtt_packet_connect_t* connect, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_connect(const iot_mqtt_packet_connect_t* connect, uint8_t* buf, size_t buf_len) {
     if (!connect || !buf || buf_len < 12) return -1;
     
     uint16_t pos = 0;
     
     /* 固定头：数据包类型 */
-    buf[pos++] = MQTT_PACKET_CONNECT;
+    buf[pos++] = IOT_MQTT_PACKET_CONNECT;
     
     /* 计算剩余长度（先占位） */
     uint8_t* remaining_len_pos = buf + pos;
     pos++;
     
     /* 可变头：协议名 */
-    pos += encode_string(buf + pos, connect->protocol_name ? connect->protocol_name : MQTT_PROTOCOL_NAME);
+    pos += encode_string(buf + pos, connect->protocol_name ? connect->protocol_name : IOT_MQTT_PROTOCOL_NAME);
     
     /* 可变头：协议级别 */
-    buf[pos++] = connect->protocol_version ? connect->protocol_version : MQTT_PROTOCOL_VERSION;
+    buf[pos++] = connect->protocol_version ? connect->protocol_version : IOT_MQTT_PROTOCOL_VERSION;
     
     /* 连接标志 */
     uint8_t connect_flags = 0;
@@ -194,10 +194,10 @@ int mqtt_packet_encode_connect(const mqtt_packet_connect_t* connect, uint8_t* bu
     return pos;
 }
 
-int mqtt_packet_encode_connack(const mqtt_packet_connack_t* connack, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_connack(const iot_mqtt_packet_connack_t* connack, uint8_t* buf, size_t buf_len) {
     if (!connack || !buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_CONNACK;
+    buf[0] = IOT_MQTT_PACKET_CONNACK;
     buf[1] = 2;  /* 剩余长度固定为 2 */
     buf[2] = connack->session_present & 0x01;
     buf[3] = connack->return_code & 0xFF;
@@ -205,13 +205,13 @@ int mqtt_packet_encode_connack(const mqtt_packet_connack_t* connack, uint8_t* bu
     return 4;
 }
 
-int mqtt_packet_encode_publish(const mqtt_packet_publish_t* publish, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_publish(const iot_mqtt_packet_publish_t* publish, uint8_t* buf, size_t buf_len) {
     if (!publish || !buf || !publish->topic) return -1;
     
     uint16_t pos = 0;
     
     /* 固定头：数据包类型 + 标志 */
-    uint8_t cmd = MQTT_PACKET_PUBLISH;
+    uint8_t cmd = IOT_MQTT_PACKET_PUBLISH;
     cmd |= (publish->dup & 0x01) << 3;
     cmd |= (publish->qos & 0x03) << 1;
     cmd |= (publish->retain & 0x01);
@@ -248,10 +248,10 @@ int mqtt_packet_encode_publish(const mqtt_packet_publish_t* publish, uint8_t* bu
     return pos;
 }
 
-int mqtt_packet_encode_puback(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_puback(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_PUBACK;
+    buf[0] = IOT_MQTT_PACKET_PUBACK;
     buf[1] = 2;
     buf[2] = (packet_id >> 8) & 0xFF;
     buf[3] = packet_id & 0xFF;
@@ -259,10 +259,10 @@ int mqtt_packet_encode_puback(uint16_t packet_id, uint8_t* buf, size_t buf_len) 
     return 4;
 }
 
-int mqtt_packet_encode_pubrec(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_pubrec(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_PUBREC;
+    buf[0] = IOT_MQTT_PACKET_PUBREC;
     buf[1] = 2;
     buf[2] = (packet_id >> 8) & 0xFF;
     buf[3] = packet_id & 0xFF;
@@ -270,10 +270,10 @@ int mqtt_packet_encode_pubrec(uint16_t packet_id, uint8_t* buf, size_t buf_len) 
     return 4;
 }
 
-int mqtt_packet_encode_pubrel(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_pubrel(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_PUBREL | 0x02;  /* PUBREL 固定标志为 10 */
+    buf[0] = IOT_MQTT_PACKET_PUBREL | 0x02;  /* PUBREL 固定标志为 10 */
     buf[1] = 2;
     buf[2] = (packet_id >> 8) & 0xFF;
     buf[3] = packet_id & 0xFF;
@@ -281,10 +281,10 @@ int mqtt_packet_encode_pubrel(uint16_t packet_id, uint8_t* buf, size_t buf_len) 
     return 4;
 }
 
-int mqtt_packet_encode_pubcomp(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_pubcomp(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_PUBCOMP;
+    buf[0] = IOT_MQTT_PACKET_PUBCOMP;
     buf[1] = 2;
     buf[2] = (packet_id >> 8) & 0xFF;
     buf[3] = packet_id & 0xFF;
@@ -292,13 +292,13 @@ int mqtt_packet_encode_pubcomp(uint16_t packet_id, uint8_t* buf, size_t buf_len)
     return 4;
 }
 
-int mqtt_packet_encode_subscribe(const mqtt_packet_subscribe_t* subscribe, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_subscribe(const iot_mqtt_packet_subscribe_t* subscribe, uint8_t* buf, size_t buf_len) {
     if (!subscribe || !buf || !subscribe->topic_filters || subscribe->topic_count == 0) return -1;
     
     uint16_t pos = 0;
     
     /* 固定头：数据包类型 + 标志（SUBSCRIBE 固定标志为 0010） */
-    buf[pos++] = MQTT_PACKET_SUBSCRIBE | 0x02;
+    buf[pos++] = IOT_MQTT_PACKET_SUBSCRIBE | 0x02;
     
     /* 计算剩余长度 */
     uint8_t* remaining_len_pos = buf + pos;
@@ -325,12 +325,12 @@ int mqtt_packet_encode_subscribe(const mqtt_packet_subscribe_t* subscribe, uint8
     return pos;
 }
 
-int mqtt_packet_encode_suback(const mqtt_packet_suback_t* suback, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_suback(const iot_mqtt_packet_suback_t* suback, uint8_t* buf, size_t buf_len) {
     if (!suback || !buf || buf_len < 4) return -1;
     
     uint16_t pos = 0;
     
-    buf[pos++] = MQTT_PACKET_SUBACK;
+    buf[pos++] = IOT_MQTT_PACKET_SUBACK;
     
     /* 计算剩余长度 */
     uint8_t* remaining_len_pos = buf + pos;
@@ -356,13 +356,13 @@ int mqtt_packet_encode_suback(const mqtt_packet_suback_t* suback, uint8_t* buf, 
     return pos;
 }
 
-int mqtt_packet_encode_unsubscribe(const mqtt_packet_unsubscribe_t* unsubscribe, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_unsubscribe(const iot_mqtt_packet_unsubscribe_t* unsubscribe, uint8_t* buf, size_t buf_len) {
     if (!unsubscribe || !buf || !unsubscribe->topic_filters || unsubscribe->topic_count == 0) return -1;
     
     uint16_t pos = 0;
     
     /* 固定头：数据包类型 + 标志（UNSUBSCRIBE 固定标志为 0010） */
-    buf[pos++] = MQTT_PACKET_UNSUBSCRIBE | 0x02;
+    buf[pos++] = IOT_MQTT_PACKET_UNSUBSCRIBE | 0x02;
     
     /* 计算剩余长度 */
     uint8_t* remaining_len_pos = buf + pos;
@@ -388,10 +388,10 @@ int mqtt_packet_encode_unsubscribe(const mqtt_packet_unsubscribe_t* unsubscribe,
     return pos;
 }
 
-int mqtt_packet_encode_unsuback(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_unsuback(uint16_t packet_id, uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 4) return -1;
     
-    buf[0] = MQTT_PACKET_UNSUBACK;
+    buf[0] = IOT_MQTT_PACKET_UNSUBACK;
     buf[1] = 2;
     buf[2] = (packet_id >> 8) & 0xFF;
     buf[3] = packet_id & 0xFF;
@@ -399,28 +399,28 @@ int mqtt_packet_encode_unsuback(uint16_t packet_id, uint8_t* buf, size_t buf_len
     return 4;
 }
 
-int mqtt_packet_encode_pingreq(uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_pingreq(uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 2) return -1;
     
-    buf[0] = MQTT_PACKET_PINGREQ;
+    buf[0] = IOT_MQTT_PACKET_PINGREQ;
     buf[1] = 0;
     
     return 2;
 }
 
-int mqtt_packet_encode_pingresp(uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_pingresp(uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 2) return -1;
     
-    buf[0] = MQTT_PACKET_PINGRESP;
+    buf[0] = IOT_MQTT_PACKET_PINGRESP;
     buf[1] = 0;
     
     return 2;
 }
 
-int mqtt_packet_encode_disconnect(uint8_t* buf, size_t buf_len) {
+int iot_mqtt_packet_encode_disconnect(uint8_t* buf, size_t buf_len) {
     if (!buf || buf_len < 2) return -1;
     
-    buf[0] = MQTT_PACKET_DISCONNECT;
+    buf[0] = IOT_MQTT_PACKET_DISCONNECT;
     buf[1] = 0;
     
     return 2;
@@ -430,17 +430,17 @@ int mqtt_packet_encode_disconnect(uint8_t* buf, size_t buf_len) {
  * 协议包解析实现
  *===========================================================*/
 
-int mqtt_packet_decode_header(const uint8_t* data, size_t data_len,
-                              mqtt_packet_t* packet, size_t* consumed) {
+int iot_mqtt_packet_decode_header(const uint8_t* data, size_t data_len,
+                              iot_mqtt_packet_t* packet, size_t* consumed) {
     if (!data || !packet || !consumed || data_len < 2) {
         return -1;
     }
     
-    memset(packet, 0, sizeof(mqtt_packet_t));
+    memset(packet, 0, sizeof(iot_mqtt_packet_t));
     
     /* 解析固定头 */
     uint8_t first_byte = data[0];
-    packet->type = (mqtt_packet_type_t)(first_byte & 0xF0);
+    packet->type = (iot_mqtt_packet_type_t)(first_byte & 0xF0);
     packet->flags = first_byte & 0x0F;
     
     /* 解析剩余长度 */
@@ -469,8 +469,8 @@ int mqtt_packet_decode_header(const uint8_t* data, size_t data_len,
     return 0;
 }
 
-int mqtt_packet_decode_connack(const mqtt_packet_t* packet, mqtt_packet_connack_t* connack) {
-    if (!packet || !connack || packet->type != MQTT_PACKET_CONNACK) {
+int iot_mqtt_packet_decode_connack(const iot_mqtt_packet_t* packet, iot_mqtt_packet_connack_t* connack) {
+    if (!packet || !connack || packet->type != IOT_MQTT_PACKET_CONNACK) {
         return -1;
     }
     
@@ -482,16 +482,16 @@ int mqtt_packet_decode_connack(const mqtt_packet_t* packet, mqtt_packet_connack_
     return 0;
 }
 
-int mqtt_packet_decode_publish(const mqtt_packet_t* packet, mqtt_packet_publish_t* publish) {
-    if (!packet || !publish || packet->type != MQTT_PACKET_PUBLISH) {
+int iot_mqtt_packet_decode_publish(const iot_mqtt_packet_t* packet, iot_mqtt_packet_publish_t* publish) {
+    if (!packet || !publish || packet->type != IOT_MQTT_PACKET_PUBLISH) {
         return -1;
     }
     
-    memset(publish, 0, sizeof(mqtt_packet_publish_t));
+    memset(publish, 0, sizeof(iot_mqtt_packet_publish_t));
     
     /* 解析标志 */
     publish->dup = (packet->flags >> 3) & 0x01;
-    publish->qos = (mqtt_qos_t)((packet->flags >> 1) & 0x03);
+    publish->qos = (iot_mqtt_qos_t)((packet->flags >> 1) & 0x03);
     publish->retain = packet->flags & 0x01;
     
     /* 解析主题名 */
@@ -516,8 +516,8 @@ int mqtt_packet_decode_publish(const mqtt_packet_t* packet, mqtt_packet_publish_
     return 0;
 }
 
-int mqtt_packet_decode_puback(const mqtt_packet_t* packet, mqtt_packet_puback_t* puback) {
-    if (!packet || !puback || packet->type != MQTT_PACKET_PUBACK) {
+int iot_mqtt_packet_decode_puback(const iot_mqtt_packet_t* packet, iot_mqtt_packet_puback_t* puback) {
+    if (!packet || !puback || packet->type != IOT_MQTT_PACKET_PUBACK) {
         return -1;
     }
     
@@ -527,8 +527,8 @@ int mqtt_packet_decode_puback(const mqtt_packet_t* packet, mqtt_packet_puback_t*
     return 0;
 }
 
-int mqtt_packet_decode_pubrec(const mqtt_packet_t* packet, mqtt_packet_pubrec_t* pubrec) {
-    if (!packet || !pubrec || packet->type != MQTT_PACKET_PUBREC) {
+int iot_mqtt_packet_decode_pubrec(const iot_mqtt_packet_t* packet, iot_mqtt_packet_pubrec_t* pubrec) {
+    if (!packet || !pubrec || packet->type != IOT_MQTT_PACKET_PUBREC) {
         return -1;
     }
     
@@ -538,8 +538,8 @@ int mqtt_packet_decode_pubrec(const mqtt_packet_t* packet, mqtt_packet_pubrec_t*
     return 0;
 }
 
-int mqtt_packet_decode_pubrel(const mqtt_packet_t* packet, mqtt_packet_pubrel_t* pubrel) {
-    if (!packet || !pubrel || packet->type != MQTT_PACKET_PUBREL) {
+int iot_mqtt_packet_decode_pubrel(const iot_mqtt_packet_t* packet, iot_mqtt_packet_pubrel_t* pubrel) {
+    if (!packet || !pubrel || packet->type != IOT_MQTT_PACKET_PUBREL) {
         return -1;
     }
     
@@ -549,8 +549,8 @@ int mqtt_packet_decode_pubrel(const mqtt_packet_t* packet, mqtt_packet_pubrel_t*
     return 0;
 }
 
-int mqtt_packet_decode_pubcomp(const mqtt_packet_t* packet, mqtt_packet_pubcomp_t* pubcomp) {
-    if (!packet || !pubcomp || packet->type != MQTT_PACKET_PUBCOMP) {
+int iot_mqtt_packet_decode_pubcomp(const iot_mqtt_packet_t* packet, iot_mqtt_packet_pubcomp_t* pubcomp) {
+    if (!packet || !pubcomp || packet->type != IOT_MQTT_PACKET_PUBCOMP) {
         return -1;
     }
     
@@ -560,8 +560,8 @@ int mqtt_packet_decode_pubcomp(const mqtt_packet_t* packet, mqtt_packet_pubcomp_
     return 0;
 }
 
-int mqtt_packet_decode_suback(const mqtt_packet_t* packet, mqtt_packet_suback_t* suback) {
-    if (!packet || !suback || packet->type != MQTT_PACKET_SUBACK) {
+int iot_mqtt_packet_decode_suback(const iot_mqtt_packet_t* packet, iot_mqtt_packet_suback_t* suback) {
+    if (!packet || !suback || packet->type != IOT_MQTT_PACKET_SUBACK) {
         return -1;
     }
     
@@ -578,8 +578,8 @@ int mqtt_packet_decode_suback(const mqtt_packet_t* packet, mqtt_packet_suback_t*
     return 0;
 }
 
-int mqtt_packet_decode_unsuback(const mqtt_packet_t* packet, mqtt_packet_unsuback_t* unsuback) {
-    if (!packet || !unsuback || packet->type != MQTT_PACKET_UNSUBACK) {
+int iot_mqtt_packet_decode_unsuback(const iot_mqtt_packet_t* packet, iot_mqtt_packet_unsuback_t* unsuback) {
+    if (!packet || !unsuback || packet->type != IOT_MQTT_PACKET_UNSUBACK) {
         return -1;
     }
     
@@ -593,28 +593,28 @@ int mqtt_packet_decode_unsuback(const mqtt_packet_t* packet, mqtt_packet_unsubac
  * 辅助函数实现
  *===========================================================*/
 
-const char* mqtt_packet_type_name(mqtt_packet_type_t type) {
+const char* iot_mqtt_packet_type_name(iot_mqtt_packet_type_t type) {
     switch (type) {
-        case MQTT_PACKET_CONNECT:     return "CONNECT";
-        case MQTT_PACKET_CONNACK:     return "CONNACK";
-        case MQTT_PACKET_PUBLISH:     return "PUBLISH";
-        case MQTT_PACKET_PUBACK:      return "PUBACK";
-        case MQTT_PACKET_PUBREC:      return "PUBREC";
-        case MQTT_PACKET_PUBREL:      return "PUBREL";
-        case MQTT_PACKET_PUBCOMP:     return "PUBCOMP";
-        case MQTT_PACKET_SUBSCRIBE:   return "SUBSCRIBE";
-        case MQTT_PACKET_SUBACK:      return "SUBACK";
-        case MQTT_PACKET_UNSUBSCRIBE: return "UNSUBSCRIBE";
-        case MQTT_PACKET_UNSUBACK:    return "UNSUBACK";
-        case MQTT_PACKET_PINGREQ:     return "PINGREQ";
-        case MQTT_PACKET_PINGRESP:    return "PINGRESP";
-        case MQTT_PACKET_DISCONNECT:  return "DISCONNECT";
+        case IOT_MQTT_PACKET_CONNECT:     return "CONNECT";
+        case IOT_MQTT_PACKET_CONNACK:     return "CONNACK";
+        case IOT_MQTT_PACKET_PUBLISH:     return "PUBLISH";
+        case IOT_MQTT_PACKET_PUBACK:      return "PUBACK";
+        case IOT_MQTT_PACKET_PUBREC:      return "PUBREC";
+        case IOT_MQTT_PACKET_PUBREL:      return "PUBREL";
+        case IOT_MQTT_PACKET_PUBCOMP:     return "PUBCOMP";
+        case IOT_MQTT_PACKET_SUBSCRIBE:   return "SUBSCRIBE";
+        case IOT_MQTT_PACKET_SUBACK:      return "SUBACK";
+        case IOT_MQTT_PACKET_UNSUBSCRIBE: return "UNSUBSCRIBE";
+        case IOT_MQTT_PACKET_UNSUBACK:    return "UNSUBACK";
+        case IOT_MQTT_PACKET_PINGREQ:     return "PINGREQ";
+        case IOT_MQTT_PACKET_PINGRESP:    return "PINGRESP";
+        case IOT_MQTT_PACKET_DISCONNECT:  return "DISCONNECT";
         default:                       return "UNKNOWN";
     }
 }
 
-bool mqtt_topic_validate(const char* topic, size_t len) {
-    if (!topic || len == 0 || len > MQTT_MAX_TOPIC_LEN) {
+bool iot_mqtt_topic_validate(const char* topic, size_t len) {
+    if (!topic || len == 0 || len > IOT_MQTT_MAX_TOPIC_LEN) {
         return false;
     }
     
@@ -633,7 +633,7 @@ bool mqtt_topic_validate(const char* topic, size_t len) {
     return true;
 }
 
-bool mqtt_topic_match(const char* filter, const char* topic) {
+bool iot_mqtt_topic_match(const char* filter, const char* topic) {
     if (!filter || !topic) return false;
     
     const char* f = filter;
@@ -668,14 +668,14 @@ bool mqtt_topic_match(const char* filter, const char* topic) {
     return false;
 }
 
-void mqtt_packet_free(mqtt_packet_t* packet) {
+void iot_mqtt_packet_free(iot_mqtt_packet_t* packet) {
     if (!packet) return;
     
-    if (packet->type == MQTT_PACKET_PUBLISH && packet->packet.publish.topic) {
+    if (packet->type == IOT_MQTT_PACKET_PUBLISH && packet->packet.publish.topic) {
         iot_free((void*)packet->packet.publish.topic);
     }
     
-    if (packet->type == MQTT_PACKET_SUBACK && packet->packet.suback.return_codes) {
+    if (packet->type == IOT_MQTT_PACKET_SUBACK && packet->packet.suback.return_codes) {
         iot_free(packet->packet.suback.return_codes);
     }
     
@@ -683,5 +683,5 @@ void mqtt_packet_free(mqtt_packet_t* packet) {
         iot_free(packet->data);
     }
     
-    memset(packet, 0, sizeof(mqtt_packet_t));
+    memset(packet, 0, sizeof(iot_mqtt_packet_t));
 }

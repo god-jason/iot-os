@@ -31,20 +31,20 @@
 #define HTTP_MAX_HEADER_SIZE 8192
 #define HTTP_MAX_BODY_SIZE   1024 * 1024
 
-static const char* http_method_to_string(http_method_t method);
-static int http_build_request(http_client_t* client, char* buf, size_t buf_len);
-static int http_parse_response(http_client_t* client, http_response_t* response, int finalize);
-static int http_body_is_complete(http_client_t* client, size_t body_start, size_t body_available);
-static int http_assign_body(http_client_t* client, http_response_t* response,
+static const char* iot_http_method_to_string(iot_http_method_t method);
+static int http_build_request(iot_http_client_t* client, char* buf, size_t buf_len);
+static int http_parse_response(iot_http_client_t* client, iot_http_response_t* response, int finalize);
+static int http_body_is_complete(iot_http_client_t* client, size_t body_start, size_t body_available);
+static int http_assign_body(iot_http_client_t* client, iot_http_response_t* response,
                             size_t body_start, size_t body_len);
 static size_t http_decode_chunked_body(const char* src, size_t src_len,
                                        uint8_t** out, size_t* out_len);
 static int http_parse_status_line(const char* line, int* status_code);
 static int http_parse_header(const char* header, const char* key, char* value, size_t value_len);
-static int http_connect(http_client_t* client);
-static void http_recv_data(http_client_t* client);
-static void http_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
-static int http_client_do_request(http_client_t* client);
+static int http_connect(iot_http_client_t* client);
+static void http_recv_data(iot_http_client_t* client);
+static void http_socket_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data);
+static int http_client_do_request(iot_http_client_t* client);
 
 static const char* http_find_crlfcrlf(const char* buf, size_t len) {
     if (!buf || len < 4) return NULL;
@@ -67,20 +67,20 @@ static const char* http_find_crlf(const char* buf, size_t len) {
     return NULL;
 }
 
-static const char* http_method_to_string(http_method_t method) {
+static const char* iot_http_method_to_string(iot_http_method_t method) {
     switch (method) {
-        case HTTP_METHOD_GET:     return "GET";
-        case HTTP_METHOD_POST:    return "POST";
-        case HTTP_METHOD_PUT:     return "PUT";
-        case HTTP_METHOD_DELETE:  return "DELETE";
-        case HTTP_METHOD_HEAD:    return "HEAD";
-        case HTTP_METHOD_OPTIONS: return "OPTIONS";
+        case IOT_HTTP_METHOD_GET:     return "GET";
+        case IOT_HTTP_METHOD_POST:    return "POST";
+        case IOT_HTTP_METHOD_PUT:     return "PUT";
+        case IOT_HTTP_METHOD_DELETE:  return "DELETE";
+        case IOT_HTTP_METHOD_HEAD:    return "HEAD";
+        case IOT_HTTP_METHOD_OPTIONS: return "OPTIONS";
         default:                  return "GET";
     }
 }
 
-static int http_build_request(http_client_t* client, char* buf, size_t buf_len) {
-    const char* method = http_method_to_string(client->options.method);
+static int http_build_request(iot_http_client_t* client, char* buf, size_t buf_len) {
+    const char* method = iot_http_method_to_string(client->options.method);
     const char* path = client->path;
     
     size_t len = snprintf(buf, buf_len, "%s %s HTTP/1.1\r\n", method, path);
@@ -223,7 +223,7 @@ static int http_chunked_body_complete(const char* body, size_t body_len) {
     return 0;
 }
 
-static int http_body_is_complete(http_client_t* client, size_t body_start, size_t body_available) {
+static int http_body_is_complete(iot_http_client_t* client, size_t body_start, size_t body_available) {
     if (!client) {
         return 0;
     }
@@ -305,7 +305,7 @@ static size_t http_decode_chunked_body(const char* src, size_t src_len,
     return written;
 }
 
-static int http_assign_body(http_client_t* client, http_response_t* response,
+static int http_assign_body(iot_http_client_t* client, iot_http_response_t* response,
                             size_t body_start, size_t body_len) {
     const char* raw = client->recv_buf + body_start;
 
@@ -317,7 +317,7 @@ static int http_assign_body(http_client_t* client, http_response_t* response,
         }
 
         if (client->response_gzip && client->options.auto_decompress && !client->options.download_path) {
-            uint8_t* decompressed = http_gzip_decompress_alloc(decoded, decoded_len, &response->body_len);
+            uint8_t* decompressed = iot_http_gzip_decompress_alloc(decoded, decoded_len, &response->body_len);
             iot_free(decoded);
             if (!decompressed) {
                 return -1;
@@ -332,7 +332,7 @@ static int http_assign_body(http_client_t* client, http_response_t* response,
     }
 
     if (client->response_gzip && client->options.auto_decompress && !client->options.download_path) {
-        uint8_t* decompressed = http_gzip_decompress_alloc((const uint8_t*)raw, body_len, &response->body_len);
+        uint8_t* decompressed = iot_http_gzip_decompress_alloc((const uint8_t*)raw, body_len, &response->body_len);
         if (!decompressed) {
             return -1;
         }
@@ -350,12 +350,12 @@ static int http_assign_body(http_client_t* client, http_response_t* response,
     return 0;
 }
 
-static int http_parse_response(http_client_t* client, http_response_t* response, int finalize) {
+static int http_parse_response(iot_http_client_t* client, iot_http_response_t* response, int finalize) {
     if (!client || !client->recv_buf || client->recv_len < 4) {
         return -1;
     }
     
-    memset(response, 0, sizeof(http_response_t));
+    memset(response, 0, sizeof(iot_http_response_t));
     
     char* header_end = (char*)http_find_crlfcrlf(client->recv_buf, client->recv_len);
     if (!header_end) {
@@ -395,7 +395,7 @@ static int http_parse_response(http_client_t* client, http_response_t* response,
         client->chunked = 0;
     }
     
-    client->response_gzip = http_gzip_check_response(response->header);
+    client->response_gzip = iot_http_gzip_check_response(response->header);
     
     size_t body_start = header_len + 4;
     size_t body_available = client->recv_len - body_start;
@@ -447,7 +447,7 @@ static int http_parse_response(http_client_t* client, http_response_t* response,
     return 0;
 }
 
-static int http_connect(http_client_t* client) {
+static int http_connect(iot_http_client_t* client) {
     char ip[32];
     int ret = iot_dns_resolve(client->host, ip, sizeof(ip));
     if (ret < 0) {
@@ -455,15 +455,15 @@ static int http_connect(http_client_t* client) {
     }
     
     if (client->sock) {
-        net_socket_close((sock_t)client->sock);
+        iot_net_socket_close((sock_t)client->sock);
     }
     
-    client->sock = (net_socket_t*)net_socket_create(SOCK_TYPE_STREAM, NULL, http_socket_callback, client);
+    client->sock = (iot_net_socket_t*)iot_net_socket_create(IOT_NET_SOCK_STREAM, NULL, http_socket_callback, client);
     if (!client->sock) {
         return -1;
     }
     
-    ret = net_socket_connect((sock_t)client->sock, ip, client->port);
+    ret = iot_net_socket_connect((sock_t)client->sock, ip, client->port);
     if (ret < 0) {
         return -1;
     }
@@ -471,13 +471,13 @@ static int http_connect(http_client_t* client) {
     return 0;
 }
 
-static void http_recv_data(http_client_t* client) {
+static void http_recv_data(iot_http_client_t* client) {
     if (!client || !client->sock) return;
 
     size_t prev_len = client->recv_len;
     size_t got;
 
-    while ((got = net_socket_drain_recv((sock_t)client->sock,
+    while ((got = iot_net_socket_drain_recv((sock_t)client->sock,
                                         &client->recv_buf,
                                         &client->recv_len,
                                         &client->recv_capacity)) > 0) {
@@ -495,22 +495,22 @@ static void http_recv_data(http_client_t* client) {
     }
 }
 
-static void http_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
-    http_client_t* client = (http_client_t*)user_data;
+static void http_socket_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data) {
+    iot_http_client_t* client = (iot_http_client_t*)user_data;
     if (!client) return;
     
     switch (event) {
-        case NET_EVENT_CONNECTED: {
+        case IOT_NET_EVENT_CONNECTED: {
             break;
         }
-        case NET_EVENT_RECV: {
+        case IOT_NET_EVENT_RECV: {
             /* 由 http_client_do_request 轮询 drain，避免与主线程互斥锁死锁 */
             break;
         }
-        case NET_EVENT_DISCONNECTED: {
+        case IOT_NET_EVENT_DISCONNECTED: {
             break;
         }
-        case NET_EVENT_ERROR: {
+        case IOT_NET_EVENT_ERROR: {
             break;
         }
         default:
@@ -518,14 +518,14 @@ static void http_socket_callback(net_socket_t* sock, net_event_type_t event, voi
     }
 }
 
-http_client_t* http_client_create(const http_client_options_t* options) {
-    http_client_t* client = (http_client_t*)iot_malloc(sizeof(http_client_t));
+iot_http_client_t* iot_http_client_create(const iot_http_client_options_t* options) {
+    iot_http_client_t* client = (iot_http_client_t*)iot_malloc(sizeof(iot_http_client_t));
     if (!client) {
         LOG_ERROR("http client create failed: out of memory");
         return NULL;
     }
     
-    memset(client, 0, sizeof(http_client_t));
+    memset(client, 0, sizeof(iot_http_client_t));
     
     if (options) {
         client->options = *options;
@@ -549,7 +549,7 @@ http_client_t* http_client_create(const http_client_options_t* options) {
     client->mutex = iot_mutex_create();
     client->sem = iot_sem_create(1, 0);
     
-    client->gzip_ctx = http_gzip_create();
+    client->gzip_ctx = iot_http_gzip_create();
     
     list_init(&client->list_node);
     
@@ -557,11 +557,11 @@ http_client_t* http_client_create(const http_client_options_t* options) {
     return client;
 }
 
-void http_client_destroy(http_client_t* client) {
+void iot_http_client_destroy(iot_http_client_t* client) {
     if (!client) return;
     
     if (client->sock) {
-        net_socket_close((sock_t)client->sock);
+        iot_net_socket_close((sock_t)client->sock);
     }
     
     if (client->recv_buf) {
@@ -572,10 +572,10 @@ void http_client_destroy(http_client_t* client) {
         iot_fs_close(client->fd);
     }
     
-    http_response_free(&client->response);
+    iot_http_response_free(&client->response);
     
     if (client->gzip_ctx) {
-        http_gzip_destroy(client->gzip_ctx);
+        iot_http_gzip_destroy(client->gzip_ctx);
     }
     
     if (client->mutex) {
@@ -589,7 +589,7 @@ void http_client_destroy(http_client_t* client) {
     iot_free(client);
 }
 
-void http_client_set_options(http_client_t* client, const http_client_options_t* options) {
+void iot_http_client_set_options(iot_http_client_t* client, const iot_http_client_options_t* options) {
     if (!client || !options) return;
     
     iot_mutex_lock(client->mutex, -1);
@@ -597,9 +597,9 @@ void http_client_set_options(http_client_t* client, const http_client_options_t*
     iot_mutex_unlock(client->mutex);
 }
 
-static int http_client_do_request(http_client_t* client) {
-    http_url_t url;
-    if (http_url_parse(client->options.url, &url) != 0) {
+static int http_client_do_request(iot_http_client_t* client) {
+    iot_http_url_t url;
+    if (iot_http_url_parse(client->options.url, &url) != 0) {
         return -1;
     }
     
@@ -647,12 +647,12 @@ static int http_client_do_request(http_client_t* client) {
     }
 
     int connect_wait = 0;
-    while (net_socket_get_state((sock_t)client->sock) == NET_SOCK_STATE_CONNECTING &&
+    while (iot_net_socket_get_state((sock_t)client->sock) == IOT_NET_SOCK_STATE_CONNECTING &&
            connect_wait < client->options.timeout_ms) {
         iot_task_delay(10);
         connect_wait += 10;
     }
-    if (net_socket_get_state((sock_t)client->sock) != NET_SOCK_STATE_CONNECTED) {
+    if (iot_net_socket_get_state((sock_t)client->sock) != IOT_NET_SOCK_STATE_CONNECTED) {
         if (client->fd) {
             iot_fs_close(client->fd);
             client->fd = NULL;
@@ -660,7 +660,7 @@ static int http_client_do_request(http_client_t* client) {
         return -1;
     }
     
-    net_socket_send((sock_t)client->sock, req_buf, req_len);
+    iot_net_socket_send((sock_t)client->sock, req_buf, req_len);
     
     int wait_ms = 0;
     while (wait_ms < client->options.timeout_ms) {
@@ -708,7 +708,7 @@ static int http_client_do_request(http_client_t* client) {
                             client->fd = NULL;
                         }
 
-                        http_client_options_t new_options = client->options;
+                        iot_http_client_options_t new_options = client->options;
                         new_options.url = location;
                         client->options = new_options;
 
@@ -726,8 +726,8 @@ static int http_client_do_request(http_client_t* client) {
             }
         }
 
-        net_sock_state_t sock_state = net_socket_get_state((sock_t)client->sock);
-        if (sock_state == NET_SOCK_STATE_CLOSED || sock_state == NET_SOCK_STATE_ERROR) {
+        iot_net_sock_state_t sock_state = iot_net_socket_get_state((sock_t)client->sock);
+        if (sock_state == IOT_NET_SOCK_STATE_CLOSED || sock_state == IOT_NET_SOCK_STATE_ERROR) {
             client->conn_closed = 1;
             iot_mutex_unlock(client->mutex);
             http_recv_data(client);
@@ -778,18 +778,18 @@ static int http_client_do_request(http_client_t* client) {
     }
     
     if (client->sock) {
-        net_socket_close((sock_t)client->sock);
+        iot_net_socket_close((sock_t)client->sock);
         client->sock = NULL;
     }
     
     return client->request_failed ? -1 : 0;
 }
 
-int http_client_execute(http_client_t* client) {
+int iot_http_client_execute(iot_http_client_t* client) {
     if (!client) return -1;
     
     iot_mutex_lock(client->mutex, -1);
-    http_response_free(&client->response);
+    iot_http_response_free(&client->response);
     client->request_done = 0;
     client->request_failed = 0;
     client->redirect_count = 0;
@@ -808,7 +808,7 @@ int http_client_execute(http_client_t* client) {
     return ret;
 }
 
-http_response_t* http_client_get_response(http_client_t* client) {
+iot_http_response_t* iot_http_client_get_response(iot_http_client_t* client) {
     if (!client) return NULL;
     
     iot_mutex_lock(client->mutex, -1);
@@ -821,7 +821,7 @@ http_response_t* http_client_get_response(http_client_t* client) {
     return &client->response;
 }
 
-void http_response_free(http_response_t* response) {
+void iot_http_response_free(iot_http_response_t* response) {
     if (!response) return;
     
     if (response->header) {
@@ -844,37 +844,37 @@ void http_response_free(http_response_t* response) {
     response->status_code = 0;
 }
 
-int http_get(const char* url, http_response_t* response) {
-    http_client_options_t options = {
+int iot_http_get(const char* url, iot_http_response_t* response) {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_GET,
+        .method = IOT_HTTP_METHOD_GET,
         .timeout_ms = 30000,
         .enable_gzip = true,
         .auto_decompress = true,
     };
     
-    http_client_t* client = http_client_create(&options);
+    iot_http_client_t* client = iot_http_client_create(&options);
     if (!client) return -1;
     
-    int ret = http_client_execute(client);
+    int ret = iot_http_client_execute(client);
     
     if (ret == 0) {
-        http_response_t* resp = http_client_get_response(client);
+        iot_http_response_t* resp = iot_http_client_get_response(client);
         if (resp) {
             *response = *resp;
         }
     }
     
-    http_client_destroy(client);
+    iot_http_client_destroy(client);
     
     return ret;
 }
 
-int http_post(const char* url, const char* body, size_t body_len, 
-              const char* content_type, http_response_t* response) {
-    http_client_options_t options = {
+int iot_http_post(const char* url, const char* body, size_t body_len, 
+              const char* content_type, iot_http_response_t* response) {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_POST,
+        .method = IOT_HTTP_METHOD_POST,
         .body = body,
         .body_len = body_len,
         .content_type = content_type ? content_type : "application/x-www-form-urlencoded",
@@ -883,28 +883,28 @@ int http_post(const char* url, const char* body, size_t body_len,
         .auto_decompress = true,
     };
     
-    http_client_t* client = http_client_create(&options);
+    iot_http_client_t* client = iot_http_client_create(&options);
     if (!client) return -1;
     
-    int ret = http_client_execute(client);
+    int ret = iot_http_client_execute(client);
     
     if (ret == 0) {
-        http_response_t* resp = http_client_get_response(client);
+        iot_http_response_t* resp = iot_http_client_get_response(client);
         if (resp) {
             *response = *resp;
         }
     }
     
-    http_client_destroy(client);
+    iot_http_client_destroy(client);
     
     return ret;
 }
 
-int http_put(const char* url, const char* body, size_t body_len,
-             const char* content_type, http_response_t* response) {
-    http_client_options_t options = {
+int iot_http_put(const char* url, const char* body, size_t body_len,
+             const char* content_type, iot_http_response_t* response) {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_PUT,
+        .method = IOT_HTTP_METHOD_PUT,
         .body = body,
         .body_len = body_len,
         .content_type = content_type ? content_type : "application/json",
@@ -913,65 +913,65 @@ int http_put(const char* url, const char* body, size_t body_len,
         .auto_decompress = true,
     };
     
-    http_client_t* client = http_client_create(&options);
+    iot_http_client_t* client = iot_http_client_create(&options);
     if (!client) return -1;
     
-    int ret = http_client_execute(client);
+    int ret = iot_http_client_execute(client);
     
     if (ret == 0) {
-        http_response_t* resp = http_client_get_response(client);
+        iot_http_response_t* resp = iot_http_client_get_response(client);
         if (resp) {
             *response = *resp;
         }
     }
     
-    http_client_destroy(client);
+    iot_http_client_destroy(client);
     
     return ret;
 }
 
-int http_delete(const char* url, http_response_t* response) {
-    http_client_options_t options = {
+int iot_http_delete(const char* url, iot_http_response_t* response) {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_DELETE,
+        .method = IOT_HTTP_METHOD_DELETE,
         .timeout_ms = 30000,
         .enable_gzip = true,
         .auto_decompress = true,
     };
     
-    http_client_t* client = http_client_create(&options);
+    iot_http_client_t* client = iot_http_client_create(&options);
     if (!client) return -1;
     
-    int ret = http_client_execute(client);
+    int ret = iot_http_client_execute(client);
     
     if (ret == 0) {
-        http_response_t* resp = http_client_get_response(client);
+        iot_http_response_t* resp = iot_http_client_get_response(client);
         if (resp) {
             *response = *resp;
         }
     }
     
-    http_client_destroy(client);
+    iot_http_client_destroy(client);
     
     return ret;
 }
 
-int http_download(const char* url, const char* save_path) {
-    http_client_options_t options = {
+int iot_http_download(const char* url, const char* save_path) {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_GET,
+        .method = IOT_HTTP_METHOD_GET,
         .download_path = save_path,
         .timeout_ms = 60000,
         .enable_gzip = true,
         .auto_decompress = true,
     };
     
-    http_client_t* client = http_client_create(&options);
+    iot_http_client_t* client = iot_http_client_create(&options);
     if (!client) return -1;
     
-    int ret = http_client_execute(client);
+    int ret = iot_http_client_execute(client);
     
-    http_client_destroy(client);
+    iot_http_client_destroy(client);
     
     return ret;
 }

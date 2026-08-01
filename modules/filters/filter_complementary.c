@@ -16,20 +16,20 @@
 
 #include "filters.h"
 
-int filter_complementary_init(filter_complementary_t* f, float alpha)
+int iot_filter_complementary_init(iot_filter_complementary_t* f, float alpha)
 {
-    if (!f || alpha < 0.0f || alpha > 1.0f) return FILTER_ERR;
+    if (!f || alpha < 0.0f || alpha > 1.0f) return IOT_FILTER_ERR;
     f->alpha       = alpha;
     f->value       = 0.0f;
     f->initialized = false;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_complementary_update(filter_complementary_t* f,
+int iot_filter_complementary_update(iot_filter_complementary_t* f,
                                 float low_pass_input, float high_pass_delta,
                                 float* output)
 {
-    if (!f || !output) return FILTER_ERR;
+    if (!f || !output) return IOT_FILTER_ERR;
 
     if (!f->initialized) {
         f->value       = low_pass_input;
@@ -39,17 +39,17 @@ int filter_complementary_update(filter_complementary_t* f,
                  + (1.0f - f->alpha) * low_pass_input;
     }
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_complementary_get(const filter_complementary_t* f, float* output)
+int iot_filter_complementary_get(const iot_filter_complementary_t* f, float* output)
 {
-    if (!f || !output || !f->initialized) return FILTER_ERR;
+    if (!f || !output || !f->initialized) return IOT_FILTER_ERR;
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_complementary_reset(filter_complementary_t* f)
+void iot_filter_complementary_reset(iot_filter_complementary_t* f)
 {
     if (f) {
         f->value       = 0.0f;

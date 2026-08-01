@@ -12,7 +12,7 @@
 #include "deflate.h"
 #include "miniz.h"
 
-size_t deflate_compress(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap)
+size_t iot_deflate_compress(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap)
 {
     mz_ulong bound;
     mz_ulong dest_len;
@@ -34,7 +34,7 @@ size_t deflate_compress(const uint8_t *in, size_t in_len, uint8_t *out, size_t o
     return (size_t)dest_len;
 }
 
-size_t inflate_decompress(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap)
+size_t iot_inflate_decompress(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap)
 {
     mz_ulong dest_len;
 

@@ -22,28 +22,28 @@ extern "C" {
 #endif
 
 typedef enum {
-    FONT_FORMAT_BDF = 0,
-    FONT_FORMAT_PCF,
-    FONT_FORMAT_BIN,
-    FONT_FORMAT_RAW,
-} external_font_format_e;
+    IOT_FONT_FORMAT_BDF = 0,
+    IOT_FONT_FORMAT_PCF,
+    IOT_FONT_FORMAT_BIN,
+    IOT_FONT_FORMAT_RAW,
+} iot_external_font_format_e;
 
 typedef struct {
-    font_info_t info;
+    iot_font_info_t info;
     uint8_t* data;
     uint32_t* offsets;
     int ref_count;
-} external_font_t;
+} iot_external_font_t;
 
-int font_external_load(const char* path, external_font_format_e format, external_font_t** font);
-void font_external_unload(external_font_t* font);
+int iot_font_external_load(const char* path, iot_external_font_format_e format, iot_external_font_t** font);
+void iot_font_external_unload(iot_external_font_t* font);
 
-int font_external_load_bdf(const char* path, external_font_t** font);
-int font_external_load_pcf(const char* path, external_font_t** font);
-int font_external_load_bin(const char* path, external_font_t** font);
-int font_external_load_raw(const char* path, int width, int height, int bpp, external_font_t** font);
+int iot_font_external_load_bdf(const char* path, iot_external_font_t** font);
+int iot_font_external_load_pcf(const char* path, iot_external_font_t** font);
+int iot_font_external_load_bin(const char* path, iot_external_font_t** font);
+int iot_font_external_load_raw(const char* path, int width, int height, int bpp, iot_external_font_t** font);
 
-const font_info_t* font_external_get_info(external_font_t* font);
+const iot_font_info_t* iot_font_external_get_info(iot_external_font_t* font);
 
 #ifdef __cplusplus
 }

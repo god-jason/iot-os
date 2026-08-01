@@ -17,9 +17,9 @@
 #include "filters.h"
 #include <string.h>
 
-int filter_iir_init(filter_iir_t* f, const float* b, const float* a, int order)
+int iot_filter_iir_init(iot_filter_iir_t* f, const float* b, const float* a, int order)
 {
-    if (!f || !b || !a || (order != 1 && order != 2)) return FILTER_ERR;
+    if (!f || !b || !a || (order != 1 && order != 2)) return IOT_FILTER_ERR;
 
     /* 系数归一化：使 a[0] = 1.0 */
     float a0_inv = 1.0f / a[0];
@@ -36,12 +36,12 @@ int filter_iir_init(filter_iir_t* f, const float* b, const float* a, int order)
     memset(f->y, 0, sizeof(f->y));
     f->order       = order;
     f->initialized = false;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_iir_update(filter_iir_t* f, float input, float* output)
+int iot_filter_iir_update(iot_filter_iir_t* f, float input, float* output)
 {
-    if (!f || !output) return FILTER_ERR;
+    if (!f || !output) return IOT_FILTER_ERR;
 
     /* 移位输入/输出历史 */
     f->x[2] = f->x[1];
@@ -62,17 +62,17 @@ int filter_iir_update(filter_iir_t* f, float input, float* output)
 
     if (!f->initialized) f->initialized = true;
     *output = f->y[0];
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_iir_get(const filter_iir_t* f, float* output)
+int iot_filter_iir_get(const iot_filter_iir_t* f, float* output)
 {
-    if (!f || !output || !f->initialized) return FILTER_ERR;
+    if (!f || !output || !f->initialized) return IOT_FILTER_ERR;
     *output = f->y[0];
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_iir_reset(filter_iir_t* f)
+void iot_filter_iir_reset(iot_filter_iir_t* f)
 {
     if (f) {
         memset(f->x, 0, sizeof(f->x));

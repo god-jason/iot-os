@@ -37,15 +37,15 @@
  * 常量
  *===========================================================*/
 
-#define STT_JSON_BUF_SIZE   4096
-#define STT_RESP_BUF_SIZE   8192
-#define STT_AUDIO_BUF_SIZE  (16000 * 2 * 60)  /* 16kHz, 16bit, 1ch, 60s */
+#define IOT_STT_JSON_BUF_SIZE   4096
+#define IOT_STT_RESP_BUF_SIZE   8192
+#define IOT_STT_AUDIO_BUF_SIZE  (16000 * 2 * 60)  /* 16kHz, 16bit, 1ch, 60s */
 
 /* VAD 默认参数 */
-#define STT_VAD_FRAME_SIZE    512     /* 帧大小 (采样点) */
-#define STT_VAD_ENERGY_THRESHOLD 500  /* 能量阈值 */
-#define STT_VAD_MIN_SPEECH_MS 200    /* 最短有效语音 */
-#define STT_VAD_MAX_SILENCE_MS 800   /* 最长静音 (触发断句) */
+#define IOT_STT_VAD_FRAME_SIZE    512     /* 帧大小 (采样点) */
+#define IOT_STT_VAD_ENERGY_THRESHOLD 500  /* 能量阈值 */
+#define IOT_STT_VAD_MIN_SPEECH_MS 200    /* 最短有效语音 */
+#define IOT_STT_VAD_MAX_SILENCE_MS 800   /* 最长静音 (触发断句) */
 
 /*===========================================================
  * 内部 JSON 构建 (轻量, 与 llm.c 中的类似) */
@@ -93,7 +93,7 @@ static char* json_extract_string(const char* json, const char* key)
  *===========================================================*/
 
 typedef struct {
-    stt_config_t config;
+    iot_stt_config_t config;
     bool         recording;
     bool         continuous_listen;
 
@@ -101,25 +101,25 @@ typedef struct {
     size_t       audio_len;
     size_t       audio_capacity;
 
-    stt_vad_callback_t   vad_cb;
+    iot_stt_vad_callback_t   vad_cb;
     void*                vad_ud;
-    stt_audio_callback_t audio_cb;
+    iot_stt_audio_callback_t audio_cb;
     void*                audio_ud;
 
     char         session_id[64];   /* 连续识别会话 ID */
     char         accumulate_text[2048]; /* 累积识别文本 */
-} stt_impl_t;
+} iot_stt_impl_t;
 
 /*===========================================================
  * 提供者名称
  *===========================================================*/
 
-const char* stt_provider_name(stt_provider_t provider)
+const char* iot_stt_provider_name(iot_stt_provider_t provider)
 {
     static const char* names[] = {
         "auto", "openai", "baidu", "iflytek", "aliyun", "tencent"
     };
-    if (provider > STT_PROVIDER_TENCENT) return "unknown";
+    if (provider > IOT_STT_PROVIDER_TENCENT) return "unknown";
     return names[provider];
 }
 
@@ -127,18 +127,18 @@ const char* stt_provider_name(stt_provider_t provider)
  * API URL 构建
  *===========================================================*/
 
-static const char* stt_get_api_url(stt_provider_t provider)
+static const char* iot_stt_get_api_url(iot_stt_provider_t provider)
 {
     switch (provider) {
-    case STT_PROVIDER_OPENAI:
+    case IOT_STT_PROVIDER_OPENAI:
         return "https://api.openai.com/v1/audio/transcriptions";
-    case STT_PROVIDER_BAIDU:
+    case IOT_STT_PROVIDER_BAIDU:
         return "https://vop.baidu.com/server_api";
-    case STT_PROVIDER_ALIYUN:
+    case IOT_STT_PROVIDER_ALIYUN:
         return "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr";
-    case STT_PROVIDER_TENCENT:
+    case IOT_STT_PROVIDER_TENCENT:
         return "https://asr.tencentcloudapi.com";
-    case STT_PROVIDER_IFLYTEK:
+    case IOT_STT_PROVIDER_IFLYTEK:
         /* 讯飞使用 WebSocket, 需要特殊处理 */
         return "wss://iat-api.xfyun.cn/v2/iat";
     default:
@@ -150,7 +150,7 @@ static const char* stt_get_api_url(stt_provider_t provider)
  * 文件读取
  *===========================================================*/
 
-static int stt_read_file(const char* path, uint8_t** out_data, size_t* out_size)
+static int iot_stt_read_file(const char* path, uint8_t** out_data, size_t* out_size)
 {
     if (!path || !out_data || !out_size) return -1;
 
@@ -182,10 +182,10 @@ static int stt_read_file(const char* path, uint8_t** out_data, size_t* out_size)
  * OpenAI Whisper 识别实现
  *===========================================================*/
 
-static int stt_openai_recognize(stt_t* stt, const uint8_t* audio, size_t len,
-                                 stt_result_t* result)
+static int iot_stt_openai_recognize(iot_stt_t* stt, const uint8_t* audio, size_t len,
+                                 iot_stt_result_t* result)
 {
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
 
     /* 构建 multipart/form-data body */
     /* 手动拼接 (简化) */
@@ -242,26 +242,26 @@ static int stt_openai_recognize(stt_t* stt, const uint8_t* audio, size_t len,
 
     /* URL 可能带查询参数 */
     char url[512];
-    snprintf(url, sizeof(url), "%s", stt_get_api_url(STT_PROVIDER_OPENAI));
+    snprintf(url, sizeof(url), "%s", iot_stt_get_api_url(IOT_STT_PROVIDER_OPENAI));
 
     /* 构建请求头 */
     char headers[512];
     snprintf(headers, sizeof(headers),
              "Authorization: Bearer %s\r\n", impl->config.api_key);
 
-    http_response_t http_resp;
+    iot_http_response_t http_resp;
     memset(&http_resp, 0, sizeof(http_resp));
 
-    int ret = http_post(url, (const char*)body, total,
+    int ret = iot_http_post(url, (const char*)body, total,
                         content_type, &http_resp);
     free(body);
 
-    memset(result, 0, sizeof(stt_result_t));
+    memset(result, 0, sizeof(iot_stt_result_t));
 
     if (ret != 0 || http_resp.error) {
         result->error = iot_strdup(http_resp.error ? http_resp.error : "HTTP error");
         result->status_code = http_resp.status_code;
-        http_response_free(&http_resp);
+        iot_http_response_free(&http_resp);
         return -1;
     }
 
@@ -274,7 +274,7 @@ static int stt_openai_recognize(stt_t* stt, const uint8_t* audio, size_t len,
 
     /* Whisper API 不直接返回置信度 */
     result->confidence = 0.95f;
-    http_response_free(&http_resp);
+    iot_http_response_free(&http_resp);
 
     return result->text ? 0 : -1;
 }
@@ -283,10 +283,10 @@ static int stt_openai_recognize(stt_t* stt, const uint8_t* audio, size_t len,
  * 百度语音识别实现
  *===========================================================*/
 
-static int stt_baidu_recognize(stt_t* stt, const uint8_t* audio, size_t len,
-                                stt_result_t* result)
+static int iot_stt_baidu_recognize(iot_stt_t* stt, const uint8_t* audio, size_t len,
+                                iot_stt_result_t* result)
 {
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
 
     /* 百度需要先获取 access_token */
     char token_url[512];
@@ -297,7 +297,7 @@ static int stt_baidu_recognize(stt_t* stt, const uint8_t* audio, size_t len,
              impl->config.api_key, impl->config.api_secret);
 
     /* 构建 JSON body */
-    char json_body[STT_JSON_BUF_SIZE];
+    char json_body[IOT_STT_JSON_BUF_SIZE];
     int body_len = snprintf(json_body, sizeof(json_body),
         "{"
         "\"format\":\"pcm\","
@@ -315,7 +315,7 @@ static int stt_baidu_recognize(stt_t* stt, const uint8_t* audio, size_t len,
         (strcmp(impl->config.language, "en") == 0) ? "1737" : "1537"
     );
 
-    memset(result, 0, sizeof(stt_result_t));
+    memset(result, 0, sizeof(iot_stt_result_t));
 
     /*
      * TODO: 完整的百度 STT 实现需要:
@@ -333,10 +333,10 @@ static int stt_baidu_recognize(stt_t* stt, const uint8_t* audio, size_t len,
  * 讯飞语音识别实现
  *===========================================================*/
 
-static int stt_iflytek_recognize(stt_t* stt, const uint8_t* audio, size_t len,
-                                  stt_result_t* result)
+static int iot_stt_iflytek_recognize(iot_stt_t* stt, const uint8_t* audio, size_t len,
+                                  iot_stt_result_t* result)
 {
-    memset(result, 0, sizeof(stt_result_t));
+    memset(result, 0, sizeof(iot_stt_result_t));
 
     /*
      * TODO: 讯飞使用 WebSocket 协议，需要:
@@ -355,26 +355,26 @@ static int stt_iflytek_recognize(stt_t* stt, const uint8_t* audio, size_t len,
  * 统一识别入口
  *===========================================================*/
 
-static int stt_do_recognize(stt_t* stt, const uint8_t* audio, size_t len,
-                              stt_result_t* result)
+static int iot_stt_do_recognize(iot_stt_t* stt, const uint8_t* audio, size_t len,
+                              iot_stt_result_t* result)
 {
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     if (!stt || !audio || !result) return -1;
 
-    memset(result, 0, sizeof(stt_result_t));
+    memset(result, 0, sizeof(iot_stt_result_t));
 
     switch (impl->config.provider) {
-    case STT_PROVIDER_OPENAI:
-        return stt_openai_recognize(stt, audio, len, result);
-    case STT_PROVIDER_BAIDU:
-        return stt_baidu_recognize(stt, audio, len, result);
-    case STT_PROVIDER_IFLYTEK:
-        return stt_iflytek_recognize(stt, audio, len, result);
-    case STT_PROVIDER_ALIYUN:
-    case STT_PROVIDER_TENCENT:
+    case IOT_STT_PROVIDER_OPENAI:
+        return iot_stt_openai_recognize(stt, audio, len, result);
+    case IOT_STT_PROVIDER_BAIDU:
+        return iot_stt_baidu_recognize(stt, audio, len, result);
+    case IOT_STT_PROVIDER_IFLYTEK:
+        return iot_stt_iflytek_recognize(stt, audio, len, result);
+    case IOT_STT_PROVIDER_ALIYUN:
+    case IOT_STT_PROVIDER_TENCENT:
         /* 类似实现, 参考 OpenAI 的 multipart 上传方式 */
         LOG_WARN("stt", "Provider %s: not yet implemented",
-                 stt_provider_name(impl->config.provider));
+                 iot_stt_provider_name(impl->config.provider));
         result->error = iot_strdup("Provider not yet implemented");
         return -1;
     default:
@@ -387,14 +387,14 @@ static int stt_do_recognize(stt_t* stt, const uint8_t* audio, size_t len,
  * 公共 API - 生命周期
  *===========================================================*/
 
-stt_t* stt_create(const stt_config_t* config)
+iot_stt_t* iot_stt_create(const iot_stt_config_t* config)
 {
     if (!config) return NULL;
 
-    stt_impl_t* impl = (stt_impl_t*)calloc(1, sizeof(stt_impl_t));
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)calloc(1, sizeof(iot_stt_impl_t));
     if (!impl) return NULL;
 
-    memcpy(&impl->config, config, sizeof(stt_config_t));
+    memcpy(&impl->config, config, sizeof(iot_stt_config_t));
 
     /* 默认值 */
     if (impl->config.sample_rate == 0)     impl->config.sample_rate = 16000;
@@ -404,7 +404,7 @@ stt_t* stt_create(const stt_config_t* config)
     if (impl->config.language[0] == '\0')  strncpy(impl->config.language, "zh", sizeof(impl->config.language) - 1);
 
     /* 预分配音频缓冲区 */
-    impl->audio_capacity = STT_AUDIO_BUF_SIZE;
+    impl->audio_capacity = IOT_STT_AUDIO_BUF_SIZE;
     impl->audio_buffer = (uint8_t*)malloc(impl->audio_capacity);
     impl->audio_len = 0;
 
@@ -412,26 +412,26 @@ stt_t* stt_create(const stt_config_t* config)
              "stt-%06d", rand() % 1000000);
 
     LOG_INFO("stt", "Created: provider=%s, rate=%d, lang=%s",
-             stt_provider_name(impl->config.provider),
+             iot_stt_provider_name(impl->config.provider),
              impl->config.sample_rate, impl->config.language);
 
-    return (stt_t*)impl;
+    return (iot_stt_t*)impl;
 }
 
-int stt_set_config(stt_t* stt, const stt_config_t* config)
+int iot_stt_set_config(iot_stt_t* stt, const iot_stt_config_t* config)
 {
     if (!stt || !config) return -1;
-    stt_impl_t* impl = (stt_impl_t*)stt;
-    memcpy(&impl->config, config, sizeof(stt_config_t));
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
+    memcpy(&impl->config, config, sizeof(iot_stt_config_t));
     return 0;
 }
 
-void stt_free(stt_t* stt)
+void iot_stt_free(iot_stt_t* stt)
 {
     if (!stt) return;
-    stt_impl_t* impl = (stt_impl_t*)stt;
-    stt_stop_recording(stt);
-    stt_stop_continuous_listen(stt);
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
+    iot_stt_stop_recording(stt);
+    iot_stt_stop_continuous_listen(stt);
     free(impl->audio_buffer);
     free(impl);
 }
@@ -440,15 +440,15 @@ void stt_free(stt_t* stt)
  * 公共 API - 同步识别
  *===========================================================*/
 
-int stt_recognize_file(stt_t* stt, const char* file_path,
-                        stt_result_t* result)
+int iot_stt_recognize_file(iot_stt_t* stt, const char* file_path,
+                        iot_stt_result_t* result)
 {
     if (!stt || !file_path || !result) return -1;
 
     uint8_t* audio = NULL;
     size_t   audio_len = 0;
 
-    if (stt_read_file(file_path, &audio, &audio_len) != 0) {
+    if (iot_stt_read_file(file_path, &audio, &audio_len) != 0) {
         result->error = iot_strdup("Failed to read audio file");
         return -1;
     }
@@ -463,7 +463,7 @@ int stt_recognize_file(stt_t* stt, const char* file_path,
         }
     }
 
-    int ret = stt_do_recognize(stt, audio, audio_len, result);
+    int ret = iot_stt_do_recognize(stt, audio, audio_len, result);
 
     /* 恢复指针后释放 */
     if (ext && strcasecmp(ext, ".wav") == 0) {
@@ -475,11 +475,11 @@ int stt_recognize_file(stt_t* stt, const char* file_path,
     return ret;
 }
 
-int stt_recognize_buffer(stt_t* stt, const uint8_t* audio_data,
-                          size_t audio_len, stt_result_t* result)
+int iot_stt_recognize_buffer(iot_stt_t* stt, const uint8_t* audio_data,
+                          size_t audio_len, iot_stt_result_t* result)
 {
     if (!stt || !audio_data || !result) return -1;
-    return stt_do_recognize(stt, audio_data, audio_len, result);
+    return iot_stt_do_recognize(stt, audio_data, audio_len, result);
 }
 
 /*===========================================================
@@ -492,10 +492,10 @@ int stt_recognize_buffer(stt_t* stt, const uint8_t* audio_data,
  *   完成后在回调中上报识别结果
  *===========================================================*/
 
-int stt_start_record_and_recognize(stt_t* stt, stt_callback_t callback,
+int iot_stt_start_record_and_recognize(iot_stt_t* stt, iot_stt_callback_t callback,
                                     void* user_data)
 {
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     if (!stt || !callback) return -1;
 
     if (impl->recording) {
@@ -515,43 +515,43 @@ int stt_start_record_and_recognize(stt_t* stt, stt_callback_t callback,
      * 3. 在回调中:
      *    a. VAD 检测语音活动
      *    b. 存入 audio_buffer
-     *    c. 检测到语音结束后调用 stt_do_recognize
+     *    c. 检测到语音结束后调用 iot_stt_do_recognize
      *    d. 通过 callback 返回结果
      */
     LOG_WARN("stt", "Audio recording requires platform HAL");
     return 0;
 }
 
-int stt_stop_recording(stt_t* stt)
+int iot_stt_stop_recording(iot_stt_t* stt)
 {
     if (!stt) return -1;
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
 
     impl->recording = false;
     LOG_INFO("stt", "Recording stopped");
     return 0;
 }
 
-bool stt_is_recording(stt_t* stt)
+bool iot_stt_is_recording(iot_stt_t* stt)
 {
     if (!stt) return false;
-    return ((stt_impl_t*)stt)->recording;
+    return ((iot_stt_impl_t*)stt)->recording;
 }
 
-void stt_set_vad_callback(stt_t* stt, stt_vad_callback_t vad_cb,
+void iot_stt_set_vad_callback(iot_stt_t* stt, iot_stt_vad_callback_t vad_cb,
                            void* user_data)
 {
     if (!stt) return;
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     impl->vad_cb = vad_cb;
     impl->vad_ud = user_data;
 }
 
-void stt_set_audio_callback(stt_t* stt, stt_audio_callback_t audio_cb,
+void iot_stt_set_audio_callback(iot_stt_t* stt, iot_stt_audio_callback_t audio_cb,
                              void* user_data)
 {
     if (!stt) return;
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     impl->audio_cb = audio_cb;
     impl->audio_ud = user_data;
 }
@@ -560,7 +560,7 @@ void stt_set_audio_callback(stt_t* stt, stt_audio_callback_t audio_cb,
  * 公共 API - 连续识别
  *===========================================================*/
 
-int stt_set_wake_word(stt_t* stt, const char* wake_word)
+int iot_stt_set_wake_word(iot_stt_t* stt, const char* wake_word)
 {
     if (!stt || !wake_word) return -1;
 
@@ -576,10 +576,10 @@ int stt_set_wake_word(stt_t* stt, const char* wake_word)
     return 0;
 }
 
-int stt_start_continuous_listen(stt_t* stt, stt_callback_t callback,
+int iot_stt_start_continuous_listen(iot_stt_t* stt, iot_stt_callback_t callback,
                                  void* user_data)
 {
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     if (!stt || !callback) return -1;
 
     impl->continuous_listen = true;
@@ -589,10 +589,10 @@ int stt_start_continuous_listen(stt_t* stt, stt_callback_t callback,
     return 0;
 }
 
-int stt_stop_continuous_listen(stt_t* stt)
+int iot_stt_stop_continuous_listen(iot_stt_t* stt)
 {
     if (!stt) return -1;
-    stt_impl_t* impl = (stt_impl_t*)stt;
+    iot_stt_impl_t* impl = (iot_stt_impl_t*)stt;
     impl->continuous_listen = false;
     return 0;
 }
@@ -601,17 +601,17 @@ int stt_stop_continuous_listen(stt_t* stt)
  * 公共 API - 辅助
  *===========================================================*/
 
-void stt_result_free(stt_result_t* result)
+void iot_stt_result_free(iot_stt_result_t* result)
 {
     if (!result) return;
     free(result->text);
     free(result->language);
     free(result->error);
     free(result->raw_response);
-    memset(result, 0, sizeof(stt_result_t));
+    memset(result, 0, sizeof(iot_stt_result_t));
 }
 
-int stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
+int iot_stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
                     int sample_rate, int channels, int bits_per_sample,
                     uint8_t** wav_data, size_t* wav_size)
 {
@@ -659,10 +659,10 @@ int stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
     return 0;
 }
 
-bool stt_vad_detect(const int16_t* pcm_data, size_t len, int threshold)
+bool iot_stt_vad_detect(const int16_t* pcm_data, size_t len, int threshold)
 {
     if (!pcm_data || len == 0) return false;
-    if (threshold <= 0) threshold = STT_VAD_ENERGY_THRESHOLD;
+    if (threshold <= 0) threshold = IOT_STT_VAD_ENERGY_THRESHOLD;
 
     double energy = 0.0;
     size_t samples = len;

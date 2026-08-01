@@ -1,5 +1,5 @@
-/**
- * @file lvgl_slider.c
+﻿/**
+ * @file iot_lvgl_slider.c
  * @brief LVGL滑块控件
  *
  * 实现LVGL滑块控件的OO风格Lua绑定，包括滑块创建、设置值（支持动画）、设置范围、设置模式、获取当前值、检查是否正在拖动等接口。
@@ -16,8 +16,8 @@ static int slider_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_slider_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* slider = lv_slider_create(parent);
     lua_pushlightuserdata(L, slider);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_slider_create_internal(lua_State* L) {
 @return userdata 带metatable的滑块实例
 @usage local slider = lvgl.slider.create(scr)
 */
-static int lvgl_slider_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_slider_create_internal, slider_metatable_ref);
+static int iot_lvgl_slider_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_slider_create_internal, slider_metatable_ref);
 }
 
 /*
@@ -43,8 +43,8 @@ static int lvgl_slider_create(lua_State* L) {
 @return self
 @usage slider:set_value(50, 0)
 */
-static int lvgl_slider_set_value(lua_State* L) {
-    lv_obj_t* slider = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_set_value(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     lv_slider_set_value(slider, value, anim);
@@ -60,8 +60,8 @@ static int lvgl_slider_set_value(lua_State* L) {
 @return self
 @usage slider:set_range(0, 100)
 */
-static int lvgl_slider_set_range(lua_State* L) {
-    lv_obj_t* slider = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_set_range(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
     int32_t min = (int32_t)luaL_checkinteger(L, 2);
     int32_t max = (int32_t)luaL_checkinteger(L, 3);
     lv_slider_set_range(slider, min, max);
@@ -76,8 +76,8 @@ static int lvgl_slider_set_range(lua_State* L) {
 @return self
 @usage slider:set_mode(lvgl.SLIDER_MODE_NORMAL)
 */
-static int lvgl_slider_set_mode(lua_State* L) {
-    lv_obj_t* slider = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_set_mode(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
     lv_slider_mode_t mode = (lv_slider_mode_t)luaL_checkinteger(L, 2);
     lv_slider_set_mode(slider, mode);
     lua_pushvalue(L, 1);
@@ -90,8 +90,8 @@ static int lvgl_slider_set_mode(lua_State* L) {
 @return integer 当前值
 @usage local value = slider:get_value()
 */
-static int lvgl_slider_get_value(lua_State* L) {
-    lv_obj_t* slider = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_get_value(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_slider_get_value(slider);
     lua_pushinteger(L, value);
     return 1;
@@ -103,24 +103,24 @@ static int lvgl_slider_get_value(lua_State* L) {
 @return boolean 是否拖动中
 @usage local dragging = slider:is_dragged()
 */
-static int lvgl_slider_is_dragged(lua_State* L) {
-    lv_obj_t* slider = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_slider_is_dragged(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
     bool dragged = lv_slider_is_dragged(slider);
     lua_pushboolean(L, dragged);
     return 1;
 }
 
 /* 注册 slider 子模块 */
-void lvgl_register_slider(lua_State* L) {
+void iot_lvgl_register_slider(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_value", lvgl_slider_set_value);
-    REG_METHOD(L, "get_value", lvgl_slider_get_value);
-    REG_METHOD(L, "set_range", lvgl_slider_set_range);
-    REG_METHOD(L, "set_mode", lvgl_slider_set_mode);
-    REG_METHOD(L, "is_dragged", lvgl_slider_is_dragged);
+    REG_METHOD(L, "set_value", iot_lvgl_slider_set_value);
+    REG_METHOD(L, "get_value", iot_lvgl_slider_get_value);
+    REG_METHOD(L, "set_range", iot_lvgl_slider_set_range);
+    REG_METHOD(L, "set_mode", iot_lvgl_slider_set_mode);
+    REG_METHOD(L, "is_dragged", iot_lvgl_slider_is_dragged);
 
     /* 保存组件metatable引用(用于继承) */
     slider_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -137,5 +137,5 @@ void lvgl_register_slider(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.slider) */
-    REG_METHOD(L, "create", lvgl_slider_create);
+    REG_METHOD(L, "create", iot_lvgl_slider_create);
 }

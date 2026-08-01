@@ -28,7 +28,7 @@
  * @return 文件名指针，失败返回 NULL
  * @note 返回值指向原路径内存，不可修改或释放
  */
-const char* fs_path_basename(const char* path) {
+const char* iot_fs_path_basename(const char* path) {
     if (!path || path[0] == '\0') {
         return NULL;
     }
@@ -53,7 +53,7 @@ const char* fs_path_basename(const char* path) {
  * @param buf_len 缓冲区长度
  * @return 成功返回 buf，失败返回 NULL
  */
-char* fs_path_dirname(const char* path, char* buf, size_t buf_len) {
+char* iot_fs_path_dirname(const char* path, char* buf, size_t buf_len) {
     if (!path || !buf || buf_len == 0) {
         return NULL;
     }
@@ -97,7 +97,7 @@ char* fs_path_dirname(const char* path, char* buf, size_t buf_len) {
  * @return 扩展名指针（包含点号），失败返回 NULL
  * @note 返回值指向原路径内存，不可修改或释放
  */
-const char* fs_path_extname(const char* path) {
+const char* iot_fs_path_extname(const char* path) {
     if (!path || path[0] == '\0') {
         return NULL;
     }
@@ -128,7 +128,7 @@ const char* fs_path_extname(const char* path) {
  * @param path2 第二个路径
  * @return 成功返回 buf，失败返回 NULL
  */
-char* fs_path_join(char* buf, size_t buf_len, const char* path1, const char* path2) {
+char* iot_fs_path_join(char* buf, size_t buf_len, const char* path1, const char* path2) {
     if (!buf || buf_len == 0 || !path1 || !path2) {
         return NULL;
     }
@@ -169,7 +169,7 @@ char* fs_path_join(char* buf, size_t buf_len, const char* path1, const char* pat
  * @param path 文件路径
  * @return 是绝对路径返回 1，否则返回 0
  */
-int fs_path_is_absolute(const char* path) {
+int iot_fs_path_is_absolute(const char* path) {
     if (!path || path[0] == '\0') {
         return 0;
     }
@@ -196,7 +196,7 @@ int fs_path_is_absolute(const char* path) {
  * @param path 原始路径
  * @return 成功返回 buf，失败返回 NULL
  */
-char* fs_path_normalize(char* buf, size_t buf_len, const char* path) {
+char* iot_fs_path_normalize(char* buf, size_t buf_len, const char* path) {
     if (!buf || buf_len == 0 || !path) {
         return NULL;
     }
@@ -210,7 +210,7 @@ char* fs_path_normalize(char* buf, size_t buf_len, const char* path) {
     char* p = buf;
     char* end = buf + buf_len - 1;
 
-    if (fs_path_is_absolute(path)) {
+    if (iot_fs_path_is_absolute(path)) {
         if (path[1] == ':') {
             *p++ = path[0];
             *p++ = path[1];
@@ -288,18 +288,18 @@ char* fs_path_normalize(char* buf, size_t buf_len, const char* path) {
  * @param path 文件路径
  * @return 成功返回 buf，失败返回 NULL
  */
-char* fs_path_stem(char* buf, size_t buf_len, const char* path) {
+char* iot_fs_path_stem(char* buf, size_t buf_len, const char* path) {
     if (!buf || buf_len == 0 || !path) {
         return NULL;
     }
 
-    const char* base = fs_path_basename(path);
+    const char* base = iot_fs_path_basename(path);
     if (!base) {
         buf[0] = '\0';
         return buf;
     }
 
-    const char* ext = fs_path_extname(path);
+    const char* ext = iot_fs_path_extname(path);
     if (!ext) {
         strncpy(buf, base, buf_len - 1);
         buf[buf_len - 1] = '\0';
@@ -326,20 +326,20 @@ char* fs_path_stem(char* buf, size_t buf_len, const char* path) {
  * @param base_len 文件名缓冲区长度
  * @return 成功返回 0，失败返回 -1
  */
-int fs_path_split(const char* path, char* dir_buf, size_t dir_len, 
+int iot_fs_path_split(const char* path, char* dir_buf, size_t dir_len, 
                   char* base_buf, size_t base_len) {
     if (!path) {
         return -1;
     }
 
-    const char* base = fs_path_basename(path);
+    const char* base = iot_fs_path_basename(path);
     if (base_buf) {
         strncpy(base_buf, base, base_len - 1);
         base_buf[base_len - 1] = '\0';
     }
 
     if (dir_buf) {
-        return fs_path_dirname(path, dir_buf, dir_len) ? 0 : -1;
+        return iot_fs_path_dirname(path, dir_buf, dir_len) ? 0 : -1;
     }
 
     return 0;
@@ -350,7 +350,7 @@ int fs_path_split(const char* path, char* dir_buf, size_t dir_len,
  * @param path 文件路径（会被修改）
  * @return 返回处理后的路径
  */
-char* fs_path_clean_trailing_sep(char* path) {
+char* iot_fs_path_clean_trailing_sep(char* path) {
     if (!path || path[0] == '\0') {
         return path;
     }

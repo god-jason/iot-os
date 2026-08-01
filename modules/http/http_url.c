@@ -29,10 +29,10 @@ static char http_url_char_to_hex(char c) {
     return hex_chars[(unsigned char)c];
 }
 
-int http_url_parse(const char* url, http_url_t* parsed) {
+int iot_http_url_parse(const char* url, iot_http_url_t* parsed) {
     if (!url || !parsed) return -1;
     
-    memset(parsed, 0, sizeof(http_url_t));
+    memset(parsed, 0, sizeof(iot_http_url_t));
     parsed->port = 80;
     
     const char* p = url;
@@ -113,7 +113,7 @@ int http_url_parse(const char* url, http_url_t* parsed) {
     return 0;
 }
 
-char* http_url_get_query(const char* url) {
+char* iot_http_url_get_query(const char* url) {
     if (!url) return NULL;
     
     const char* query = strchr(url, '?');
@@ -130,7 +130,7 @@ char* http_url_get_query(const char* url) {
     return result;
 }
 
-char* http_url_get_param(const char* query, const char* key) {
+char* iot_http_url_get_param(const char* query, const char* key) {
     if (!query || !key) return NULL;
     
     size_t key_len = strlen(key);
@@ -157,7 +157,7 @@ char* http_url_get_param(const char* query, const char* key) {
                 value[value_len] = '\0';
                 
                 /* URL 解码 */
-                char* decoded = http_url_decode_alloc(value);
+                char* decoded = iot_http_url_decode_alloc(value);
                 free(value);
                 if (decoded) {
                     return decoded;
@@ -174,7 +174,7 @@ char* http_url_get_param(const char* query, const char* key) {
     return NULL;
 }
 
-size_t http_url_encode_len(const char* str) {
+size_t iot_http_url_encode_len(const char* str) {
     if (!str) return 0;
     
     size_t len = 0;
@@ -192,7 +192,7 @@ size_t http_url_encode_len(const char* str) {
     return len + 1;
 }
 
-char* http_url_encode(const char* src, char* dst, size_t dst_len) {
+char* iot_http_url_encode(const char* src, char* dst, size_t dst_len) {
     if (!src || !dst || dst_len == 0) return NULL;
     
     char* p = dst;
@@ -213,18 +213,18 @@ char* http_url_encode(const char* src, char* dst, size_t dst_len) {
     return dst;
 }
 
-char* http_url_encode_alloc(const char* str) {
+char* iot_http_url_encode_alloc(const char* str) {
     if (!str) return NULL;
     
-    size_t len = http_url_encode_len(str);
+    size_t len = iot_http_url_encode_len(str);
     char* result = (char*)malloc(len);
     if (result) {
-        http_url_encode(str, result, len);
+        iot_http_url_encode(str, result, len);
     }
     return result;
 }
 
-size_t http_url_decode_len(const char* str) {
+size_t iot_http_url_decode_len(const char* str) {
     if (!str) return 0;
     
     size_t len = 0;
@@ -244,7 +244,7 @@ size_t http_url_decode_len(const char* str) {
     return len + 1;
 }
 
-char* http_url_decode(const char* src, char* dst, size_t dst_len) {
+char* iot_http_url_decode(const char* src, char* dst, size_t dst_len) {
     if (!src || !dst || dst_len == 0) return NULL;
     
     char* p = dst;
@@ -267,18 +267,18 @@ char* http_url_decode(const char* src, char* dst, size_t dst_len) {
     return dst;
 }
 
-char* http_url_decode_alloc(const char* str) {
+char* iot_http_url_decode_alloc(const char* str) {
     if (!str) return NULL;
     
-    size_t len = http_url_decode_len(str);
+    size_t len = iot_http_url_decode_len(str);
     char* result = (char*)malloc(len);
     if (result) {
-        http_url_decode(str, result, len);
+        iot_http_url_decode(str, result, len);
     }
     return result;
 }
 
-int http_url_build(char* url, size_t url_len, const char* scheme, const char* host,
+int iot_http_url_build(char* url, size_t url_len, const char* scheme, const char* host,
                   uint16_t port, const char* path, const char* query) {
     if (!url || !scheme || !host) return -1;
     

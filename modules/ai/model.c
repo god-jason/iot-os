@@ -15,10 +15,10 @@
  *   - Windows: 优先使用 ONNX Runtime，次选 TFLite
  *     * 集成方式: vcpkg 或预编译二进制
  *
- *   - WASM / 其他 MCU: 无硬件加速能力，返回 MODEL_BACKEND_NONE
+ *   - WASM / 其他 MCU: 无硬件加速能力，返回 IOT_MODEL_BACKEND_NONE
  *
  * 内部架构:
- *   model_ctx 结构体内部持有一个 void* backend_ctx 指向具体后端上下文。
+ *   iot_model_ctx 结构体内部持有一个 void* backend_ctx 指向具体后端上下文。
  *   初始化时根据平台宏自动选择后端，通过函数指针表实现多态。
  *
  * @author 杰神 & CodeBuddy
@@ -35,15 +35,15 @@
 #if defined(PLATFORM_ESP32) || defined(PLATFORM_ESP32C3) || \
     defined(PLATFORM_ESP32S3) || defined(PLATFORM_ESP32C2)
   #define HAS_TFLITE_MICRO   1
-  #define DEFAULT_BACKEND    MODEL_BACKEND_TFLITE
+  #define DEFAULT_BACKEND    IOT_MODEL_BACKEND_TFLITE
 #elif defined(PLATFORM_LINUX) || defined(PLATFORM_YOPEN) || \
       defined(PLATFORM_WINDOWS) || defined(PLATFORM_WIN32)
   /* 桌面/Linux 平台优先 ONNX，也可选择 TFLite */
   #define HAS_ONNX_RUNTIME   1
   #define HAS_TFLITE         1
-  #define DEFAULT_BACKEND    MODEL_BACKEND_ONNX
+  #define DEFAULT_BACKEND    IOT_MODEL_BACKEND_ONNX
 #else
-  #define DEFAULT_BACKEND    MODEL_BACKEND_NONE
+  #define DEFAULT_BACKEND    IOT_MODEL_BACKEND_NONE
 #endif
 
 /*===========================================================
@@ -51,12 +51,12 @@
  *===========================================================*/
 
 typedef int  (*backend_load_fn)(void* ctx, const uint8_t* data, size_t size,
-                                model_precision_t precision);
+                                iot_model_precision_t precision);
 typedef void (*backend_free_fn)(void* ctx);
 typedef int  (*backend_invoke_fn)(void* ctx);
 typedef int  (*backend_tensor_count_fn)(void* ctx, int is_input);
 typedef int  (*backend_tensor_info_fn)(void* ctx, int index, int is_input,
-                                       model_tensor_info_t* info);
+                                       iot_model_tensor_info_t* info);
 typedef int  (*backend_set_input_fn)(void* ctx, int index,
                                      const void* data, size_t size);
 typedef int  (*backend_get_output_fn)(void* ctx, int index,
@@ -70,17 +70,17 @@ typedef struct {
     backend_tensor_info_fn  tensor_info;
     backend_set_input_fn    set_input;
     backend_get_output_fn   get_output;
-} model_backend_ops_t;
+} iot_model_backend_ops_t;
 
 /*===========================================================
  * 模型上下文结构
  *===========================================================*/
 
-struct model_ctx {
-    model_backend_t    backend_type;   /* 后端类型 */
-    model_precision_t  precision;      /* 精度 */
+struct iot_model_ctx {
+    iot_model_backend_t    backend_type;   /* 后端类型 */
+    iot_model_precision_t  precision;      /* 精度 */
     void*              backend_ctx;    /* 后端私有上下文 */
-    model_backend_ops_t ops;           /* 操作函数表 */
+    iot_model_backend_ops_t ops;           /* 操作函数表 */
     int64_t            last_infer_us;  /* 上次推理耗时 */
     char               model_name[64]; /* 模型名称 (从路径提取) */
     size_t             model_size;     /* 模型数据大小 */
@@ -121,7 +121,7 @@ static int64_t get_time_us(void)
  *===========================================================*/
 
 static int backend_none_load(void* ctx, const uint8_t* data, size_t size,
-                             model_precision_t precision)
+                             iot_model_precision_t precision)
 {
     (void)ctx; (void)data; (void)size; (void)precision;
     LOG_ERROR("model", "No inference backend available on this platform");
@@ -133,7 +133,7 @@ static int backend_none_invoke(void* ctx) { (void)ctx; return -1; }
 static int backend_none_tensor_count(void* ctx, int is_input)
 { (void)ctx; (void)is_input; return 0; }
 static int backend_none_tensor_info(void* ctx, int index, int is_input,
-                                    model_tensor_info_t* info)
+                                    iot_model_tensor_info_t* info)
 { (void)ctx; (void)index; (void)is_input; (void)info; return -1; }
 static int backend_none_set_input(void* ctx, int index, const void* data,
                                    size_t size)
@@ -142,7 +142,7 @@ static int backend_none_get_output(void* ctx, int index, void* data,
                                     size_t* size)
 { (void)ctx; (void)index; (void)data; (void)size; return -1; }
 
-static model_backend_ops_t backend_none_ops = {
+static iot_model_backend_ops_t backend_none_ops = {
     backend_none_load,
     backend_none_free,
     backend_none_invoke,
@@ -175,14 +175,14 @@ typedef struct {
     void*          output_tensor;   /* 输出 Tensor 指针 */
     uint8_t*       arena;           /* Tensor Arena (工作内存) */
     size_t         arena_size;      /* Arena 大小 */
-} tf_backend_ctx_t;
+} iot_tf_backend_ctx_t;
 
 #define TFLITE_ARENA_SIZE  (128 * 1024)  /* 默认 128KB tensor arena */
 
 static int backend_tflite_load(void* ctx_p, const uint8_t* data, size_t size,
-                               model_precision_t precision)
+                               iot_model_precision_t precision)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     (void)precision;
 
     ctx->model_data = data;
@@ -228,17 +228,17 @@ static int backend_tflite_load(void* ctx_p, const uint8_t* data, size_t size,
 
 static void backend_tflite_free(void* ctx_p)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     if (ctx->arena) {
         free(ctx->arena);
         ctx->arena = NULL;
     }
-    memset(ctx, 0, sizeof(tf_backend_ctx_t));
+    memset(ctx, 0, sizeof(iot_tf_backend_ctx_t));
 }
 
 static int backend_tflite_invoke(void* ctx_p)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     (void)ctx;
 
     /*
@@ -258,14 +258,14 @@ static int backend_tflite_tensor_count(void* ctx_p, int is_input)
 }
 
 static int backend_tflite_tensor_info(void* ctx_p, int index, int is_input,
-                                       model_tensor_info_t* info)
+                                       iot_model_tensor_info_t* info)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     (void)ctx;
 
     if (index != 0 || !info) return -1;
 
-    memset(info, 0, sizeof(model_tensor_info_t));
+    memset(info, 0, sizeof(iot_model_tensor_info_t));
     snprintf(info->name, sizeof(info->name), "%s", is_input ? "input" : "output");
 
     /*
@@ -283,7 +283,7 @@ static int backend_tflite_tensor_info(void* ctx_p, int index, int is_input,
     info->ndim = 2;
     info->dims[0] = 1;
     info->dims[1] = 128;
-    info->dtype = MODEL_DTYPE_UINT8;
+    info->dtype = IOT_MODEL_DTYPE_UINT8;
     info->size_bytes = 128;
 
     return 0;
@@ -292,7 +292,7 @@ static int backend_tflite_tensor_info(void* ctx_p, int index, int is_input,
 static int backend_tflite_set_input(void* ctx_p, int index,
                                      const void* data, size_t size)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     if (index != 0 || !data) return -1;
 
     /*
@@ -309,7 +309,7 @@ static int backend_tflite_set_input(void* ctx_p, int index,
 static int backend_tflite_get_output(void* ctx_p, int index,
                                       void* data, size_t* size)
 {
-    tf_backend_ctx_t* ctx = (tf_backend_ctx_t*)ctx_p;
+    iot_tf_backend_ctx_t* ctx = (iot_tf_backend_ctx_t*)ctx_p;
     if (index != 0 || !data || !size) return -1;
 
     /*
@@ -324,7 +324,7 @@ static int backend_tflite_get_output(void* ctx_p, int index,
     return 0;
 }
 
-static model_backend_ops_t backend_tflite_ops = {
+static iot_model_backend_ops_t backend_tflite_ops = {
     backend_tflite_load,
     backend_tflite_free,
     backend_tflite_invoke,
@@ -371,7 +371,7 @@ typedef struct {
 } onnx_backend_ctx_t;
 
 static int backend_onnx_load(void* ctx_p, const uint8_t* data, size_t size,
-                             model_precision_t precision)
+                             iot_model_precision_t precision)
 {
     onnx_backend_ctx_t* ctx = (onnx_backend_ctx_t*)ctx_p;
     (void)precision;
@@ -459,14 +459,14 @@ static int backend_onnx_tensor_count(void* ctx_p, int is_input)
 }
 
 static int backend_onnx_tensor_info(void* ctx_p, int index, int is_input,
-                                     model_tensor_info_t* info)
+                                     iot_model_tensor_info_t* info)
 {
     onnx_backend_ctx_t* ctx = (onnx_backend_ctx_t*)ctx_p;
     (void)ctx;
 
     if (!info || index < 0) return -1;
 
-    memset(info, 0, sizeof(model_tensor_info_t));
+    memset(info, 0, sizeof(iot_model_tensor_info_t));
     snprintf(info->name, sizeof(info->name), "%s_%d",
              is_input ? "input" : "output", index);
 
@@ -513,7 +513,7 @@ static int backend_onnx_get_output(void* ctx_p, int index,
     return 0;
 }
 
-static model_backend_ops_t backend_onnx_ops = {
+static iot_model_backend_ops_t backend_onnx_ops = {
     backend_onnx_load,
     backend_onnx_free,
     backend_onnx_invoke,
@@ -573,28 +573,28 @@ static uint8_t* read_file_data(const char* path, size_t* out_size)
  * 公共 API 实现
  *===========================================================*/
 
-model_backend_t model_get_available_backend(void)
+iot_model_backend_t iot_model_get_available_backend(void)
 {
 #if HAS_ONNX_RUNTIME
-    return MODEL_BACKEND_ONNX;
+    return IOT_MODEL_BACKEND_ONNX;
 #elif HAS_TFLITE_MICRO || HAS_TFLITE
-    return MODEL_BACKEND_TFLITE;
+    return IOT_MODEL_BACKEND_TFLITE;
 #else
-    return MODEL_BACKEND_NONE;
+    return IOT_MODEL_BACKEND_NONE;
 #endif
 }
 
-const char* model_backend_name(model_backend_t backend)
+const char* iot_model_backend_name(iot_model_backend_t backend)
 {
     static const char* names[] = {
         "auto", "tflite", "onnx", "none"
     };
-    if (backend > MODEL_BACKEND_NONE) return "unknown";
+    if (backend > IOT_MODEL_BACKEND_NONE) return "unknown";
     return names[backend];
 }
 
-model_t* model_load_from_file(const char* path, model_backend_t backend,
-                               model_precision_t precision)
+iot_model_t* iot_model_load_from_file(const char* path, iot_model_backend_t backend,
+                               iot_model_precision_t precision)
 {
     if (!path) return NULL;
 
@@ -602,7 +602,7 @@ model_t* model_load_from_file(const char* path, model_backend_t backend,
     uint8_t* model_data = read_file_data(path, &model_size);
     if (!model_data) return NULL;
 
-    model_t* model = model_load_from_memory(model_data, model_size,
+    iot_model_t* model = iot_model_load_from_memory(model_data, model_size,
                                             backend, precision);
     if (!model) {
         free(model_data);
@@ -613,23 +613,23 @@ model_t* model_load_from_file(const char* path, model_backend_t backend,
     return model;
 }
 
-model_t* model_load_from_memory(const uint8_t* model_data, size_t model_size,
-                                 model_backend_t backend, model_precision_t precision)
+iot_model_t* iot_model_load_from_memory(const uint8_t* model_data, size_t model_size,
+                                 iot_model_backend_t backend, iot_model_precision_t precision)
 {
     if (!model_data || model_size == 0) return NULL;
 
     /* 自动选择后端 */
-    if (backend == MODEL_BACKEND_AUTO) {
+    if (backend == IOT_MODEL_BACKEND_AUTO) {
         backend = DEFAULT_BACKEND;
     }
 
-    if (backend == MODEL_BACKEND_NONE) {
+    if (backend == IOT_MODEL_BACKEND_NONE) {
         LOG_ERROR("model", "No inference backend available");
         return NULL;
     }
 
     /* 分配模型上下文 */
-    model_t* model = (model_t*)calloc(1, sizeof(model_t));
+    iot_model_t* model = (iot_model_t*)calloc(1, sizeof(iot_model_t));
     if (!model) {
         LOG_ERROR("model", "OOM allocating model context");
         return NULL;
@@ -642,8 +642,8 @@ model_t* model_load_from_memory(const uint8_t* model_data, size_t model_size,
     /* 选择后端并分配私有上下文 */
     switch (backend) {
 #if HAS_TFLITE_MICRO || HAS_TFLITE
-    case MODEL_BACKEND_TFLITE: {
-        tf_backend_ctx_t* tf_ctx = (tf_backend_ctx_t*)calloc(1, sizeof(tf_backend_ctx_t));
+    case IOT_MODEL_BACKEND_TFLITE: {
+        iot_tf_backend_ctx_t* tf_ctx = (iot_tf_backend_ctx_t*)calloc(1, sizeof(iot_tf_backend_ctx_t));
         if (!tf_ctx) goto oom;
         model->backend_ctx = tf_ctx;
         model->ops = backend_tflite_ops;
@@ -651,7 +651,7 @@ model_t* model_load_from_memory(const uint8_t* model_data, size_t model_size,
     }
 #endif
 #if HAS_ONNX_RUNTIME
-    case MODEL_BACKEND_ONNX: {
+    case IOT_MODEL_BACKEND_ONNX: {
         onnx_backend_ctx_t* onnx_ctx = (onnx_backend_ctx_t*)calloc(1, sizeof(onnx_backend_ctx_t));
         if (!onnx_ctx) goto oom;
         model->backend_ctx = onnx_ctx;
@@ -676,7 +676,7 @@ model_t* model_load_from_memory(const uint8_t* model_data, size_t model_size,
     }
 
     LOG_INFO("model", "Model loaded: backend=%s, precision=%d, size=%zu",
-             model_backend_name(backend), precision, model_size);
+             iot_model_backend_name(backend), precision, model_size);
     return model;
 
 oom:
@@ -685,7 +685,7 @@ oom:
     return NULL;
 }
 
-void model_free(model_t* model)
+void iot_model_free(iot_model_t* model)
 {
     if (!model) return;
 
@@ -693,25 +693,25 @@ void model_free(model_t* model)
         model->ops.free(model->backend_ctx);
     }
     free(model->backend_ctx);
-    memset(model, 0, sizeof(model_t));
+    memset(model, 0, sizeof(iot_model_t));
     free(model);
 }
 
-model_t* model_reload(model_t* model, const char* path)
+iot_model_t* model_reload(iot_model_t* model, const char* path)
 {
     if (!model || !path) {
-        if (model) model_free(model);
+        if (model) iot_model_free(model);
         return NULL;
     }
 
-    model_backend_t backend = model->backend_type;
-    model_precision_t precision = model->precision;
-    model_free(model);
+    iot_model_backend_t backend = model->backend_type;
+    iot_model_precision_t precision = model->precision;
+    iot_model_free(model);
 
-    return model_load_from_file(path, backend, precision);
+    return iot_model_load_from_file(path, backend, precision);
 }
 
-int model_invoke(model_t* model)
+int iot_model_invoke(iot_model_t* model)
 {
     if (!model || !model->ops.invoke) return -1;
 
@@ -723,7 +723,7 @@ int model_invoke(model_t* model)
     return result;
 }
 
-int model_invoke_async(model_t* model,
+int iot_model_invoke_async(iot_model_t* model,
                        void (*callback)(void* user_data, int result),
                        void* user_data)
 {
@@ -737,60 +737,60 @@ int model_invoke_async(model_t* model,
      * 完成后在 invoke_task_func 中调用 callback
      */
     LOG_WARN("model", "Async invoke not implemented, falling back to sync");
-    int result = model_invoke(model);
+    int result = iot_model_invoke(model);
     callback(user_data, result);
     return 0;
 }
 
-int model_get_input_count(model_t* model)
+int iot_model_get_input_count(iot_model_t* model)
 {
     if (!model || !model->ops.tensor_count) return 0;
     return model->ops.tensor_count(model->backend_ctx, 1);
 }
 
-int model_get_output_count(model_t* model)
+int iot_model_get_output_count(iot_model_t* model)
 {
     if (!model || !model->ops.tensor_count) return 0;
     return model->ops.tensor_count(model->backend_ctx, 0);
 }
 
-int model_get_input_info(model_t* model, int index, model_tensor_info_t* info)
+int iot_model_get_input_info(iot_model_t* model, int index, iot_model_tensor_info_t* info)
 {
     if (!model || !model->ops.tensor_info) return -1;
     return model->ops.tensor_info(model->backend_ctx, index, 1, info);
 }
 
-int model_get_output_info(model_t* model, int index, model_tensor_info_t* info)
+int iot_model_get_output_info(iot_model_t* model, int index, iot_model_tensor_info_t* info)
 {
     if (!model || !model->ops.tensor_info) return -1;
     return model->ops.tensor_info(model->backend_ctx, index, 0, info);
 }
 
-int model_set_input(model_t* model, int index, const void* data, size_t size)
+int iot_model_set_input(iot_model_t* model, int index, const void* data, size_t size)
 {
     if (!model || !model->ops.set_input) return -1;
     return model->ops.set_input(model->backend_ctx, index, data, size);
 }
 
-int model_get_output(model_t* model, int index, void* data, size_t* size)
+int iot_model_get_output(iot_model_t* model, int index, void* data, size_t* size)
 {
     if (!model || !model->ops.get_output) return -1;
     return model->ops.get_output(model->backend_ctx, index, data, size);
 }
 
-int64_t model_get_last_inference_time_us(model_t* model)
+int64_t iot_model_get_last_inference_time_us(iot_model_t* model)
 {
     if (!model) return -1;
     return model->last_infer_us;
 }
 
-int model_get_info_json(model_t* model, char* buf, size_t bufsize)
+int iot_model_get_info_json(iot_model_t* model, char* buf, size_t bufsize)
 {
     if (!model || !buf || bufsize == 0) return -1;
 
-    model_tensor_info_t in_info, out_info;
-    int in_ok = model_get_input_info(model, 0, &in_info);
-    int out_ok = model_get_output_info(model, 0, &out_info);
+    iot_model_tensor_info_t in_info, out_info;
+    int in_ok = iot_model_get_input_info(model, 0, &in_info);
+    int out_ok = iot_model_get_output_info(model, 0, &out_info);
 
     int n = snprintf(buf, bufsize,
         "{"
@@ -801,7 +801,7 @@ int model_get_info_json(model_t* model, char* buf, size_t bufsize)
         "\"inputs\":[%s],"
         "\"outputs\":[%s]"
         "}",
-        model_backend_name(model->backend_type),
+        iot_model_backend_name(model->backend_type),
         model->precision,
         model->model_size,
         (long long)model->last_infer_us,

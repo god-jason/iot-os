@@ -1,5 +1,5 @@
-/**
- * @file lvgl_meter.c
+﻿/**
+ * @file iot_lvgl_meter.c
  * @brief LVGL仪表盘控件
  *
  * 实现LVGL仪表盘控件的OO风格Lua绑定，包括仪表盘创建、添加刻度、设置刻度范围/刻度线/主刻度、添加指示器（线条/弧形）、设置指示器值等接口。
@@ -16,8 +16,8 @@ static int meter_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_meter_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* meter = lv_meter_create(parent);
     lua_pushlightuserdata(L, meter);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_meter_create_internal(lua_State* L) {
 @return userdata 带metatable的仪表盘实例
 @usage local meter = lvgl.meter.create(scr)
 */
-static int lvgl_meter_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_meter_create_internal, meter_metatable_ref);
+static int iot_lvgl_meter_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_meter_create_internal, meter_metatable_ref);
 }
 
 /*
@@ -43,8 +43,8 @@ static int lvgl_meter_create(lua_State* L) {
 @return userdata 刻度指针
 @usage local scale = meter:add_scale(270, 0)
 */
-static int lvgl_meter_add_scale(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_add_scale(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     int32_t angle_range = (int32_t)luaL_checkinteger(L, 2);
     int32_t rotation = (int32_t)luaL_optinteger(L, 3, 0);
     lv_meter_scale_t* scale = lv_meter_add_scale(meter);
@@ -64,8 +64,8 @@ static int lvgl_meter_add_scale(lua_State* L) {
 @return self
 @usage meter:set_scale_range(scale, 0, 100, 270, 225)
 */
-static int lvgl_meter_set_scale_range(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_scale_range(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     int32_t min = (int32_t)luaL_checkinteger(L, 3);
     int32_t max = (int32_t)luaL_checkinteger(L, 4);
@@ -87,8 +87,8 @@ static int lvgl_meter_set_scale_range(lua_State* L) {
 @return self
 @usage meter:set_scale_ticks(scale, 11, 2, 5, 0x000000)
 */
-static int lvgl_meter_set_scale_ticks(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_scale_ticks(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t cnt = (uint16_t)luaL_checkinteger(L, 3);
     uint16_t len = (uint16_t)luaL_checkinteger(L, 4);
@@ -111,8 +111,8 @@ static int lvgl_meter_set_scale_ticks(lua_State* L) {
 @return self
 @usage meter:set_scale_major_ticks(scale, 4, 2, 5, 0xFF0000)
 */
-static int lvgl_meter_set_scale_major_ticks(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_scale_major_ticks(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t nth = (uint16_t)luaL_checkinteger(L, 3);
     uint16_t len = (uint16_t)luaL_checkinteger(L, 4);
@@ -135,8 +135,8 @@ static int lvgl_meter_set_scale_major_ticks(lua_State* L) {
 @return userdata 指示器指针
 @usage local indic = meter:add_indicator_line(scale, 3, 0x0000FF, 10)
 */
-static int lvgl_meter_add_indicator_line(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_add_indicator_line(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t width = (uint16_t)luaL_checkinteger(L, 3);
     lv_color_t color;
@@ -157,8 +157,8 @@ static int lvgl_meter_add_indicator_line(lua_State* L) {
 @return userdata 指示器指针
 @usage local arc_indic = meter:add_indicator_arc(scale, 10, 0x00FF00, 5)
 */
-static int lvgl_meter_add_indicator_arc(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_add_indicator_arc(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t width = (uint16_t)luaL_checkinteger(L, 3);
     lv_color_t color;
@@ -178,8 +178,8 @@ static int lvgl_meter_add_indicator_arc(lua_State* L) {
 @return userdata 指示器指针
 @usage local needle = meter:add_indicator_needle(scale, 0xFF0000, 4)
 */
-static int lvgl_meter_add_indicator_needle(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_add_indicator_needle(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 3);
@@ -197,8 +197,8 @@ static int lvgl_meter_add_indicator_needle(lua_State* L) {
 @return self
 @usage meter:set_indicator_value(indic, 50)
 */
-static int lvgl_meter_set_indicator_value(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_indicator_value(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_indicator_t* indic = (lv_meter_indicator_t*)luaL_checklightuserdata(L, 2);
     int32_t value = (int32_t)luaL_checkinteger(L, 3);
     lv_meter_set_indicator_value(meter, indic, value);
@@ -214,8 +214,8 @@ static int lvgl_meter_set_indicator_value(lua_State* L) {
 @return self
 @usage meter:set_indicator_start_value(indic, 0)
 */
-static int lvgl_meter_set_indicator_start_value(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_indicator_start_value(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_indicator_t* indic = (lv_meter_indicator_t*)luaL_checklightuserdata(L, 2);
     int32_t value = (int32_t)luaL_checkinteger(L, 3);
     lv_meter_set_indicator_start_value(meter, indic, value);
@@ -231,8 +231,8 @@ static int lvgl_meter_set_indicator_start_value(lua_State* L) {
 @return self
 @usage meter:set_indicator_end_value(indic, 100)
 */
-static int lvgl_meter_set_indicator_end_value(lua_State* L) {
-    lv_obj_t* meter = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_meter_set_indicator_end_value(lua_State* L) {
+    lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_indicator_t* indic = (lv_meter_indicator_t*)luaL_checklightuserdata(L, 2);
     int32_t value = (int32_t)luaL_checkinteger(L, 3);
     lv_meter_set_indicator_end_value(meter, indic, value);
@@ -241,21 +241,21 @@ static int lvgl_meter_set_indicator_end_value(lua_State* L) {
 }
 
 /* 注册 meter 子模块 */
-void lvgl_register_meter(lua_State* L) {
+void iot_lvgl_register_meter(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "add_scale", lvgl_meter_add_scale);
-    REG_METHOD(L, "set_scale_range", lvgl_meter_set_scale_range);
-    REG_METHOD(L, "set_scale_ticks", lvgl_meter_set_scale_ticks);
-    REG_METHOD(L, "set_scale_major_ticks", lvgl_meter_set_scale_major_ticks);
-    REG_METHOD(L, "add_indicator_line", lvgl_meter_add_indicator_line);
-    REG_METHOD(L, "add_indicator_arc", lvgl_meter_add_indicator_arc);
-    REG_METHOD(L, "add_indicator_needle", lvgl_meter_add_indicator_needle);
-    REG_METHOD(L, "set_indicator_value", lvgl_meter_set_indicator_value);
-    REG_METHOD(L, "set_indicator_start_value", lvgl_meter_set_indicator_start_value);
-    REG_METHOD(L, "set_indicator_end_value", lvgl_meter_set_indicator_end_value);
+    REG_METHOD(L, "add_scale", iot_lvgl_meter_add_scale);
+    REG_METHOD(L, "set_scale_range", iot_lvgl_meter_set_scale_range);
+    REG_METHOD(L, "set_scale_ticks", iot_lvgl_meter_set_scale_ticks);
+    REG_METHOD(L, "set_scale_major_ticks", iot_lvgl_meter_set_scale_major_ticks);
+    REG_METHOD(L, "add_indicator_line", iot_lvgl_meter_add_indicator_line);
+    REG_METHOD(L, "add_indicator_arc", iot_lvgl_meter_add_indicator_arc);
+    REG_METHOD(L, "add_indicator_needle", iot_lvgl_meter_add_indicator_needle);
+    REG_METHOD(L, "set_indicator_value", iot_lvgl_meter_set_indicator_value);
+    REG_METHOD(L, "set_indicator_start_value", iot_lvgl_meter_set_indicator_start_value);
+    REG_METHOD(L, "set_indicator_end_value", iot_lvgl_meter_set_indicator_end_value);
 
     /* 保存组件metatable引用(用于继承) */
     meter_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -272,5 +272,5 @@ void lvgl_register_meter(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.meter) */
-    REG_METHOD(L, "create", lvgl_meter_create);
+    REG_METHOD(L, "create", iot_lvgl_meter_create);
 }

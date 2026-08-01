@@ -1,5 +1,5 @@
-/**
- * @file lvgl_line.c
+﻿/**
+ * @file iot_lvgl_line.c
  * @brief LVGL线条控件
  *
  * 实现LVGL线条控件的OO风格Lua绑定，包括线条创建、设置坐标点数组、设置自动尺寸、设置Y轴翻转等接口，用于绘制折线图。
@@ -16,8 +16,8 @@ static int line_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_line_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* line = lv_line_create(parent);
     lua_pushlightuserdata(L, line);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_line_create_internal(lua_State* L) {
 @return userdata 带metatable的线条实例
 @usage local line = lvgl.line.create(scr)
 */
-static int lvgl_line_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_line_create_internal, line_metatable_ref);
+static int iot_lvgl_line_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_line_create_internal, line_metatable_ref);
 }
 
 /*
@@ -42,8 +42,8 @@ static int lvgl_line_create(lua_State* L) {
 @return self
 @usage line:set_points({{0,0},{100,50}})
 */
-static int lvgl_line_set_points(lua_State* L) {
-    lv_obj_t* line = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_set_points(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
 
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
@@ -86,8 +86,8 @@ static int lvgl_line_set_points(lua_State* L) {
 @return self
 @usage line:set_style(style)
 */
-static int lvgl_line_set_style(lua_State* L) {
-    lv_obj_t* line = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_set_style(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 2);
     lv_obj_add_style(line, style, LV_PART_MAIN);
     lua_pushvalue(L, 1);
@@ -101,8 +101,8 @@ static int lvgl_line_set_style(lua_State* L) {
 @return self
 @usage line:set_auto_size(true)
 */
-static int lvgl_line_set_auto_size(lua_State* L) {
-    lv_obj_t* line = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_set_auto_size(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     if (en) {
         lv_obj_set_width(line, LV_SIZE_CONTENT);
@@ -122,8 +122,8 @@ static int lvgl_line_set_auto_size(lua_State* L) {
 @return self
 @usage line:set_y_invert(true)
 */
-static int lvgl_line_set_y_invert(lua_State* L) {
-    lv_obj_t* line = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_set_y_invert(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_line_set_y_invert(line, en);
     lua_pushvalue(L, 1);
@@ -136,24 +136,24 @@ static int lvgl_line_set_y_invert(lua_State* L) {
 @return boolean 是否反转
 @usage local inverted = line:get_y_invert()
 */
-static int lvgl_line_get_y_invert(lua_State* L) {
-    lv_obj_t* line = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_line_get_y_invert(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
     bool inverted = lv_line_get_y_invert(line);
     lua_pushboolean(L, inverted);
     return 1;
 }
 
 /* 注册 line 子模块 */
-void lvgl_register_line(lua_State* L) {
+void iot_lvgl_register_line(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_points", lvgl_line_set_points);
-    REG_METHOD(L, "set_style", lvgl_line_set_style);
-    REG_METHOD(L, "set_auto_size", lvgl_line_set_auto_size);
-    REG_METHOD(L, "set_y_invert", lvgl_line_set_y_invert);
-    REG_METHOD(L, "get_y_invert", lvgl_line_get_y_invert);
+    REG_METHOD(L, "set_points", iot_lvgl_line_set_points);
+    REG_METHOD(L, "set_style", iot_lvgl_line_set_style);
+    REG_METHOD(L, "set_auto_size", iot_lvgl_line_set_auto_size);
+    REG_METHOD(L, "set_y_invert", iot_lvgl_line_set_y_invert);
+    REG_METHOD(L, "get_y_invert", iot_lvgl_line_get_y_invert);
 
     /* 保存组件metatable引用(用于继承) */
     line_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -170,5 +170,5 @@ void lvgl_register_line(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.line) */
-    REG_METHOD(L, "create", lvgl_line_create);
+    REG_METHOD(L, "create", iot_lvgl_line_create);
 }

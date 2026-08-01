@@ -1,5 +1,5 @@
-/**
- * @file lvgl_spinbox.c
+﻿/**
+ * @file iot_lvgl_spinbox.c
  * @brief LVGL数值框控件
  *
  * 实现LVGL数值框控件的OO风格Lua绑定，包括数值框创建、设置/获取值、设置范围、设置步进值、设置小数位数和整数位数、增量/减量操作等接口。
@@ -16,8 +16,8 @@ static int spinbox_metatable_ref = LUA_NOREF;
 
 /* ==================== åé¨åå»ºå½æ° ==================== */
 
-static int lvgl_spinbox_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* spinbox = lv_spinbox_create(parent);
     lua_pushlightuserdata(L, spinbox);
     return 1;
@@ -25,27 +25,27 @@ static int lvgl_spinbox_create_internal(lua_State* L) {
 
 /* ==================== æ°å¼æ¡OOæ¹æ³ ==================== */
 
-static int lvgl_spinbox_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_spinbox_create_internal, spinbox_metatable_ref);
+static int iot_lvgl_spinbox_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_spinbox_create_internal, spinbox_metatable_ref);
 }
 
-static int lvgl_spinbox_set_value(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_set_value(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_spinbox_set_value(spinbox, value);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int lvgl_spinbox_get_value(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_get_value(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_spinbox_get_value(spinbox);
     lua_pushinteger(L, value);
     return 1;
 }
 
-static int lvgl_spinbox_set_range(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_set_range(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     int32_t min = (int32_t)luaL_checkinteger(L, 2);
     int32_t max = (int32_t)luaL_checkinteger(L, 3);
     lv_spinbox_set_range(spinbox, min, max);
@@ -53,16 +53,16 @@ static int lvgl_spinbox_set_range(lua_State* L) {
     return 1;
 }
 
-static int lvgl_spinbox_set_step(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_set_step(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t step = (uint32_t)luaL_checkinteger(L, 2);
     lv_spinbox_set_step(spinbox, step);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int lvgl_spinbox_set_digit_format(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_set_digit_format(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     uint8_t digit_count = (uint8_t)luaL_checkinteger(L, 2);
     uint8_t separator_position = (uint8_t)luaL_checkinteger(L, 3);
     lv_spinbox_set_digit_format(spinbox, digit_count, separator_position);
@@ -70,8 +70,8 @@ static int lvgl_spinbox_set_digit_format(lua_State* L) {
     return 1;
 }
 
-static int lvgl_spinbox_set_scroll_speed(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_set_scroll_speed(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checkinteger(L, 2);
     /* lv_spinbox_set_scroll_speed() was removed in LVGL 8 */
     (void)spinbox;
@@ -79,34 +79,34 @@ static int lvgl_spinbox_set_scroll_speed(lua_State* L) {
     return 1;
 }
 
-static int lvgl_spinbox_increment(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_increment(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     lv_spinbox_increment(spinbox);
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int lvgl_spinbox_decrement(lua_State* L) {
-    lv_obj_t* spinbox = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_spinbox_decrement(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
     lv_spinbox_decrement(spinbox);
     lua_pushvalue(L, 1);
     return 1;
 }
 
 /* æ³¨å spinbox å­æ¨¡块*/
-void lvgl_register_spinbox(lua_State* L) {
+void iot_lvgl_register_spinbox(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
     /* æ³¨åOOé£æ ¼æ¹æ³ */
-    REG_METHOD(L, "set_value", lvgl_spinbox_set_value);
-    REG_METHOD(L, "get_value", lvgl_spinbox_get_value);
-    REG_METHOD(L, "set_range", lvgl_spinbox_set_range);
-    REG_METHOD(L, "set_step", lvgl_spinbox_set_step);
-    REG_METHOD(L, "set_digit_format", lvgl_spinbox_set_digit_format);
-    REG_METHOD(L, "set_scroll_speed", lvgl_spinbox_set_scroll_speed);
-    REG_METHOD(L, "increment", lvgl_spinbox_increment);
-    REG_METHOD(L, "decrement", lvgl_spinbox_decrement);
+    REG_METHOD(L, "set_value", iot_lvgl_spinbox_set_value);
+    REG_METHOD(L, "get_value", iot_lvgl_spinbox_get_value);
+    REG_METHOD(L, "set_range", iot_lvgl_spinbox_set_range);
+    REG_METHOD(L, "set_step", iot_lvgl_spinbox_set_step);
+    REG_METHOD(L, "set_digit_format", iot_lvgl_spinbox_set_digit_format);
+    REG_METHOD(L, "set_scroll_speed", iot_lvgl_spinbox_set_scroll_speed);
+    REG_METHOD(L, "increment", iot_lvgl_spinbox_increment);
+    REG_METHOD(L, "decrement", iot_lvgl_spinbox_decrement);
 
     /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     spinbox_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -123,5 +123,5 @@ void lvgl_register_spinbox(lua_State* L) {
     lua_pop(L, 1);
 
     /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.spinbox) */
-    REG_METHOD(L, "create", lvgl_spinbox_create);
+    REG_METHOD(L, "create", iot_lvgl_spinbox_create);
 }

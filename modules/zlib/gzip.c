@@ -15,12 +15,12 @@
 #include <string.h>
 #include <stdio.h>
 
-#define GZIP_MAGIC1          0x1F
-#define GZIP_MAGIC2          0x8B
-#define GZIP_METHOD_DEFLATE  0x08
-#define GZIP_FLAG_FEXTRA     0x04
-#define GZIP_FLAG_FNAME      0x08
-#define GZIP_FLAG_FCOMMENT   0x10
+#define IOT_GZIP_MAGIC1          0x1F
+#define IOT_GZIP_MAGIC2          0x8B
+#define IOT_GZIP_METHOD_DEFLATE  0x08
+#define IOT_GZIP_FLAG_FEXTRA     0x04
+#define IOT_GZIP_FLAG_FNAME      0x08
+#define IOT_GZIP_FLAG_FCOMMENT   0x10
 
 static size_t gzip_raw_deflate(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, int level)
 {
@@ -41,7 +41,7 @@ static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_
         return NULL;
     }
 
-    if (p[0] != GZIP_MAGIC1 || p[1] != GZIP_MAGIC2 || p[2] != GZIP_METHOD_DEFLATE) {
+    if (p[0] != IOT_GZIP_MAGIC1 || p[1] != IOT_GZIP_MAGIC2 || p[2] != IOT_GZIP_METHOD_DEFLATE) {
         return NULL;
     }
 
@@ -49,7 +49,7 @@ static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_
         uint8_t flags = p[3];
         p += 10;
 
-        if (flags & GZIP_FLAG_FEXTRA) {
+        if (flags & IOT_GZIP_FLAG_FEXTRA) {
             uint16_t extra_len;
             if ((size_t)(p - src) + 2 > src_len) {
                 return NULL;
@@ -58,7 +58,7 @@ static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_
             p += 2 + extra_len;
         }
 
-        if (flags & GZIP_FLAG_FNAME) {
+        if (flags & IOT_GZIP_FLAG_FNAME) {
             while (p < src + src_len && *p != '\0') {
                 p++;
             }
@@ -68,7 +68,7 @@ static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_
             p++;
         }
 
-        if (flags & GZIP_FLAG_FCOMMENT) {
+        if (flags & IOT_GZIP_FLAG_FCOMMENT) {
             while (p < src + src_len && *p != '\0') {
                 p++;
             }
@@ -91,7 +91,7 @@ static const uint8_t *gzip_skip_header(const uint8_t *src, size_t src_len, size_
     return p;
 }
 
-int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len)
+int iot_gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len)
 {
     size_t compressed_len = 0;
     const uint8_t *payload;
@@ -102,17 +102,17 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
     uint32_t computed_crc;
 
     if (!src || !dst || !dst_len) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     payload = gzip_skip_header(src, src_len, &compressed_len);
     if (!payload || compressed_len == 0) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     out_len = gzip_raw_inflate(payload, compressed_len, dst, *dst_len);
     if (out_len == 0) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     tail = src + src_len - 8;
@@ -121,14 +121,14 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
 
     computed_crc = (uint32_t)mz_crc32(MZ_CRC32_INIT, dst, out_len) ^ 0xffffffffU;
     if (computed_crc != crc32 || (uint32_t)out_len != orig_size) {
-        return GZIP_ERR_CRC;
+        return IOT_GZIP_ERR_CRC;
     }
 
     *dst_len = out_len;
-    return GZIP_OK;
+    return IOT_GZIP_OK;
 }
 
-static size_t gzip_compress_bound_size(size_t src_len)
+static size_t iot_gzip_compress_bound_size(size_t src_len)
 {
     mz_ulong bound = mz_compressBound((mz_ulong)src_len);
     size_t total = (size_t)bound + 18;
@@ -139,12 +139,12 @@ static size_t gzip_compress_bound_size(size_t src_len)
     return total;
 }
 
-size_t gzip_compress_bound(size_t src_len)
+size_t iot_gzip_compress_bound(size_t src_len)
 {
-    return gzip_compress_bound_size(src_len);
+    return iot_gzip_compress_bound_size(src_len);
 }
 
-int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level)
+int iot_gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level)
 {
     uint8_t *p;
     uint32_t crc;
@@ -153,25 +153,25 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
     uint32_t size;
 
     if (!src || !dst || !dst_len) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     if (level < 1) {
-        level = GZIP_COMPRESS_FAST;
+        level = IOT_GZIP_COMPRESS_FAST;
     }
     if (level > 9) {
-        level = GZIP_COMPRESS_BEST;
+        level = IOT_GZIP_COMPRESS_BEST;
     }
 
-    bound = gzip_compress_bound_size(src_len);
+    bound = iot_gzip_compress_bound_size(src_len);
     if (*dst_len < bound) {
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
 
     p = dst;
-    p[0] = GZIP_MAGIC1;
-    p[1] = GZIP_MAGIC2;
-    p[2] = GZIP_METHOD_DEFLATE;
+    p[0] = IOT_GZIP_MAGIC1;
+    p[1] = IOT_GZIP_MAGIC2;
+    p[2] = IOT_GZIP_METHOD_DEFLATE;
     p[3] = 0;
     memset(p + 4, 0, 6);
     p[9] = 0x03;
@@ -180,7 +180,7 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
     crc = (uint32_t)mz_crc32(MZ_CRC32_INIT, src, src_len) ^ 0xffffffffU;
     compressed = gzip_raw_deflate(src, src_len, p, *dst_len - 18, level);
     if (compressed == 0) {
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
     p += compressed;
 
@@ -196,10 +196,10 @@ int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_
     *p++ = (uint8_t)((size >> 24) & 0xff);
 
     *dst_len = (size_t)(p - dst);
-    return GZIP_OK;
+    return IOT_GZIP_OK;
 }
 
-int gzip_decompress_file(const char *src_path, const char *dst_path)
+int iot_gzip_decompress_file(const char *src_path, const char *dst_path)
 {
     iot_fs_file_t src_fd;
     int32_t file_size;
@@ -212,30 +212,30 @@ int gzip_decompress_file(const char *src_path, const char *dst_path)
     uint32_t dst_size;
 
     if (!src_path || !dst_path) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     file_size = iot_fs_filesize(src_path);
     if (file_size < 18) {
         iot_fs_close(src_fd);
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     src_buf = (uint8_t *)iot_malloc((size_t)file_size);
     if (!src_buf) {
         iot_fs_close(src_fd);
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
 
     if (iot_fs_read(src_fd, src_buf, (size_t)file_size) != file_size) {
         iot_free(src_buf);
         iot_fs_close(src_fd);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
     iot_fs_close(src_fd);
 
@@ -245,13 +245,13 @@ int gzip_decompress_file(const char *src_path, const char *dst_path)
     dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
 
     out_len = dst_size;
-    ret = gzip_decompress(src_buf, (size_t)file_size, dst_buf, &out_len);
+    ret = iot_gzip_decompress(src_buf, (size_t)file_size, dst_buf, &out_len);
     iot_free(src_buf);
-    if (ret != GZIP_OK) {
+    if (ret != IOT_GZIP_OK) {
         iot_free(dst_buf);
         return ret;
     }
@@ -259,21 +259,21 @@ int gzip_decompress_file(const char *src_path, const char *dst_path)
     dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
         iot_free(dst_buf);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     if (iot_fs_write(dst_fd, dst_buf, out_len) != (int32_t)out_len) {
         iot_fs_close(dst_fd);
         iot_free(dst_buf);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     iot_fs_close(dst_fd);
     iot_free(dst_buf);
-    return GZIP_OK;
+    return IOT_GZIP_OK;
 }
 
-int gzip_compress_file(const char *src_path, const char *dst_path, int level)
+int iot_gzip_compress_file(const char *src_path, const char *dst_path, int level)
 {
     iot_fs_file_t src_fd;
     int32_t file_size;
@@ -284,43 +284,43 @@ int gzip_compress_file(const char *src_path, const char *dst_path, int level)
     iot_fs_file_t dst_fd;
 
     if (!src_path || !dst_path) {
-        return GZIP_ERR_FORMAT;
+        return IOT_GZIP_ERR_FORMAT;
     }
 
     src_fd = iot_fs_open(src_path, IOT_FS_RB);
     if (!src_fd) {
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     file_size = iot_fs_filesize(src_path);
     if (file_size <= 0) {
         iot_fs_close(src_fd);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     src_buf = (uint8_t *)iot_malloc((size_t)file_size);
     if (!src_buf) {
         iot_fs_close(src_fd);
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
 
     if (iot_fs_read(src_fd, src_buf, (size_t)file_size) != file_size) {
         iot_free(src_buf);
         iot_fs_close(src_fd);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
     iot_fs_close(src_fd);
 
-    dst_size = gzip_compress_bound_size((size_t)file_size);
+    dst_size = iot_gzip_compress_bound_size((size_t)file_size);
     dst_buf = (uint8_t *)iot_malloc(dst_size);
     if (!dst_buf) {
         iot_free(src_buf);
-        return GZIP_ERR_MEM;
+        return IOT_GZIP_ERR_MEM;
     }
 
-    ret = gzip_compress(src_buf, (size_t)file_size, dst_buf, &dst_size, level);
+    ret = iot_gzip_compress(src_buf, (size_t)file_size, dst_buf, &dst_size, level);
     iot_free(src_buf);
-    if (ret != GZIP_OK) {
+    if (ret != IOT_GZIP_OK) {
         iot_free(dst_buf);
         return ret;
     }
@@ -328,16 +328,16 @@ int gzip_compress_file(const char *src_path, const char *dst_path, int level)
     dst_fd = iot_fs_open(dst_path, IOT_FS_WB);
     if (!dst_fd) {
         iot_free(dst_buf);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     if (iot_fs_write(dst_fd, dst_buf, dst_size) != (int32_t)dst_size) {
         iot_fs_close(dst_fd);
         iot_free(dst_buf);
-        return GZIP_ERR_FILE;
+        return IOT_GZIP_ERR_FILE;
     }
 
     iot_fs_close(dst_fd);
     iot_free(dst_buf);
-    return GZIP_OK;
+    return IOT_GZIP_OK;
 }

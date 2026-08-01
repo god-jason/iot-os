@@ -13,18 +13,18 @@
 
 #include "filters.h"
 
-int filter_lowpass_init(filter_lowpass_t* f, float alpha)
+int iot_filter_lowpass_init(iot_filter_lowpass_t* f, float alpha)
 {
-    if (!f || alpha < 0.0f || alpha > 1.0f) return FILTER_ERR;
+    if (!f || alpha < 0.0f || alpha > 1.0f) return IOT_FILTER_ERR;
     f->alpha       = alpha;
     f->value       = 0.0f;
     f->initialized = false;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_lowpass_update(filter_lowpass_t* f, float input, float* output)
+int iot_filter_lowpass_update(iot_filter_lowpass_t* f, float input, float* output)
 {
-    if (!f || !output) return FILTER_ERR;
+    if (!f || !output) return IOT_FILTER_ERR;
 
     if (!f->initialized) {
         f->value       = input;
@@ -33,17 +33,17 @@ int filter_lowpass_update(filter_lowpass_t* f, float input, float* output)
         f->value = f->alpha * input + (1.0f - f->alpha) * f->value;
     }
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_lowpass_get(const filter_lowpass_t* f, float* output)
+int iot_filter_lowpass_get(const iot_filter_lowpass_t* f, float* output)
 {
-    if (!f || !output || !f->initialized) return FILTER_ERR;
+    if (!f || !output || !f->initialized) return IOT_FILTER_ERR;
     *output = f->value;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_lowpass_reset(filter_lowpass_t* f)
+void iot_filter_lowpass_reset(iot_filter_lowpass_t* f)
 {
     if (f) {
         f->value       = 0.0f;

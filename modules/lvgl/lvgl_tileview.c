@@ -1,5 +1,5 @@
-/**
- * @file lvgl_tileview.c
+﻿/**
+ * @file iot_lvgl_tileview.c
  * @brief LVGL平铺视图控件
  *
  * 实现LVGL平铺视图控件的OO风格Lua绑定，包括平铺视图创建、添加平铺块、设置活动平铺、获取活动平铺等接口，支持滑动切换页面。
@@ -16,8 +16,8 @@ static int tileview_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_tileview_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_tileview_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* tv = lv_tileview_create(parent);
     lua_pushlightuserdata(L, tv);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_tileview_create_internal(lua_State* L) {
 @return userdata 带metatable的瓦片视图实例
 @usage local tv = lvgl.tileview.create(scr)
 */
-static int lvgl_tileview_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_tileview_create_internal, tileview_metatable_ref);
+static int iot_lvgl_tileview_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_tileview_create_internal, tileview_metatable_ref);
 }
 
 /*
@@ -44,8 +44,8 @@ static int lvgl_tileview_create(lua_State* L) {
 @return userdata 瓦片对象
 @usage local tile = tv:add_tile(0, 0, lvgl.DIR_RIGHT)
 */
-static int lvgl_tileview_add_tile(lua_State* L) {
-    lv_obj_t* tv = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_tileview_add_tile(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     uint8_t col = (uint8_t)luaL_checkinteger(L, 2);
     uint8_t row = (uint8_t)luaL_checkinteger(L, 3);
     lv_dir_t dir = (lv_dir_t)luaL_optinteger(L, 4, LV_DIR_ALL);
@@ -62,8 +62,8 @@ static int lvgl_tileview_add_tile(lua_State* L) {
 @return self
 @usage tv:set_tile(tile, 0)
 */
-static int lvgl_tileview_set_tile(lua_State* L) {
-    lv_obj_t* tv = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_tileview_set_tile(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* tile = (lv_obj_t*)luaL_checklightuserdata(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     lv_obj_set_tile(tv, tile, anim);
@@ -79,8 +79,8 @@ static int lvgl_tileview_set_tile(lua_State* L) {
 @return self
 @usage tv:set_tile_drag_dir(tile, lvgl.DIR_LEFT)
 */
-static int lvgl_tileview_set_tile_drag_dir(lua_State* L) {
-    lv_obj_t* tv = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_tileview_set_tile_drag_dir(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* tile = (lv_obj_t*)luaL_checklightuserdata(L, 2);
     lv_dir_t dir = (lv_dir_t)luaL_checkinteger(L, 3);
     if (lv_obj_check_type(tile, &lv_tileview_tile_class)) {
@@ -99,23 +99,23 @@ static int lvgl_tileview_set_tile_drag_dir(lua_State* L) {
 @return userdata 瓦片对象
 @usage local cur = tv:get_tile_act()
 */
-static int lvgl_tileview_get_tile_act(lua_State* L) {
-    lv_obj_t* tv = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_tileview_get_tile_act(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* tile = lv_tileview_get_tile_act(tv);
     lua_pushlightuserdata(L, tile);
     return 1;
 }
 
 /* 注册 tileview 子模块 */
-void lvgl_register_tileview(lua_State* L) {
+void iot_lvgl_register_tileview(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "add_tile", lvgl_tileview_add_tile);
-    REG_METHOD(L, "set_tile", lvgl_tileview_set_tile);
-    REG_METHOD(L, "set_tile_drag_dir", lvgl_tileview_set_tile_drag_dir);
-    REG_METHOD(L, "get_tile_act", lvgl_tileview_get_tile_act);
+    REG_METHOD(L, "add_tile", iot_lvgl_tileview_add_tile);
+    REG_METHOD(L, "set_tile", iot_lvgl_tileview_set_tile);
+    REG_METHOD(L, "set_tile_drag_dir", iot_lvgl_tileview_set_tile_drag_dir);
+    REG_METHOD(L, "get_tile_act", iot_lvgl_tileview_get_tile_act);
 
     /* 保存组件metatable引用(用于继承) */
     tileview_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -132,5 +132,5 @@ void lvgl_register_tileview(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.tileview) */
-    REG_METHOD(L, "create", lvgl_tileview_create);
+    REG_METHOD(L, "create", iot_lvgl_tileview_create);
 }

@@ -21,30 +21,30 @@
 
 static LIST_HEAD(s_mqtt_clients);
 static iot_mutex_t s_mqtt_mutex;
-static iot_task_t s_mqtt_manager_task;
+static iot_task_t s_iot_mqtt_manager_task;
 static bool s_mqtt_running = false;
 
-static int mqtt_manager_send_raw(mqtt_client_t* client, const uint8_t* buf, size_t len);
-static void mqtt_manager_process_packet(mqtt_client_t* client);
-static void mqtt_manager_handle_publish(mqtt_client_t* client, const mqtt_packet_publish_t* publish);
-static void mqtt_manager_trigger_event(mqtt_client_t* client, mqtt_event_type_t event);
+static int iot_mqtt_manager_send_raw(iot_mqtt_client_t* client, const uint8_t* buf, size_t len);
+static void iot_mqtt_manager_process_packet(iot_mqtt_client_t* client);
+static void iot_mqtt_manager_handle_publish(iot_mqtt_client_t* client, const iot_mqtt_packet_publish_t* publish);
+static void iot_mqtt_manager_trigger_event(iot_mqtt_client_t* client, iot_mqtt_event_type_t event);
 
-static void mqtt_manager_send_ping(mqtt_client_t* client);
-static void mqtt_manager_resend_messages(mqtt_client_t* client);
-static void mqtt_manager_check_keepalive(mqtt_client_t* client);
-static void mqtt_manager_check_reconnect(mqtt_client_t* client);
+static void iot_mqtt_manager_send_ping(iot_mqtt_client_t* client);
+static void iot_mqtt_manager_resend_messages(iot_mqtt_client_t* client);
+static void iot_mqtt_manager_check_keepalive(iot_mqtt_client_t* client);
+static void iot_mqtt_manager_check_reconnect(iot_mqtt_client_t* client);
 
-static void mqtt_manager_thread(void* arg);
+static void iot_mqtt_manager_thread(void* arg);
 
-int mqtt_manager_init(void) {
+int iot_mqtt_manager_init(void) {
     s_mqtt_mutex = iot_mutex_create();
     if (!s_mqtt_mutex) {
         return -1;
     }
 
     s_mqtt_running = true;
-    s_mqtt_manager_task = iot_task_create("mqtt_mgr", mqtt_manager_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
-    if (!s_mqtt_manager_task) {
+    s_iot_mqtt_manager_task = iot_task_create("mqtt_mgr", iot_mqtt_manager_thread, NULL, 4096, IOT_OS_PRIO_NORMAL);
+    if (!s_iot_mqtt_manager_task) {
         iot_mutex_delete(s_mqtt_mutex);
         s_mqtt_running = false;
         return -1;
@@ -53,22 +53,22 @@ int mqtt_manager_init(void) {
     return 0;
 }
 
-void mqtt_manager_deinit(void) {
+void iot_mqtt_manager_deinit(void) {
     s_mqtt_running = false;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
-    mqtt_client_t* client;
-    mqtt_client_t* tmp;
-    list_for_each_entry_safe(client, tmp, &s_mqtt_clients, list_node, mqtt_client_t) {
+    iot_mqtt_client_t* client;
+    iot_mqtt_client_t* tmp;
+    list_for_each_entry_safe(client, tmp, &s_mqtt_clients, list_node, iot_mqtt_client_t) {
         list_del(&client->list_node);
-        mqtt_client_disconnect(client);
+        iot_mqtt_client_disconnect(client);
     }
     iot_mutex_unlock(s_mqtt_mutex);
 
     iot_task_delay(100);
 
-    if (s_mqtt_manager_task) {
-        iot_task_delete(s_mqtt_manager_task);
+    if (s_iot_mqtt_manager_task) {
+        iot_task_delete(s_iot_mqtt_manager_task);
     }
 
     if (s_mqtt_mutex) {
@@ -76,7 +76,7 @@ void mqtt_manager_deinit(void) {
     }
 }
 
-int mqtt_manager_add_client(mqtt_client_t* client) {
+int iot_mqtt_manager_add_client(iot_mqtt_client_t* client) {
     if (!client) return -1;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
@@ -86,7 +86,7 @@ int mqtt_manager_add_client(mqtt_client_t* client) {
     return 0;
 }
 
-int mqtt_manager_remove_client(mqtt_client_t* client) {
+int iot_mqtt_manager_remove_client(iot_mqtt_client_t* client) {
     if (!client) return -1;
 
     iot_mutex_lock(s_mqtt_mutex, -1);
@@ -98,41 +98,41 @@ int mqtt_manager_remove_client(mqtt_client_t* client) {
     return 0;
 }
 
-void mqtt_manager_lock(void) {
+void iot_mqtt_manager_lock(void) {
     iot_mutex_lock(s_mqtt_mutex, -1);
 }
 
-void mqtt_manager_unlock(void) {
+void iot_mqtt_manager_unlock(void) {
     iot_mutex_unlock(s_mqtt_mutex);
 }
 
-static void mqtt_manager_send_ping(mqtt_client_t* client) {
-    if (!client || !client->sock || client->state != MQTT_STATE_CONNECTED) {
+static void iot_mqtt_manager_send_ping(iot_mqtt_client_t* client) {
+    if (!client || !client->sock || client->state != IOT_MQTT_STATE_CONNECTED) {
         return;
     }
 
     uint8_t buf[4];
-    int len = mqtt_packet_encode_pingreq(buf, sizeof(buf));
+    int len = iot_mqtt_packet_encode_pingreq(buf, sizeof(buf));
     if (len > 0) {
-        mqtt_manager_send_raw(client, buf, len);
+        iot_mqtt_manager_send_raw(client, buf, len);
         client->ping_sent_time = iot_get_tick_ms();
     }
 }
 
-static void mqtt_manager_resend_messages(mqtt_client_t* client) {
-    if (!client || !client->sock || client->state != MQTT_STATE_CONNECTED) {
+static void iot_mqtt_manager_resend_messages(iot_mqtt_client_t* client) {
+    if (!client || !client->sock || client->state != IOT_MQTT_STATE_CONNECTED) {
         return;
     }
 
     uint32_t now = iot_get_tick_ms();
-    mqtt_outgoing_msg_t** pp = &client->outgoing_head;
+    iot_mqtt_outgoing_msg_t** pp = &client->outgoing_head;
 
     while (*pp) {
-        mqtt_outgoing_msg_t* msg = *pp;
+        iot_mqtt_outgoing_msg_t* msg = *pp;
 
-        if (now - msg->send_time > MQTT_RETRY_INTERVAL_MS && msg->retry_count < MQTT_MAX_RETRY) {
-            uint8_t buf[MQTT_MAX_PACKET_SIZE];
-            mqtt_packet_publish_t publish = {
+        if (now - msg->send_time > IOT_MQTT_RETRY_INTERVAL_MS && msg->retry_count < IOT_MQTT_MAX_RETRY) {
+            uint8_t buf[IOT_MQTT_MAX_PACKET_SIZE];
+            iot_mqtt_packet_publish_t publish = {
                 .dup = true,
                 .qos = msg->qos,
                 .retain = msg->retain,
@@ -142,9 +142,9 @@ static void mqtt_manager_resend_messages(mqtt_client_t* client) {
                 .payload_len = msg->payload_len
             };
 
-            int len = mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
+            int len = iot_mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
             if (len > 0) {
-                int ret = mqtt_manager_send_raw(client, buf, len);
+                int ret = iot_mqtt_manager_send_raw(client, buf, len);
                 if (ret > 0) {
                     msg->send_time = now;
                     msg->retry_count++;
@@ -152,7 +152,7 @@ static void mqtt_manager_resend_messages(mqtt_client_t* client) {
             }
         }
 
-        if (msg->retry_count >= MQTT_MAX_RETRY) {
+        if (msg->retry_count >= IOT_MQTT_MAX_RETRY) {
             *pp = msg->next;
             if (msg == client->outgoing_tail) {
                 client->outgoing_tail = *pp;
@@ -167,8 +167,8 @@ static void mqtt_manager_resend_messages(mqtt_client_t* client) {
     }
 }
 
-static void mqtt_manager_check_keepalive(mqtt_client_t* client) {
-    if (!client || client->state != MQTT_STATE_CONNECTED || client->keepalive <= 0) {
+static void iot_mqtt_manager_check_keepalive(iot_mqtt_client_t* client) {
+    if (!client || client->state != IOT_MQTT_STATE_CONNECTED || client->keepalive <= 0) {
         return;
     }
 
@@ -176,70 +176,70 @@ static void mqtt_manager_check_keepalive(mqtt_client_t* client) {
 
     if (client->ping_sent_time > 0) {
         if (now - client->ping_sent_time > (uint32_t)client->options.timeout_ms) {
-            client->state = MQTT_STATE_ERROR;
-            client->last_error = MQTT_ERR_KEEPALIVE;
-            mqtt_manager_trigger_event(client, MQTT_EVENT_ERROR);
+            client->state = IOT_MQTT_STATE_ERROR;
+            client->last_error = IOT_MQTT_ERR_KEEPALIVE;
+            iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_ERROR);
             return;
         }
     } else {
         if (now - client->last_ping_time > (uint32_t)client->keepalive * 1000 / 2) {
-            mqtt_manager_send_ping(client);
+            iot_mqtt_manager_send_ping(client);
         }
     }
 }
 
-static void mqtt_manager_check_reconnect(mqtt_client_t* client) {
+static void iot_mqtt_manager_check_reconnect(iot_mqtt_client_t* client) {
     if (!client) return;
 
-    if ((client->state == MQTT_STATE_DISCONNECTED ||
-         client->state == MQTT_STATE_ERROR) &&
+    if ((client->state == IOT_MQTT_STATE_DISCONNECTED ||
+         client->state == IOT_MQTT_STATE_ERROR) &&
         client->auto_reconnect) {
         uint32_t now = iot_get_tick_ms();
         if (now - client->last_connect_attempt >= (uint32_t)client->reconnect_interval_ms) {
-            mqtt_client_connect(client, &client->options);
+            iot_mqtt_client_connect(client, &client->options);
         }
     }
 }
 
-static int mqtt_manager_send_raw(mqtt_client_t* client, const uint8_t* buf, size_t len) {
+static int iot_mqtt_manager_send_raw(iot_mqtt_client_t* client, const uint8_t* buf, size_t len) {
     if (!client || !client->sock) return -1;
-    return net_socket_send(client->sock, buf, len);
+    return iot_net_socket_send(client->sock, buf, len);
 }
 
-static void mqtt_manager_process_packet(mqtt_client_t* client) {
+static void iot_mqtt_manager_process_packet(iot_mqtt_client_t* client) {
     if (!client || client->recv_len < 2) {
         return;
     }
 
-    mqtt_packet_t packet;
+    iot_mqtt_packet_t packet;
     size_t consumed = 0;
 
-    int ret = mqtt_packet_decode_header(client->recv_buf, client->recv_len, &packet, &consumed);
+    int ret = iot_mqtt_packet_decode_header(client->recv_buf, client->recv_len, &packet, &consumed);
     if (ret < 0) {
-        mqtt_packet_free(&packet);
-        client->last_error = MQTT_ERR_PROTOCOL;
+        iot_mqtt_packet_free(&packet);
+        client->last_error = IOT_MQTT_ERR_PROTOCOL;
         return;
     }
 
     if (ret == 1) {
-        mqtt_packet_free(&packet);
+        iot_mqtt_packet_free(&packet);
         return;
     }
 
     switch (packet.type) {
-        case MQTT_PACKET_CONNACK: {
-            mqtt_packet_connack_t connack;
-            if (mqtt_packet_decode_connack(&packet, &connack) == 0) {
-                if (connack.return_code == MQTT_CONNACK_ACCEPTED) {
-                    client->state = MQTT_STATE_CONNECTED;
+        case IOT_MQTT_PACKET_CONNACK: {
+            iot_mqtt_packet_connack_t connack;
+            if (iot_mqtt_packet_decode_connack(&packet, &connack) == 0) {
+                if (connack.return_code == IOT_MQTT_CONNACK_ACCEPTED) {
+                    client->state = IOT_MQTT_STATE_CONNECTED;
                     client->last_ping_time = iot_get_tick_ms();
                     client->ping_sent_time = 0;
 
-                    mqtt_outgoing_msg_t* msg = client->outgoing_head;
+                    iot_mqtt_outgoing_msg_t* msg = client->outgoing_head;
                     while (msg) {
-                        mqtt_outgoing_msg_t* next = msg->next;
-                        uint8_t buf[MQTT_MAX_PACKET_SIZE];
-                        mqtt_packet_publish_t publish = {
+                        iot_mqtt_outgoing_msg_t* next = msg->next;
+                        uint8_t buf[IOT_MQTT_MAX_PACKET_SIZE];
+                        iot_mqtt_packet_publish_t publish = {
                             .dup = true,
                             .qos = msg->qos,
                             .retain = msg->retain,
@@ -249,9 +249,9 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
                             .payload_len = msg->payload_len
                         };
 
-                        int len = mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
+                        int len = iot_mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
                         if (len > 0) {
-                            mqtt_manager_send_raw(client, buf, len);
+                            iot_mqtt_manager_send_raw(client, buf, len);
                         }
                         msg->send_time = iot_get_tick_ms();
                         msg->retry_count = 0;
@@ -259,51 +259,51 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
                     }
 
                     if (!client->options.clean_session) {
-                        mqtt_subscribe_entry_t* entry = client->subscribe_head;
+                        iot_mqtt_subscribe_entry_t* entry = client->subscribe_head;
                         while (entry) {
                             uint8_t buf[512];
                             const char* topic_filter = entry->topic_filter;
-                            mqtt_qos_t qos = entry->qos;
-                            mqtt_packet_subscribe_t subscribe = {
+                            iot_mqtt_qos_t qos = entry->qos;
+                            iot_mqtt_packet_subscribe_t subscribe = {
                                 .packet_id = client->next_packet_id++,
                                 .topic_filters = &topic_filter,
                                 .requested_qos = &qos,
                                 .topic_count = 1
                             };
 
-                            int len = mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
+                            int len = iot_mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
                             if (len > 0) {
-                                mqtt_manager_send_raw(client, buf, len);
+                                iot_mqtt_manager_send_raw(client, buf, len);
                             }
                             entry = entry->next;
                         }
                     }
 
-                    mqtt_manager_trigger_event(client, MQTT_EVENT_CONNECTED);
+                    iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_CONNECTED);
                 } else {
-                    client->state = MQTT_STATE_ERROR;
-                    client->last_error = MQTT_ERR_CONNECT;
-                    mqtt_manager_trigger_event(client, MQTT_EVENT_ERROR);
+                    client->state = IOT_MQTT_STATE_ERROR;
+                    client->last_error = IOT_MQTT_ERR_CONNECT;
+                    iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_ERROR);
                 }
             }
             break;
         }
 
-        case MQTT_PACKET_PUBLISH: {
-            mqtt_packet_publish_t publish;
-            if (mqtt_packet_decode_publish(&packet, &publish) == 0) {
-                mqtt_manager_handle_publish(client, &publish);
+        case IOT_MQTT_PACKET_PUBLISH: {
+            iot_mqtt_packet_publish_t publish;
+            if (iot_mqtt_packet_decode_publish(&packet, &publish) == 0) {
+                iot_mqtt_manager_handle_publish(client, &publish);
             }
             break;
         }
 
-        case MQTT_PACKET_PUBACK: {
-            mqtt_packet_puback_t puback;
-            if (mqtt_packet_decode_puback(&packet, &puback) == 0) {
-                mqtt_outgoing_msg_t** pp = &client->outgoing_head;
+        case IOT_MQTT_PACKET_PUBACK: {
+            iot_mqtt_packet_puback_t puback;
+            if (iot_mqtt_packet_decode_puback(&packet, &puback) == 0) {
+                iot_mqtt_outgoing_msg_t** pp = &client->outgoing_head;
                 while (*pp) {
-                    mqtt_outgoing_msg_t* msg = *pp;
-                    if (msg->packet_id == puback.packet_id && msg->qos == MQTT_QOS_1) {
+                    iot_mqtt_outgoing_msg_t* msg = *pp;
+                    if (msg->packet_id == puback.packet_id && msg->qos == IOT_MQTT_QOS_1) {
                         *pp = msg->next;
                         if (msg == client->outgoing_tail) {
                             client->outgoing_tail = *pp;
@@ -320,37 +320,37 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
             break;
         }
 
-        case MQTT_PACKET_PUBREC: {
-            mqtt_packet_pubrec_t pubrec;
-            if (mqtt_packet_decode_pubrec(&packet, &pubrec) == 0) {
+        case IOT_MQTT_PACKET_PUBREC: {
+            iot_mqtt_packet_pubrec_t pubrec;
+            if (iot_mqtt_packet_decode_pubrec(&packet, &pubrec) == 0) {
                 uint8_t buf[8];
-                int len = mqtt_packet_encode_pubrel(pubrec.packet_id, buf, sizeof(buf));
+                int len = iot_mqtt_packet_encode_pubrel(pubrec.packet_id, buf, sizeof(buf));
                 if (len > 0) {
-                    mqtt_manager_send_raw(client, buf, len);
+                    iot_mqtt_manager_send_raw(client, buf, len);
                 }
             }
             break;
         }
 
-        case MQTT_PACKET_PUBREL: {
-            mqtt_packet_pubrel_t pubrel;
-            if (mqtt_packet_decode_pubrel(&packet, &pubrel) == 0) {
+        case IOT_MQTT_PACKET_PUBREL: {
+            iot_mqtt_packet_pubrel_t pubrel;
+            if (iot_mqtt_packet_decode_pubrel(&packet, &pubrel) == 0) {
                 uint8_t buf[8];
-                int len = mqtt_packet_encode_pubcomp(pubrel.packet_id, buf, sizeof(buf));
+                int len = iot_mqtt_packet_encode_pubcomp(pubrel.packet_id, buf, sizeof(buf));
                 if (len > 0) {
-                    mqtt_manager_send_raw(client, buf, len);
+                    iot_mqtt_manager_send_raw(client, buf, len);
                 }
             }
             break;
         }
 
-        case MQTT_PACKET_PUBCOMP: {
-            mqtt_packet_pubcomp_t pubcomp;
-            if (mqtt_packet_decode_pubcomp(&packet, &pubcomp) == 0) {
-                mqtt_outgoing_msg_t** pp = &client->outgoing_head;
+        case IOT_MQTT_PACKET_PUBCOMP: {
+            iot_mqtt_packet_pubcomp_t pubcomp;
+            if (iot_mqtt_packet_decode_pubcomp(&packet, &pubcomp) == 0) {
+                iot_mqtt_outgoing_msg_t** pp = &client->outgoing_head;
                 while (*pp) {
-                    mqtt_outgoing_msg_t* msg = *pp;
-                    if (msg->packet_id == pubcomp.packet_id && msg->qos == MQTT_QOS_2) {
+                    iot_mqtt_outgoing_msg_t* msg = *pp;
+                    if (msg->packet_id == pubcomp.packet_id && msg->qos == IOT_MQTT_QOS_2) {
                         *pp = msg->next;
                         if (msg == client->outgoing_tail) {
                             client->outgoing_tail = *pp;
@@ -367,24 +367,24 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
             break;
         }
 
-        case MQTT_PACKET_SUBACK: {
-            mqtt_manager_trigger_event(client, MQTT_EVENT_SUBSCRIBED);
+        case IOT_MQTT_PACKET_SUBACK: {
+            iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_SUBSCRIBED);
             break;
         }
 
-        case MQTT_PACKET_UNSUBACK: {
-            mqtt_manager_trigger_event(client, MQTT_EVENT_UNSUBSCRIBED);
+        case IOT_MQTT_PACKET_UNSUBACK: {
+            iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_UNSUBSCRIBED);
             break;
         }
 
-        case MQTT_PACKET_PINGRESP: {
+        case IOT_MQTT_PACKET_PINGRESP: {
             client->last_ping_time = iot_get_tick_ms();
             client->ping_sent_time = 0;
             break;
         }
 
-        case MQTT_PACKET_DISCONNECT: {
-            mqtt_client_disconnect(client);
+        case IOT_MQTT_PACKET_DISCONNECT: {
+            iot_mqtt_client_disconnect(client);
             break;
         }
 
@@ -392,7 +392,7 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
             break;
     }
 
-    mqtt_packet_free(&packet);
+    iot_mqtt_packet_free(&packet);
 
     if (consumed > 0 && consumed <= client->recv_len) {
         memmove(client->recv_buf, client->recv_buf + consumed, client->recv_len - consumed);
@@ -400,26 +400,26 @@ static void mqtt_manager_process_packet(mqtt_client_t* client) {
     }
 }
 
-static void mqtt_manager_handle_publish(mqtt_client_t* client, const mqtt_packet_publish_t* publish) {
+static void iot_mqtt_manager_handle_publish(iot_mqtt_client_t* client, const iot_mqtt_packet_publish_t* publish) {
     if (!client || !publish) return;
 
-    if (publish->qos == MQTT_QOS_1) {
+    if (publish->qos == IOT_MQTT_QOS_1) {
         uint8_t buf[8];
-        int len = mqtt_packet_encode_puback(publish->packet_id, buf, sizeof(buf));
+        int len = iot_mqtt_packet_encode_puback(publish->packet_id, buf, sizeof(buf));
         if (len > 0) {
-            mqtt_manager_send_raw(client, buf, len);
+            iot_mqtt_manager_send_raw(client, buf, len);
         }
-    } else if (publish->qos == MQTT_QOS_2) {
+    } else if (publish->qos == IOT_MQTT_QOS_2) {
         uint8_t buf[8];
-        int len = mqtt_packet_encode_pubrec(publish->packet_id, buf, sizeof(buf));
+        int len = iot_mqtt_packet_encode_pubrec(publish->packet_id, buf, sizeof(buf));
         if (len > 0) {
-            mqtt_manager_send_raw(client, buf, len);
+            iot_mqtt_manager_send_raw(client, buf, len);
         }
     }
 
-    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    iot_mqtt_subscribe_entry_t* entry = client->subscribe_head;
     while (entry) {
-        if (mqtt_topic_match(entry->topic_filter, publish->topic)) {
+        if (iot_mqtt_topic_match(entry->topic_filter, publish->topic)) {
             if (entry->callback) {
                 entry->callback(publish->topic, publish->payload,
                                publish->payload_len, publish->qos, publish->retain, entry->user_data);
@@ -429,41 +429,41 @@ static void mqtt_manager_handle_publish(mqtt_client_t* client, const mqtt_packet
     }
 }
 
-static void mqtt_manager_trigger_event(mqtt_client_t* client, mqtt_event_type_t event) {
+static void iot_mqtt_manager_trigger_event(iot_mqtt_client_t* client, iot_mqtt_event_type_t event) {
     if (client && client->event_callback) {
         client->event_callback(client, event, client->event_user_data);
     }
 }
 
-static void mqtt_manager_thread(void* arg) {
+static void iot_mqtt_manager_thread(void* arg) {
     while (s_mqtt_running) {
         iot_mutex_lock(s_mqtt_mutex, -1);
 
-        mqtt_client_t* client;
-        list_for_each_entry(client, &s_mqtt_clients, list_node, mqtt_client_t) {
-            if (client->state == MQTT_STATE_CONNECTED) {
-                mqtt_manager_check_keepalive(client);
-                mqtt_manager_resend_messages(client);
+        iot_mqtt_client_t* client;
+        list_for_each_entry(client, &s_mqtt_clients, list_node, iot_mqtt_client_t) {
+            if (client->state == IOT_MQTT_STATE_CONNECTED) {
+                iot_mqtt_manager_check_keepalive(client);
+                iot_mqtt_manager_resend_messages(client);
             }
 
-            mqtt_manager_check_reconnect(client);
+            iot_mqtt_manager_check_reconnect(client);
         }
 
         iot_mutex_unlock(s_mqtt_mutex);
 
-        iot_task_delay(MQTT_MANAGER_POLL_INTERVAL);
+        iot_task_delay(IOT_MQTT_MANAGER_POLL_INTERVAL);
     }
 }
 
-void mqtt_manager_on_socket_event(mqtt_client_t* client, net_event_type_t event) {
+void iot_mqtt_manager_on_socket_event(iot_mqtt_client_t* client, iot_net_event_type_t event) {
     if (!client) return;
 
     switch (event) {
-        case NET_EVENT_CONNECTED: {
+        case IOT_NET_EVENT_CONNECTED: {
             uint8_t buf[512];
-            mqtt_packet_connect_t connect = {
-                .protocol_name = MQTT_PROTOCOL_NAME,
-                .protocol_version = MQTT_PROTOCOL_VERSION,
+            iot_mqtt_packet_connect_t connect = {
+                .protocol_name = IOT_MQTT_PROTOCOL_NAME,
+                .protocol_version = IOT_MQTT_PROTOCOL_VERSION,
                 .clean_session = client->options.clean_session,
                 .will_flag = (client->options.will_topic != NULL),
                 .will_qos = client->options.will_qos,
@@ -478,23 +478,23 @@ void mqtt_manager_on_socket_event(mqtt_client_t* client, net_event_type_t event)
                 .password = client->options.password
             };
 
-            int len = mqtt_packet_encode_connect(&connect, buf, sizeof(buf));
+            int len = iot_mqtt_packet_encode_connect(&connect, buf, sizeof(buf));
             if (len > 0) {
-                mqtt_manager_send_raw(client, buf, len);
+                iot_mqtt_manager_send_raw(client, buf, len);
             }
             break;
         }
 
-        case NET_EVENT_RECV: {
-            const char* buf = net_socket_get_recv_buf(client->sock);
-            size_t len = net_socket_get_recv_len(client->sock);
+        case IOT_NET_EVENT_RECV: {
+            const char* buf = iot_net_socket_get_recv_buf(client->sock);
+            size_t len = iot_net_socket_get_recv_len(client->sock);
 
             if (!client->recv_buf) {
                 return;
             }
 
             if (len > 0 && client->recv_len + len > client->recv_capacity) {
-                size_t new_cap = client->recv_capacity + MQTT_MAX_PACKET_SIZE;
+                size_t new_cap = client->recv_capacity + IOT_MQTT_MAX_PACKET_SIZE;
                 uint8_t* new_buf = (uint8_t*)iot_realloc(client->recv_buf, new_cap);
                 if (!new_buf) return;
                 client->recv_buf = new_buf;
@@ -503,11 +503,11 @@ void mqtt_manager_on_socket_event(mqtt_client_t* client, net_event_type_t event)
 
             memcpy(client->recv_buf + client->recv_len, buf, len);
             client->recv_len += len;
-            net_socket_clear_recv_buf(client->sock);
+            iot_net_socket_clear_recv_buf(client->sock);
 
             while (client->recv_len > 0) {
                 size_t before = client->recv_len;
-                mqtt_manager_process_packet(client);
+                iot_mqtt_manager_process_packet(client);
                 if (client->recv_len == before) {
                     break;
                 }
@@ -515,16 +515,16 @@ void mqtt_manager_on_socket_event(mqtt_client_t* client, net_event_type_t event)
             break;
         }
 
-        case NET_EVENT_DISCONNECTED: {
-            client->state = MQTT_STATE_DISCONNECTED;
-            mqtt_manager_trigger_event(client, MQTT_EVENT_DISCONNECTED);
+        case IOT_NET_EVENT_DISCONNECTED: {
+            client->state = IOT_MQTT_STATE_DISCONNECTED;
+            iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_DISCONNECTED);
             break;
         }
 
-        case NET_EVENT_ERROR: {
-            client->state = MQTT_STATE_ERROR;
-            client->last_error = MQTT_ERR_CONNECT;
-            mqtt_manager_trigger_event(client, MQTT_EVENT_ERROR);
+        case IOT_NET_EVENT_ERROR: {
+            client->state = IOT_MQTT_STATE_ERROR;
+            client->last_error = IOT_MQTT_ERR_CONNECT;
+            iot_mqtt_manager_trigger_event(client, IOT_MQTT_EVENT_ERROR);
             break;
         }
 

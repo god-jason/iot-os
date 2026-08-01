@@ -1,5 +1,5 @@
-/**
- * @file lvgl_roller.c
+﻿/**
+ * @file iot_lvgl_roller.c
  * @brief LVGL滚轮控件
  *
  * 实现LVGL滚轮控件的OO风格Lua绑定，包括滚轮创建、设置选项、设置/获取选中项、设置可见行数等接口，用于从多个选项中选择一项。
@@ -16,8 +16,8 @@ static int roller_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_roller_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* roller = lv_roller_create(parent);
     lua_pushlightuserdata(L, roller);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_roller_create_internal(lua_State* L) {
 @return userdata 带metatable的滚轮实例
 @usage local roller = lvgl.roller.create(scr)
 */
-static int lvgl_roller_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_roller_create_internal, roller_metatable_ref);
+static int iot_lvgl_roller_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_roller_create_internal, roller_metatable_ref);
 }
 
 /*
@@ -43,8 +43,8 @@ static int lvgl_roller_create(lua_State* L) {
 @return self
 @usage roller:set_options("A\nB\nC", lvgl.ROLLER_MODE_NORMAL)
 */
-static int lvgl_roller_set_options(lua_State* L) {
-    lv_obj_t* roller = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_set_options(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
     const char* options = luaL_checkstring(L, 2);
     lv_roller_mode_t mode = (lv_roller_mode_t)luaL_optinteger(L, 3, LV_ROLLER_MODE_NORMAL);
     lv_roller_set_options(roller, options, mode);
@@ -60,8 +60,8 @@ static int lvgl_roller_set_options(lua_State* L) {
 @return self
 @usage roller:set_selected(1, 0)
 */
-static int lvgl_roller_set_selected(lua_State* L) {
-    lv_obj_t* roller = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_set_selected(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t sel = (uint16_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     lv_roller_set_selected(roller, sel, anim);
@@ -76,8 +76,8 @@ static int lvgl_roller_set_selected(lua_State* L) {
 @return self
 @usage roller:set_visible_row_count(3)
 */
-static int lvgl_roller_set_visible_row_count(lua_State* L) {
-    lv_obj_t* roller = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_set_visible_row_count(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
     uint8_t row_cnt = (uint8_t)luaL_checkinteger(L, 2);
     lv_roller_set_visible_row_count(roller, row_cnt);
     lua_pushvalue(L, 1);
@@ -90,15 +90,15 @@ static int lvgl_roller_set_visible_row_count(lua_State* L) {
 @return integer 选中项索引
 @usage local sel = roller:get_selected()
 */
-static int lvgl_roller_get_selected(lua_State* L) {
-    lv_obj_t* roller = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_get_selected(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t sel = lv_roller_get_selected(roller);
     lua_pushinteger(L, sel);
     return 1;
 }
 
-static int lvgl_roller_get_selected_str(lua_State* L) {
-    lv_obj_t* roller = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_roller_get_selected_str(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
     char buf[256];
     uint32_t len = (uint32_t)luaL_optinteger(L, 2, sizeof(buf));
     lv_roller_get_selected_str(roller, buf, len);
@@ -107,16 +107,16 @@ static int lvgl_roller_get_selected_str(lua_State* L) {
 }
 
 /* 注册 roller 子模块 */
-void lvgl_register_roller(lua_State* L) {
+void iot_lvgl_register_roller(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_options", lvgl_roller_set_options);
-    REG_METHOD(L, "set_selected", lvgl_roller_set_selected);
-    REG_METHOD(L, "set_visible_row_count", lvgl_roller_set_visible_row_count);
-    REG_METHOD(L, "get_selected", lvgl_roller_get_selected);
-    REG_METHOD(L, "get_selected_str", lvgl_roller_get_selected_str);
+    REG_METHOD(L, "set_options", iot_lvgl_roller_set_options);
+    REG_METHOD(L, "set_selected", iot_lvgl_roller_set_selected);
+    REG_METHOD(L, "set_visible_row_count", iot_lvgl_roller_set_visible_row_count);
+    REG_METHOD(L, "get_selected", iot_lvgl_roller_get_selected);
+    REG_METHOD(L, "get_selected_str", iot_lvgl_roller_get_selected_str);
 
     /* 保存组件metatable引用(用于继承) */
     roller_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -133,5 +133,5 @@ void lvgl_register_roller(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.roller) */
-    REG_METHOD(L, "create", lvgl_roller_create);
+    REG_METHOD(L, "create", iot_lvgl_roller_create);
 }

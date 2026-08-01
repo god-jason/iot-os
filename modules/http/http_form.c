@@ -19,7 +19,7 @@
 
 static const char* s_default_boundary = "----IOTFormBoundary7MA4YWxkTrZu0gW";
 
-static void http_form_multipart_ensure_capacity(http_form_multipart_t* mp, size_t needed) {
+static void http_form_multipart_ensure_capacity(iot_http_form_multipart_t* mp, size_t needed) {
     if (!mp) return;
     
     if (mp->data_len + needed > mp->data_capacity) {
@@ -35,11 +35,11 @@ static void http_form_multipart_ensure_capacity(http_form_multipart_t* mp, size_
     }
 }
 
-int http_form_encode_param(const char* name, const char* value, char* encoded, size_t encoded_len) {
+int iot_http_form_encode_param(const char* name, const char* value, char* encoded, size_t encoded_len) {
     if (!name || !encoded || encoded_len == 0) return -1;
     
-    char* encoded_name = http_url_encode_alloc(name);
-    char* encoded_value = value ? http_url_encode_alloc(value) : NULL;
+    char* encoded_name = iot_http_url_encode_alloc(name);
+    char* encoded_value = value ? iot_http_url_encode_alloc(value) : NULL;
     
     int len = snprintf(encoded, encoded_len, "%s=%s", 
                        encoded_name ? encoded_name : name,
@@ -51,7 +51,7 @@ int http_form_encode_param(const char* name, const char* value, char* encoded, s
     return (len >= (int)encoded_len) ? -1 : 0;
 }
 
-int http_form_encode_params(const http_form_param_t* params, size_t param_count,
+int iot_http_form_encode_params(const iot_http_form_param_t* params, size_t param_count,
                              char* encoded, size_t encoded_len) {
     if (!params || !encoded || encoded_len == 0) return -1;
     
@@ -66,7 +66,7 @@ int http_form_encode_params(const http_form_param_t* params, size_t param_count,
         }
         
         char encoded_pair[1024];
-        if (http_form_encode_param(params[i].name, params[i].value, 
+        if (iot_http_form_encode_param(params[i].name, params[i].value, 
                                    encoded_pair, sizeof(encoded_pair)) == 0) {
             size_t len = strlen(encoded_pair);
             if (len >= remaining) {
@@ -85,17 +85,17 @@ int http_form_encode_params(const http_form_param_t* params, size_t param_count,
     return 0;
 }
 
-char* http_form_encode_params_alloc(const http_form_param_t* params, size_t param_count) {
+char* iot_http_form_encode_params_alloc(const iot_http_form_param_t* params, size_t param_count) {
     if (!params || param_count == 0) return NULL;
     
     size_t total_len = 0;
     for (size_t i = 0; i < param_count; i++) {
-        total_len += http_url_encode_len(params[i].name) + http_url_encode_len(params[i].value) + 2;
+        total_len += iot_http_url_encode_len(params[i].name) + iot_http_url_encode_len(params[i].value) + 2;
     }
     
     char* result = (char*)malloc(total_len);
     if (result) {
-        if (http_form_encode_params(params, param_count, result, total_len) != 0) {
+        if (iot_http_form_encode_params(params, param_count, result, total_len) != 0) {
             free(result);
             return NULL;
         }
@@ -104,7 +104,7 @@ char* http_form_encode_params_alloc(const http_form_param_t* params, size_t para
     return result;
 }
 
-size_t http_form_decode_params(const char* encoded, http_form_param_t* params, size_t max_params) {
+size_t iot_http_form_decode_params(const char* encoded, iot_http_form_param_t* params, size_t max_params) {
     if (!encoded || !params || max_params == 0) return 0;
     
     size_t count = 0;
@@ -137,14 +137,14 @@ size_t http_form_decode_params(const char* encoded, http_form_param_t* params, s
         memcpy(params[count].value, value_start, value_len);
         params[count].value[value_len] = '\0';
         
-        char* decoded = http_url_decode_alloc(params[count].value);
+        char* decoded = iot_http_url_decode_alloc(params[count].value);
         if (decoded) {
             strncpy(params[count].value, decoded, sizeof(params[count].value) - 1);
             params[count].value[sizeof(params[count].value) - 1] = '\0';
             free(decoded);
         }
         
-        decoded = http_url_decode_alloc(params[count].name);
+        decoded = iot_http_url_decode_alloc(params[count].name);
         if (decoded) {
             strncpy(params[count].name, decoded, sizeof(params[count].name) - 1);
             params[count].name[sizeof(params[count].name) - 1] = '\0';
@@ -159,7 +159,7 @@ size_t http_form_decode_params(const char* encoded, http_form_param_t* params, s
     return count;
 }
 
-const char* http_form_get_param(const http_form_param_t* params, size_t param_count, const char* name) {
+const char* iot_http_form_get_param(const iot_http_form_param_t* params, size_t param_count, const char* name) {
     if (!params || !name) return NULL;
     
     for (size_t i = 0; i < param_count; i++) {
@@ -171,11 +171,11 @@ const char* http_form_get_param(const http_form_param_t* params, size_t param_co
     return NULL;
 }
 
-http_form_multipart_t* http_form_multipart_create(const char* boundary) {
-    http_form_multipart_t* mp = (http_form_multipart_t*)malloc(sizeof(http_form_multipart_t));
+iot_http_form_multipart_t* iot_http_form_multipart_create(const char* boundary) {
+    iot_http_form_multipart_t* mp = (iot_http_form_multipart_t*)malloc(sizeof(iot_http_form_multipart_t));
     if (!mp) return NULL;
     
-    memset(mp, 0, sizeof(http_form_multipart_t));
+    memset(mp, 0, sizeof(iot_http_form_multipart_t));
     
     if (boundary && boundary[0]) {
         strncpy(mp->boundary, boundary, sizeof(mp->boundary) - 1);
@@ -194,13 +194,13 @@ http_form_multipart_t* http_form_multipart_create(const char* boundary) {
     return mp;
 }
 
-void http_form_multipart_destroy(http_form_multipart_t* mp) {
+void iot_http_form_multipart_destroy(iot_http_form_multipart_t* mp) {
     if (!mp) return;
     if (mp->data) free(mp->data);
     free(mp);
 }
 
-int http_form_multipart_add_field(http_form_multipart_t* mp, const char* name, const char* value) {
+int iot_http_form_multipart_add_field(iot_http_form_multipart_t* mp, const char* name, const char* value) {
     if (!mp || !name) return -1;
     
     char line[512];
@@ -218,7 +218,7 @@ int http_form_multipart_add_field(http_form_multipart_t* mp, const char* name, c
     return 0;
 }
 
-int http_form_multipart_add_file(http_form_multipart_t* mp, const char* name, const char* filename,
+int iot_http_form_multipart_add_file(iot_http_form_multipart_t* mp, const char* name, const char* filename,
                                 const char* content_type, const void* data, size_t data_len) {
     if (!mp || !name || !filename || !data || data_len == 0) return -1;
     
@@ -244,7 +244,7 @@ int http_form_multipart_add_file(http_form_multipart_t* mp, const char* name, co
     return 0;
 }
 
-int http_form_multipart_add_file_path(http_form_multipart_t* mp, const char* name, 
+int iot_http_form_multipart_add_file_path(iot_http_form_multipart_t* mp, const char* name, 
                                        const char* filename, const char* content_type,
                                        const char* file_path) {
     if (!mp || !name || !filename || !file_path) return -1;
@@ -257,12 +257,12 @@ int http_form_multipart_add_file_path(http_form_multipart_t* mp, const char* nam
     int len = snprintf(placeholder, sizeof(placeholder),
                        "[File content from %s]", file_path);
     
-    const char* mime = content_type ? content_type : http_form_guess_content_type(filename);
+    const char* mime = content_type ? content_type : iot_http_form_guess_content_type(filename);
     
-    return http_form_multipart_add_file(mp, name, filename, mime, placeholder, len);
+    return iot_http_form_multipart_add_file(mp, name, filename, mime, placeholder, len);
 }
 
-const char* http_form_multipart_get_data(http_form_multipart_t* mp, const char** data, size_t* len) {
+const char* iot_http_form_multipart_get_data(iot_http_form_multipart_t* mp, const char** data, size_t* len) {
     if (!mp) return NULL;
     
     http_form_multipart_ensure_capacity(mp, 20);
@@ -279,25 +279,25 @@ const char* http_form_multipart_get_data(http_form_multipart_t* mp, const char**
     return mp->data;
 }
 
-int http_form_multipart_get_content_type(http_form_multipart_t* mp, char* content_type, size_t len) {
+int iot_http_form_multipart_get_content_type(iot_http_form_multipart_t* mp, char* content_type, size_t len) {
     if (!mp || !content_type) return -1;
     
     snprintf(content_type, len, "multipart/form-data; boundary=%s", mp->boundary);
     return 0;
 }
 
-size_t http_form_multipart_get_size(http_form_multipart_t* mp) {
+size_t iot_http_form_multipart_get_size(iot_http_form_multipart_t* mp) {
     if (!mp) return 0;
     
     if (mp->data_len == 0) {
-        const char* data = http_form_multipart_get_data(mp, NULL, NULL);
+        const char* data = iot_http_form_multipart_get_data(mp, NULL, NULL);
         (void)data;
     }
     
     return mp->data_len;
 }
 
-const char* http_form_guess_content_type(const char* filename) {
+const char* iot_http_form_guess_content_type(const char* filename) {
     if (!filename) return "application/octet-stream";
     
     const char* ext = strrchr(filename, '.');

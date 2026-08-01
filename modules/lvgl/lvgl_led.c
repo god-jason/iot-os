@@ -1,5 +1,5 @@
-/**
- * @file lvgl_led.c
+﻿/**
+ * @file iot_lvgl_led.c
  * @brief LVGL LED控件
  *
  * 实现LVGL LED控件的OO风格Lua绑定，包括LED创建、点亮/熄灭、设置亮度、获取当前亮度等接口，用于状态指示显示。
@@ -16,8 +16,8 @@ static int led_metatable_ref = LUA_NOREF;
 
 /* ==================== åé¨åå»ºå½æ° ==================== */
 
-static int lvgl_led_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* led = lv_led_create(parent);
     lua_pushlightuserdata(L, led);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_led_create_internal(lua_State* L) {
 @return userdata å¸¦metatableçLEDå®ä¾
 @usage local led = lvgl.led.create(scr)
 */
-static int lvgl_led_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_led_create_internal, led_metatable_ref);
+static int iot_lvgl_led_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_led_create_internal, led_metatable_ref);
 }
 
 /*
@@ -41,8 +41,8 @@ static int lvgl_led_create(lua_State* L) {
 @return self
 @usage led:on()
 */
-static int lvgl_led_on(lua_State* L) {
-    lv_obj_t* led = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_on(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     lv_led_on(led);
     lua_pushvalue(L, 1);
     return 1;
@@ -54,8 +54,8 @@ static int lvgl_led_on(lua_State* L) {
 @return self
 @usage led:off()
 */
-static int lvgl_led_off(lua_State* L) {
-    lv_obj_t* led = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_off(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     lv_led_off(led);
     lua_pushvalue(L, 1);
     return 1;
@@ -68,8 +68,8 @@ static int lvgl_led_off(lua_State* L) {
 @return self
 @usage led:set_brightness(200)
 */
-static int lvgl_led_set_brightness(lua_State* L) {
-    lv_obj_t* led = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_set_brightness(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     uint8_t bright = (uint8_t)luaL_checkinteger(L, 2);
     lv_led_set_brightness(led, bright);
     lua_pushvalue(L, 1);
@@ -83,8 +83,8 @@ static int lvgl_led_set_brightness(lua_State* L) {
 @return self
 @usage led:set_color(0xFF0000)
 */
-static int lvgl_led_set_color(lua_State* L) {
-    lv_obj_t* led = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_set_color(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 2);
     lv_led_set_color(led, color);
@@ -98,24 +98,24 @@ static int lvgl_led_set_color(lua_State* L) {
 @return integer äº®åº¦å?0-255)
 @usage local bright = led:get_brightness()
 */
-static int lvgl_led_get_brightness(lua_State* L) {
-    lv_obj_t* led = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_led_get_brightness(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     uint8_t bright = lv_led_get_brightness(led);
     lua_pushinteger(L, bright);
     return 1;
 }
 
 /* æ³¨å led å­æ¨¡块*/
-void lvgl_register_led(lua_State* L) {
+void iot_lvgl_register_led(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
 
     /* æ³¨åOOé£æ ¼æ¹æ³ */
-    REG_METHOD(L, "on", lvgl_led_on);
-    REG_METHOD(L, "off", lvgl_led_off);
-    REG_METHOD(L, "set_brightness", lvgl_led_set_brightness);
-    REG_METHOD(L, "set_color", lvgl_led_set_color);
-    REG_METHOD(L, "get_brightness", lvgl_led_get_brightness);
+    REG_METHOD(L, "on", iot_lvgl_led_on);
+    REG_METHOD(L, "off", iot_lvgl_led_off);
+    REG_METHOD(L, "set_brightness", iot_lvgl_led_set_brightness);
+    REG_METHOD(L, "set_color", iot_lvgl_led_set_color);
+    REG_METHOD(L, "get_brightness", iot_lvgl_led_get_brightness);
 
     /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     led_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -132,5 +132,5 @@ void lvgl_register_led(lua_State* L) {
     lua_pop(L, 1);
 
     /* æ³¨åcreateå½æ°å°ä¸»è¡?lvgl.led) */
-    REG_METHOD(L, "create", lvgl_led_create);
+    REG_METHOD(L, "create", iot_lvgl_led_create);
 }

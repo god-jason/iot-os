@@ -37,56 +37,56 @@
  * 内部函数声明
  *===========================================================*/
 
-static const DIGEST* crypto_hash_to_gmssl_digest(crypto_hash_type_t type);
-static const char* crypto_hash_name_internal(crypto_hash_type_t type);
-static size_t crypto_hash_digest_size_internal(crypto_hash_type_t type);
+static const DIGEST* iot_crypto_hash_to_gmssl_digest(iot_crypto_hash_type_t type);
+static const char* iot_crypto_hash_name_internal(iot_crypto_hash_type_t type);
+static size_t iot_crypto_hash_digest_size_internal(iot_crypto_hash_type_t type);
 
 /*===========================================================
  * 哈希实现
  *===========================================================*/
 
-static const char* crypto_hash_name_internal(crypto_hash_type_t type) {
+static const char* iot_crypto_hash_name_internal(iot_crypto_hash_type_t type) {
     switch (type) {
-        case CRYPTO_HASH_MD5:    return "MD5";
-        case CRYPTO_HASH_SHA1:   return "SHA1";
-        case CRYPTO_HASH_SHA224: return "SHA224";
-        case CRYPTO_HASH_SHA256: return "SHA256";
-        case CRYPTO_HASH_SHA384: return "SHA384";
-        case CRYPTO_HASH_SHA512: return "SHA512";
-        case CRYPTO_HASH_SM3:    return "SM3";
+        case IOT_CRYPTO_HASH_MD5:    return "MD5";
+        case IOT_CRYPTO_HASH_SHA1:   return "SHA1";
+        case IOT_CRYPTO_HASH_SHA224: return "SHA224";
+        case IOT_CRYPTO_HASH_SHA256: return "SHA256";
+        case IOT_CRYPTO_HASH_SHA384: return "SHA384";
+        case IOT_CRYPTO_HASH_SHA512: return "SHA512";
+        case IOT_CRYPTO_HASH_SM3:    return "SM3";
         default:                 return NULL;
     }
 }
 
-static size_t crypto_hash_digest_size_internal(crypto_hash_type_t type) {
+static size_t iot_crypto_hash_digest_size_internal(iot_crypto_hash_type_t type) {
     switch (type) {
-        case CRYPTO_HASH_MD5:    return 16;
-        case CRYPTO_HASH_SHA1:   return 20;
-        case CRYPTO_HASH_SHA224: return 28;
-        case CRYPTO_HASH_SHA256: return 32;
-        case CRYPTO_HASH_SHA384: return 48;
-        case CRYPTO_HASH_SHA512: return 64;
-        case CRYPTO_HASH_SM3:    return 32;
+        case IOT_CRYPTO_HASH_MD5:    return 16;
+        case IOT_CRYPTO_HASH_SHA1:   return 20;
+        case IOT_CRYPTO_HASH_SHA224: return 28;
+        case IOT_CRYPTO_HASH_SHA256: return 32;
+        case IOT_CRYPTO_HASH_SHA384: return 48;
+        case IOT_CRYPTO_HASH_SHA512: return 64;
+        case IOT_CRYPTO_HASH_SM3:    return 32;
         default:                 return 0;
     }
 }
 
-static const DIGEST* crypto_hash_to_gmssl_digest(crypto_hash_type_t type) {
+static const DIGEST* iot_crypto_hash_to_gmssl_digest(iot_crypto_hash_type_t type) {
     switch (type) {
-        case CRYPTO_HASH_SM3:
+        case IOT_CRYPTO_HASH_SM3:
             return DIGEST_sm3();
 #ifdef ENABLE_SHA1
-        case CRYPTO_HASH_SHA1:
+        case IOT_CRYPTO_HASH_SHA1:
             return DIGEST_sha1();
 #endif
 #ifdef ENABLE_SHA2
-        case CRYPTO_HASH_SHA224:
+        case IOT_CRYPTO_HASH_SHA224:
             return DIGEST_sha224();
-        case CRYPTO_HASH_SHA256:
+        case IOT_CRYPTO_HASH_SHA256:
             return DIGEST_sha256();
-        case CRYPTO_HASH_SHA384:
+        case IOT_CRYPTO_HASH_SHA384:
             return DIGEST_sha384();
-        case CRYPTO_HASH_SHA512:
+        case IOT_CRYPTO_HASH_SHA512:
             return DIGEST_sha512();
 #endif
         default:
@@ -94,21 +94,21 @@ static const DIGEST* crypto_hash_to_gmssl_digest(crypto_hash_type_t type) {
     }
 }
 
-size_t crypto_hash_digest_size(crypto_hash_type_t type) {
-    return crypto_hash_digest_size_internal(type);
+size_t iot_crypto_hash_digest_size(iot_crypto_hash_type_t type) {
+    return iot_crypto_hash_digest_size_internal(type);
 }
 
-const char* crypto_hash_name(crypto_hash_type_t type) {
-    return crypto_hash_name_internal(type);
+const char* iot_crypto_hash_name(iot_crypto_hash_type_t type) {
+    return iot_crypto_hash_name_internal(type);
 }
 
-int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
+int iot_crypto_hash(iot_crypto_hash_type_t type, const uint8_t* data, size_t datalen,
                uint8_t* digest, size_t* digestlen) {
     if (!digest || !digestlen) {
         return -1;
     }
 
-    size_t expected_len = crypto_hash_digest_size_internal(type);
+    size_t expected_len = iot_crypto_hash_digest_size_internal(type);
     if (expected_len == 0) {
         LOG_INFO("ERR: unsupported hash type %d", type);
         return -1;
@@ -121,7 +121,7 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
     }
 
     /* SM3 使用独立接口 */
-    if (type == CRYPTO_HASH_SM3) {
+    if (type == IOT_CRYPTO_HASH_SM3) {
         SM3_CTX ctx;
         sm3_init(&ctx);
         sm3_update(&ctx, data, datalen);
@@ -131,7 +131,7 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
     }
 
     /* 其他哈希使用通用 DIGEST 接口 */
-    const DIGEST* digest_alg = crypto_hash_to_gmssl_digest(type);
+    const DIGEST* digest_alg = iot_crypto_hash_to_gmssl_digest(type);
     if (!digest_alg) {
         LOG_INFO("ERR: digest algorithm not available");
         return -1;
@@ -157,7 +157,7 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
  * HMAC 实现
  *===========================================================*/
 
-int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
+int iot_crypto_hmac(iot_crypto_hash_type_t type, const uint8_t* key, size_t keylen,
                const uint8_t* data, size_t datalen,
                uint8_t* mac, size_t* maclen) {
     if (!mac || !maclen) {
@@ -165,7 +165,7 @@ int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
     }
 
     /* SM3 HMAC 使用独立接口 */
-    if (type == CRYPTO_HASH_SM3) {
+    if (type == IOT_CRYPTO_HASH_SM3) {
         size_t expected_len = SM3_DIGEST_SIZE;
         if (*maclen < expected_len) {
             *maclen = expected_len;
@@ -180,7 +180,7 @@ int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
     }
 
     /* 其他 HMAC 使用通用接口 */
-    const DIGEST* digest_alg = crypto_hash_to_gmssl_digest(type);
+    const DIGEST* digest_alg = iot_crypto_hash_to_gmssl_digest(type);
     if (!digest_alg) {
         LOG_INFO("ERR: digest algorithm not available for HMAC");
         return -1;
@@ -199,30 +199,30 @@ int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
  * 对称加密实现
  *===========================================================*/
 
-size_t crypto_cipher_key_size(crypto_cipher_type_t type) {
+size_t iot_crypto_cipher_key_size(iot_crypto_cipher_type_t type) {
     switch (type) {
-        case CRYPTO_CIPHER_AES_128_ECB:
-        case CRYPTO_CIPHER_AES_128_CBC:
-        case CRYPTO_CIPHER_AES_128_CTR:
-        case CRYPTO_CIPHER_AES_128_GCM:
+        case IOT_CRYPTO_CIPHER_AES_128_ECB:
+        case IOT_CRYPTO_CIPHER_AES_128_CBC:
+        case IOT_CRYPTO_CIPHER_AES_128_CTR:
+        case IOT_CRYPTO_CIPHER_AES_128_GCM:
             return 16;
 
-        case CRYPTO_CIPHER_AES_192_ECB:
-        case CRYPTO_CIPHER_AES_192_CBC:
-        case CRYPTO_CIPHER_AES_192_CTR:
-        case CRYPTO_CIPHER_AES_192_GCM:
+        case IOT_CRYPTO_CIPHER_AES_192_ECB:
+        case IOT_CRYPTO_CIPHER_AES_192_CBC:
+        case IOT_CRYPTO_CIPHER_AES_192_CTR:
+        case IOT_CRYPTO_CIPHER_AES_192_GCM:
             return 24;
 
-        case CRYPTO_CIPHER_AES_256_ECB:
-        case CRYPTO_CIPHER_AES_256_CBC:
-        case CRYPTO_CIPHER_AES_256_CTR:
-        case CRYPTO_CIPHER_AES_256_GCM:
+        case IOT_CRYPTO_CIPHER_AES_256_ECB:
+        case IOT_CRYPTO_CIPHER_AES_256_CBC:
+        case IOT_CRYPTO_CIPHER_AES_256_CTR:
+        case IOT_CRYPTO_CIPHER_AES_256_GCM:
             return 32;
 
-        case CRYPTO_CIPHER_SM4_ECB:
-        case CRYPTO_CIPHER_SM4_CBC:
-        case CRYPTO_CIPHER_SM4_CTR:
-        case CRYPTO_CIPHER_SM4_GCM:
+        case IOT_CRYPTO_CIPHER_SM4_ECB:
+        case IOT_CRYPTO_CIPHER_SM4_CBC:
+        case IOT_CRYPTO_CIPHER_SM4_CTR:
+        case IOT_CRYPTO_CIPHER_SM4_GCM:
             return 16;
 
         default:
@@ -230,30 +230,30 @@ size_t crypto_cipher_key_size(crypto_cipher_type_t type) {
     }
 }
 
-size_t crypto_cipher_iv_size(crypto_cipher_type_t type) {
+size_t iot_crypto_cipher_iv_size(iot_crypto_cipher_type_t type) {
     switch (type) {
-        case CRYPTO_CIPHER_AES_128_ECB:
-        case CRYPTO_CIPHER_AES_192_ECB:
-        case CRYPTO_CIPHER_AES_256_ECB:
-        case CRYPTO_CIPHER_SM4_ECB:
+        case IOT_CRYPTO_CIPHER_AES_128_ECB:
+        case IOT_CRYPTO_CIPHER_AES_192_ECB:
+        case IOT_CRYPTO_CIPHER_AES_256_ECB:
+        case IOT_CRYPTO_CIPHER_SM4_ECB:
             return 0;  /* ECB 模式不需要 IV */
 
-        case CRYPTO_CIPHER_AES_128_CBC:
-        case CRYPTO_CIPHER_AES_192_CBC:
-        case CRYPTO_CIPHER_AES_256_CBC:
-        case CRYPTO_CIPHER_SM4_CBC:
+        case IOT_CRYPTO_CIPHER_AES_128_CBC:
+        case IOT_CRYPTO_CIPHER_AES_192_CBC:
+        case IOT_CRYPTO_CIPHER_AES_256_CBC:
+        case IOT_CRYPTO_CIPHER_SM4_CBC:
             return 16;
 
-        case CRYPTO_CIPHER_AES_128_CTR:
-        case CRYPTO_CIPHER_AES_192_CTR:
-        case CRYPTO_CIPHER_AES_256_CTR:
-        case CRYPTO_CIPHER_SM4_CTR:
+        case IOT_CRYPTO_CIPHER_AES_128_CTR:
+        case IOT_CRYPTO_CIPHER_AES_192_CTR:
+        case IOT_CRYPTO_CIPHER_AES_256_CTR:
+        case IOT_CRYPTO_CIPHER_SM4_CTR:
             return 16;
 
-        case CRYPTO_CIPHER_AES_128_GCM:
-        case CRYPTO_CIPHER_AES_192_GCM:
-        case CRYPTO_CIPHER_AES_256_GCM:
-        case CRYPTO_CIPHER_SM4_GCM:
+        case IOT_CRYPTO_CIPHER_AES_128_GCM:
+        case IOT_CRYPTO_CIPHER_AES_192_GCM:
+        case IOT_CRYPTO_CIPHER_AES_256_GCM:
+        case IOT_CRYPTO_CIPHER_SM4_GCM:
             return 12;  /* GCM 推荐 12 字节 IV */
 
         default:
@@ -261,26 +261,26 @@ size_t crypto_cipher_iv_size(crypto_cipher_type_t type) {
     }
 }
 
-size_t crypto_cipher_block_size(crypto_cipher_type_t type) {
+size_t iot_crypto_cipher_block_size(iot_crypto_cipher_type_t type) {
     switch (type) {
-        case CRYPTO_CIPHER_AES_128_ECB:
-        case CRYPTO_CIPHER_AES_128_CBC:
-        case CRYPTO_CIPHER_AES_128_CTR:
-        case CRYPTO_CIPHER_AES_128_GCM:
-        case CRYPTO_CIPHER_AES_192_ECB:
-        case CRYPTO_CIPHER_AES_192_CBC:
-        case CRYPTO_CIPHER_AES_192_CTR:
-        case CRYPTO_CIPHER_AES_192_GCM:
-        case CRYPTO_CIPHER_AES_256_ECB:
-        case CRYPTO_CIPHER_AES_256_CBC:
-        case CRYPTO_CIPHER_AES_256_CTR:
-        case CRYPTO_CIPHER_AES_256_GCM:
+        case IOT_CRYPTO_CIPHER_AES_128_ECB:
+        case IOT_CRYPTO_CIPHER_AES_128_CBC:
+        case IOT_CRYPTO_CIPHER_AES_128_CTR:
+        case IOT_CRYPTO_CIPHER_AES_128_GCM:
+        case IOT_CRYPTO_CIPHER_AES_192_ECB:
+        case IOT_CRYPTO_CIPHER_AES_192_CBC:
+        case IOT_CRYPTO_CIPHER_AES_192_CTR:
+        case IOT_CRYPTO_CIPHER_AES_192_GCM:
+        case IOT_CRYPTO_CIPHER_AES_256_ECB:
+        case IOT_CRYPTO_CIPHER_AES_256_CBC:
+        case IOT_CRYPTO_CIPHER_AES_256_CTR:
+        case IOT_CRYPTO_CIPHER_AES_256_GCM:
             return 16;
 
-        case CRYPTO_CIPHER_SM4_ECB:
-        case CRYPTO_CIPHER_SM4_CBC:
-        case CRYPTO_CIPHER_SM4_CTR:
-        case CRYPTO_CIPHER_SM4_GCM:
+        case IOT_CRYPTO_CIPHER_SM4_ECB:
+        case IOT_CRYPTO_CIPHER_SM4_CBC:
+        case IOT_CRYPTO_CIPHER_SM4_CTR:
+        case IOT_CRYPTO_CIPHER_SM4_GCM:
             return 16;
 
         default:
@@ -289,51 +289,51 @@ size_t crypto_cipher_block_size(crypto_cipher_type_t type) {
 }
 
 /* 判断是否为 GCM 模式 */
-static int cipher_is_gcm(crypto_cipher_type_t type) {
-    return (type == CRYPTO_CIPHER_AES_128_GCM ||
-            type == CRYPTO_CIPHER_AES_192_GCM ||
-            type == CRYPTO_CIPHER_AES_256_GCM ||
-            type == CRYPTO_CIPHER_SM4_GCM);
+static int cipher_is_gcm(iot_crypto_cipher_type_t type) {
+    return (type == IOT_CRYPTO_CIPHER_AES_128_GCM ||
+            type == IOT_CRYPTO_CIPHER_AES_192_GCM ||
+            type == IOT_CRYPTO_CIPHER_AES_256_GCM ||
+            type == IOT_CRYPTO_CIPHER_SM4_GCM);
 }
 
 /* 判断是否为 CTR 模式 */
-static int cipher_is_ctr(crypto_cipher_type_t type) {
-    return (type == CRYPTO_CIPHER_AES_128_CTR ||
-            type == CRYPTO_CIPHER_AES_192_CTR ||
-            type == CRYPTO_CIPHER_AES_256_CTR ||
-            type == CRYPTO_CIPHER_SM4_CTR);
+static int cipher_is_ctr(iot_crypto_cipher_type_t type) {
+    return (type == IOT_CRYPTO_CIPHER_AES_128_CTR ||
+            type == IOT_CRYPTO_CIPHER_AES_192_CTR ||
+            type == IOT_CRYPTO_CIPHER_AES_256_CTR ||
+            type == IOT_CRYPTO_CIPHER_SM4_CTR);
 }
 
 /* 判断是否为 CBC 模式 */
-static int cipher_is_cbc(crypto_cipher_type_t type) {
-    return (type == CRYPTO_CIPHER_AES_128_CBC ||
-            type == CRYPTO_CIPHER_AES_192_CBC ||
-            type == CRYPTO_CIPHER_AES_256_CBC ||
-            type == CRYPTO_CIPHER_SM4_CBC);
+static int cipher_is_cbc(iot_crypto_cipher_type_t type) {
+    return (type == IOT_CRYPTO_CIPHER_AES_128_CBC ||
+            type == IOT_CRYPTO_CIPHER_AES_192_CBC ||
+            type == IOT_CRYPTO_CIPHER_AES_256_CBC ||
+            type == IOT_CRYPTO_CIPHER_SM4_CBC);
 }
 
 /* 判断是否为 ECB 模式 */
-static int cipher_is_ecb(crypto_cipher_type_t type) {
-    return (type == CRYPTO_CIPHER_AES_128_ECB ||
-            type == CRYPTO_CIPHER_AES_192_ECB ||
-            type == CRYPTO_CIPHER_AES_256_ECB ||
-            type == CRYPTO_CIPHER_SM4_ECB);
+static int cipher_is_ecb(iot_crypto_cipher_type_t type) {
+    return (type == IOT_CRYPTO_CIPHER_AES_128_ECB ||
+            type == IOT_CRYPTO_CIPHER_AES_192_ECB ||
+            type == IOT_CRYPTO_CIPHER_AES_256_ECB ||
+            type == IOT_CRYPTO_CIPHER_SM4_ECB);
 }
 
 /* 判断是否为 SM4 */
-static int cipher_is_sm4(crypto_cipher_type_t type) {
-    return (type == CRYPTO_CIPHER_SM4_ECB ||
-            type == CRYPTO_CIPHER_SM4_CBC ||
-            type == CRYPTO_CIPHER_SM4_CTR ||
-            type == CRYPTO_CIPHER_SM4_GCM);
+static int cipher_is_sm4(iot_crypto_cipher_type_t type) {
+    return (type == IOT_CRYPTO_CIPHER_SM4_ECB ||
+            type == IOT_CRYPTO_CIPHER_SM4_CBC ||
+            type == IOT_CRYPTO_CIPHER_SM4_CTR ||
+            type == IOT_CRYPTO_CIPHER_SM4_GCM);
 }
 
 /* 判断是否为 AES */
-static int cipher_is_aes(crypto_cipher_type_t type) {
-    return (type >= CRYPTO_CIPHER_AES_128_ECB && type <= CRYPTO_CIPHER_AES_256_GCM);
+static int cipher_is_aes(iot_crypto_cipher_type_t type) {
+    return (type >= IOT_CRYPTO_CIPHER_AES_128_ECB && type <= IOT_CRYPTO_CIPHER_AES_256_GCM);
 }
 
-int crypto_encrypt(crypto_cipher_type_t type,
+int iot_crypto_encrypt(iot_crypto_cipher_type_t type,
                    const uint8_t* key, size_t keylen,
                    const uint8_t* iv, size_t ivlen,
                    const uint8_t* aad, size_t aadlen,
@@ -343,8 +343,8 @@ int crypto_encrypt(crypto_cipher_type_t type,
         return -1;
     }
 
-    size_t expected_keylen = crypto_cipher_key_size(type);
-    size_t expected_ivlen = crypto_cipher_iv_size(type);
+    size_t expected_keylen = iot_crypto_cipher_key_size(type);
+    size_t expected_ivlen = iot_crypto_cipher_iv_size(type);
 
     if (expected_keylen == 0 || keylen != expected_keylen) {
         LOG_INFO("ERR: invalid key length %d, expected %d", (int)keylen, (int)expected_keylen);
@@ -378,7 +378,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
     }
 
     /* 计算输出缓冲区需要的最小大小 */
-    size_t block_size = crypto_cipher_block_size(type);
+    size_t block_size = iot_crypto_cipher_block_size(type);
     size_t min_outlen = inlen;
 
     if (cipher_is_cbc(type) || cipher_is_ecb(type)) {
@@ -472,7 +472,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
     return -1;
 }
 
-int crypto_decrypt(crypto_cipher_type_t type,
+int iot_crypto_decrypt(iot_crypto_cipher_type_t type,
                    const uint8_t* key, size_t keylen,
                    const uint8_t* iv, size_t ivlen,
                    const uint8_t* aad, size_t aadlen,
@@ -482,8 +482,8 @@ int crypto_decrypt(crypto_cipher_type_t type,
         return -1;
     }
 
-    size_t expected_keylen = crypto_cipher_key_size(type);
-    size_t expected_ivlen = crypto_cipher_iv_size(type);
+    size_t expected_keylen = iot_crypto_cipher_key_size(type);
+    size_t expected_ivlen = iot_crypto_cipher_iv_size(type);
 
     if (expected_keylen == 0 || keylen != expected_keylen) {
         LOG_INFO("ERR: invalid key length");
@@ -521,7 +521,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
         }
     }
 
-    size_t block_size = crypto_cipher_block_size(type);
+    size_t block_size = iot_crypto_cipher_block_size(type);
 
     /* ECB 模式 */
     if (cipher_is_ecb(type)) {
@@ -612,7 +612,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
  * 随机数实现
  *===========================================================*/
 
-int crypto_rand_bytes(uint8_t* buf, size_t buflen) {
+int iot_crypto_rand_bytes(uint8_t* buf, size_t buflen) {
     if (!buf) {
         return -1;
     }
@@ -626,7 +626,7 @@ int crypto_rand_bytes(uint8_t* buf, size_t buflen) {
  * 编码转换实现
  *===========================================================*/
 
-int crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outlen) {
+int iot_crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outlen) {
     if (!in || !out || !outlen) {
         return -1;
     }
@@ -642,7 +642,7 @@ int crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outl
     return 0;
 }
 
-int crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outlen) {
+int iot_crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outlen) {
     if (!in || !out || !outlen) {
         return -1;
     }
@@ -686,22 +686,22 @@ static const int8_t base64_decode_table[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
-size_t crypto_base64_encode_len(size_t inlen) {
+size_t iot_crypto_base64_encode_len(size_t inlen) {
     /* 每个3字节组编码为4字符，加上可能的填充 */
     return ((inlen + 2) / 3) * 4 + 1;
 }
 
-size_t crypto_base64_decode_len(size_t inlen) {
+size_t iot_crypto_base64_decode_len(size_t inlen) {
     /* 每个4字符组解码为3字节 */
     return (inlen / 4) * 3 + 2;
 }
 
-int crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* outlen) {
+int iot_crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* outlen) {
     if (!in || !out || !outlen) {
         return -1;
     }
 
-    size_t needed_len = crypto_base64_encode_len(inlen);
+    size_t needed_len = iot_crypto_base64_encode_len(inlen);
     if (*outlen < needed_len) {
         *outlen = needed_len;
         return -1;
@@ -741,7 +741,7 @@ int crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* out
     return 0;
 }
 
-int crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* outlen) {
+int iot_crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* outlen) {
     if (!in || !out || !outlen) {
         return -1;
     }
@@ -751,7 +751,7 @@ int crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* out
         inlen--;
     }
 
-    size_t needed_len = crypto_base64_decode_len(inlen);
+    size_t needed_len = iot_crypto_base64_decode_len(inlen);
     if (*outlen < needed_len) {
         *outlen = needed_len;
         return -1;
@@ -801,7 +801,7 @@ int crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* out
 #include <mbedtls/x509_crt.h>
 #include <mbedtls/oid.h>
 
-crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen) {
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_pem(const char* pem, size_t pemlen) {
     if (!pem || pemlen == 0) {
         return NULL;
     }
@@ -815,13 +815,13 @@ crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen) {
         return NULL;
     }
 
-    crypto_x509_cert_t* out = (crypto_x509_cert_t*)malloc(sizeof(crypto_x509_cert_t));
+    iot_crypto_x509_cert_t* out = (iot_crypto_x509_cert_t*)malloc(sizeof(iot_crypto_x509_cert_t));
     if (!out) {
         mbedtls_x509_crt_free(&cert);
         return NULL;
     }
 
-    memset(out, 0, sizeof(crypto_x509_cert_t));
+    memset(out, 0, sizeof(iot_crypto_x509_cert_t));
 
     /* 复制主题 */
     char buf[512];
@@ -866,7 +866,7 @@ crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen) {
     return out;
 }
 
-crypto_x509_cert_t* crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
     if (!der || derlen == 0) {
         return NULL;
     }
@@ -880,13 +880,13 @@ crypto_x509_cert_t* crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
         return NULL;
     }
 
-    crypto_x509_cert_t* out = (crypto_x509_cert_t*)malloc(sizeof(crypto_x509_cert_t));
+    iot_crypto_x509_cert_t* out = (iot_crypto_x509_cert_t*)malloc(sizeof(iot_crypto_x509_cert_t));
     if (!out) {
         mbedtls_x509_crt_free(&cert);
         return NULL;
     }
 
-    memset(out, 0, sizeof(crypto_x509_cert_t));
+    memset(out, 0, sizeof(iot_crypto_x509_cert_t));
 
     char buf[512];
     int ret2 = mbedtls_x509_get_subject(&cert, buf, sizeof(buf));
@@ -906,7 +906,7 @@ crypto_x509_cert_t* crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
 #else
 /* 简化的占位实现 - 无需外部库 */
 
-crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen) {
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_pem(const char* pem, size_t pemlen) {
     (void)pem;
     (void)pemlen;
     /* 实际实现需要完整的 ASN.1/DER 解析器 */
@@ -914,14 +914,14 @@ crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen) {
     return NULL;
 }
 
-crypto_x509_cert_t* crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_der(const uint8_t* der, size_t derlen) {
     (void)der;
     (void)derlen;
     return NULL;
 }
 #endif /* USE_MBEDTLS */
 
-void crypto_x509_free(crypto_x509_cert_t* cert) {
+void iot_crypto_x509_free(iot_crypto_x509_cert_t* cert) {
     if (!cert) {
         return;
     }
@@ -934,32 +934,32 @@ void crypto_x509_free(crypto_x509_cert_t* cert) {
     if (cert->common_name) free(cert->common_name);
     if (cert->organization) free(cert->organization);
     if (cert->public_key) free(cert->public_key);
-    if (cert->next) crypto_x509_free(cert->next);
+    if (cert->next) iot_crypto_x509_free(cert->next);
 
     free(cert);
 }
 
-char* crypto_x509_get_subject(const crypto_x509_cert_t* cert) {
+char* iot_crypto_x509_get_subject(const iot_crypto_x509_cert_t* cert) {
     if (!cert) return NULL;
     return cert->subject ? strdup(cert->subject) : NULL;
 }
 
-char* crypto_x509_get_issuer(const crypto_x509_cert_t* cert) {
+char* iot_crypto_x509_get_issuer(const iot_crypto_x509_cert_t* cert) {
     if (!cert) return NULL;
     return cert->issuer ? strdup(cert->issuer) : NULL;
 }
 
-char* crypto_x509_get_serial_number(const crypto_x509_cert_t* cert) {
+char* iot_crypto_x509_get_serial_number(const iot_crypto_x509_cert_t* cert) {
     if (!cert) return NULL;
     return cert->serial_number ? strdup(cert->serial_number) : NULL;
 }
 
-char* crypto_x509_get_common_name(const crypto_x509_cert_t* cert) {
+char* iot_crypto_x509_get_common_name(const iot_crypto_x509_cert_t* cert) {
     if (!cert) return NULL;
     return cert->common_name ? strdup(cert->common_name) : NULL;
 }
 
-int crypto_x509_verify_time(const crypto_x509_cert_t* cert, time_t timestamp) {
+int iot_crypto_x509_verify_time(const iot_crypto_x509_cert_t* cert, time_t timestamp) {
     (void)cert;
     (void)timestamp;
     /* 需要实现时间验证 */
@@ -970,7 +970,7 @@ int crypto_x509_verify_time(const crypto_x509_cert_t* cert, time_t timestamp) {
  * PBKDF2 实现
  *===========================================================*/
 
-int crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
+int iot_crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
                          const uint8_t* salt, size_t saltlen,
                          int iterations,
                          size_t keylen, uint8_t* key) {
@@ -978,7 +978,7 @@ int crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
         return -1;
     }
 
-    const DIGEST* digest = crypto_hash_to_gmssl_digest(CRYPTO_HASH_SHA256);
+    const DIGEST* digest = iot_crypto_hash_to_gmssl_digest(IOT_CRYPTO_HASH_SHA256);
     if (!digest) {
         return -1;
     }

@@ -32,13 +32,13 @@ extern int luaopen_pack_register(lua_State* L);
 extern int luaopen_wdt_register(lua_State* L);
 
 /* Modules 模块 */
-extern int luaopen_crypto_register(lua_State* L);
-extern int luaopen_fs_register(lua_State* L);
+extern int luaopen_iot_crypto_register(lua_State* L);
+extern int luaopen_iot_fs_register(lua_State* L);
 extern int luaopen_http_register(lua_State* L);
 extern int luaopen_mqtt_register(lua_State* L);
-extern int luaopen_net_register(lua_State* L);
+extern int luaopen_iot_net_register(lua_State* L);
 extern int luaopen_zlib_register(lua_State* L);
-extern int luaopen_modbus_register(lua_State* L);
+extern int luaopen_iot_modbus_register(lua_State* L);
 extern int luaopen_lvgl(lua_State* L);
 extern int luaopen_filters_register(lua_State* L);
 
@@ -70,13 +70,13 @@ static const luaL_Reg core_modules[] = {
  *===========================================================*/
 
 static const luaL_Reg modules_list[] = {
-    {"crypto",   luaopen_crypto_register},     /* 加密模块 */
-    {"fs",       luaopen_fs_register},         /* 文件系统模块 */
+    {"crypto",   luaopen_iot_crypto_register},     /* 加密模块 */
+    {"fs",       luaopen_iot_fs_register},         /* 文件系统模块 */
     {"http",     luaopen_http_register},       /* HTTP 模块 */
     {"mqtt",     luaopen_mqtt_register},       /* MQTT 模块 */
-    {"net",      luaopen_net_register},        /* 网络模块 */
+    {"net",      luaopen_iot_net_register},        /* 网络模块 */
     {"zlib",     luaopen_zlib_register},       /* ZLIB 压缩模块 */
-    {"modbus",   luaopen_modbus_register},     /* Modbus RTU 模块 */
+    {"modbus",   luaopen_iot_modbus_register},     /* Modbus RTU 模块 */
     {"lvgl",     luaopen_lvgl},       /* LVGL 模块 */
     {"filter",   luaopen_filters_register},    /* 数字滤波模块 */
     {NULL, NULL}

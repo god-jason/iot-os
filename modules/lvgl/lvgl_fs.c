@@ -1,5 +1,5 @@
-/**
- * @file lvgl_fs.c
+﻿/**
+ * @file iot_lvgl_fs.c
  * @brief LVGL文件系统接口
  *
  * 实现LVGL文件系统的Lua绑定，包括文件打开/关闭/读取/写入、目录列表、文件信息获取等接口，支持只读/只写/读写等模式。
@@ -20,7 +20,7 @@
 @return userdata 文件指针
 @usage local f = lvgl.fs.open("test.txt", lvgl.FS_MODE_RD)
 */
-static int lvgl_fs_open(lua_State* L) {
+static int iot_lvgl_fs_open(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     lv_fs_mode_t mode = (lv_fs_mode_t)luaL_checkinteger(L, 2);
     lv_fs_file_t* file = (lv_fs_file_t*)cm_malloc(sizeof(lv_fs_file_t));
@@ -44,7 +44,7 @@ static int lvgl_fs_open(lua_State* L) {
 @param file 文件指针
 @usage f:close()
 */
-static int lvgl_fs_close(lua_State* L) {
+static int iot_lvgl_fs_close(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     lv_fs_close(file);
     cm_free(file);
@@ -58,7 +58,7 @@ static int lvgl_fs_close(lua_State* L) {
 @return string 读取的数据
 @usage local data = f:read(1024)
 */
-static int lvgl_fs_read(lua_State* L) {
+static int iot_lvgl_fs_read(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     size_t size = (size_t)luaL_checkinteger(L, 2);
     char* buf = (char*)cm_malloc(size + 1);
@@ -87,7 +87,7 @@ static int lvgl_fs_read(lua_State* L) {
 @return integer 写入的字节数
 @usage local bytes = f:write("hello")
 */
-static int lvgl_fs_write(lua_State* L) {
+static int iot_lvgl_fs_write(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     size_t len;
     const char* data = luaL_checklstring(L, 2, &len);
@@ -110,7 +110,7 @@ static int lvgl_fs_write(lua_State* L) {
 @return integer 新位置或错误码
 @usage f:seek(10, lvgl.FS_SEEK_SET)
 */
-static int lvgl_fs_seek(lua_State* L) {
+static int iot_lvgl_fs_seek(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     uint32_t pos = (uint32_t)luaL_checkinteger(L, 2);
     lv_fs_whence_t whence = (lv_fs_whence_t)luaL_optinteger(L, 3, LV_FS_SEEK_SET);
@@ -137,7 +137,7 @@ static int lvgl_fs_seek(lua_State* L) {
 @return integer 文件大小
 @usage local size = f:size()
 */
-static int lvgl_fs_size(lua_State* L) {
+static int iot_lvgl_fs_size(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     uint32_t cur_pos;
     lv_fs_res_t res = lv_fs_tell(file, &cur_pos);
@@ -170,7 +170,7 @@ static int lvgl_fs_size(lua_State* L) {
 @return integer 当前位置
 @usage local pos = f:tell()
 */
-static int lvgl_fs_tell(lua_State* L) {
+static int iot_lvgl_fs_tell(lua_State* L) {
     lv_fs_file_t* file = (lv_fs_file_t*)luaL_checklightuserdata(L, 1);
     uint32_t pos;
     lv_fs_res_t res = lv_fs_tell(file, &pos);
@@ -191,7 +191,7 @@ static int lvgl_fs_tell(lua_State* L) {
 @return userdata 目录指针
 @usage local dir = lvgl.fs.dir_open("data/")
 */
-static int lvgl_fs_dir_open(lua_State* L) {
+static int iot_lvgl_fs_dir_open(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     lv_fs_dir_t* dir = (lv_fs_dir_t*)cm_malloc(sizeof(lv_fs_dir_t));
     if (!dir) {
@@ -214,7 +214,7 @@ static int lvgl_fs_dir_open(lua_State* L) {
 @param dir 目录指针
 @usage dir:close()
 */
-static int lvgl_fs_dir_close(lua_State* L) {
+static int iot_lvgl_fs_dir_close(lua_State* L) {
     lv_fs_dir_t* dir = (lv_fs_dir_t*)luaL_checklightuserdata(L, 1);
     lv_fs_dir_close(dir);
     cm_free(dir);
@@ -227,7 +227,7 @@ static int lvgl_fs_dir_close(lua_State* L) {
 @return table 目录项信息或nil
 @usage local item = dir:read()
 */
-static int lvgl_fs_dir_read(lua_State* L) {
+static int iot_lvgl_fs_dir_read(lua_State* L) {
     lv_fs_dir_t* dir = (lv_fs_dir_t*)luaL_checklightuserdata(L, 1);
     char fn[LV_FS_MAX_FN_LENGTH];
     lv_fs_res_t res = lv_fs_dir_read(dir, fn);
@@ -257,7 +257,7 @@ static int lvgl_fs_dir_read(lua_State* L) {
 @return table 驱动器信息
 @usage local info = lvgl.fs.get_drive_info("S")
 */
-static int lvgl_fs_get_drive_info(lua_State* L) {
+static int iot_lvgl_fs_get_drive_info(lua_State* L) {
     (void)luaL_checkstring(L, 1);
     lua_pushnil(L);
     lua_pushinteger(L, LV_FS_RES_NOT_IMP);
@@ -272,7 +272,7 @@ static int lvgl_fs_get_drive_info(lua_State* L) {
 @return table 文件列表
 @usage local files = lvgl.fs.list("data/")
 */
-static int lvgl_fs_list(lua_State* L) {
+static int iot_lvgl_fs_list(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     lv_fs_dir_t* dir = (lv_fs_dir_t*)cm_malloc(sizeof(lv_fs_dir_t));
     if (!dir) {
@@ -312,7 +312,7 @@ static int lvgl_fs_list(lua_State* L) {
 @return string 文件内容
 @usage local content = lvgl.fs.read_file("test.txt")
 */
-static int lvgl_fs_read_file(lua_State* L) {
+static int iot_lvgl_fs_read_file(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     lv_fs_file_t* file = (lv_fs_file_t*)cm_malloc(sizeof(lv_fs_file_t));
     if (!file) {
@@ -368,19 +368,19 @@ static int lvgl_fs_read_file(lua_State* L) {
 }
 
 /* 注册 fs 子模块 */
-int lvgl_register_fs(lua_State* L) {
-    REG_METHOD(L, "open", lvgl_fs_open);
-    REG_METHOD(L, "close", lvgl_fs_close);
-    REG_METHOD(L, "read", lvgl_fs_read);
-    REG_METHOD(L, "write", lvgl_fs_write);
-    REG_METHOD(L, "seek", lvgl_fs_seek);
-    REG_METHOD(L, "size", lvgl_fs_size);
-    REG_METHOD(L, "tell", lvgl_fs_tell);
-    REG_METHOD(L, "dir_open", lvgl_fs_dir_open);
-    REG_METHOD(L, "dir_close", lvgl_fs_dir_close);
-    REG_METHOD(L, "dir_read", lvgl_fs_dir_read);
-    REG_METHOD(L, "get_drive_info", lvgl_fs_get_drive_info);
-    REG_METHOD(L, "list", lvgl_fs_list);
-    REG_METHOD(L, "read_file", lvgl_fs_read_file);
+int iot_lvgl_register_fs(lua_State* L) {
+    REG_METHOD(L, "open", iot_lvgl_fs_open);
+    REG_METHOD(L, "close", iot_lvgl_fs_close);
+    REG_METHOD(L, "read", iot_lvgl_fs_read);
+    REG_METHOD(L, "write", iot_lvgl_fs_write);
+    REG_METHOD(L, "seek", iot_lvgl_fs_seek);
+    REG_METHOD(L, "size", iot_lvgl_fs_size);
+    REG_METHOD(L, "tell", iot_lvgl_fs_tell);
+    REG_METHOD(L, "dir_open", iot_lvgl_fs_dir_open);
+    REG_METHOD(L, "dir_close", iot_lvgl_fs_dir_close);
+    REG_METHOD(L, "dir_read", iot_lvgl_fs_dir_read);
+    REG_METHOD(L, "get_drive_info", iot_lvgl_fs_get_drive_info);
+    REG_METHOD(L, "list", iot_lvgl_fs_list);
+    REG_METHOD(L, "read_file", iot_lvgl_fs_read_file);
     return 0;
 }

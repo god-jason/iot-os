@@ -1,5 +1,5 @@
-/**
- * @file lvgl_constants.c
+﻿/**
+ * @file iot_lvgl_constants.c
  * @brief LVGL常量定义
  *
  * 实现LVGL常量注册函数，定义对齐常量、状态常量、部件常量、动画常量、动画路径常量、不透明度常量、文本对齐常量、边框常量、布局常量、方向常量、滑块模式、进度条模式、图表类型、滚轮模式等常用常量。
@@ -12,7 +12,7 @@
 #include "lvgl_obj.h"
 
 /* 定义常量 */
-void lvgl_define_constants(lua_State* L) {
+void iot_lvgl_define_constants(lua_State* L) {
     /* 对齐常量 */
     REG_CONSTANT(L, "ALIGN_DEFAULT", LV_ALIGN_DEFAULT);
     REG_CONSTANT(L, "ALIGN_TOP_LEFT", LV_ALIGN_TOP_LEFT);

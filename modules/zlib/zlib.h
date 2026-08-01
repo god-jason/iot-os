@@ -25,19 +25,19 @@ extern "C" {
 #endif
 
 /* 版本信息 */
-#define ZLIB_VERSION_MAJOR    2
-#define ZLIB_VERSION_MINOR    0
-#define ZLIB_VERSION_PATCH    0
-#define ZLIB_VERSION          "2.0.0-miniz"
+#define IOT_ZLIB_VERSION_MAJOR    2
+#define IOT_ZLIB_VERSION_MINOR    0
+#define IOT_ZLIB_VERSION_PATCH    0
+#define IOT_ZLIB_VERSION          "2.0.0-miniz"
 
 /* 通用错误码 */
-#define ZLIB_OK               0   /**< 成功 */
-#define ZLIB_ERR_MEM         -1   /**< 内存分配失败 */
-#define ZLIB_ERR_BUF         -2   /**< 缓冲区空间不足 */
-#define ZLIB_ERR_FORMAT      -3   /**< 格式错误 */
-#define ZLIB_ERR_CRC         -4   /**< CRC校验失败 */
-#define ZLIB_ERR_FILE        -5   /**< 文件操作失败 */
-#define ZLIB_ERR_NOT_FOUND   -6   /**< 文件/条目未找到 */
+#define IOT_ZLIB_OK               0   /**< 成功 */
+#define IOT_ZLIB_ERR_MEM         -1   /**< 内存分配失败 */
+#define IOT_ZLIB_ERR_BUF         -2   /**< 缓冲区空间不足 */
+#define IOT_ZLIB_ERR_FORMAT      -3   /**< 格式错误 */
+#define IOT_ZLIB_ERR_CRC         -4   /**< CRC校验失败 */
+#define IOT_ZLIB_ERR_FILE        -5   /**< 文件操作失败 */
+#define IOT_ZLIB_ERR_NOT_FOUND   -6   /**< 文件/条目未找到 */
 
 #ifdef __cplusplus
 }

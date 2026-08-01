@@ -146,8 +146,8 @@ static void check_and_extract_app_zip(void)
     if (iot_fs_access(APP_ZIP_PATH, 0)) {
         LOG_INFO("Found app.zip, extracting...");
         clear_app_dir();
-        int ret = zip_decompress_file(APP_ZIP_PATH, APP_DIR);
-        if (ret == ZIP_OK) {
+        int ret = iot_zip_decompress_file(APP_ZIP_PATH, APP_DIR);
+        if (ret == IOT_ZIP_OK) {
             LOG_INFO("zip decompress success");
         } else {
             LOG_ERROR("zip decompress failed ret=%d", ret);
@@ -155,8 +155,8 @@ static void check_and_extract_app_zip(void)
     } else if (iot_fs_access(APP_TAR_PATH, 0)) {
         LOG_INFO("Found app.tar.gz, extracting...");
         clear_app_dir();
-        int ret = tar_decompress_file(APP_TAR_PATH, APP_DIR);
-        if (ret == TAR_OK) {
+        int ret = iot_tar_decompress_file(APP_TAR_PATH, APP_DIR);
+        if (ret == IOT_TAR_OK) {
             LOG_INFO("tar decompress success");
         } else {
             LOG_ERROR("tar decompress failed ret=%d", ret);

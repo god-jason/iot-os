@@ -25,17 +25,17 @@ extern "C" {
  * 类型定义
  *===========================================================*/
 
-typedef struct http_server http_server_t;
+typedef struct iot_http_server iot_http_server_t;
 
 typedef enum {
-    HTTP_SERVER_METHOD_GET     = 0,
-    HTTP_SERVER_METHOD_POST    = 1,
-    HTTP_SERVER_METHOD_PUT     = 2,
-    HTTP_SERVER_METHOD_DELETE  = 3,
-    HTTP_SERVER_METHOD_HEAD    = 4,
-    HTTP_SERVER_METHOD_OPTIONS = 5,
-    HTTP_SERVER_METHOD_ALL     = 6,
-} http_server_method_t;
+    IOT_HTTP_SERVER_METHOD_GET     = 0,
+    IOT_HTTP_SERVER_METHOD_POST    = 1,
+    IOT_HTTP_SERVER_METHOD_PUT     = 2,
+    IOT_HTTP_SERVER_METHOD_DELETE  = 3,
+    IOT_HTTP_SERVER_METHOD_HEAD    = 4,
+    IOT_HTTP_SERVER_METHOD_OPTIONS = 5,
+    IOT_HTTP_SERVER_METHOD_ALL     = 6,
+} iot_http_server_method_t;
 
 typedef struct {
     const char* method;
@@ -45,7 +45,7 @@ typedef struct {
     size_t header_len;
     const char* body;
     size_t body_len;
-} http_server_request_t;
+} iot_http_server_request_t;
 
 typedef struct {
     int status_code;
@@ -54,43 +54,43 @@ typedef struct {
     size_t headers_len;
     char* body;
     size_t body_len;
-} http_server_response_t;
+} iot_http_server_response_t;
 
-typedef void (*http_server_handler_t)(const http_server_request_t* req, http_server_response_t* resp);
+typedef void (*iot_http_server_handler_t)(const iot_http_server_request_t* req, iot_http_server_response_t* resp);
 
-typedef void (*http_server_request_callback_t)(http_server_t* server, 
-                                               const http_server_request_t* req, 
-                                               http_server_response_t* resp,
+typedef void (*iot_http_server_request_callback_t)(iot_http_server_t* server, 
+                                               const iot_http_server_request_t* req, 
+                                               iot_http_server_response_t* resp,
                                                void* user_data);
 
 /*===========================================================
  * HTTP 服务器接口
  *===========================================================*/
 
-http_server_t* http_server_create(void);
-void http_server_destroy(http_server_t* server);
+iot_http_server_t* iot_http_server_create(void);
+void iot_http_server_destroy(iot_http_server_t* server);
 
-int http_server_start(http_server_t* server, uint16_t port);
-void http_server_stop(http_server_t* server);
+int iot_http_server_start(iot_http_server_t* server, uint16_t port);
+void iot_http_server_stop(iot_http_server_t* server);
 
-int http_server_register_handler(http_server_t* server, http_server_method_t method,
-                                 const char* path, http_server_handler_t handler);
+int iot_http_server_register_handler(iot_http_server_t* server, iot_http_server_method_t method,
+                                 const char* path, iot_http_server_handler_t handler);
 
-int http_server_set_static_dir(http_server_t* server, const char* dir);
+int iot_http_server_set_static_dir(iot_http_server_t* server, const char* dir);
 
-void http_server_set_request_callback(http_server_t* server, 
-                                      http_server_request_callback_t callback,
+void iot_http_server_set_request_callback(iot_http_server_t* server, 
+                                      iot_http_server_request_callback_t callback,
                                       void* user_data);
 
 /*===========================================================
  * HTTP 响应接口
  *===========================================================*/
 
-void http_server_response_write_head(http_server_response_t* resp, int status_code, 
+void iot_http_server_response_write_head(iot_http_server_response_t* resp, int status_code, 
                                      const char* content_type, const char* headers);
-void http_server_response_set_header(http_server_response_t* resp, const char* key, const char* value);
-void http_server_response_end(http_server_response_t* resp, const char* body, size_t body_len);
-void http_server_response_free(http_server_response_t* resp);
+void iot_http_server_response_set_header(iot_http_server_response_t* resp, const char* key, const char* value);
+void iot_http_server_response_end(iot_http_server_response_t* resp, const char* body, size_t body_len);
+void iot_http_server_response_free(iot_http_server_response_t* resp);
 
 #ifdef __cplusplus
 }

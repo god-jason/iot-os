@@ -1,5 +1,5 @@
-/**
- * @file lvgl_label.c
+﻿/**
+ * @file iot_lvgl_label.c
  * @brief LVGL标签控件
  *
  * 实现LVGL标签控件的OO风格Lua绑定，包括标签创建、设置/获取文本、设置文本对齐、设置自动换行模式、设置长文本模式（滚动/省略/裁剪）、设置文本选择范围等接口。
@@ -16,8 +16,8 @@ static int label_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_label_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* label = lv_label_create(parent);
     lua_pushlightuserdata(L, label);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_label_create_internal(lua_State* L) {
 @return userdata 带metatable的标签实例
 @usage local label = lvgl.label.create(scr)
 */
-static int lvgl_label_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_label_create_internal, label_metatable_ref);
+static int iot_lvgl_label_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_label_create_internal, label_metatable_ref);
 }
 
 /*
@@ -42,8 +42,8 @@ static int lvgl_label_create(lua_State* L) {
 @return self
 @usage label:set_text("Hello")
 */
-static int lvgl_label_set_text(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_text(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     const char* text = luaL_checkstring(L, 2);
     lv_label_set_text(label, text);
     lua_pushvalue(L, 1);
@@ -56,8 +56,8 @@ static int lvgl_label_set_text(lua_State* L) {
 @return string 文本内容
 @usage local text = label:get_text()
 */
-static int lvgl_label_get_text(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_get_text(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     const char* text = lv_label_get_text(label);
     lua_pushstring(L, text ? text : "");
     return 1;
@@ -70,8 +70,8 @@ static int lvgl_label_get_text(lua_State* L) {
 @return self
 @usage label:set_align(lvgl.TEXT_ALIGN_CENTER)
 */
-static int lvgl_label_set_align(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_align(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     lv_text_align_t align = (lv_text_align_t)luaL_checkinteger(L, 2);
     lv_obj_set_style_text_align(label, align, LV_PART_MAIN);
     lua_pushvalue(L, 1);
@@ -85,8 +85,8 @@ static int lvgl_label_set_align(lua_State* L) {
 @return self
 @usage label:set_long_mode(lvgl.LABEL_LONG_SCROLL_CIRCULAR)
 */
-static int lvgl_label_set_long_mode(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_long_mode(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t mode = (uint32_t)luaL_checkinteger(L, 2);
     lv_label_set_long_mode(label, mode);
     lua_pushvalue(L, 1);
@@ -100,8 +100,8 @@ static int lvgl_label_set_long_mode(lua_State* L) {
 @return self
 @usage label:set_recolor(true)
 */
-static int lvgl_label_set_recolor(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_recolor(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_label_set_recolor(label, en);
     lua_pushvalue(L, 1);
@@ -115,8 +115,8 @@ static int lvgl_label_set_recolor(lua_State* L) {
 @return self
 @usage label:set_text_sel_start(0)
 */
-static int lvgl_label_set_text_sel_start(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_text_sel_start(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     int32_t pos = (int32_t)luaL_checkinteger(L, 2);
     lv_label_set_text_sel_start(label, pos);
     lua_pushvalue(L, 1);
@@ -130,8 +130,8 @@ static int lvgl_label_set_text_sel_start(lua_State* L) {
 @return self
 @usage label:set_text_sel_end(5)
 */
-static int lvgl_label_set_text_sel_end(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_set_text_sel_end(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     int32_t pos = (int32_t)luaL_checkinteger(L, 2);
     lv_label_set_text_sel_end(label, pos);
     lua_pushvalue(L, 1);
@@ -144,8 +144,8 @@ static int lvgl_label_set_text_sel_end(lua_State* L) {
 @return boolean
 @usage local under = label:is_char_under_cursor()
 */
-static int lvgl_label_is_char_under_cursor(lua_State* L) {
-    lv_obj_t* label = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_label_is_char_under_cursor(lua_State* L) {
+    lv_obj_t* label = iot_lvgl_get_obj_ptr(L, 1);
     lv_indev_t* indev = lv_indev_get_act();
     lv_point_t rel_pos = {0, 0};
     bool under = false;
@@ -165,19 +165,19 @@ static int lvgl_label_is_char_under_cursor(lua_State* L) {
 }
 
 /* 注册 label 子模块 */
-void lvgl_register_label(lua_State* L) {
+void iot_lvgl_register_label(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_text", lvgl_label_set_text);
-    REG_METHOD(L, "get_text", lvgl_label_get_text);
-    REG_METHOD(L, "set_align", lvgl_label_set_align);
-    REG_METHOD(L, "set_long_mode", lvgl_label_set_long_mode);
-    REG_METHOD(L, "set_recolor", lvgl_label_set_recolor);
-    REG_METHOD(L, "set_text_sel_start", lvgl_label_set_text_sel_start);
-    REG_METHOD(L, "set_text_sel_end", lvgl_label_set_text_sel_end);
-    REG_METHOD(L, "is_char_under_cursor", lvgl_label_is_char_under_cursor);
+    REG_METHOD(L, "set_text", iot_lvgl_label_set_text);
+    REG_METHOD(L, "get_text", iot_lvgl_label_get_text);
+    REG_METHOD(L, "set_align", iot_lvgl_label_set_align);
+    REG_METHOD(L, "set_long_mode", iot_lvgl_label_set_long_mode);
+    REG_METHOD(L, "set_recolor", iot_lvgl_label_set_recolor);
+    REG_METHOD(L, "set_text_sel_start", iot_lvgl_label_set_text_sel_start);
+    REG_METHOD(L, "set_text_sel_end", iot_lvgl_label_set_text_sel_end);
+    REG_METHOD(L, "is_char_under_cursor", iot_lvgl_label_is_char_under_cursor);
 
     /* 保存组件metatable引用(用于继承) */
     label_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -194,5 +194,5 @@ void lvgl_register_label(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.label) */
-    REG_METHOD(L, "create", lvgl_label_create);
+    REG_METHOD(L, "create", iot_lvgl_label_create);
 }

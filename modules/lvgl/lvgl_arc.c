@@ -1,5 +1,5 @@
-/**
- * @file lvgl_arc.c
+﻿/**
+ * @file iot_lvgl_arc.c
  * @brief LVGL弧形控件
  *
  * 实现LVGL弧形控件的OO风格Lua绑定，包括弧形创建、设置起止角度范围、设置/获取当前值、设置背景角度、设置动画使能等接口，支持链式调用。
@@ -16,8 +16,8 @@ static int arc_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_arc_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* arc = lv_arc_create(parent);
     lua_pushlightuserdata(L, arc);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_arc_create_internal(lua_State* L) {
 @return userdata 带metatable的弧形实例
 @usage local arc = lvgl.arc.create(scr)
 */
-static int lvgl_arc_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_arc_create_internal, arc_metatable_ref);
+static int iot_lvgl_arc_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_arc_create_internal, arc_metatable_ref);
 }
 
 /*
@@ -43,8 +43,8 @@ static int lvgl_arc_create(lua_State* L) {
 @return self
 @usage arc:set_value(75)
 */
-static int lvgl_arc_set_value(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_set_value(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     (void)anim;
@@ -61,8 +61,8 @@ static int lvgl_arc_set_value(lua_State* L) {
 @return self
 @usage arc:set_range(0, 100)
 */
-static int lvgl_arc_set_range(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_set_range(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     int32_t min = (int32_t)luaL_checkinteger(L, 2);
     int32_t max = (int32_t)luaL_checkinteger(L, 3);
     lv_arc_set_range(arc, min, max);
@@ -78,8 +78,8 @@ static int lvgl_arc_set_range(lua_State* L) {
 @return self
 @usage arc:set_bg_angles(0, 270)
 */
-static int lvgl_arc_set_bg_angles(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_set_bg_angles(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t start = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t end_angle = (uint16_t)luaL_checkinteger(L, 3);
     lv_arc_set_bg_angles(arc, start, end_angle);
@@ -95,8 +95,8 @@ static int lvgl_arc_set_bg_angles(lua_State* L) {
 @return self
 @usage arc:set_angles(0, 135)
 */
-static int lvgl_arc_set_angles(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_set_angles(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t start = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t end_angle = (uint16_t)luaL_checkinteger(L, 3);
     lv_arc_set_angles(arc, start, end_angle);
@@ -110,8 +110,8 @@ static int lvgl_arc_set_angles(lua_State* L) {
 @return integer 当前值
 @usage local value = arc:get_value()
 */
-static int lvgl_arc_get_value(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_get_value(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_arc_get_value(arc);
     lua_pushinteger(L, value);
     return 1;
@@ -123,8 +123,8 @@ static int lvgl_arc_get_value(lua_State* L) {
 @return integer 起始角度
 @usage local angle = arc:get_angle_start()
 */
-static int lvgl_arc_get_angle_start(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_get_angle_start(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t angle = lv_arc_get_angle_start(arc);
     lua_pushinteger(L, angle);
     return 1;
@@ -136,24 +136,24 @@ static int lvgl_arc_get_angle_start(lua_State* L) {
 @return integer 结束角度
 @usage local angle = arc:get_angle_end()
 */
-static int lvgl_arc_get_angle_end(lua_State* L) {
-    lv_obj_t* arc = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_arc_get_angle_end(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t angle = lv_arc_get_angle_end(arc);
     lua_pushinteger(L, angle);
     return 1;
 }
 
 /* 注册 arc 子模块 */
-void lvgl_register_arc(lua_State* L) {
+void iot_lvgl_register_arc(lua_State* L) {
     lua_newtable(L);
 
-    REG_METHOD(L, "set_value", lvgl_arc_set_value);
-    REG_METHOD(L, "get_value", lvgl_arc_get_value);
-    REG_METHOD(L, "set_range", lvgl_arc_set_range);
-    REG_METHOD(L, "set_bg_angles", lvgl_arc_set_bg_angles);
-    REG_METHOD(L, "set_angles", lvgl_arc_set_angles);
-    REG_METHOD(L, "get_angle_start", lvgl_arc_get_angle_start);
-    REG_METHOD(L, "get_angle_end", lvgl_arc_get_angle_end);
+    REG_METHOD(L, "set_value", iot_lvgl_arc_set_value);
+    REG_METHOD(L, "get_value", iot_lvgl_arc_get_value);
+    REG_METHOD(L, "set_range", iot_lvgl_arc_set_range);
+    REG_METHOD(L, "set_bg_angles", iot_lvgl_arc_set_bg_angles);
+    REG_METHOD(L, "set_angles", iot_lvgl_arc_set_angles);
+    REG_METHOD(L, "get_angle_start", iot_lvgl_arc_get_angle_start);
+    REG_METHOD(L, "get_angle_end", iot_lvgl_arc_get_angle_end);
 
     arc_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -168,5 +168,5 @@ void lvgl_register_arc(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.arc) */
-    REG_METHOD(L, "create", lvgl_arc_create);
+    REG_METHOD(L, "create", iot_lvgl_arc_create);
 }

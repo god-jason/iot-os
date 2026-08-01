@@ -32,7 +32,7 @@ static void http_manager_thread(void* arg);
 static void http_manager_check_timeout(struct http_manager* manager);
 static void http_manager_check_retry(struct http_manager* manager);
 
-int http_manager_init(void) {
+int iot_http_manager_init(void) {
     memset(&g_http_manager, 0, sizeof(g_http_manager));
     
     g_http_manager.mutex = iot_mutex_create();
@@ -55,59 +55,59 @@ int http_manager_init(void) {
     return 0;
 }
 
-void http_manager_deinit(void) {
+void iot_http_manager_deinit(void) {
     g_http_manager.running = 0;
     iot_task_delete(g_http_manager.task);
     
     list_head_t* pos, *n;
     list_for_each_safe(pos, n, &g_http_manager.clients) {
-        http_client_t* client = list_entry(pos, http_client_t, list_node);
+        iot_http_client_t* client = list_entry(pos, iot_http_client_t, list_node);
         list_del(pos);
-        http_client_destroy(client);
+        iot_http_client_destroy(client);
     }
     
     iot_mutex_delete(g_http_manager.mutex);
 }
 
-int http_manager_add_client(http_client_t* client) {
+int iot_http_manager_add_client(iot_http_client_t* client) {
     if (!client) return -1;
     
-    http_manager_lock();
+    iot_http_manager_lock();
     list_add_tail(&client->list_node, &g_http_manager.clients);
-    http_manager_unlock();
+    iot_http_manager_unlock();
     
     return 0;
 }
 
-int http_manager_remove_client(http_client_t* client) {
+int iot_http_manager_remove_client(iot_http_client_t* client) {
     if (!client) return -1;
     
-    http_manager_lock();
+    iot_http_manager_lock();
     list_del(&client->list_node);
-    http_manager_unlock();
+    iot_http_manager_unlock();
     
     return 0;
 }
 
-void http_manager_lock(void) {
+void iot_http_manager_lock(void) {
     iot_mutex_lock(g_http_manager.mutex, -1);
 }
 
-void http_manager_unlock(void) {
+void iot_http_manager_unlock(void) {
     iot_mutex_unlock(g_http_manager.mutex);
 }
 
-void http_manager_set_default_timeout(int timeout_ms) {
-    http_manager_lock();
+void iot_http_manager_set_default_timeout(int timeout_ms) {
+    iot_http_manager_lock();
     g_http_manager.default_timeout = timeout_ms;
-    http_manager_unlock();
+    iot_http_manager_unlock();
 }
 
-int http_manager_get_default_timeout(void) {
+int iot_http_manager_get_default_timeout(void) {
     int timeout;
-    http_manager_lock();
+    iot_http_manager_lock();
     timeout = g_http_manager.default_timeout;
-    http_manager_unlock();
+    iot_http_manager_unlock();
     return timeout;
 }
 
@@ -116,7 +116,7 @@ static void http_manager_check_timeout(struct http_manager* manager) {
     uint32_t now = iot_get_tick_ms();
     
     list_for_each_safe(pos, n, &manager->clients) {
-        http_client_t* client = list_entry(pos, http_client_t, list_node);
+        iot_http_client_t* client = list_entry(pos, iot_http_client_t, list_node);
         if (!client) continue;
     }
 }
@@ -125,7 +125,7 @@ static void http_manager_check_retry(struct http_manager* manager) {
     list_head_t* pos, *n;
     
     list_for_each_safe(pos, n, &manager->clients) {
-        http_client_t* client = list_entry(pos, http_client_t, list_node);
+        iot_http_client_t* client = list_entry(pos, iot_http_client_t, list_node);
         if (!client) continue;
     }
 }
@@ -134,13 +134,13 @@ static void http_manager_thread(void* arg) {
     struct http_manager* manager = &g_http_manager;
     
     while (manager->running) {
-        http_manager_lock();
+        iot_http_manager_lock();
         
         http_manager_check_timeout(manager);
         http_manager_check_retry(manager);
         
-        http_manager_unlock();
+        iot_http_manager_unlock();
         
-        iot_task_delay(HTTP_MANAGER_POLL_INTERVAL);
+        iot_task_delay(IOT_HTTP_MANAGER_POLL_INTERVAL);
     }
 }

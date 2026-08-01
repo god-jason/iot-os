@@ -18,27 +18,27 @@
 
 #include "filters.h"
 
-int filter_kalman_init(filter_kalman_t* f, float q, float r)
+int iot_filter_kalman_init(iot_filter_kalman_t* f, float q, float r)
 {
-    if (!f || q < 0.0f || r <= 0.0f) return FILTER_ERR;
+    if (!f || q < 0.0f || r <= 0.0f) return IOT_FILTER_ERR;
     f->q           = q;
     f->r           = r;
     f->x           = 0.0f;
     f->p           = 1.0f;
     f->k           = 0.0f;
     f->initialized = false;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_kalman_update(filter_kalman_t* f, float measurement, float* output)
+int iot_filter_kalman_update(iot_filter_kalman_t* f, float measurement, float* output)
 {
-    if (!f || !output) return FILTER_ERR;
+    if (!f || !output) return IOT_FILTER_ERR;
 
     if (!f->initialized) {
         f->x           = measurement;
         f->initialized = true;
         *output        = measurement;
-        return FILTER_OK;
+        return IOT_FILTER_OK;
     }
 
     /* Predict: x_hat = x, P = P + Q */
@@ -54,17 +54,17 @@ int filter_kalman_update(filter_kalman_t* f, float measurement, float* output)
     f->p = (1.0f - f->k) * f->p;
 
     *output = f->x;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_kalman_get(const filter_kalman_t* f, float* output)
+int iot_filter_kalman_get(const iot_filter_kalman_t* f, float* output)
 {
-    if (!f || !output || !f->initialized) return FILTER_ERR;
+    if (!f || !output || !f->initialized) return IOT_FILTER_ERR;
     *output = f->x;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_kalman_reset(filter_kalman_t* f)
+void iot_filter_kalman_reset(iot_filter_kalman_t* f)
 {
     if (f) {
         f->x           = 0.0f;

@@ -1,5 +1,5 @@
-/**
- * @file lvgl_textarea.c
+﻿/**
+ * @file iot_lvgl_textarea.c
  * @brief LVGL文本区域控件
  *
  * 实现LVGL文本区域控件的OO风格Lua绑定，包括文本区创建、设置/获取文本、设置占位符文本、设置最大长度、设置单行模式、设置密码模式、添加/删除字符、清空等接口。
@@ -16,8 +16,8 @@ static int textarea_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_textarea_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* ta = lv_textarea_create(parent);
     lua_pushlightuserdata(L, ta);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_textarea_create_internal(lua_State* L) {
 @return userdata 带metatable的文本区域实例
 @usage local ta = lvgl.textarea.create(scr)
 */
-static int lvgl_textarea_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_textarea_create_internal, textarea_metatable_ref);
+static int iot_lvgl_textarea_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_textarea_create_internal, textarea_metatable_ref);
 }
 
 /*
@@ -42,8 +42,8 @@ static int lvgl_textarea_create(lua_State* L) {
 @return self
 @usage ta:set_text("Hello")
 */
-static int lvgl_textarea_set_text(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_text(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = luaL_checkstring(L, 2);
     lv_textarea_set_text(ta, txt);
     lua_pushvalue(L, 1);
@@ -56,8 +56,8 @@ static int lvgl_textarea_set_text(lua_State* L) {
 @return string 文本内容
 @usage local text = ta:get_text()
 */
-static int lvgl_textarea_get_text(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_get_text(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = lv_textarea_get_text(ta);
     lua_pushstring(L, txt ? txt : "");
     return 1;
@@ -70,8 +70,8 @@ static int lvgl_textarea_get_text(lua_State* L) {
 @return self
 @usage ta:set_placeholder_text("请输入...")
 */
-static int lvgl_textarea_set_placeholder_text(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_placeholder_text(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = luaL_checkstring(L, 2);
     lv_textarea_set_placeholder_text(ta, txt);
     lua_pushvalue(L, 1);
@@ -85,8 +85,8 @@ static int lvgl_textarea_set_placeholder_text(lua_State* L) {
 @return self
 @usage ta:set_max_length(100)
 */
-static int lvgl_textarea_set_max_length(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_max_length(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t max = (uint32_t)luaL_checkinteger(L, 2);
     lv_textarea_set_max_length(ta, max);
     lua_pushvalue(L, 1);
@@ -100,8 +100,8 @@ static int lvgl_textarea_set_max_length(lua_State* L) {
 @return self
 @usage ta:set_one_line(false)
 */
-static int lvgl_textarea_set_one_line(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_one_line(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_textarea_set_one_line(ta, en);
     lua_pushvalue(L, 1);
@@ -115,8 +115,8 @@ static int lvgl_textarea_set_one_line(lua_State* L) {
 @return self
 @usage ta:set_password_mode(false)
 */
-static int lvgl_textarea_set_password_mode(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_password_mode(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_textarea_set_password_mode(ta, en);
     lua_pushvalue(L, 1);
@@ -130,8 +130,8 @@ static int lvgl_textarea_set_password_mode(lua_State* L) {
 @return self
 @usage ta:set_password_show_time(1000)
 */
-static int lvgl_textarea_set_password_show_time(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_password_show_time(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     uint16_t time = (uint16_t)luaL_checkinteger(L, 2);
     lv_textarea_set_password_show_time(ta, time);
     lua_pushvalue(L, 1);
@@ -145,8 +145,8 @@ static int lvgl_textarea_set_password_show_time(lua_State* L) {
 @return self
 @usage ta:set_accepted_chars("0123456789")
 */
-static int lvgl_textarea_set_accepted_chars(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_accepted_chars(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     const char* list = luaL_checkstring(L, 2);
     lv_textarea_set_accepted_chars(ta, list);
     lua_pushvalue(L, 1);
@@ -160,8 +160,8 @@ static int lvgl_textarea_set_accepted_chars(lua_State* L) {
 @return self
 @usage ta:set_recolor(true)
 */
-static int lvgl_textarea_set_recolor(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_recolor(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_label_set_recolor(lv_textarea_get_label(ta), en);
     lua_pushvalue(L, 1);
@@ -175,8 +175,8 @@ static int lvgl_textarea_set_recolor(lua_State* L) {
 @return self
 @usage ta:set_cursor_pos(5)
 */
-static int lvgl_textarea_set_cursor_pos(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_cursor_pos(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     int32_t pos = (int32_t)luaL_checkinteger(L, 2);
     lv_textarea_set_cursor_pos(ta, pos);
     lua_pushvalue(L, 1);
@@ -190,8 +190,8 @@ static int lvgl_textarea_set_cursor_pos(lua_State* L) {
 @return self
 @usage ta:set_cursor_click_pos(true)
 */
-static int lvgl_textarea_set_cursor_click_pos(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_set_cursor_click_pos(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
     lv_textarea_set_cursor_click_pos(ta, en);
     lua_pushvalue(L, 1);
@@ -205,8 +205,8 @@ static int lvgl_textarea_set_cursor_click_pos(lua_State* L) {
 @return self
 @usage ta:add_char(string.byte("A"))
 */
-static int lvgl_textarea_add_char(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_add_char(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t c = (uint32_t)luaL_checkinteger(L, 2);
     lv_textarea_add_char(ta, c);
     lua_pushvalue(L, 1);
@@ -220,8 +220,8 @@ static int lvgl_textarea_add_char(lua_State* L) {
 @return self
 @usage ta:add_text(" appended")
 */
-static int lvgl_textarea_add_text(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_add_text(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = luaL_checkstring(L, 2);
     lv_textarea_add_text(ta, txt);
     lua_pushvalue(L, 1);
@@ -234,8 +234,8 @@ static int lvgl_textarea_add_text(lua_State* L) {
 @return self
 @usage ta:del_char()
 */
-static int lvgl_textarea_del_char(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_del_char(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     lv_textarea_del_char(ta);
     lua_pushvalue(L, 1);
     return 1;
@@ -247,8 +247,8 @@ static int lvgl_textarea_del_char(lua_State* L) {
 @return self
 @usage ta:del_char_forward()
 */
-static int lvgl_textarea_del_char_forward(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_del_char_forward(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     lv_textarea_del_char_forward(ta);
     lua_pushvalue(L, 1);
     return 1;
@@ -260,8 +260,8 @@ static int lvgl_textarea_del_char_forward(lua_State* L) {
 @return self
 @usage ta:clear()
 */
-static int lvgl_textarea_clear(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_clear(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     lv_textarea_set_text(ta, "");
     lua_pushvalue(L, 1);
     return 1;
@@ -273,36 +273,36 @@ static int lvgl_textarea_clear(lua_State* L) {
 @return integer 光标位置
 @usage local pos = ta:get_cursor_pos()
 */
-static int lvgl_textarea_get_cursor_pos(lua_State* L) {
-    lv_obj_t* ta = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_textarea_get_cursor_pos(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
     int32_t pos = lv_textarea_get_cursor_pos(ta);
     lua_pushinteger(L, pos);
     return 1;
 }
 
 /* 注册 textarea 子模块 */
-void lvgl_register_textarea(lua_State* L) {
+void iot_lvgl_register_textarea(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_text", lvgl_textarea_set_text);
-    REG_METHOD(L, "get_text", lvgl_textarea_get_text);
-    REG_METHOD(L, "set_placeholder_text", lvgl_textarea_set_placeholder_text);
-    REG_METHOD(L, "set_max_length", lvgl_textarea_set_max_length);
-    REG_METHOD(L, "set_one_line", lvgl_textarea_set_one_line);
-    REG_METHOD(L, "set_password_mode", lvgl_textarea_set_password_mode);
-    REG_METHOD(L, "set_password_show_time", lvgl_textarea_set_password_show_time);
-    REG_METHOD(L, "set_accepted_chars", lvgl_textarea_set_accepted_chars);
-    REG_METHOD(L, "set_recolor", lvgl_textarea_set_recolor);
-    REG_METHOD(L, "set_cursor_pos", lvgl_textarea_set_cursor_pos);
-    REG_METHOD(L, "set_cursor_click_pos", lvgl_textarea_set_cursor_click_pos);
-    REG_METHOD(L, "add_char", lvgl_textarea_add_char);
-    REG_METHOD(L, "add_text", lvgl_textarea_add_text);
-    REG_METHOD(L, "del_char", lvgl_textarea_del_char);
-    REG_METHOD(L, "del_char_forward", lvgl_textarea_del_char_forward);
-    REG_METHOD(L, "clear", lvgl_textarea_clear);
-    REG_METHOD(L, "get_cursor_pos", lvgl_textarea_get_cursor_pos);
+    REG_METHOD(L, "set_text", iot_lvgl_textarea_set_text);
+    REG_METHOD(L, "get_text", iot_lvgl_textarea_get_text);
+    REG_METHOD(L, "set_placeholder_text", iot_lvgl_textarea_set_placeholder_text);
+    REG_METHOD(L, "set_max_length", iot_lvgl_textarea_set_max_length);
+    REG_METHOD(L, "set_one_line", iot_lvgl_textarea_set_one_line);
+    REG_METHOD(L, "set_password_mode", iot_lvgl_textarea_set_password_mode);
+    REG_METHOD(L, "set_password_show_time", iot_lvgl_textarea_set_password_show_time);
+    REG_METHOD(L, "set_accepted_chars", iot_lvgl_textarea_set_accepted_chars);
+    REG_METHOD(L, "set_recolor", iot_lvgl_textarea_set_recolor);
+    REG_METHOD(L, "set_cursor_pos", iot_lvgl_textarea_set_cursor_pos);
+    REG_METHOD(L, "set_cursor_click_pos", iot_lvgl_textarea_set_cursor_click_pos);
+    REG_METHOD(L, "add_char", iot_lvgl_textarea_add_char);
+    REG_METHOD(L, "add_text", iot_lvgl_textarea_add_text);
+    REG_METHOD(L, "del_char", iot_lvgl_textarea_del_char);
+    REG_METHOD(L, "del_char_forward", iot_lvgl_textarea_del_char_forward);
+    REG_METHOD(L, "clear", iot_lvgl_textarea_clear);
+    REG_METHOD(L, "get_cursor_pos", iot_lvgl_textarea_get_cursor_pos);
 
     /* 保存组件metatable引用(用于继承) */
     textarea_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -319,5 +319,5 @@ void lvgl_register_textarea(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.textarea) */
-    REG_METHOD(L, "create", lvgl_textarea_create);
+    REG_METHOD(L, "create", iot_lvgl_textarea_create);
 }

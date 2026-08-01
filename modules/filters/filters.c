@@ -24,7 +24,7 @@
  * @param sample_rate 采样率 (Hz)
  * @return alpha 值
  */
-float filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate)
+float iot_filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate)
 {
     if (sample_rate <= 0.0f) return 1.0f;
     float dt = 1.0f / sample_rate;
@@ -41,7 +41,7 @@ float filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate)
  * @param sample_rate 采样率 (Hz)
  * @return alpha 值
  */
-float filter_calc_alpha_from_tau(float tau, float sample_rate)
+float iot_filter_calc_alpha_from_tau(float tau, float sample_rate)
 {
     if (sample_rate <= 0.0f || tau <= 0.0f) return 1.0f;
     float dt = 1.0f / sample_rate;

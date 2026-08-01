@@ -1,5 +1,5 @@
-/**
- * @file lvgl_bar.c
+﻿/**
+ * @file iot_lvgl_bar.c
  * @brief LVGL进度条控件
  *
  * 实现LVGL进度条控件的OO风格Lua绑定，包括进度条创建、设置值（支持动画）、设置范围、设置模式（正常/反向/对称）、获取当前值/最小值/最大值等接口。
@@ -16,8 +16,8 @@ static int bar_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_bar_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* bar = lv_bar_create(parent);
     lua_pushlightuserdata(L, bar);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_bar_create_internal(lua_State* L) {
 @return userdata 带metatable的进度条实例
 @usage local bar = lvgl.bar.create(scr)
 */
-static int lvgl_bar_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_bar_create_internal, bar_metatable_ref);
+static int iot_lvgl_bar_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_bar_create_internal, bar_metatable_ref);
 }
 
 /*
@@ -43,8 +43,8 @@ static int lvgl_bar_create(lua_State* L) {
 @return self
 @usage bar:set_value(50, 0)
 */
-static int lvgl_bar_set_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_set_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     lv_bar_set_value(bar, value, anim);
@@ -60,8 +60,8 @@ static int lvgl_bar_set_value(lua_State* L) {
 @return self
 @usage bar:set_range(0, 100)
 */
-static int lvgl_bar_set_range(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_set_range(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t min = (int32_t)luaL_checkinteger(L, 2);
     int32_t max = (int32_t)luaL_checkinteger(L, 3);
     lv_bar_set_range(bar, min, max);
@@ -76,8 +76,8 @@ static int lvgl_bar_set_range(lua_State* L) {
 @return self
 @usage bar:set_mode(lvgl.BAR_MODE_NORMAL)
 */
-static int lvgl_bar_set_mode(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_set_mode(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     lv_bar_mode_t mode = (lv_bar_mode_t)luaL_checkinteger(L, 2);
     lv_bar_set_mode(bar, mode);
     lua_pushvalue(L, 1);
@@ -92,8 +92,8 @@ static int lvgl_bar_set_mode(lua_State* L) {
 @return self
 @usage bar:set_start_value(20, 0)
 */
-static int lvgl_bar_set_start_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_set_start_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = (int32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
     lv_bar_set_start_value(bar, value, anim);
@@ -107,8 +107,8 @@ static int lvgl_bar_set_start_value(lua_State* L) {
 @return integer 当前值
 @usage local value = bar:get_value()
 */
-static int lvgl_bar_get_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_get_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_bar_get_value(bar);
     lua_pushinteger(L, value);
     return 1;
@@ -120,8 +120,8 @@ static int lvgl_bar_get_value(lua_State* L) {
 @return integer 起始值
 @usage local value = bar:get_start_value()
 */
-static int lvgl_bar_get_start_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_get_start_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_bar_get_start_value(bar);
     lua_pushinteger(L, value);
     return 1;
@@ -133,8 +133,8 @@ static int lvgl_bar_get_start_value(lua_State* L) {
 @return integer 最小值
 @usage local min = bar:get_min_value()
 */
-static int lvgl_bar_get_min_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_get_min_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_bar_get_min_value(bar);
     lua_pushinteger(L, value);
     return 1;
@@ -146,25 +146,25 @@ static int lvgl_bar_get_min_value(lua_State* L) {
 @return integer 最大值
 @usage local max = bar:get_max_value()
 */
-static int lvgl_bar_get_max_value(lua_State* L) {
-    lv_obj_t* bar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_bar_get_max_value(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
     int32_t value = lv_bar_get_max_value(bar);
     lua_pushinteger(L, value);
     return 1;
 }
 
 /* 注册 bar 子模块 */
-void lvgl_register_bar(lua_State* L) {
+void iot_lvgl_register_bar(lua_State* L) {
     lua_newtable(L);
 
-    REG_METHOD(L, "set_value", lvgl_bar_set_value);
-    REG_METHOD(L, "get_value", lvgl_bar_get_value);
-    REG_METHOD(L, "set_range", lvgl_bar_set_range);
-    REG_METHOD(L, "set_mode", lvgl_bar_set_mode);
-    REG_METHOD(L, "set_start_value", lvgl_bar_set_start_value);
-    REG_METHOD(L, "get_start_value", lvgl_bar_get_start_value);
-    REG_METHOD(L, "get_min_value", lvgl_bar_get_min_value);
-    REG_METHOD(L, "get_max_value", lvgl_bar_get_max_value);
+    REG_METHOD(L, "set_value", iot_lvgl_bar_set_value);
+    REG_METHOD(L, "get_value", iot_lvgl_bar_get_value);
+    REG_METHOD(L, "set_range", iot_lvgl_bar_set_range);
+    REG_METHOD(L, "set_mode", iot_lvgl_bar_set_mode);
+    REG_METHOD(L, "set_start_value", iot_lvgl_bar_set_start_value);
+    REG_METHOD(L, "get_start_value", iot_lvgl_bar_get_start_value);
+    REG_METHOD(L, "get_min_value", iot_lvgl_bar_get_min_value);
+    REG_METHOD(L, "get_max_value", iot_lvgl_bar_get_max_value);
 
     bar_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -179,5 +179,5 @@ void lvgl_register_bar(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.bar) */
-    REG_METHOD(L, "create", lvgl_bar_create);
+    REG_METHOD(L, "create", iot_lvgl_bar_create);
 }

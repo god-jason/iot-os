@@ -1,15 +1,15 @@
-/**
- * @file lvgl_obj.h
+﻿/**
+ * @file iot_lvgl_obj.h
  * @brief LVGL对象系统头文件（OO风格）
  *
- * 定义LVGL对象系统的核心宏和函数声明，包括方法注册宏（REG_METHOD）、只读属性注册宏（REG_READONLY）、常量注册宏（REG_CONSTANT）、对象指针获取函数（lvgl_get_obj_ptr）、OO实例创建函数（lvgl_obj_create_instance）、元表设置等，为所有控件的OO风格Lua绑定提供基础框架。
+ * 定义LVGL对象系统的核心宏和函数声明，包括方法注册宏（REG_METHOD）、只读属性注册宏（REG_READONLY）、常量注册宏（REG_CONSTANT）、对象指针获取函数（iot_lvgl_get_obj_ptr）、OO实例创建函数（iot_lvgl_obj_create_instance）、元表设置等，为所有控件的OO风格Lua绑定提供基础框架。
  *
  * @author  杰神 & TRAE & ChatGPT
  * @date    2026.06.10
  */
 
-#ifndef LVGL_OBJ_H
-#define LVGL_OBJ_H
+#ifndef IOT_LVGL_OBJ_H
+#define IOT_LVGL_OBJ_H
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -24,7 +24,7 @@
 @param name 方法名
 @param func C函数
 @example
-REG_METHOD(L, "set_size", lvgl_obj_set_size)
+REG_METHOD(L, "set_size", iot_lvgl_obj_set_size)
 */
 #define REG_METHOD(L, name, func) \
     lua_pushcfunction(L, func); \
@@ -60,7 +60,7 @@ REG_METHOD(L, "set_size", lvgl_obj_set_size)
 @note 当idx=1时,如果参数是表(OO风格调用如lvgl.btn.create),会跳过表并检查后续参数
 @error 获取不到对象时会抛出Lua错误,由虚拟机内部pcall处理
 */
-lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx);
+lv_obj_t* iot_lvgl_get_obj_ptr(lua_State* L, int idx);
 
 /*
 注册对象系统(创建obj子表和基础metatable)
@@ -68,13 +68,13 @@ lv_obj_t* lvgl_get_obj_ptr(lua_State* L, int idx);
 @return int 基础metatable在注册表中的引用ID
 @note 必须在所有组件注册之前调用,创建 lvgl.obj 子表
 */
-int lvgl_register_obj(lua_State* L);
+int iot_lvgl_register_obj(lua_State* L);
 
 /*
 获取对象metatable引用
 @return int 注册表引用ID
 */
-int lvgl_get_obj_metatable_ref(void);
+int iot_lvgl_get_obj_metatable_ref(void);
 
 /*
 创建对象实例(通用)
@@ -83,90 +83,90 @@ int lvgl_get_obj_metatable_ref(void);
 @param metatable_ref 组件专属metatable引用(可以是LUA_NOREF表示只有基础方法)
 @return userdata 带方法的对象实例
 */
-int lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref);
+int iot_lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref);
 
 /* ==================== 对象方法(供内部使用) ==================== */
 
 /* 删除对象 */
-int lvgl_obj_delete(lua_State* L);
+int iot_lvgl_obj_delete(lua_State* L);
 /* 清空对象 */
-int lvgl_obj_clean(lua_State* L);
+int iot_lvgl_obj_clean(lua_State* L);
 /* 获取父对象 */
-int lvgl_obj_get_parent(lua_State* L);
+int iot_lvgl_obj_get_parent(lua_State* L);
 /* 获取子对象数量 */
-int lvgl_obj_get_child_cnt(lua_State* L);
+int iot_lvgl_obj_get_child_cnt(lua_State* L);
 /* 设置位置 */
-int lvgl_obj_set_pos(lua_State* L);
+int iot_lvgl_obj_set_pos(lua_State* L);
 /* 设置尺寸 */
-int lvgl_obj_set_size(lua_State* L);
+int iot_lvgl_obj_set_size(lua_State* L);
 /* 设置宽度 */
-int lvgl_obj_set_width(lua_State* L);
+int iot_lvgl_obj_set_width(lua_State* L);
 /* 设置高度 */
-int lvgl_obj_set_height(lua_State* L);
+int iot_lvgl_obj_set_height(lua_State* L);
 /* 设置X坐标 */
-int lvgl_obj_set_x(lua_State* L);
+int iot_lvgl_obj_set_x(lua_State* L);
 /* 设置Y坐标 */
-int lvgl_obj_set_y(lua_State* L);
+int iot_lvgl_obj_set_y(lua_State* L);
 /* 对齐对象 */
-int lvgl_obj_align(lua_State* L);
+int iot_lvgl_obj_align(lua_State* L);
 /* 相对另一对象对齐 */
-int lvgl_obj_align_to(lua_State* L);
+int iot_lvgl_obj_align_to(lua_State* L);
 /* 居中对齐 */
-int lvgl_obj_center(lua_State* L);
+int iot_lvgl_obj_center(lua_State* L);
 /* 设置可点击 */
-int lvgl_obj_set_click(lua_State* L);
+int iot_lvgl_obj_set_click(lua_State* L);
 /* 设置隐藏 */
-int lvgl_obj_set_hidden(lua_State* L);
+int iot_lvgl_obj_set_hidden(lua_State* L);
 /* 设置用户数据 */
-int lvgl_obj_set_user_data(lua_State* L);
+int iot_lvgl_obj_set_user_data(lua_State* L);
 /* 添加样式 */
-int lvgl_obj_add_style(lua_State* L);
+int iot_lvgl_obj_add_style(lua_State* L);
 /* 添加到父对象 */
-int lvgl_obj_add_to(lua_State* L);
+int iot_lvgl_obj_add_to(lua_State* L);
 /* 移动到前台 */
-int lvgl_obj_move_foreground(lua_State* L);
+int iot_lvgl_obj_move_foreground(lua_State* L);
 /* 移动到后台 */
-int lvgl_obj_move_background(lua_State* L);
+int iot_lvgl_obj_move_background(lua_State* L);
 /* 获取对象指针 */
-int lvgl_obj_get_ptr(lua_State* L);
+int iot_lvgl_obj_get_ptr(lua_State* L);
 /* 获取X坐标 */
-int lvgl_obj_get_x(lua_State* L);
+int iot_lvgl_obj_get_x(lua_State* L);
 /* 获取Y坐标 */
-int lvgl_obj_get_y(lua_State* L);
+int iot_lvgl_obj_get_y(lua_State* L);
 /* 获取宽度 */
-int lvgl_obj_get_width(lua_State* L);
+int iot_lvgl_obj_get_width(lua_State* L);
 /* 获取高度 */
-int lvgl_obj_get_height(lua_State* L);
+int iot_lvgl_obj_get_height(lua_State* L);
 /* 获取位置 */
-int lvgl_obj_get_pos(lua_State* L);
+int iot_lvgl_obj_get_pos(lua_State* L);
 /* 是否可见 */
-int lvgl_obj_is_visible(lua_State* L);
+int iot_lvgl_obj_is_visible(lua_State* L);
 /* 是否可点击 */
-int lvgl_obj_is_clickable(lua_State* L);
+int iot_lvgl_obj_is_clickable(lua_State* L);
 /* 获取对象类型 */
-int lvgl_obj_get_type(lua_State* L);
+int iot_lvgl_obj_get_type(lua_State* L);
 
 /* 添加事件回调 */
-int lvgl_obj_add_event_cb(lua_State* L);
+int iot_lvgl_obj_add_event_cb(lua_State* L);
 /* 删除事件回调 */
-int lvgl_obj_remove_event_cb(lua_State* L);
+int iot_lvgl_obj_remove_event_cb(lua_State* L);
 /* 设置事件回调 */
-int lvgl_obj_set_event_cb(lua_State* L);
+int iot_lvgl_obj_set_event_cb(lua_State* L);
 /* 注册事件监听器(按事件名称) */
-int lvgl_obj_on(lua_State* L);
+int iot_lvgl_obj_on(lua_State* L);
 /* 移除事件监听器 */
-int lvgl_obj_off(lua_State* L);
+int iot_lvgl_obj_off(lua_State* L);
 
 /* 滚动操作 */
-int lvgl_obj_scroll_to_x(lua_State* L);
-int lvgl_obj_scroll_to_y(lua_State* L);
-int lvgl_obj_scroll_to(lua_State* L);
-int lvgl_obj_scroll_by(lua_State* L);
-int lvgl_obj_scroll_to_view(lua_State* L);
-int lvgl_obj_get_scroll_x(lua_State* L);
-int lvgl_obj_get_scroll_y(lua_State* L);
-int lvgl_obj_set_scrollbar_mode(lua_State* L);
-int lvgl_obj_set_scroll_dir(lua_State* L);
+int iot_lvgl_obj_scroll_to_x(lua_State* L);
+int iot_lvgl_obj_scroll_to_y(lua_State* L);
+int iot_lvgl_obj_scroll_to(lua_State* L);
+int iot_lvgl_obj_scroll_by(lua_State* L);
+int iot_lvgl_obj_scroll_to_view(lua_State* L);
+int iot_lvgl_obj_get_scroll_x(lua_State* L);
+int iot_lvgl_obj_get_scroll_y(lua_State* L);
+int iot_lvgl_obj_set_scrollbar_mode(lua_State* L);
+int iot_lvgl_obj_set_scroll_dir(lua_State* L);
 
 /* ==================== 样式相关函数 ==================== */
 
@@ -177,7 +177,7 @@ int lvgl_obj_set_scroll_dir(lua_State* L);
 @example
 local style = lvgl.style.create({width=100, height=50, radius=10, bg_color=0x3366FF})
 */
-lv_style_t* lvgl_style_create_from_table(lua_State* L);
+lv_style_t* iot_lvgl_style_create_from_table(lua_State* L);
 
 /*
 设置样式属性(通用)
@@ -185,6 +185,6 @@ lv_style_t* lvgl_style_create_from_table(lua_State* L);
 @param prop 属性名
 @param value 属性值
 */
-void lvgl_style_set_prop(lua_State* L, lv_style_t* style, const char* prop, int value);
+void iot_lvgl_style_set_prop(lua_State* L, lv_style_t* style, const char* prop, int value);
 
-#endif /* LVGL_OBJ_H */
+#endif /* IOT_LVGL_OBJ_H */

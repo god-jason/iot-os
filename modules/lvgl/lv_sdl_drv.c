@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file lv_sdl_drv.c
  * @brief SDL2 显示与输入驱动实现
  *
@@ -203,7 +203,7 @@ static bool sdl_process_events(void)
  * 公开接口
  *===========================================================*/
 
-bool lv_sdl_drv_init(int hor_res, int ver_res)
+bool iot_lv_sdl_drv_init(int hor_res, int ver_res)
 {
     if (s_sdl.inited) {
         LOG_WARN("SDL driver already initialized");
@@ -332,12 +332,12 @@ bool lv_sdl_drv_init(int hor_res, int ver_res)
     return true;
 }
 
-bool lv_sdl_drv_is_inited(void)
+bool iot_lv_sdl_drv_is_inited(void)
 {
     return s_sdl.inited;
 }
 
-bool lv_sdl_drv_loop(void)
+bool iot_lv_sdl_drv_loop(void)
 {
     if (!s_sdl.inited) {
         return true;  /* 未初始化不阻止调用方 */
@@ -360,7 +360,7 @@ bool lv_sdl_drv_loop(void)
     return true;
 }
 
-void lv_sdl_drv_deinit(void)
+void iot_lv_sdl_drv_deinit(void)
 {
     if (!s_sdl.inited) {
         return;

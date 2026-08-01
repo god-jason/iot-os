@@ -107,7 +107,7 @@ static void file_ctx_destroy(file_lua_ctx_t* ctx) {
  *     f:close()
  * end
  */
-static int luaopen_fs_open(lua_State* L) {
+static int luaopen_iot_fs_open(lua_State* L) {
 
     const char* path = luaL_checkstring(L, 1);
     const char* mode = luaL_optstring(L, 2, "r");
@@ -148,7 +148,7 @@ static int luaopen_fs_open(lua_State* L) {
  * @usage
  * local n = file:write("hello")
  */
-static int luaopen_fs_file_write(lua_State* L) {
+static int luaopen_iot_fs_file_write(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushinteger(L, -1);
@@ -171,7 +171,7 @@ static int luaopen_fs_file_write(lua_State* L) {
  * @usage
  * local data = file:read(1024)
  */
-static int luaopen_fs_file_read(lua_State* L) {
+static int luaopen_iot_fs_file_read(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushnil(L);
@@ -204,7 +204,7 @@ static int luaopen_fs_file_read(lua_State* L) {
  * @usage
  * local line = file:readline()
  */
-static int luaopen_fs_file_readline(lua_State* L) {
+static int luaopen_iot_fs_file_readline(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushnil(L);
@@ -239,7 +239,7 @@ static int luaopen_fs_file_readline(lua_State* L) {
  * @usage
  * file:writeline("hello world")
  */
-static int luaopen_fs_file_writeline(lua_State* L) {
+static int luaopen_iot_fs_file_writeline(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushinteger(L, -1);
@@ -267,7 +267,7 @@ static int luaopen_fs_file_writeline(lua_State* L) {
  * file:seek(0, 0)  -- 移动到文件头
  * file:seek(0, 2)  -- 移动到文件尾
  */
-static int luaopen_fs_file_seek(lua_State* L) {
+static int luaopen_iot_fs_file_seek(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushinteger(L, -1);
@@ -294,7 +294,7 @@ static int luaopen_fs_file_seek(lua_State* L) {
  * @usage
  * file:flush()
  */
-static int luaopen_fs_file_flush(lua_State* L) {
+static int luaopen_iot_fs_file_flush(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushboolean(L, 0);
@@ -312,7 +312,7 @@ static int luaopen_fs_file_flush(lua_State* L) {
  * @usage
  * file:close()
  */
-static int luaopen_fs_file_close(lua_State* L) {
+static int luaopen_iot_fs_file_close(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx) {
         return 0;
@@ -331,7 +331,7 @@ static int luaopen_fs_file_close(lua_State* L) {
  * @usage
  * local size = file:size()
  */
-static int luaopen_fs_file_size(lua_State* L) {
+static int luaopen_iot_fs_file_size(lua_State* L) {
     file_lua_ctx_t* ctx = file_get_ctx_from_userdata(L, 1);
     if (!ctx || !ctx->fp || ctx->closed) {
         lua_pushinteger(L, -1);
@@ -360,7 +360,7 @@ static int luaopen_fs_file_size(lua_State* L) {
  * @usage
  * fs.mkdir("/tmp/test", 0755)
  */
-static int luaopen_fs_mkdir(lua_State* L) {
+static int luaopen_iot_fs_mkdir(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     int mode = (int)luaL_optinteger(L, 2, 0755);
 
@@ -377,7 +377,7 @@ static int luaopen_fs_mkdir(lua_State* L) {
  * @usage
  * fs.remove("/tmp/test.txt")
  */
-static int luaopen_fs_remove(lua_State* L) {
+static int luaopen_iot_fs_remove(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
 
     int ret = iot_fs_remove(path);
@@ -394,7 +394,7 @@ static int luaopen_fs_remove(lua_State* L) {
  * @usage
  * fs.rename("/tmp/old.txt", "/tmp/new.txt")
  */
-static int luaopen_fs_rename(lua_State* L) {
+static int luaopen_iot_fs_rename(lua_State* L) {
     const char* oldpath = luaL_checkstring(L, 1);
     const char* newpath = luaL_checkstring(L, 2);
 
@@ -413,7 +413,7 @@ static int luaopen_fs_rename(lua_State* L) {
  *     print("file exists")
  * end
  */
-static int luaopen_fs_exists(lua_State* L) {
+static int luaopen_iot_fs_exists(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
 
     int ret = iot_fs_access(path, 0);
@@ -432,7 +432,7 @@ static int luaopen_fs_exists(lua_State* L) {
  *     print("file readable")
  * end
  */
-static int luaopen_fs_access(lua_State* L) {
+static int luaopen_iot_fs_access(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     int mode = (int)luaL_optinteger(L, 2, 0);
 
@@ -453,7 +453,7 @@ static int luaopen_fs_access(lua_State* L) {
  *     print("mode:", info.mode)
  * end
  */
-static int luaopen_fs_stat(lua_State* L) {
+static int luaopen_iot_fs_stat(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
 
     if (!iot_fs_access(path, 0)) {
@@ -499,9 +499,9 @@ static int luaopen_fs_stat(lua_State* L) {
  * Lua 方法实现 - 路径处理
  *===========================================================*/
 
-static int luaopen_fs_basename(lua_State* L) {
+static int luaopen_iot_fs_basename(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
-    const char* base = fs_path_basename(path);
+    const char* base = iot_fs_path_basename(path);
     if (base) {
         lua_pushstring(L, base);
     } else {
@@ -510,10 +510,10 @@ static int luaopen_fs_basename(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_dirname(lua_State* L) {
+static int luaopen_iot_fs_dirname(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     char buf[512];
-    if (fs_path_dirname(path, buf, sizeof(buf))) {
+    if (iot_fs_path_dirname(path, buf, sizeof(buf))) {
         lua_pushstring(L, buf);
     } else {
         lua_pushnil(L);
@@ -521,9 +521,9 @@ static int luaopen_fs_dirname(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_extname(lua_State* L) {
+static int luaopen_iot_fs_extname(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
-    const char* ext = fs_path_extname(path);
+    const char* ext = iot_fs_path_extname(path);
     if (ext) {
         lua_pushstring(L, ext);
     } else {
@@ -532,11 +532,11 @@ static int luaopen_fs_extname(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_join(lua_State* L) {
+static int luaopen_iot_fs_join(lua_State* L) {
     const char* path1 = luaL_checkstring(L, 1);
     const char* path2 = luaL_checkstring(L, 2);
     char buf[1024];
-    if (fs_path_join(buf, sizeof(buf), path1, path2)) {
+    if (iot_fs_path_join(buf, sizeof(buf), path1, path2)) {
         lua_pushstring(L, buf);
     } else {
         lua_pushnil(L);
@@ -544,16 +544,16 @@ static int luaopen_fs_join(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_is_absolute(lua_State* L) {
+static int luaopen_iot_fs_is_absolute(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
-    lua_pushboolean(L, fs_path_is_absolute(path));
+    lua_pushboolean(L, iot_fs_path_is_absolute(path));
     return 1;
 }
 
-static int luaopen_fs_normalize(lua_State* L) {
+static int luaopen_iot_fs_normalize(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     char buf[1024];
-    if (fs_path_normalize(buf, sizeof(buf), path)) {
+    if (iot_fs_path_normalize(buf, sizeof(buf), path)) {
         lua_pushstring(L, buf);
     } else {
         lua_pushnil(L);
@@ -561,10 +561,10 @@ static int luaopen_fs_normalize(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_stem(lua_State* L) {
+static int luaopen_iot_fs_stem(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     char buf[512];
-    if (fs_path_stem(buf, sizeof(buf), path)) {
+    if (iot_fs_path_stem(buf, sizeof(buf), path)) {
         lua_pushstring(L, buf);
     } else {
         lua_pushnil(L);
@@ -572,12 +572,12 @@ static int luaopen_fs_stem(lua_State* L) {
     return 1;
 }
 
-static int luaopen_fs_split(lua_State* L) {
+static int luaopen_iot_fs_split(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     char dir_buf[512];
     char base_buf[512];
     
-    if (fs_path_split(path, dir_buf, sizeof(dir_buf), base_buf, sizeof(base_buf)) == 0) {
+    if (iot_fs_path_split(path, dir_buf, sizeof(dir_buf), base_buf, sizeof(base_buf)) == 0) {
         lua_pushstring(L, dir_buf);
         lua_pushstring(L, base_buf);
         return 2;
@@ -587,13 +587,13 @@ static int luaopen_fs_split(lua_State* L) {
     }
 }
 
-static int luaopen_fs_lsdir(lua_State* L) {
+static int luaopen_iot_fs_lsdir(lua_State* L) {
     const char* path = luaL_checkstring(L, 1);
     
-    fs_dir_entry_t* entries = NULL;
+    iot_fs_dir_entry_t* entries = NULL;
     int count = 0;
     
-    if (fs_dir_list(path, &entries, &count) != 0) {
+    if (iot_fs_dir_list(path, &entries, &count) != 0) {
         lua_pushnil(L);
         lua_pushstring(L, "failed to list directory");
         return 2;
@@ -619,7 +619,7 @@ static int luaopen_fs_lsdir(lua_State* L) {
         lua_rawseti(L, -2, i + 1);
     }
     
-    fs_dir_free_list(entries);
+    iot_fs_dir_free_list(entries);
     
     return 1;
 }
@@ -629,54 +629,54 @@ static int luaopen_fs_lsdir(lua_State* L) {
  *===========================================================*/
 
 /* file 方法表 */
-static const luaL_Reg file_methods[] = {
-    { "write",    luaopen_fs_file_write },    /* 写入 */
-    { "read",     luaopen_fs_file_read },     /* 读取 */
-    { "readline", luaopen_fs_file_readline }, /* 读取一行 */
-    { "writeline",luaopen_fs_file_writeline },/* 写入一行 */
-    { "seek",     luaopen_fs_file_seek },     /* 移动指针 */
-    { "flush",    luaopen_fs_file_flush },    /* 刷新缓冲 */
-    { "close",    luaopen_fs_file_close },    /* 关闭 */
-    { "size",     luaopen_fs_file_size },     /* 获取大小 */
-    { "__gc",     luaopen_fs_file_close },    /* 垃圾回收 */
-    { "__tostring", luaopen_fs_file_close },  /* 字符串转换 */
+static const luaL_Reg iot_file_methods[] = {
+    { "write",    luaopen_iot_fs_file_write },    /* 写入 */
+    { "read",     luaopen_iot_fs_file_read },     /* 读取 */
+    { "readline", luaopen_iot_fs_file_readline }, /* 读取一行 */
+    { "writeline",luaopen_iot_fs_file_writeline },/* 写入一行 */
+    { "seek",     luaopen_iot_fs_file_seek },     /* 移动指针 */
+    { "flush",    luaopen_iot_fs_file_flush },    /* 刷新缓冲 */
+    { "close",    luaopen_iot_fs_file_close },    /* 关闭 */
+    { "size",     luaopen_iot_fs_file_size },     /* 获取大小 */
+    { "__gc",     luaopen_iot_fs_file_close },    /* 垃圾回收 */
+    { "__tostring", luaopen_iot_fs_file_close },  /* 字符串转换 */
     { NULL,       NULL }
 };
 
 /* fs 模块方法表 */
-static const luaL_Reg fs_methods[] = {
-    { "open",          luaopen_fs_open },          /* 打开文件 */
-    { "mkdir",         luaopen_fs_mkdir },         /* 创建目录 */
-    { "remove",        luaopen_fs_remove },        /* 删除文件 */
-    { "rename",        luaopen_fs_rename },        /* 重命名 */
-    { "exists",        luaopen_fs_exists },        /* 检查存在 */
-    { "access",        luaopen_fs_access },        /* 检查权限 */
-    { "stat",          luaopen_fs_stat },          /* 获取文件信息 */
-    { "basename",      luaopen_fs_basename },      /* 获取文件名 */
-    { "dirname",       luaopen_fs_dirname },       /* 获取目录名 */
-    { "extname",       luaopen_fs_extname },       /* 获取扩展名 */
-    { "join",          luaopen_fs_join },          /* 拼接路径 */
-    { "isAbsolute",    luaopen_fs_is_absolute },   /* 判断绝对路径 */
-    { "normalize",     luaopen_fs_normalize },     /* 规范化路径 */
-    { "stem",          luaopen_fs_stem },          /* 获取不含扩展名的文件名 */
-    { "split",         luaopen_fs_split },         /* 分割路径 */
-    { "lsdir",         luaopen_fs_lsdir },         /* 遍历目录 */
+static const luaL_Reg iot_fs_methods[] = {
+    { "open",          luaopen_iot_fs_open },          /* 打开文件 */
+    { "mkdir",         luaopen_iot_fs_mkdir },         /* 创建目录 */
+    { "remove",        luaopen_iot_fs_remove },        /* 删除文件 */
+    { "rename",        luaopen_iot_fs_rename },        /* 重命名 */
+    { "exists",        luaopen_iot_fs_exists },        /* 检查存在 */
+    { "access",        luaopen_iot_fs_access },        /* 检查权限 */
+    { "stat",          luaopen_iot_fs_stat },          /* 获取文件信息 */
+    { "basename",      luaopen_iot_fs_basename },      /* 获取文件名 */
+    { "dirname",       luaopen_iot_fs_dirname },       /* 获取目录名 */
+    { "extname",       luaopen_iot_fs_extname },       /* 获取扩展名 */
+    { "join",          luaopen_iot_fs_join },          /* 拼接路径 */
+    { "isAbsolute",    luaopen_iot_fs_is_absolute },   /* 判断绝对路径 */
+    { "normalize",     luaopen_iot_fs_normalize },     /* 规范化路径 */
+    { "stem",          luaopen_iot_fs_stem },          /* 获取不含扩展名的文件名 */
+    { "split",         luaopen_iot_fs_split },         /* 分割路径 */
+    { "lsdir",         luaopen_iot_fs_lsdir },         /* 遍历目录 */
     { NULL,            NULL }
 };
 
 /**
  * @brief 注册 fs 模块
  */
-int luaopen_fs_register(lua_State* L) {
+int luaopen_iot_fs_register(lua_State* L) {
     /* 创建 file 元表 */
     luaL_newmetatable(L, "fs.file");
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
-    luaL_setfuncs(L, file_methods, 0);
+    luaL_setfuncs(L, iot_file_methods, 0);
     lua_pop(L, 1);
 
     /* 创建 fs 模块 */
-    luaL_newlib(L, fs_methods);
+    luaL_newlib(L, iot_fs_methods);
 
     /* 注册常量 - 文件权限 */
     lua_pushinteger(L, 4);  lua_setfield(L, -2, "R_OK");  /* 可读 */

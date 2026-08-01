@@ -28,9 +28,9 @@ static void sort_floats(float* arr, int len)
     }
 }
 
-int filter_median_init(filter_median_t* f, int window)
+int iot_filter_median_init(iot_filter_median_t* f, int window)
 {
-    if (!f || window < 3) return FILTER_ERR;
+    if (!f || window < 3) return IOT_FILTER_ERR;
 
     f->buffer = (float*)calloc((size_t)window, sizeof(float));
     f->sorted = (float*)calloc((size_t)window, sizeof(float));
@@ -39,19 +39,19 @@ int filter_median_init(filter_median_t* f, int window)
         free(f->sorted);
         f->buffer = NULL;
         f->sorted = NULL;
-        return FILTER_ERR;
+        return IOT_FILTER_ERR;
     }
 
     f->size      = window;
     f->index     = 0;
     f->count     = 0;
     f->need_free = true;
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_median_update(filter_median_t* f, float input, float* output)
+int iot_filter_median_update(iot_filter_median_t* f, float input, float* output)
 {
-    if (!f || !f->buffer || !f->sorted || !output) return FILTER_ERR;
+    if (!f || !f->buffer || !f->sorted || !output) return IOT_FILTER_ERR;
 
     /* 窗口未满 */
     if (f->count < f->size) {
@@ -73,12 +73,12 @@ int filter_median_update(filter_median_t* f, float input, float* output)
     } else {
         *output = (f->sorted[valid / 2 - 1] + f->sorted[valid / 2]) * 0.5f;
     }
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-int filter_median_get(const filter_median_t* f, float* output)
+int iot_filter_median_get(const iot_filter_median_t* f, float* output)
 {
-    if (!f || !output || !f->buffer || f->count == 0) return FILTER_ERR;
+    if (!f || !output || !f->buffer || f->count == 0) return IOT_FILTER_ERR;
 
     int valid = (f->count < f->size) ? f->count : f->size;
     memcpy(f->sorted, f->buffer, (size_t)valid * sizeof(float));
@@ -89,10 +89,10 @@ int filter_median_get(const filter_median_t* f, float* output)
     } else {
         *output = (f->sorted[valid / 2 - 1] + f->sorted[valid / 2]) * 0.5f;
     }
-    return FILTER_OK;
+    return IOT_FILTER_OK;
 }
 
-void filter_median_reset(filter_median_t* f)
+void iot_filter_median_reset(iot_filter_median_t* f)
 {
     if (!f || !f->buffer) return;
     memset(f->buffer, 0, (size_t)f->size * sizeof(float));
@@ -101,7 +101,7 @@ void filter_median_reset(filter_median_t* f)
     f->count = 0;
 }
 
-void filter_median_deinit(filter_median_t* f)
+void iot_filter_median_deinit(iot_filter_median_t* f)
 {
     if (!f) return;
     if (f->need_free) {

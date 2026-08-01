@@ -21,38 +21,38 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MQTT_DEFAULT_KEEPALIVE      60
-#define MQTT_DEFAULT_PORT           1883
-#define MQTT_DEFAULT_TIMEOUT        30000
-#define MQTT_DEFAULT_SSL_PORT       8883
+#define IOT_MQTT_DEFAULT_KEEPALIVE      60
+#define IOT_MQTT_DEFAULT_PORT           1883
+#define IOT_MQTT_DEFAULT_TIMEOUT        30000
+#define IOT_MQTT_DEFAULT_SSL_PORT       8883
 
-static void mqtt_client_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data);
+static void iot_mqtt_client_socket_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data);
 
-static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client, const char* topic_filter);
-static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, const char* topic_filter, mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data);
-static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topic_filter);
-static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client);
-static void mqtt_client_options_free(mqtt_client_t* client);
-static int mqtt_client_options_copy(mqtt_client_t* client, const mqtt_connect_options_t* src);
+static iot_mqtt_subscribe_entry_t* iot_mqtt_client_subscribe_find(iot_mqtt_client_t* client, const char* topic_filter);
+static iot_mqtt_subscribe_entry_t* iot_mqtt_client_subscribe_add(iot_mqtt_client_t* client, const char* topic_filter, iot_mqtt_qos_t qos, iot_mqtt_message_callback_t callback, void* user_data);
+static void iot_mqtt_client_subscribe_remove(iot_mqtt_client_t* client, const char* topic_filter);
+static void iot_mqtt_client_subscribe_destroy_all(iot_mqtt_client_t* client);
+static void iot_mqtt_client_options_free(iot_mqtt_client_t* client);
+static int iot_mqtt_client_options_copy(iot_mqtt_client_t* client, const iot_mqtt_connect_options_t* src);
 
-mqtt_client_t* mqtt_client_create(void) {
-    mqtt_client_t* client = (mqtt_client_t*)iot_malloc(sizeof(mqtt_client_t));
+iot_mqtt_client_t* iot_mqtt_client_create(void) {
+    iot_mqtt_client_t* client = (iot_mqtt_client_t*)iot_malloc(sizeof(iot_mqtt_client_t));
     if (!client) {
         LOG_ERROR("mqtt client create failed: out of memory");
         return NULL;
     }
 
-    memset(client, 0, sizeof(mqtt_client_t));
+    memset(client, 0, sizeof(iot_mqtt_client_t));
     list_init(&client->list_node);
-    client->state = MQTT_STATE_DISCONNECTED;
+    client->state = IOT_MQTT_STATE_DISCONNECTED;
     client->next_packet_id = 1;
-    client->options.keepalive = MQTT_DEFAULT_KEEPALIVE;
-    client->options.port = MQTT_DEFAULT_PORT;
+    client->options.keepalive = IOT_MQTT_DEFAULT_KEEPALIVE;
+    client->options.port = IOT_MQTT_DEFAULT_PORT;
     client->options.clean_session = true;
-    client->options.timeout_ms = MQTT_DEFAULT_TIMEOUT;
+    client->options.timeout_ms = IOT_MQTT_DEFAULT_TIMEOUT;
     client->options.use_ssl = false;
 
-    client->recv_capacity = MQTT_MAX_PACKET_SIZE;
+    client->recv_capacity = IOT_MQTT_MAX_PACKET_SIZE;
     client->recv_buf = (uint8_t*)iot_malloc(client->recv_capacity);
     if (!client->recv_buf) {
         LOG_ERROR("mqtt client create failed: recv buffer alloc error");
@@ -64,21 +64,21 @@ mqtt_client_t* mqtt_client_create(void) {
     return client;
 }
 
-void mqtt_client_destroy(mqtt_client_t* client) {
+void iot_mqtt_client_destroy(iot_mqtt_client_t* client) {
     if (!client) return;
 
-    mqtt_client_disconnect(client);
+    iot_mqtt_client_disconnect(client);
 
     if (client->recv_buf) {
         iot_free(client->recv_buf);
     }
 
-    mqtt_client_subscribe_destroy_all(client);
-    mqtt_client_options_free(client);
+    iot_mqtt_client_subscribe_destroy_all(client);
+    iot_mqtt_client_options_free(client);
 
-    mqtt_outgoing_msg_t* msg = client->outgoing_head;
+    iot_mqtt_outgoing_msg_t* msg = client->outgoing_head;
     while (msg) {
-        mqtt_outgoing_msg_t* next = msg->next;
+        iot_mqtt_outgoing_msg_t* next = msg->next;
         if (msg->topic) iot_free(msg->topic);
         if (msg->payload) iot_free(msg->payload);
         iot_free(msg);
@@ -88,88 +88,88 @@ void mqtt_client_destroy(mqtt_client_t* client) {
     iot_free(client);
 }
 
-int mqtt_client_connect(mqtt_client_t* client, const mqtt_connect_options_t* options) {
+int iot_mqtt_client_connect(iot_mqtt_client_t* client, const iot_mqtt_connect_options_t* options) {
     if (!client || !options || !options->host || !options->client_id) {
-        return MQTT_ERR_PARAM;
+        return IOT_MQTT_ERR_PARAM;
     }
 
-    mqtt_client_disconnect(client);
+    iot_mqtt_client_disconnect(client);
 
-    if (mqtt_client_options_copy(client, options) != 0) {
-        client->state = MQTT_STATE_ERROR;
-        client->last_error = MQTT_ERR_MEMORY;
-        return MQTT_ERR_MEMORY;
+    if (iot_mqtt_client_options_copy(client, options) != 0) {
+        client->state = IOT_MQTT_STATE_ERROR;
+        client->last_error = IOT_MQTT_ERR_MEMORY;
+        return IOT_MQTT_ERR_MEMORY;
     }
 
     if (client->options.port == 0) {
-        client->options.port = client->options.use_ssl ? MQTT_DEFAULT_SSL_PORT : MQTT_DEFAULT_PORT;
+        client->options.port = client->options.use_ssl ? IOT_MQTT_DEFAULT_SSL_PORT : IOT_MQTT_DEFAULT_PORT;
     }
 
     if (client->options.keepalive == 0) {
-        client->options.keepalive = MQTT_DEFAULT_KEEPALIVE;
+        client->options.keepalive = IOT_MQTT_DEFAULT_KEEPALIVE;
     }
 
     client->keepalive = client->options.keepalive;
-    client->state = MQTT_STATE_CONNECTING;
+    client->state = IOT_MQTT_STATE_CONNECTING;
     client->last_connect_attempt = iot_get_tick_ms();
 
-    const net_ssl_config_t* ssl_config = client->options.use_ssl ? &client->options.ssl_config : NULL;
-    client->sock = net_socket_create(SOCK_TYPE_STREAM, ssl_config, mqtt_client_socket_callback, client);
+    const iot_net_ssl_config_t* ssl_config = client->options.use_ssl ? &client->options.ssl_config : NULL;
+    client->sock = iot_net_socket_create(IOT_NET_SOCK_STREAM, ssl_config, iot_mqtt_client_socket_callback, client);
     if (!client->sock) {
-        client->state = MQTT_STATE_ERROR;
-        client->last_error = MQTT_ERR_CONNECT;
-        return MQTT_ERR_CONNECT;
+        client->state = IOT_MQTT_STATE_ERROR;
+        client->last_error = IOT_MQTT_ERR_CONNECT;
+        return IOT_MQTT_ERR_CONNECT;
     }
 
-    int ret = net_socket_connect(client->sock, client->options.host, client->options.port);
+    int ret = iot_net_socket_connect(client->sock, client->options.host, client->options.port);
     if (ret < 0) {
-        client->state = MQTT_STATE_ERROR;
-        client->last_error = MQTT_ERR_CONNECT;
-        net_socket_close(client->sock);
+        client->state = IOT_MQTT_STATE_ERROR;
+        client->last_error = IOT_MQTT_ERR_CONNECT;
+        iot_net_socket_close(client->sock);
         client->sock = NULL;
-        return MQTT_ERR_CONNECT;
+        return IOT_MQTT_ERR_CONNECT;
     }
 
-    mqtt_manager_add_client(client);
+    iot_mqtt_manager_add_client(client);
 
     return 0;
 }
 
-int mqtt_client_disconnect(mqtt_client_t* client) {
-    if (!client) return MQTT_ERR_PARAM;
+int iot_mqtt_client_disconnect(iot_mqtt_client_t* client) {
+    if (!client) return IOT_MQTT_ERR_PARAM;
 
     uint8_t buf[4];
-    int len = mqtt_packet_encode_disconnect(buf, sizeof(buf));
+    int len = iot_mqtt_packet_encode_disconnect(buf, sizeof(buf));
     if (len > 0 && client->sock) {
-        net_socket_send(client->sock, buf, len);
+        iot_net_socket_send(client->sock, buf, len);
     }
 
-    mqtt_manager_remove_client(client);
+    iot_mqtt_manager_remove_client(client);
 
     if (client->sock) {
-        net_socket_close(client->sock);
+        iot_net_socket_close(client->sock);
         client->sock = NULL;
     }
 
     client->recv_len = 0;
-    client->state = MQTT_STATE_DISCONNECTED;
+    client->state = IOT_MQTT_STATE_DISCONNECTED;
 
     return 0;
 }
 
-int mqtt_client_publish(mqtt_client_t* client, const char* topic,
+int iot_mqtt_client_publish(iot_mqtt_client_t* client, const char* topic,
                         const uint8_t* payload, size_t payload_len,
-                        mqtt_qos_t qos, bool retain) {
-    if (!client || !topic || client->state != MQTT_STATE_CONNECTED) {
-        return MQTT_ERR_PARAM;
+                        iot_mqtt_qos_t qos, bool retain) {
+    if (!client || !topic || client->state != IOT_MQTT_STATE_CONNECTED) {
+        return IOT_MQTT_ERR_PARAM;
     }
 
     if (!client->sock) {
-        return MQTT_ERR_PARAM;
+        return IOT_MQTT_ERR_PARAM;
     }
 
-    uint8_t buf[MQTT_MAX_PACKET_SIZE];
-    mqtt_packet_publish_t publish = {
+    uint8_t buf[IOT_MQTT_MAX_PACKET_SIZE];
+    iot_mqtt_packet_publish_t publish = {
         .dup = false,
         .qos = qos,
         .retain = retain,
@@ -183,27 +183,27 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
         client->next_packet_id = 1;
     }
 
-    int len = mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
+    int len = iot_mqtt_packet_encode_publish(&publish, buf, sizeof(buf));
     if (len < 0) {
-        return MQTT_ERR_SEND;
+        return IOT_MQTT_ERR_SEND;
     }
 
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = iot_net_socket_send(client->sock, buf, len);
     if (ret < 0) {
-        return MQTT_ERR_SEND;
+        return IOT_MQTT_ERR_SEND;
     }
 
     if (qos > 0) {
-        mqtt_outgoing_msg_t* msg = (mqtt_outgoing_msg_t*)iot_malloc(sizeof(mqtt_outgoing_msg_t));
-        if (!msg) return MQTT_ERR_MEMORY;
+        iot_mqtt_outgoing_msg_t* msg = (iot_mqtt_outgoing_msg_t*)iot_malloc(sizeof(iot_mqtt_outgoing_msg_t));
+        if (!msg) return IOT_MQTT_ERR_MEMORY;
 
-        memset(msg, 0, sizeof(mqtt_outgoing_msg_t));
+        memset(msg, 0, sizeof(iot_mqtt_outgoing_msg_t));
         msg->packet_id = publish.packet_id;
         msg->qos = qos;
         msg->topic = (char*)iot_strdup(topic);
         if (!msg->topic) {
             iot_free(msg);
-            return MQTT_ERR_MEMORY;
+            return IOT_MQTT_ERR_MEMORY;
         }
 
         if (payload && payload_len > 0) {
@@ -211,7 +211,7 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
             if (!msg->payload) {
                 iot_free(msg->topic);
                 iot_free(msg);
-                return MQTT_ERR_MEMORY;
+                return IOT_MQTT_ERR_MEMORY;
             }
             memcpy(msg->payload, payload, payload_len);
             msg->payload_len = payload_len;
@@ -232,29 +232,29 @@ int mqtt_client_publish(mqtt_client_t* client, const char* topic,
     return 0;
 }
 
-int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
-                          mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data) {
-    if (!client || !topic_filter || !callback || client->state != MQTT_STATE_CONNECTED) {
-        return MQTT_ERR_PARAM;
+int iot_mqtt_client_subscribe(iot_mqtt_client_t* client, const char* topic_filter,
+                          iot_mqtt_qos_t qos, iot_mqtt_message_callback_t callback, void* user_data) {
+    if (!client || !topic_filter || !callback || client->state != IOT_MQTT_STATE_CONNECTED) {
+        return IOT_MQTT_ERR_PARAM;
     }
 
     if (!client->sock) {
-        return MQTT_ERR_PARAM;
+        return IOT_MQTT_ERR_PARAM;
     }
 
-    mqtt_subscribe_entry_t* existing = mqtt_client_subscribe_find(client, topic_filter);
+    iot_mqtt_subscribe_entry_t* existing = iot_mqtt_client_subscribe_find(client, topic_filter);
     if (existing) {
         existing->qos = qos;
         existing->callback = callback;
         existing->user_data = user_data;
     } else {
-        if (!mqtt_client_subscribe_add(client, topic_filter, qos, callback, user_data)) {
-            return MQTT_ERR_MEMORY;
+        if (!iot_mqtt_client_subscribe_add(client, topic_filter, qos, callback, user_data)) {
+            return IOT_MQTT_ERR_MEMORY;
         }
     }
 
     uint8_t buf[512];
-    mqtt_packet_subscribe_t subscribe = {
+    iot_mqtt_packet_subscribe_t subscribe = {
         .packet_id = client->next_packet_id++,
         .topic_filters = &topic_filter,
         .requested_qos = &qos,
@@ -265,31 +265,31 @@ int mqtt_client_subscribe(mqtt_client_t* client, const char* topic_filter,
         client->next_packet_id = 1;
     }
 
-    int len = mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
+    int len = iot_mqtt_packet_encode_subscribe(&subscribe, buf, sizeof(buf));
     if (len < 0) {
-        return MQTT_ERR_SEND;
+        return IOT_MQTT_ERR_SEND;
     }
 
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = iot_net_socket_send(client->sock, buf, len);
     if (ret < 0) {
-        mqtt_client_subscribe_remove(client, topic_filter);
-        return MQTT_ERR_SEND;
+        iot_mqtt_client_subscribe_remove(client, topic_filter);
+        return IOT_MQTT_ERR_SEND;
     }
 
     return 0;
 }
 
-int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
-    if (!client || !topic_filter || client->state != MQTT_STATE_CONNECTED) {
-        return MQTT_ERR_PARAM;
+int iot_mqtt_client_unsubscribe(iot_mqtt_client_t* client, const char* topic_filter) {
+    if (!client || !topic_filter || client->state != IOT_MQTT_STATE_CONNECTED) {
+        return IOT_MQTT_ERR_PARAM;
     }
 
     if (!client->sock) {
-        return MQTT_ERR_PARAM;
+        return IOT_MQTT_ERR_PARAM;
     }
 
     uint8_t buf[512];
-    mqtt_packet_unsubscribe_t unsubscribe = {
+    iot_mqtt_packet_unsubscribe_t unsubscribe = {
         .packet_id = client->next_packet_id++,
         .topic_filters = &topic_filter,
         .topic_count = 1
@@ -299,72 +299,72 @@ int mqtt_client_unsubscribe(mqtt_client_t* client, const char* topic_filter) {
         client->next_packet_id = 1;
     }
 
-    int len = mqtt_packet_encode_unsubscribe(&unsubscribe, buf, sizeof(buf));
+    int len = iot_mqtt_packet_encode_unsubscribe(&unsubscribe, buf, sizeof(buf));
     if (len < 0) {
-        return MQTT_ERR_SEND;
+        return IOT_MQTT_ERR_SEND;
     }
 
-    int ret = net_socket_send(client->sock, buf, len);
+    int ret = iot_net_socket_send(client->sock, buf, len);
     if (ret < 0) {
-        return MQTT_ERR_SEND;
+        return IOT_MQTT_ERR_SEND;
     }
 
-    mqtt_client_subscribe_remove(client, topic_filter);
+    iot_mqtt_client_subscribe_remove(client, topic_filter);
 
     return 0;
 }
 
-static void mqtt_client_socket_callback(net_socket_t* sock, net_event_type_t event, void* user_data) {
-    mqtt_client_t* client = (mqtt_client_t*)user_data;
+static void iot_mqtt_client_socket_callback(iot_net_socket_t* sock, iot_net_event_type_t event, void* user_data) {
+    iot_mqtt_client_t* client = (iot_mqtt_client_t*)user_data;
     if (!client) return;
 
-    mqtt_manager_on_socket_event(client, event);
+    iot_mqtt_manager_on_socket_event(client, event);
 }
 
-void mqtt_client_set_event_callback(mqtt_client_t* client,
-                                    mqtt_event_callback_t callback, void* user_data) {
+void iot_mqtt_client_set_event_callback(iot_mqtt_client_t* client,
+                                    iot_mqtt_event_callback_t callback, void* user_data) {
     if (client) {
         client->event_callback = callback;
         client->event_user_data = user_data;
     }
 }
 
-void mqtt_client_enable_auto_reconnect(mqtt_client_t* client, int interval_ms) {
+void iot_mqtt_client_enable_auto_reconnect(iot_mqtt_client_t* client, int interval_ms) {
     if (client) {
         client->auto_reconnect = true;
         client->reconnect_interval_ms = interval_ms;
     }
 }
 
-void mqtt_client_disable_auto_reconnect(mqtt_client_t* client) {
+void iot_mqtt_client_disable_auto_reconnect(iot_mqtt_client_t* client) {
     if (client) {
         client->auto_reconnect = false;
     }
 }
 
-mqtt_state_t mqtt_client_get_state(mqtt_client_t* client) {
-    return client ? client->state : MQTT_STATE_DISCONNECTED;
+iot_mqtt_state_t iot_mqtt_client_get_state(iot_mqtt_client_t* client) {
+    return client ? client->state : IOT_MQTT_STATE_DISCONNECTED;
 }
 
-mqtt_error_t mqtt_client_get_error(mqtt_client_t* client) {
-    return client ? client->last_error : MQTT_ERR_PARAM;
+iot_mqtt_error_t iot_mqtt_client_get_error(iot_mqtt_client_t* client) {
+    return client ? client->last_error : IOT_MQTT_ERR_PARAM;
 }
 
-bool mqtt_client_is_connected(mqtt_client_t* client) {
-    return client && client->state == MQTT_STATE_CONNECTED;
+bool iot_mqtt_client_is_connected(iot_mqtt_client_t* client) {
+    return client && client->state == IOT_MQTT_STATE_CONNECTED;
 }
 
-int mqtt_manager_start(void) {
-    return mqtt_manager_init();
+int iot_mqtt_manager_start(void) {
+    return iot_mqtt_manager_init();
 }
 
-void mqtt_manager_stop(void) {
-    mqtt_manager_deinit();
+void iot_mqtt_manager_stop(void) {
+    iot_mqtt_manager_deinit();
 }
 
-static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client, const char* topic_filter) {
+static iot_mqtt_subscribe_entry_t* iot_mqtt_client_subscribe_find(iot_mqtt_client_t* client, const char* topic_filter) {
     if (!client || !topic_filter) return NULL;
-    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    iot_mqtt_subscribe_entry_t* entry = client->subscribe_head;
     while (entry) {
         if (strcmp(entry->topic_filter, topic_filter) == 0) {
             return entry;
@@ -374,14 +374,14 @@ static mqtt_subscribe_entry_t* mqtt_client_subscribe_find(mqtt_client_t* client,
     return NULL;
 }
 
-static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, const char* topic_filter,
-                                                          mqtt_qos_t qos, mqtt_message_callback_t callback, void* user_data) {
+static iot_mqtt_subscribe_entry_t* iot_mqtt_client_subscribe_add(iot_mqtt_client_t* client, const char* topic_filter,
+                                                          iot_mqtt_qos_t qos, iot_mqtt_message_callback_t callback, void* user_data) {
     if (!client || !topic_filter || !callback) return NULL;
 
-    mqtt_subscribe_entry_t* entry = (mqtt_subscribe_entry_t*)iot_malloc(sizeof(mqtt_subscribe_entry_t));
+    iot_mqtt_subscribe_entry_t* entry = (iot_mqtt_subscribe_entry_t*)iot_malloc(sizeof(iot_mqtt_subscribe_entry_t));
     if (!entry) return NULL;
 
-    memset(entry, 0, sizeof(mqtt_subscribe_entry_t));
+    memset(entry, 0, sizeof(iot_mqtt_subscribe_entry_t));
     entry->topic_filter = (char*)iot_strdup(topic_filter);
     if (!entry->topic_filter) {
         iot_free(entry);
@@ -403,12 +403,12 @@ static mqtt_subscribe_entry_t* mqtt_client_subscribe_add(mqtt_client_t* client, 
     return entry;
 }
 
-static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topic_filter) {
+static void iot_mqtt_client_subscribe_remove(iot_mqtt_client_t* client, const char* topic_filter) {
     if (!client || !topic_filter) return;
 
-    mqtt_subscribe_entry_t** pp = &client->subscribe_head;
+    iot_mqtt_subscribe_entry_t** pp = &client->subscribe_head;
     while (*pp) {
-        mqtt_subscribe_entry_t* entry = *pp;
+        iot_mqtt_subscribe_entry_t* entry = *pp;
         if (strcmp(entry->topic_filter, topic_filter) == 0) {
             *pp = entry->next;
             if (entry == client->subscribe_tail) {
@@ -423,12 +423,12 @@ static void mqtt_client_subscribe_remove(mqtt_client_t* client, const char* topi
     }
 }
 
-static void mqtt_client_subscribe_destroy_all(mqtt_client_t* client) {
+static void iot_mqtt_client_subscribe_destroy_all(iot_mqtt_client_t* client) {
     if (!client) return;
 
-    mqtt_subscribe_entry_t* entry = client->subscribe_head;
+    iot_mqtt_subscribe_entry_t* entry = client->subscribe_head;
     while (entry) {
-        mqtt_subscribe_entry_t* next = entry->next;
+        iot_mqtt_subscribe_entry_t* next = entry->next;
         iot_free(entry->topic_filter);
         iot_free(entry);
         entry = next;
@@ -451,7 +451,7 @@ static char* mqtt_strdup_opt(const char* s)
     return p;
 }
 
-static void mqtt_client_options_free(mqtt_client_t* client)
+static void iot_mqtt_client_options_free(iot_mqtt_client_t* client)
 {
     if (!client) {
         return;
@@ -466,9 +466,9 @@ static void mqtt_client_options_free(mqtt_client_t* client)
     memset(&client->options, 0, sizeof(client->options));
 }
 
-static int mqtt_client_options_copy(mqtt_client_t* client, const mqtt_connect_options_t* src)
+static int iot_mqtt_client_options_copy(iot_mqtt_client_t* client, const iot_mqtt_connect_options_t* src)
 {
-    mqtt_connect_options_t copy = *src;
+    iot_mqtt_connect_options_t copy = *src;
 
     copy.host = mqtt_strdup_opt(src->host);
     copy.client_id = mqtt_strdup_opt(src->client_id);
@@ -492,7 +492,7 @@ static int mqtt_client_options_copy(mqtt_client_t* client, const mqtt_connect_op
         return -1;
     }
 
-    mqtt_client_options_free(client);
+    iot_mqtt_client_options_free(client);
     client->options = copy;
     return 0;
 }

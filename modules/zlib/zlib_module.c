@@ -46,24 +46,24 @@ static void lua_pushstring_safe(lua_State* L, const char* str, size_t len) {
 /* 将 gzip 错误码转换为错误消息 */
 static const char* gzip_error_str(int err) {
     switch (err) {
-        case GZIP_OK:           return "success";
-        case GZIP_ERR_MEM:      return "memory error";
-        case GZIP_ERR_FORMAT:   return "format error";
-        case GZIP_ERR_CRC:      return "crc error";
-        case GZIP_ERR_FILE:     return "file error";
+        case IOT_ZIP_OK:           return "success";
+        case IOT_ZIP_ERR_MEM:      return "memory error";
+        case IOT_ZIP_ERR_FORMAT:   return "format error";
+        case IOT_ZIP_ERR_CRC:      return "crc error";
+        case IOT_ZIP_ERR_FILE:     return "file error";
         default:                return "unknown error";
     }
 }
 
 static const char* zlib_error_str(int err) {
     switch (err) {
-        case ZLIB_OK:           return "success";
-        case ZLIB_ERR_MEM:      return "memory error";
-        case ZLIB_ERR_BUF:      return "buffer error";
-        case ZLIB_ERR_FORMAT:   return "format error";
-        case ZLIB_ERR_CRC:      return "crc error";
-        case ZLIB_ERR_FILE:     return "file error";
-        case ZLIB_ERR_NOT_FOUND: return "not found";
+        case IOT_ZLIB_OK:           return "success";
+        case IOT_ZLIB_ERR_MEM:      return "memory error";
+        case IOT_ZLIB_ERR_BUF:      return "buffer error";
+        case IOT_ZLIB_ERR_FORMAT:   return "format error";
+        case IOT_ZLIB_ERR_CRC:      return "crc error";
+        case IOT_ZLIB_ERR_FILE:     return "file error";
+        case IOT_ZLIB_ERR_NOT_FOUND: return "not found";
         default:                return "unknown error";
     }
 }
@@ -78,7 +78,7 @@ static const char* zlib_error_str(int err) {
  * @int level 压缩级别（1-9），默认6
  * @return string 压缩后的数据，失败返回 nil
  */
-static int luaopen_zlib_deflate_compress(lua_State* L) {
+static int luaopen_zlib_iot_deflate_compress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     int level = (int)luaL_optinteger(L, 2, 6);  /* default level 6 */
@@ -96,7 +96,7 @@ static int luaopen_zlib_deflate_compress(lua_State* L) {
         return 2;
     }
     
-    size_t out_len = deflate_compress((const uint8_t*)src, src_len, dst, dst_len);
+    size_t out_len = iot_deflate_compress((const uint8_t*)src, src_len, dst, dst_len);
     
     if (out_len == 0) {
         iot_free(dst);
@@ -115,7 +115,7 @@ static int luaopen_zlib_deflate_compress(lua_State* L) {
  * @string data 压缩的数据
  * @return string 解压后的数据，失败返回 nil
  */
-static int luaopen_zlib_deflate_decompress(lua_State* L) {
+static int luaopen_zlib_iot_deflate_decompress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     
@@ -130,7 +130,7 @@ static int luaopen_zlib_deflate_decompress(lua_State* L) {
         return 2;
     }
     
-    size_t out_len = inflate_decompress((const uint8_t*)src, src_len, dst, dst_len);
+    size_t out_len = iot_inflate_decompress((const uint8_t*)src, src_len, dst, dst_len);
     
     if (out_len == 0) {
         iot_free(dst);
@@ -150,7 +150,7 @@ static int luaopen_zlib_deflate_decompress(lua_State* L) {
  * @int adler 初始值（可选），默认1
  * @return int ADLER32 校验码
  */
-static int luaopen_zlib_deflate_adler32(lua_State* L) {
+static int luaopen_zlib_iot_deflate_adler32(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t adler = (uint32_t)luaL_optinteger(L, 2, 1);
@@ -166,7 +166,7 @@ static int luaopen_zlib_deflate_adler32(lua_State* L) {
  * @int crc 初始值（可选），默认0
  * @return int CRC32 校验码
  */
-static int luaopen_zlib_deflate_crc32(lua_State* L) {
+static int luaopen_zlib_iot_deflate_crc32(lua_State* L) {
     size_t len = 0;
     const char* data = luaL_checklstring(L, 1, &len);
     uint32_t crc = (uint32_t)luaL_optinteger(L, 2, 0);
@@ -178,10 +178,10 @@ static int luaopen_zlib_deflate_crc32(lua_State* L) {
 
 /* deflate 模块方法表 */
 static const luaL_Reg deflate_lib[] = {
-    { "compress",  luaopen_zlib_deflate_compress },
-    { "decompress", luaopen_zlib_deflate_decompress },
-    { "adler32",   luaopen_zlib_deflate_adler32 },
-    { "crc32",     luaopen_zlib_deflate_crc32 },
+    { "compress",  luaopen_zlib_iot_deflate_compress },
+    { "decompress", luaopen_zlib_iot_deflate_decompress },
+    { "adler32",   luaopen_zlib_iot_deflate_adler32 },
+    { "crc32",     luaopen_zlib_iot_deflate_crc32 },
     { NULL, NULL }
 };
 
@@ -195,16 +195,16 @@ static const luaL_Reg deflate_lib[] = {
  * @int level 压缩级别（1-9），默认6
  * @return string 压缩后的数据，失败返回 nil
  */
-static int luaopen_zlib_gzip_compress(lua_State* L) {
+static int luaopen_zlib_iot_gzip_compress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
-    int level = (int)luaL_optinteger(L, 2, GZIP_COMPRESS_DEFAULT);
+    int level = (int)luaL_optinteger(L, 2, IOT_GZIP_COMPRESS_DEFAULT);
     
-    if (level < 1) level = GZIP_COMPRESS_FAST;
-    if (level > 9) level = GZIP_COMPRESS_BEST;
+    if (level < 1) level = IOT_GZIP_COMPRESS_FAST;
+    if (level > 9) level = IOT_GZIP_COMPRESS_BEST;
     
     /* 估算输出缓冲区大小 */
-    size_t dst_len = gzip_compress_bound(src_len);
+    size_t dst_len = iot_gzip_compress_bound(src_len);
     uint8_t* dst = (uint8_t*)iot_malloc(dst_len);
     if (!dst) {
         lua_pushnil(L);
@@ -213,9 +213,9 @@ static int luaopen_zlib_gzip_compress(lua_State* L) {
     }
     
     size_t out_len = dst_len;
-    int ret = gzip_compress((const uint8_t*)src, src_len, dst, &out_len, level);
+    int ret = iot_gzip_compress((const uint8_t*)src, src_len, dst, &out_len, level);
     
-    if (ret != GZIP_OK) {
+    if (ret != IOT_ZIP_OK) {
         iot_free(dst);
         lua_pushnil(L);
         lua_pushstring(L, gzip_error_str(ret));
@@ -232,7 +232,7 @@ static int luaopen_zlib_gzip_compress(lua_State* L) {
  * @string data 压缩的数据
  * @return string 解压后的数据，失败返回 nil
  */
-static int luaopen_zlib_gzip_decompress(lua_State* L) {
+static int luaopen_zlib_iot_gzip_decompress(lua_State* L) {
     size_t src_len = 0;
     const char* src = luaL_checklstring(L, 1, &src_len);
     
@@ -248,9 +248,9 @@ static int luaopen_zlib_gzip_decompress(lua_State* L) {
     }
     
     size_t out_len = dst_len;
-    int ret = gzip_decompress((const uint8_t*)src, src_len, dst, &out_len);
+    int ret = iot_gzip_decompress((const uint8_t*)src, src_len, dst, &out_len);
     
-    if (ret != GZIP_OK) {
+    if (ret != IOT_ZIP_OK) {
         iot_free(dst);
         lua_pushnil(L);
         lua_pushstring(L, gzip_error_str(ret));
@@ -269,13 +269,13 @@ static int luaopen_zlib_gzip_decompress(lua_State* L) {
  * @int level 压缩级别（可选）
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_gzip_compress_file(lua_State* L) {
+static int luaopen_zlib_iot_gzip_compress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_path = luaL_checkstring(L, 2);
-    int level = (int)luaL_optinteger(L, 3, GZIP_COMPRESS_DEFAULT);
+    int level = (int)luaL_optinteger(L, 3, IOT_GZIP_COMPRESS_DEFAULT);
     
-    int ret = gzip_compress_file(src_path, dst_path, level);
-    if (ret != GZIP_OK) {
+    int ret = iot_gzip_compress_file(src_path, dst_path, level);
+    if (ret != IOT_ZIP_OK) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, gzip_error_str(ret));
         return 2;
@@ -291,12 +291,12 @@ static int luaopen_zlib_gzip_compress_file(lua_State* L) {
  * @string dst_path 目标文件路径
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_gzip_decompress_file(lua_State* L) {
+static int luaopen_zlib_iot_gzip_decompress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_path = luaL_checkstring(L, 2);
     
-    int ret = gzip_decompress_file(src_path, dst_path);
-    if (ret != GZIP_OK) {
+    int ret = iot_gzip_decompress_file(src_path, dst_path);
+    if (ret != IOT_ZIP_OK) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, gzip_error_str(ret));
         return 2;
@@ -308,10 +308,10 @@ static int luaopen_zlib_gzip_decompress_file(lua_State* L) {
 
 /* gzip 模块方法表 */
 static const luaL_Reg gzip_lib[] = {
-    { "compress",      luaopen_zlib_gzip_compress },
-    { "decompress",    luaopen_zlib_gzip_decompress },
-    { "compress_file", luaopen_zlib_gzip_compress_file },
-    { "decompress_file", luaopen_zlib_gzip_decompress_file },
+    { "compress",      luaopen_zlib_iot_gzip_compress },
+    { "decompress",    luaopen_zlib_iot_gzip_decompress },
+    { "compress_file", luaopen_zlib_iot_gzip_compress_file },
+    { "decompress_file", luaopen_zlib_iot_gzip_decompress_file },
     { NULL, NULL }
 };
 
@@ -325,21 +325,21 @@ static const luaL_Reg gzip_lib[] = {
  * @string dest_dir 目标解压目录
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_zip_decompress_file(lua_State* L) {
+static int luaopen_zlib_iot_zip_decompress_file(lua_State* L) {
     const char* zip_path = luaL_checkstring(L, 1);
     const char* dest_dir = luaL_checkstring(L, 2);
     
-    int ret = zip_decompress_file(zip_path, dest_dir);
-    if (ret != ZIP_OK) {
+    int ret = iot_zip_decompress_file(zip_path, dest_dir);
+    if (ret != IOT_ZIP_OK) {
         lua_pushboolean(L, 0);
         /* ZIP 错误码单独处理 */
         const char* err_msg;
         switch (ret) {
-            case ZIP_ERR_MEM:       err_msg = "memory error"; break;
-            case ZIP_ERR_FORMAT:    err_msg = "format error"; break;
-            case ZIP_ERR_CRC:       err_msg = "crc error"; break;
-            case ZIP_ERR_FILE:      err_msg = "file error"; break;
-            case ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
+            case IOT_ZIP_ERR_MEM:       err_msg = "memory error"; break;
+            case IOT_ZIP_ERR_FORMAT:    err_msg = "format error"; break;
+            case IOT_ZIP_ERR_CRC:       err_msg = "crc error"; break;
+            case IOT_ZIP_ERR_FILE:      err_msg = "file error"; break;
+            case IOT_ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
             default:                err_msg = "unknown error"; break;
         }
         lua_pushstring(L, err_msg);
@@ -356,7 +356,7 @@ static int luaopen_zlib_zip_decompress_file(lua_State* L) {
  * @int level 压缩级别（可选）
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_zip_compress_file(lua_State* L) {
+static int luaopen_zlib_iot_zip_compress_file(lua_State* L) {
     const char* zip_path = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     int level = (int)luaL_optinteger(L, 3, 6);
@@ -382,18 +382,18 @@ static int luaopen_zlib_zip_compress_file(lua_State* L) {
         lua_pop(L, 1);
     }
     
-    int ret = zip_compress_file(zip_path, files, file_count, level);
+    int ret = iot_zip_compress_file(zip_path, files, file_count, level);
     iot_free(files);
     
-    if (ret != ZIP_OK) {
+    if (ret != IOT_ZIP_OK) {
         lua_pushboolean(L, 0);
         const char* err_msg;
         switch (ret) {
-            case ZIP_ERR_MEM:       err_msg = "memory error"; break;
-            case ZIP_ERR_FORMAT:    err_msg = "format error"; break;
-            case ZIP_ERR_CRC:       err_msg = "crc error"; break;
-            case ZIP_ERR_FILE:      err_msg = "file error"; break;
-            case ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
+            case IOT_ZIP_ERR_MEM:       err_msg = "memory error"; break;
+            case IOT_ZIP_ERR_FORMAT:    err_msg = "format error"; break;
+            case IOT_ZIP_ERR_CRC:       err_msg = "crc error"; break;
+            case IOT_ZIP_ERR_FILE:      err_msg = "file error"; break;
+            case IOT_ZIP_ERR_NOT_FOUND: err_msg = "not found"; break;
             default:                err_msg = "unknown error"; break;
         }
         lua_pushstring(L, err_msg);
@@ -406,8 +406,8 @@ static int luaopen_zlib_zip_compress_file(lua_State* L) {
 
 /* zip 模块方法表 */
 static const luaL_Reg zip_lib[] = {
-    { "decompress_file", luaopen_zlib_zip_decompress_file },
-    { "compress_file",   luaopen_zlib_zip_compress_file },
+    { "decompress_file", luaopen_zlib_iot_zip_decompress_file },
+    { "compress_file",   luaopen_zlib_iot_zip_compress_file },
     { NULL, NULL }
 };
 
@@ -421,19 +421,19 @@ static const luaL_Reg zip_lib[] = {
  * @string dst_dir 目标解压目录
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_tar_decompress_file(lua_State* L) {
+static int luaopen_zlib_iot_tar_decompress_file(lua_State* L) {
     const char* src_path = luaL_checkstring(L, 1);
     const char* dst_dir = luaL_checkstring(L, 2);
     
-    int ret = tar_decompress_file(src_path, dst_dir);
-    if (ret != TAR_OK) {
+    int ret = iot_tar_decompress_file(src_path, dst_dir);
+    if (ret != IOT_TAR_OK) {
         lua_pushboolean(L, 0);
         const char* err_msg;
         switch (ret) {
-            case TAR_ERR_MEM:       err_msg = "memory error"; break;
-            case TAR_ERR_FORMAT:    err_msg = "format error"; break;
-            case TAR_ERR_FILE:      err_msg = "file error"; break;
-            case TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
+            case IOT_TAR_ERR_MEM:       err_msg = "memory error"; break;
+            case IOT_TAR_ERR_FORMAT:    err_msg = "format error"; break;
+            case IOT_TAR_ERR_FILE:      err_msg = "file error"; break;
+            case IOT_TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
             default:                err_msg = "unknown error"; break;
         }
         lua_pushstring(L, err_msg);
@@ -452,11 +452,11 @@ static int luaopen_zlib_tar_decompress_file(lua_State* L) {
  * @int level 压缩级别（可选，仅对 .tar.gz 有效）
  * @return bool 成功返回 true
  */
-static int luaopen_zlib_tar_compress_file(lua_State* L) {
+static int luaopen_zlib_iot_tar_compress_file(lua_State* L) {
     const char* src_dir = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     const char* dst_path = luaL_checkstring(L, 3);
-    int level = (int)luaL_optinteger(L, 4, TAR_COMPRESS_DEFAULT);
+    int level = (int)luaL_optinteger(L, 4, IOT_TAR_COMPRESS_DEFAULT);
     
     /* 获取文件列表 */
     int file_count = (int)lua_rawlen(L, 2);
@@ -479,17 +479,17 @@ static int luaopen_zlib_tar_compress_file(lua_State* L) {
         lua_pop(L, 1);
     }
     
-    int ret = tar_compress_file(src_dir, files, file_count, dst_path, level);
+    int ret = iot_tar_compress_file(src_dir, files, file_count, dst_path, level);
     iot_free(files);
     
-    if (ret != TAR_OK) {
+    if (ret != IOT_TAR_OK) {
         lua_pushboolean(L, 0);
         const char* err_msg;
         switch (ret) {
-            case TAR_ERR_MEM:       err_msg = "memory error"; break;
-            case TAR_ERR_FORMAT:    err_msg = "format error"; break;
-            case TAR_ERR_FILE:      err_msg = "file error"; break;
-            case TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
+            case IOT_TAR_ERR_MEM:       err_msg = "memory error"; break;
+            case IOT_TAR_ERR_FORMAT:    err_msg = "format error"; break;
+            case IOT_TAR_ERR_FILE:      err_msg = "file error"; break;
+            case IOT_TAR_ERR_NOT_FOUND: err_msg = "not found"; break;
             default:                err_msg = "unknown error"; break;
         }
         lua_pushstring(L, err_msg);
@@ -502,8 +502,8 @@ static int luaopen_zlib_tar_compress_file(lua_State* L) {
 
 /* tar 模块方法表 */
 static const luaL_Reg tar_lib[] = {
-    { "decompress_file", luaopen_zlib_tar_decompress_file },
-    { "compress_file",   luaopen_zlib_tar_compress_file },
+    { "decompress_file", luaopen_zlib_iot_tar_decompress_file },
+    { "compress_file",   luaopen_zlib_iot_tar_compress_file },
     { NULL, NULL }
 };
 
@@ -543,7 +543,7 @@ LUAMOD_API int luaopen_zlib_register(lua_State* L) {
     lua_newtable(L);
     
     /* 添加版本信息 */
-    lua_pushstring(L, ZLIB_VERSION);
+    lua_pushstring(L, IOT_ZLIB_VERSION);
     lua_setfield(L, -2, "version");
     
     /* 创建子模块 */

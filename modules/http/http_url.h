@@ -30,7 +30,7 @@ typedef struct {
     char path[512];      /* 路径 */
     char query[512];     /* 查询参数 */
     char fragment[128];  /* 锚点 */
-} http_url_t;
+} iot_http_url_t;
 
 /*===========================================================
  * URL 解析接口
@@ -42,14 +42,14 @@ typedef struct {
  * @param parsed 输出参数，解析结果
  * @return 0 成功，-1 失败
  */
-int http_url_parse(const char* url, http_url_t* parsed);
+int iot_http_url_parse(const char* url, iot_http_url_t* parsed);
 
 /**
  * @brief 从 URL 构建查询参数
  * @param url URL 字符串
  * @return 查询参数字符串，失败或无查询参数返回 NULL，使用完后需 free
  */
-char* http_url_get_query(const char* url);
+char* iot_http_url_get_query(const char* url);
 
 /**
  * @brief 根据键名获取查询参数值
@@ -57,14 +57,14 @@ char* http_url_get_query(const char* url);
  * @param key 键名
  * @return 值字符串，未找到返回 NULL，使用完后需 free
  */
-char* http_url_get_param(const char* query, const char* key);
+char* iot_http_url_get_param(const char* query, const char* key);
 
 /**
  * @brief 获取 URL 编码后的字符串长度
  * @param str 原始字符串
  * @return 编码后字符串长度
  */
-size_t http_url_encode_len(const char* str);
+size_t iot_http_url_encode_len(const char* str);
 
 /**
  * @brief URL 编码
@@ -73,21 +73,21 @@ size_t http_url_encode_len(const char* str);
  * @param dst_len 缓冲区大小
  * @return 编码后字符串，失败返回 NULL
  */
-char* http_url_encode(const char* src, char* dst, size_t dst_len);
+char* iot_http_url_encode(const char* src, char* dst, size_t dst_len);
 
 /**
  * @brief URL 编码（分配内存版本）
  * @param str 原始字符串
  * @return 编码后字符串，失败返回 NULL，使用完后需 free
  */
-char* http_url_encode_alloc(const char* str);
+char* iot_http_url_encode_alloc(const char* str);
 
 /**
  * @brief 获取 URL 解码后的字符串长度
  * @param str 编码后的字符串
  * @return 解码后字符串长度
  */
-size_t http_url_decode_len(const char* str);
+size_t iot_http_url_decode_len(const char* str);
 
 /**
  * @brief URL 解码
@@ -96,14 +96,14 @@ size_t http_url_decode_len(const char* str);
  * @param dst_len 缓冲区大小
  * @return 解码后字符串，失败返回 NULL
  */
-char* http_url_decode(const char* src, char* dst, size_t dst_len);
+char* iot_http_url_decode(const char* src, char* dst, size_t dst_len);
 
 /**
  * @brief URL 解码（分配内存版本）
  * @param str 编码后的字符串
  * @return 解码后字符串，失败返回 NULL，使用完后需 free
  */
-char* http_url_decode_alloc(const char* str);
+char* iot_http_url_decode_alloc(const char* str);
 
 /**
  * @brief 构建 URL 字符串
@@ -116,7 +116,7 @@ char* http_url_decode_alloc(const char* str);
  * @param query 查询参数（可选）
  * @return 0 成功，-1 失败
  */
-int http_url_build(char* url, size_t url_len, const char* scheme, const char* host,
+int iot_http_url_build(char* url, size_t url_len, const char* scheme, const char* host,
                   uint16_t port, const char* path, const char* query);
 
 #ifdef __cplusplus

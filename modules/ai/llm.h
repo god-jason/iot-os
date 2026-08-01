@@ -36,26 +36,26 @@ extern "C" {
 
 /* LLM 消息角色 */
 typedef enum {
-    LLM_ROLE_SYSTEM    = 0,
-    LLM_ROLE_USER      = 1,
-    LLM_ROLE_ASSISTANT = 2,
-    LLM_ROLE_TOOL      = 3
-} llm_role_t;
+    IOT_LLM_ROLE_SYSTEM    = 0,
+    IOT_LLM_ROLE_USER      = 1,
+    IOT_LLM_ROLE_ASSISTANT = 2,
+    IOT_LLM_ROLE_TOOL      = 3
+} iot_llm_message_role_t;
 
 /* LLM 消息 */
 typedef struct {
-    llm_role_t role;        /* 角色 */
+    iot_llm_message_role_t role;        /* 角色 */
     char*      content;     /* 消息内容 (JSON 字符串) */
     char*      name;        /* 名称 (可选, 用于 tool role) */
     char*      tool_call_id;/* 工具调用 ID (可选) */
-} llm_message_t;
+} iot_llm_message_t;
 
 /* LLM 工具定义 */
 typedef struct {
     char* name;             /* 工具名称 */
     char* description;      /* 工具描述 */
     char* parameters;       /* 参数 JSON Schema 字符串 */
-} llm_tool_t;
+} iot_llm_tool_t;
 
 /* LLM 配置 */
 typedef struct {
@@ -70,13 +70,13 @@ typedef struct {
     char*    json_schema;    /* JSON Schema 字符串 (enable_json_mode 时使用) */
     char*    system_prompt;  /* 系统提示词 */
     char*    extra_headers;  /* 额外 HTTP 头 (JSON 格式, 如 {"X-Custom":"val"}) */
-} llm_config_t;
+} iot_llm_config_t;
 
 /* LLM 客户端句柄 (不透明) */
-typedef struct llm_client_ctx llm_client_t;
+typedef struct iot_llm_client_ctx iot_llm_client_t;
 
 /* 对话上下文句柄 (不透明) */
-typedef struct llm_conversation_ctx llm_conversation_t;
+typedef struct iot_llm_conversation_ctx iot_llm_conversation_t;
 
 /* LLM 响应 */
 typedef struct {
@@ -88,10 +88,10 @@ typedef struct {
     int       total_tokens;  /* 总 token 数 */
     int       status_code;   /* HTTP 状态码 */
     char*     error;         /* 错误信息 (NULL 表示成功) */
-} llm_response_t;
+} iot_llm_response_t;
 
 /* 异步回调 */
-typedef void (*llm_callback_t)(llm_response_t* response, void* user_data);
+typedef void (*iot_llm_callback_t)(iot_llm_response_t* response, void* user_data);
 
 /* 流式回调 (每次收到一个 token 调用) */
 typedef void (*llm_stream_callback_t)(const char* delta_content,
@@ -108,7 +108,7 @@ typedef void (*llm_stream_callback_t)(const char* delta_content,
  * @param config 配置参数 (内部会拷贝, 调用者可释放)
  * @return 客户端句柄, 失败返回 NULL
  */
-llm_client_t* llm_client_create(const llm_config_t* config);
+iot_llm_client_t* iot_llm_client_create(const iot_llm_config_t* config);
 
 /**
  * @brief 更新客户端配置
@@ -116,13 +116,13 @@ llm_client_t* llm_client_create(const llm_config_t* config);
  * @param config 新配置
  * @return 0 成功, -1 失败
  */
-int llm_client_set_config(llm_client_t* client, const llm_config_t* config);
+int iot_llm_client_set_config(iot_llm_client_t* client, const iot_llm_config_t* config);
 
 /**
  * @brief 释放 LLM 客户端
  * @param client 客户端句柄
  */
-void llm_client_free(llm_client_t* client);
+void iot_llm_client_free(iot_llm_client_t* client);
 
 /**
  * @brief 获取可用模型列表 (需要 API 支持)
@@ -130,7 +130,7 @@ void llm_client_free(llm_client_t* client);
  * @param models_json 输出: 模型列表 JSON 字符串 (调用者 free)
  * @return 0 成功, -1 失败
  */
-int llm_client_list_models(llm_client_t* client, char** models_json);
+int iot_llm_client_list_models(iot_llm_client_t* client, char** models_json);
 
 /*===========================================================
  * 对话管理
@@ -141,7 +141,7 @@ int llm_client_list_models(llm_client_t* client, char** models_json);
  * @param max_turns 最大保留轮次 (0 表示不限制)
  * @return 对话句柄
  */
-llm_conversation_t* llm_conversation_create(int max_turns);
+iot_llm_conversation_t* iot_llm_conversation_create(int max_turns);
 
 /**
  * @brief 添加消息到对话上下文
@@ -150,7 +150,7 @@ llm_conversation_t* llm_conversation_create(int max_turns);
  * @param content 内容
  * @return 0 成功, -1 失败
  */
-int llm_conversation_add(llm_conversation_t* conv, llm_role_t role,
+int iot_llm_conversation_add(iot_llm_conversation_t* conv, iot_llm_message_role_t role,
                           const char* content);
 
 /**
@@ -159,20 +159,20 @@ int llm_conversation_add(llm_conversation_t* conv, llm_role_t role,
  * @param include_system 是否包含 system 消息
  * @return JSON 数组字符串 (内部管理, 不可 free)
  */
-const char* llm_conversation_get_messages_json(llm_conversation_t* conv,
+const char* iot_llm_conversation_get_messages_json(iot_llm_conversation_t* conv,
                                                 bool include_system);
 
 /**
  * @brief 清空对话上下文 (保留 system prompt)
  * @param conv 对话句柄
  */
-void llm_conversation_clear(llm_conversation_t* conv);
+void iot_llm_conversation_clear(iot_llm_conversation_t* conv);
 
 /**
  * @brief 释放对话上下文
  * @param conv 对话句柄
  */
-void llm_conversation_free(llm_conversation_t* conv);
+void iot_llm_conversation_free(iot_llm_conversation_t* conv);
 
 /*===========================================================
  * Chat 接口 - 同步
@@ -184,12 +184,12 @@ void llm_conversation_free(llm_conversation_t* conv);
  * @param messages_json 消息 JSON 数组
  * @param tools 工具数组 (可为 NULL)
  * @param tool_count 工具数量
- * @param response 输出响应 (调用者需 llm_response_free)
+ * @param response 输出响应 (调用者需 iot_llm_response_free)
  * @return 0 成功, -1 失败
  */
-int llm_chat(llm_client_t* client, const char* messages_json,
-             const llm_tool_t* tools, int tool_count,
-             llm_response_t* response);
+int iot_llm_chat(iot_llm_client_t* client, const char* messages_json,
+             const iot_llm_tool_t* tools, int tool_count,
+             iot_llm_response_t* response);
 
 /**
  * @brief 同步聊天 (使用对话上下文)
@@ -200,9 +200,9 @@ int llm_chat(llm_client_t* client, const char* messages_json,
  * @param response 输出响应
  * @return 0 成功, -1 失败
  */
-int llm_chat_with_context(llm_client_t* client, llm_conversation_t* conv,
-                           const llm_tool_t* tools, int tool_count,
-                           llm_response_t* response);
+int iot_llm_chat_with_context(iot_llm_client_t* client, iot_llm_conversation_t* conv,
+                           const iot_llm_tool_t* tools, int tool_count,
+                           iot_llm_response_t* response);
 
 /**
  * @brief 单轮问答 (简便接口)
@@ -211,8 +211,8 @@ int llm_chat_with_context(llm_client_t* client, llm_conversation_t* conv,
  * @param response 输出响应
  * @return 0 成功, -1 失败
  */
-int llm_ask(llm_client_t* client, const char* user_message,
-            llm_response_t* response);
+int iot_llm_ask(iot_llm_client_t* client, const char* user_message,
+            iot_llm_response_t* response);
 
 /*===========================================================
  * Chat 接口 - 异步
@@ -228,9 +228,9 @@ int llm_ask(llm_client_t* client, const char* user_message,
  * @param user_data 用户数据
  * @return 0 已提交, -1 失败
  */
-int llm_chat_async(llm_client_t* client, const char* messages_json,
-                    const llm_tool_t* tools, int tool_count,
-                    llm_callback_t callback, void* user_data);
+int iot_llm_chat_async(iot_llm_client_t* client, const char* messages_json,
+                    const iot_llm_tool_t* tools, int tool_count,
+                    iot_llm_callback_t callback, void* user_data);
 
 /**
  * @brief 流式聊天
@@ -242,8 +242,8 @@ int llm_chat_async(llm_client_t* client, const char* messages_json,
  * @param user_data 用户数据
  * @return 0 已提交, -1 失败
  */
-int llm_chat_stream(llm_client_t* client, const char* messages_json,
-                     const llm_tool_t* tools, int tool_count,
+int iot_llm_chat_stream(iot_llm_client_t* client, const char* messages_json,
+                     const iot_llm_tool_t* tools, int tool_count,
                      llm_stream_callback_t stream_cb, void* user_data);
 
 /**
@@ -256,8 +256,8 @@ int llm_chat_stream(llm_client_t* client, const char* messages_json,
  * @param user_data 用户数据
  * @return 0 已提交, -1 失败
  */
-int llm_chat_stream_with_context(llm_client_t* client, llm_conversation_t* conv,
-                                  const llm_tool_t* tools, int tool_count,
+int iot_llm_chat_stream_with_context(iot_llm_client_t* client, iot_llm_conversation_t* conv,
+                                  const iot_llm_tool_t* tools, int tool_count,
                                   llm_stream_callback_t stream_cb, void* user_data);
 
 /*===========================================================
@@ -268,14 +268,14 @@ int llm_chat_stream_with_context(llm_client_t* client, llm_conversation_t* conv,
  * @brief 释放 LLM 响应资源
  * @param response 响应指针
  */
-void llm_response_free(llm_response_t* response);
+void iot_llm_response_free(iot_llm_response_t* response);
 
 /**
  * @brief 获取角色名称字符串
  * @param role 角色
  * @return 名称字符串 (如 "user", "assistant")
  */
-const char* llm_role_name(llm_role_t role);
+const char* llm_role_name(iot_llm_message_role_t role);
 
 /**
  * @brief 构建单条消息 JSON
@@ -285,7 +285,7 @@ const char* llm_role_name(llm_role_t role);
  * @param bufsize 缓冲区大小
  * @return 0 成功, -1 失败
  */
-int llm_message_to_json(llm_role_t role, const char* content,
+int iot_llm_message_to_json(iot_llm_message_role_t role, const char* content,
                          char* buf, size_t bufsize);
 
 /**
@@ -294,7 +294,7 @@ int llm_message_to_json(llm_role_t role, const char* content,
  * @param model 模型名称
  * @return 默认配置 (静态, 不可 free)
  */
-const llm_config_t* llm_default_config(const char* api_key, const char* model);
+const iot_llm_config_t* llm_default_config(const char* api_key, const char* model);
 
 #ifdef __cplusplus
 }

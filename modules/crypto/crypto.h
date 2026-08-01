@@ -28,37 +28,37 @@ extern "C" {
 
 /* 哈希算法类型 */
 typedef enum {
-    CRYPTO_HASH_MD5 = 0,
-    CRYPTO_HASH_SHA1,
-    CRYPTO_HASH_SHA224,
-    CRYPTO_HASH_SHA256,
-    CRYPTO_HASH_SHA384,
-    CRYPTO_HASH_SHA512,
-    CRYPTO_HASH_SM3
-} crypto_hash_type_t;
+    IOT_CRYPTO_HASH_MD5 = 0,
+    IOT_CRYPTO_HASH_SHA1,
+    IOT_CRYPTO_HASH_SHA224,
+    IOT_CRYPTO_HASH_SHA256,
+    IOT_CRYPTO_HASH_SHA384,
+    IOT_CRYPTO_HASH_SHA512,
+    IOT_CRYPTO_HASH_SM3
+} iot_crypto_hash_type_t;
 
 /* 对称加密算法类型 */
 typedef enum {
-    CRYPTO_CIPHER_AES_128_ECB = 0,
-    CRYPTO_CIPHER_AES_128_CBC,
-    CRYPTO_CIPHER_AES_128_CTR,
-    CRYPTO_CIPHER_AES_128_GCM,
-    CRYPTO_CIPHER_AES_192_ECB,
-    CRYPTO_CIPHER_AES_192_CBC,
-    CRYPTO_CIPHER_AES_192_CTR,
-    CRYPTO_CIPHER_AES_192_GCM,
-    CRYPTO_CIPHER_AES_256_ECB,
-    CRYPTO_CIPHER_AES_256_CBC,
-    CRYPTO_CIPHER_AES_256_CTR,
-    CRYPTO_CIPHER_AES_256_GCM,
-    CRYPTO_CIPHER_SM4_ECB,
-    CRYPTO_CIPHER_SM4_CBC,
-    CRYPTO_CIPHER_SM4_CTR,
-    CRYPTO_CIPHER_SM4_GCM
-} crypto_cipher_type_t;
+    IOT_CRYPTO_CIPHER_AES_128_ECB = 0,
+    IOT_CRYPTO_CIPHER_AES_128_CBC,
+    IOT_CRYPTO_CIPHER_AES_128_CTR,
+    IOT_CRYPTO_CIPHER_AES_128_GCM,
+    IOT_CRYPTO_CIPHER_AES_192_ECB,
+    IOT_CRYPTO_CIPHER_AES_192_CBC,
+    IOT_CRYPTO_CIPHER_AES_192_CTR,
+    IOT_CRYPTO_CIPHER_AES_192_GCM,
+    IOT_CRYPTO_CIPHER_AES_256_ECB,
+    IOT_CRYPTO_CIPHER_AES_256_CBC,
+    IOT_CRYPTO_CIPHER_AES_256_CTR,
+    IOT_CRYPTO_CIPHER_AES_256_GCM,
+    IOT_CRYPTO_CIPHER_SM4_ECB,
+    IOT_CRYPTO_CIPHER_SM4_CBC,
+    IOT_CRYPTO_CIPHER_SM4_CTR,
+    IOT_CRYPTO_CIPHER_SM4_GCM
+} iot_crypto_cipher_type_t;
 
 /* X509 证书信息 */
-typedef struct crypto_x509_cert crypto_x509_cert_t;
+typedef struct crypto_x509_cert iot_crypto_x509_cert_t;
 struct crypto_x509_cert {
     char* subject;           /* 证书主题 */
     char* issuer;           /* 颁发者 */
@@ -69,11 +69,11 @@ struct crypto_x509_cert {
     char* organization;     /* 组织名称 (O) */
     uint8_t* public_key;    /* 公钥 */
     size_t public_key_len;  /* 公钥长度 */
-    crypto_x509_cert_t* next;  /* 下一个证书 (用于证书链) */
+    iot_crypto_x509_cert_t* next;  /* 下一个证书 (用于证书链) */
 };
 
 /* 哈希上下文 (预留) */
-typedef struct crypto_hash_ctx crypto_hash_ctx_t;
+typedef struct crypto_hash_ctx iot_crypto_hash_ctx_t;
 
 /*===========================================================
  * 哈希接口
@@ -84,14 +84,14 @@ typedef struct crypto_hash_ctx crypto_hash_ctx_t;
  * @param type 哈希类型
  * @return 摘要长度，失败返回 0
  */
-size_t crypto_hash_digest_size(crypto_hash_type_t type);
+size_t iot_crypto_hash_digest_size(iot_crypto_hash_type_t type);
 
 /**
  * @brief 获取哈希算法名称
  * @param type 哈希类型
  * @return 哈希算法名称字符串
  */
-const char* crypto_hash_name(crypto_hash_type_t type);
+const char* iot_crypto_hash_name(iot_crypto_hash_type_t type);
 
 /**
  * @brief 计算哈希值 (一步完成)
@@ -102,7 +102,7 @@ const char* crypto_hash_name(crypto_hash_type_t type);
  * @param digestlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
+int iot_crypto_hash(iot_crypto_hash_type_t type, const uint8_t* data, size_t datalen,
                 uint8_t* digest, size_t* digestlen);
 
 /*===========================================================
@@ -120,7 +120,7 @@ int crypto_hash(crypto_hash_type_t type, const uint8_t* data, size_t datalen,
  * @param maclen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
+int iot_crypto_hmac(iot_crypto_hash_type_t type, const uint8_t* key, size_t keylen,
                 const uint8_t* data, size_t datalen,
                 uint8_t* mac, size_t* maclen);
 
@@ -133,21 +133,21 @@ int crypto_hmac(crypto_hash_type_t type, const uint8_t* key, size_t keylen,
  * @param type 加密算法类型
  * @return 密钥长度，失败返回 0
  */
-size_t crypto_cipher_key_size(crypto_cipher_type_t type);
+size_t iot_crypto_cipher_key_size(iot_crypto_cipher_type_t type);
 
 /**
  * @brief 获取对称加密算法 IV 长度
  * @param type 加密算法类型
  * @return IV 长度，失败返回 0
  */
-size_t crypto_cipher_iv_size(crypto_cipher_type_t type);
+size_t iot_crypto_cipher_iv_size(iot_crypto_cipher_type_t type);
 
 /**
  * @brief 获取对称加密算法块大小
  * @param type 加密算法类型
  * @return 块大小，失败返回 0
  */
-size_t crypto_cipher_block_size(crypto_cipher_type_t type);
+size_t iot_crypto_cipher_block_size(iot_crypto_cipher_type_t type);
 
 /**
  * @brief AES/SM4 加密 (一步完成，PKCS7 填充)
@@ -164,7 +164,7 @@ size_t crypto_cipher_block_size(crypto_cipher_type_t type);
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_encrypt(crypto_cipher_type_t type,
+int iot_crypto_encrypt(iot_crypto_cipher_type_t type,
                    const uint8_t* key, size_t keylen,
                    const uint8_t* iv, size_t ivlen,
                    const uint8_t* aad, size_t aadlen,
@@ -186,7 +186,7 @@ int crypto_encrypt(crypto_cipher_type_t type,
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_decrypt(crypto_cipher_type_t type,
+int iot_crypto_decrypt(iot_crypto_cipher_type_t type,
                    const uint8_t* key, size_t keylen,
                    const uint8_t* iv, size_t ivlen,
                    const uint8_t* aad, size_t aadlen,
@@ -203,7 +203,7 @@ int crypto_decrypt(crypto_cipher_type_t type,
  * @param buflen 需要的随机字节数
  * @return 0 成功，-1 失败
  */
-int crypto_rand_bytes(uint8_t* buf, size_t buflen);
+int iot_crypto_rand_bytes(uint8_t* buf, size_t buflen);
 
 /*===========================================================
  * 编码转换接口
@@ -217,7 +217,7 @@ int crypto_rand_bytes(uint8_t* buf, size_t buflen);
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outlen);
+int iot_crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outlen);
 
 /**
  * @brief 字节数组转十六进制字符串
@@ -227,7 +227,7 @@ int crypto_hex_to_bytes(const char* in, size_t inlen, uint8_t* out, size_t* outl
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outlen);
+int iot_crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outlen);
 
 /*===========================================================
  * Base64 编解码接口
@@ -241,7 +241,7 @@ int crypto_bytes_to_hex(const uint8_t* in, size_t inlen, char* out, size_t* outl
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* outlen);
+int iot_crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* outlen);
 
 /**
  * @brief Base64 解码
@@ -251,21 +251,21 @@ int crypto_base64_encode(const uint8_t* in, size_t inlen, char* out, size_t* out
  * @param outlen 缓冲区长度 (输入/输出)
  * @return 0 成功，-1 失败
  */
-int crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* outlen);
+int iot_crypto_base64_decode(const char* in, size_t inlen, uint8_t* out, size_t* outlen);
 
 /**
  * @brief 获取 Base64 编码输出长度
  * @param inlen 输入长度
  * @return 需要的输出缓冲区长度
  */
-size_t crypto_base64_encode_len(size_t inlen);
+size_t iot_crypto_base64_encode_len(size_t inlen);
 
 /**
  * @brief 获取 Base64 解码输出长度
  * @param inlen 输入长度
  * @return 需要的输出缓冲区长度
  */
-size_t crypto_base64_decode_len(size_t inlen);
+size_t iot_crypto_base64_decode_len(size_t inlen);
 
 /*===========================================================
  * X509 证书接口
@@ -277,7 +277,7 @@ size_t crypto_base64_decode_len(size_t inlen);
  * @param pemlen 字符串长度
  * @return 证书结构，失败返回 NULL
  */
-crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen);
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_pem(const char* pem, size_t pemlen);
 
 /**
  * @brief 从 DER 数据解析证书
@@ -285,41 +285,41 @@ crypto_x509_cert_t* crypto_x509_parse_pem(const char* pem, size_t pemlen);
  * @param derlen 数据长度
  * @return 证书结构，失败返回 NULL
  */
-crypto_x509_cert_t* crypto_x509_parse_der(const uint8_t* der, size_t derlen);
+iot_crypto_x509_cert_t* iot_crypto_x509_parse_der(const uint8_t* der, size_t derlen);
 
 /**
  * @brief 释放证书结构
  * @param cert 证书结构
  */
-void crypto_x509_free(crypto_x509_cert_t* cert);
+void iot_crypto_x509_free(iot_crypto_x509_cert_t* cert);
 
 /**
  * @brief 获取证书主题字符串
  * @param cert 证书
  * @return 主题字符串，需要手动释放
  */
-char* crypto_x509_get_subject(const crypto_x509_cert_t* cert);
+char* iot_crypto_x509_get_subject(const iot_crypto_x509_cert_t* cert);
 
 /**
  * @brief 获取证书颁发者字符串
  * @param cert 证书
  * @return 颁发者字符串，需要手动释放
  */
-char* crypto_x509_get_issuer(const crypto_x509_cert_t* cert);
+char* iot_crypto_x509_get_issuer(const iot_crypto_x509_cert_t* cert);
 
 /**
  * @brief 获取证书序列号
  * @param cert 证书
  * @return 序列号字符串，需要手动释放
  */
-char* crypto_x509_get_serial_number(const crypto_x509_cert_t* cert);
+char* iot_crypto_x509_get_serial_number(const iot_crypto_x509_cert_t* cert);
 
 /**
  * @brief 获取证书通用名称 (CN)
  * @param cert 证书
  * @return CN 字符串，需要手动释放
  */
-char* crypto_x509_get_common_name(const crypto_x509_cert_t* cert);
+char* iot_crypto_x509_get_common_name(const iot_crypto_x509_cert_t* cert);
 
 /**
  * @brief 验证证书有效期
@@ -327,7 +327,7 @@ char* crypto_x509_get_common_name(const crypto_x509_cert_t* cert);
  * @param timestamp 要验证的时间戳 (0 表示当前时间)
  * @return 1 有效，0 无效
  */
-int crypto_x509_verify_time(const crypto_x509_cert_t* cert, time_t timestamp);
+int iot_crypto_x509_verify_time(const iot_crypto_x509_cert_t* cert, time_t timestamp);
 
 /*===========================================================
  * PBKDF2 密钥派生接口
@@ -344,7 +344,7 @@ int crypto_x509_verify_time(const crypto_x509_cert_t* cert, time_t timestamp);
  * @param key 输出密钥缓冲区
  * @return 0 成功，-1 失败
  */
-int crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
+int iot_crypto_pbkdf2_sha256(const uint8_t* password, size_t passwordlen,
                          const uint8_t* salt, size_t saltlen,
                          int iterations,
                          size_t keylen, uint8_t* key);

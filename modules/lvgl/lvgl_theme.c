@@ -1,5 +1,5 @@
-/**
- * @file lvgl_theme.c
+﻿/**
+ * @file iot_lvgl_theme.c
  * @brief LVGL主题系统
  *
  * 实现LVGL主题系统的Lua绑定，包括主题创建（自定义主色/次色/暗色模式）、设置主题颜色、应用主题、恢复默认主题等接口。
@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-static lv_color_t lvgl_theme_parse_color(lua_State* L, int idx, lv_color_t fallback)
+static lv_color_t iot_lvgl_theme_parse_color(lua_State* L, int idx, lv_color_t fallback)
 {
     if (lua_gettop(L) >= idx && !lua_isnil(L, idx)) {
         lv_color_t color;
@@ -21,7 +21,7 @@ static lv_color_t lvgl_theme_parse_color(lua_State* L, int idx, lv_color_t fallb
     return fallback;
 }
 
-static lv_disp_t* lvgl_theme_get_disp(lua_State* L, int idx)
+static lv_disp_t* iot_lvgl_theme_get_disp(lua_State* L, int idx)
 {
     if (lua_gettop(L) >= idx && lua_islightuserdata(L, idx)) {
         return (lv_disp_t*)lua_touserdata(L, idx);
@@ -34,15 +34,15 @@ static lv_disp_t* lvgl_theme_get_disp(lua_State* L, int idx)
 @return userdata 主题指针
 @usage local theme = lvgl.theme.create()
 */
-static int lvgl_theme_create(lua_State* L)
+static int iot_lvgl_theme_create(lua_State* L)
 {
     lv_disp_t* disp = lv_disp_get_default();
     lv_color_t primary = lv_palette_main(LV_PALETTE_BLUE);
     lv_color_t secondary = lv_palette_main(LV_PALETTE_RED);
     bool dark = false;
 
-    primary = lvgl_theme_parse_color(L, 1, primary);
-    secondary = lvgl_theme_parse_color(L, 2, secondary);
+    primary = iot_lvgl_theme_parse_color(L, 1, primary);
+    secondary = iot_lvgl_theme_parse_color(L, 2, secondary);
     if (lua_gettop(L) >= 3) {
         dark = lua_toboolean(L, 3);
     }
@@ -57,10 +57,10 @@ static int lvgl_theme_create(lua_State* L)
 @param theme 主题指针
 @usage lvgl.theme.set(theme)
 */
-static int lvgl_theme_set(lua_State* L)
+static int iot_lvgl_theme_set(lua_State* L)
 {
     lv_theme_t* theme = (lv_theme_t*)luaL_checklightuserdata(L, 1);
-    lv_disp_t* disp = lvgl_theme_get_disp(L, 2);
+    lv_disp_t* disp = iot_lvgl_theme_get_disp(L, 2);
     lv_disp_set_theme(disp, theme);
     return 0;
 }
@@ -70,9 +70,9 @@ static int lvgl_theme_set(lua_State* L)
 @return userdata 当前主题指针
 @usage local theme = lvgl.theme.get()
 */
-static int lvgl_theme_get(lua_State* L)
+static int iot_lvgl_theme_get(lua_State* L)
 {
-    lv_disp_t* disp = lvgl_theme_get_disp(L, 1);
+    lv_disp_t* disp = iot_lvgl_theme_get_disp(L, 1);
     lua_pushlightuserdata(L, lv_disp_get_theme(disp));
     return 1;
 }
@@ -82,7 +82,7 @@ static int lvgl_theme_get(lua_State* L)
 @return userdata 默认主题指针
 @usage local theme = lvgl.theme.default()
 */
-static int lvgl_theme_default(lua_State* L)
+static int iot_lvgl_theme_default(lua_State* L)
 {
     lv_theme_t* theme;
 
@@ -105,14 +105,14 @@ static int lvgl_theme_default(lua_State* L)
 @param obj 对象指针
 @usage lvgl.theme.apply(obj)
 */
-static int lvgl_theme_apply(lua_State* L)
+static int iot_lvgl_theme_apply(lua_State* L)
 {
-    lv_obj_t* obj = lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
     lv_theme_apply(obj);
     return 0;
 }
 
-static bool lvgl_theme_set_color_field(lv_theme_t* theme, int color_id, lv_color_t color)
+static bool iot_lvgl_theme_set_color_field(lv_theme_t* theme, int color_id, lv_color_t color)
 {
     switch (color_id) {
     case LV_THEME_COLOR_PRIMARY:
@@ -126,7 +126,7 @@ static bool lvgl_theme_set_color_field(lv_theme_t* theme, int color_id, lv_color
     }
 }
 
-static bool lvgl_theme_get_color_field(const lv_theme_t* theme, int color_id, lv_color_t* color)
+static bool iot_lvgl_theme_get_color_field(const lv_theme_t* theme, int color_id, lv_color_t* color)
 {
     switch (color_id) {
     case LV_THEME_COLOR_PRIMARY:
@@ -147,14 +147,14 @@ static bool lvgl_theme_get_color_field(const lv_theme_t* theme, int color_id, lv
 @param color 颜色值
 @usage theme:set_color(lvgl.THEME_COLOR_PRIMARY, 0x3366FF)
 */
-static int lvgl_theme_set_color(lua_State* L)
+static int iot_lvgl_theme_set_color(lua_State* L)
 {
     lv_theme_t* theme = (lv_theme_t*)luaL_checklightuserdata(L, 1);
     int color_id = (int)luaL_checkinteger(L, 2);
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 3);
 
-    if (!lvgl_theme_set_color_field(theme, color_id, color)) {
+    if (!iot_lvgl_theme_set_color_field(theme, color_id, color)) {
         return luaL_error(L, "unsupported theme color id: %d", color_id);
     }
 
@@ -170,13 +170,13 @@ static int lvgl_theme_set_color(lua_State* L)
 @return integer 颜色值
 @usage local color = theme:get_color(lvgl.THEME_COLOR_PRIMARY)
 */
-static int lvgl_theme_get_color(lua_State* L)
+static int iot_lvgl_theme_get_color(lua_State* L)
 {
     const lv_theme_t* theme = (const lv_theme_t*)luaL_checklightuserdata(L, 1);
     int color_id = (int)luaL_checkinteger(L, 2);
     lv_color_t color;
 
-    if (!lvgl_theme_get_color_field(theme, color_id, &color)) {
+    if (!iot_lvgl_theme_get_color_field(theme, color_id, &color)) {
         return luaL_error(L, "unsupported theme color id: %d", color_id);
     }
 
@@ -184,7 +184,7 @@ static int lvgl_theme_get_color(lua_State* L)
     return 1;
 }
 
-static bool lvgl_theme_set_font_field(lv_theme_t* theme, int font_id, const lv_font_t* font)
+static bool iot_lvgl_theme_set_font_field(lv_theme_t* theme, int font_id, const lv_font_t* font)
 {
     switch (font_id) {
     case LV_THEME_FONT_SMALL:
@@ -202,7 +202,7 @@ static bool lvgl_theme_set_font_field(lv_theme_t* theme, int font_id, const lv_f
     }
 }
 
-static const lv_font_t* lvgl_theme_get_font_field(const lv_theme_t* theme, int font_id)
+static const lv_font_t* iot_lvgl_theme_get_font_field(const lv_theme_t* theme, int font_id)
 {
     switch (font_id) {
     case LV_THEME_FONT_SMALL:
@@ -224,13 +224,13 @@ static const lv_font_t* lvgl_theme_get_font_field(const lv_theme_t* theme, int f
 @param font 字体指针
 @usage theme:set_font(lvgl.THEME_FONT_SMALL, font)
 */
-static int lvgl_theme_set_font(lua_State* L)
+static int iot_lvgl_theme_set_font(lua_State* L)
 {
     lv_theme_t* theme = (lv_theme_t*)luaL_checklightuserdata(L, 1);
     int font_id = (int)luaL_checkinteger(L, 2);
     const lv_font_t* font = (const lv_font_t*)luaL_checklightuserdata(L, 3);
 
-    if (!lvgl_theme_set_font_field(theme, font_id, font)) {
+    if (!iot_lvgl_theme_set_font_field(theme, font_id, font)) {
         return luaL_error(L, "unsupported theme font id: %d", font_id);
     }
 
@@ -246,11 +246,11 @@ static int lvgl_theme_set_font(lua_State* L)
 @return userdata 字体指针
 @usage local font = theme:get_font(lvgl.THEME_FONT_SMALL)
 */
-static int lvgl_theme_get_font(lua_State* L)
+static int iot_lvgl_theme_get_font(lua_State* L)
 {
     const lv_theme_t* theme = (const lv_theme_t*)luaL_checklightuserdata(L, 1);
     int font_id = (int)luaL_checkinteger(L, 2);
-    const lv_font_t* font = lvgl_theme_get_font_field(theme, font_id);
+    const lv_font_t* font = iot_lvgl_theme_get_font_field(theme, font_id);
 
     if (!font) {
         return luaL_error(L, "unsupported theme font id: %d", font_id);
@@ -267,7 +267,7 @@ static int lvgl_theme_get_font(lua_State* L)
 @param size 尺寸值
 @usage theme:set_size(lvgl.THEME_SIZE_BUTTON_HEIGHT, 40)
 */
-static int lvgl_theme_set_size(lua_State* L)
+static int iot_lvgl_theme_set_size(lua_State* L)
 {
     (void)luaL_checklightuserdata(L, 1);
     (void)luaL_checkinteger(L, 2);
@@ -283,7 +283,7 @@ static int lvgl_theme_set_size(lua_State* L)
 @return integer 尺寸值
 @usage local size = theme:get_size(lvgl.THEME_SIZE_BUTTON_HEIGHT)
 */
-static int lvgl_theme_get_size(lua_State* L)
+static int iot_lvgl_theme_get_size(lua_State* L)
 {
     (void)luaL_checklightuserdata(L, 1);
     (void)luaL_checkinteger(L, 2);
@@ -292,18 +292,18 @@ static int lvgl_theme_get_size(lua_State* L)
 }
 
 /* 注册 theme 子模块 */
-int lvgl_register_theme(lua_State* L)
+int iot_lvgl_register_theme(lua_State* L)
 {
-    REG_METHOD(L, "create", lvgl_theme_create);
-    REG_METHOD(L, "set", lvgl_theme_set);
-    REG_METHOD(L, "get", lvgl_theme_get);
-    REG_METHOD(L, "default", lvgl_theme_default);
-    REG_METHOD(L, "apply", lvgl_theme_apply);
-    REG_METHOD(L, "set_color", lvgl_theme_set_color);
-    REG_METHOD(L, "get_color", lvgl_theme_get_color);
-    REG_METHOD(L, "set_font", lvgl_theme_set_font);
-    REG_METHOD(L, "get_font", lvgl_theme_get_font);
-    REG_METHOD(L, "set_size", lvgl_theme_set_size);
-    REG_METHOD(L, "get_size", lvgl_theme_get_size);
+    REG_METHOD(L, "create", iot_lvgl_theme_create);
+    REG_METHOD(L, "set", iot_lvgl_theme_set);
+    REG_METHOD(L, "get", iot_lvgl_theme_get);
+    REG_METHOD(L, "default", iot_lvgl_theme_default);
+    REG_METHOD(L, "apply", iot_lvgl_theme_apply);
+    REG_METHOD(L, "set_color", iot_lvgl_theme_set_color);
+    REG_METHOD(L, "get_color", iot_lvgl_theme_get_color);
+    REG_METHOD(L, "set_font", iot_lvgl_theme_set_font);
+    REG_METHOD(L, "get_font", iot_lvgl_theme_get_font);
+    REG_METHOD(L, "set_size", iot_lvgl_theme_set_size);
+    REG_METHOD(L, "get_size", iot_lvgl_theme_get_size);
     return 0;
 }

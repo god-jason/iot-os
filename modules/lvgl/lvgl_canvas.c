@@ -1,5 +1,5 @@
-/**
- * @file lvgl_canvas.c
+﻿/**
+ * @file iot_lvgl_canvas.c
  * @brief LVGL画布控件
  *
  * 实现LVGL画布控件的OO风格Lua绑定，包括画布创建、设置缓冲区、设置像素颜色、填充背景、绘制矩形/圆形/线条/弧形/文本等图元，支持样式属性转换。
@@ -14,7 +14,7 @@
 /* canvas组件的metatable引用 */
 static int canvas_metatable_ref = LUA_NOREF;
 
-static lv_coord_t lvgl_style_get_coord(const lv_style_t* style, lv_style_prop_t prop, lv_coord_t def)
+static lv_coord_t iot_lvgl_style_get_coord(const lv_style_t* style, lv_style_prop_t prop, lv_coord_t def)
 {
     lv_style_value_t v;
     if (style && lv_style_get_prop(style, prop, &v) == LV_STYLE_RES_FOUND) {
@@ -23,7 +23,7 @@ static lv_coord_t lvgl_style_get_coord(const lv_style_t* style, lv_style_prop_t 
     return def;
 }
 
-static lv_opa_t lvgl_style_get_opa(const lv_style_t* style, lv_style_prop_t prop, lv_opa_t def)
+static lv_opa_t iot_lvgl_style_get_opa(const lv_style_t* style, lv_style_prop_t prop, lv_opa_t def)
 {
     lv_style_value_t v;
     if (style && lv_style_get_prop(style, prop, &v) == LV_STYLE_RES_FOUND) {
@@ -32,7 +32,7 @@ static lv_opa_t lvgl_style_get_opa(const lv_style_t* style, lv_style_prop_t prop
     return def;
 }
 
-static void lvgl_style_to_rect_dsc(const lv_style_t* style, lv_draw_rect_dsc_t* dsc)
+static void iot_lvgl_style_to_rect_dsc(const lv_style_t* style, lv_draw_rect_dsc_t* dsc)
 {
     lv_style_value_t v;
 
@@ -49,12 +49,12 @@ static void lvgl_style_to_rect_dsc(const lv_style_t* style, lv_draw_rect_dsc_t* 
     if (lv_style_get_prop(style, LV_STYLE_BORDER_COLOR, &v) == LV_STYLE_RES_FOUND) {
         dsc->border_color = v.color;
     }
-    dsc->border_width = lvgl_style_get_coord(style, LV_STYLE_BORDER_WIDTH, dsc->border_width);
-    dsc->border_opa = lvgl_style_get_opa(style, LV_STYLE_BORDER_OPA, dsc->border_opa);
-    dsc->radius = lvgl_style_get_coord(style, LV_STYLE_RADIUS, dsc->radius);
+    dsc->border_width = iot_lvgl_style_get_coord(style, LV_STYLE_BORDER_WIDTH, dsc->border_width);
+    dsc->border_opa = iot_lvgl_style_get_opa(style, LV_STYLE_BORDER_OPA, dsc->border_opa);
+    dsc->radius = iot_lvgl_style_get_coord(style, LV_STYLE_RADIUS, dsc->radius);
 }
 
-static void lvgl_style_to_line_dsc(const lv_style_t* style, lv_draw_line_dsc_t* dsc)
+static void iot_lvgl_style_to_line_dsc(const lv_style_t* style, lv_draw_line_dsc_t* dsc)
 {
     lv_style_value_t v;
 
@@ -65,13 +65,13 @@ static void lvgl_style_to_line_dsc(const lv_style_t* style, lv_draw_line_dsc_t* 
     if (lv_style_get_prop(style, LV_STYLE_LINE_COLOR, &v) == LV_STYLE_RES_FOUND) {
         dsc->color = v.color;
     }
-    dsc->width = lvgl_style_get_coord(style, LV_STYLE_LINE_WIDTH, dsc->width);
-    dsc->opa = lvgl_style_get_opa(style, LV_STYLE_LINE_OPA, dsc->opa);
-    dsc->dash_width = lvgl_style_get_coord(style, LV_STYLE_LINE_DASH_WIDTH, dsc->dash_width);
-    dsc->dash_gap = lvgl_style_get_coord(style, LV_STYLE_LINE_DASH_GAP, dsc->dash_gap);
+    dsc->width = iot_lvgl_style_get_coord(style, LV_STYLE_LINE_WIDTH, dsc->width);
+    dsc->opa = iot_lvgl_style_get_opa(style, LV_STYLE_LINE_OPA, dsc->opa);
+    dsc->dash_width = iot_lvgl_style_get_coord(style, LV_STYLE_LINE_DASH_WIDTH, dsc->dash_width);
+    dsc->dash_gap = iot_lvgl_style_get_coord(style, LV_STYLE_LINE_DASH_GAP, dsc->dash_gap);
 }
 
-static void lvgl_style_to_arc_dsc(const lv_style_t* style, lv_draw_arc_dsc_t* dsc)
+static void iot_lvgl_style_to_arc_dsc(const lv_style_t* style, lv_draw_arc_dsc_t* dsc)
 {
     lv_style_value_t v;
 
@@ -84,13 +84,13 @@ static void lvgl_style_to_arc_dsc(const lv_style_t* style, lv_draw_arc_dsc_t* ds
     } else if (lv_style_get_prop(style, LV_STYLE_LINE_COLOR, &v) == LV_STYLE_RES_FOUND) {
         dsc->color = v.color;
     }
-    dsc->width = lvgl_style_get_coord(style, LV_STYLE_ARC_WIDTH,
-                                      lvgl_style_get_coord(style, LV_STYLE_LINE_WIDTH, dsc->width));
-    dsc->opa = lvgl_style_get_opa(style, LV_STYLE_ARC_OPA,
-                                  lvgl_style_get_opa(style, LV_STYLE_LINE_OPA, dsc->opa));
+    dsc->width = iot_lvgl_style_get_coord(style, LV_STYLE_ARC_WIDTH,
+                                      iot_lvgl_style_get_coord(style, LV_STYLE_LINE_WIDTH, dsc->width));
+    dsc->opa = iot_lvgl_style_get_opa(style, LV_STYLE_ARC_OPA,
+                                  iot_lvgl_style_get_opa(style, LV_STYLE_LINE_OPA, dsc->opa));
 }
 
-static void lvgl_style_to_label_dsc(const lv_style_t* style, lv_draw_label_dsc_t* dsc)
+static void iot_lvgl_style_to_label_dsc(const lv_style_t* style, lv_draw_label_dsc_t* dsc)
 {
     lv_style_value_t v;
 
@@ -104,15 +104,15 @@ static void lvgl_style_to_label_dsc(const lv_style_t* style, lv_draw_label_dsc_t
     if (lv_style_get_prop(style, LV_STYLE_TEXT_FONT, &v) == LV_STYLE_RES_FOUND) {
         dsc->font = v.ptr;
     }
-    dsc->opa = lvgl_style_get_opa(style, LV_STYLE_TEXT_OPA, dsc->opa);
-    dsc->letter_space = lvgl_style_get_coord(style, LV_STYLE_TEXT_LETTER_SPACE, dsc->letter_space);
-    dsc->line_space = lvgl_style_get_coord(style, LV_STYLE_TEXT_LINE_SPACE, dsc->line_space);
+    dsc->opa = iot_lvgl_style_get_opa(style, LV_STYLE_TEXT_OPA, dsc->opa);
+    dsc->letter_space = iot_lvgl_style_get_coord(style, LV_STYLE_TEXT_LETTER_SPACE, dsc->letter_space);
+    dsc->line_space = iot_lvgl_style_get_coord(style, LV_STYLE_TEXT_LINE_SPACE, dsc->line_space);
 }
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_canvas_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* canvas = lv_canvas_create(parent);
     lua_pushlightuserdata(L, canvas);
     return 1;
@@ -126,8 +126,8 @@ static int lvgl_canvas_create_internal(lua_State* L) {
 @return userdata 带metatable的画布实例
 @usage local canvas = lvgl.canvas.create(scr)
 */
-static int lvgl_canvas_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_canvas_create_internal, canvas_metatable_ref);
+static int iot_lvgl_canvas_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_canvas_create_internal, canvas_metatable_ref);
 }
 
 /*
@@ -140,8 +140,8 @@ static int lvgl_canvas_create(lua_State* L) {
 @return self
 @usage canvas:set_buffer(buf, 200, 200)
 */
-static int lvgl_canvas_set_buffer(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_set_buffer(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t w = (int32_t)luaL_checkinteger(L, 2);
     int32_t h = (int32_t)luaL_checkinteger(L, 3);
     lv_color_t* buf = (lv_color_t*)luaL_checklightuserdata(L, 4);
@@ -160,8 +160,8 @@ static int lvgl_canvas_set_buffer(lua_State* L) {
 @return self
 @usage canvas:set_px_color(10, 10, 0xFF0000)
 */
-static int lvgl_canvas_set_px_color(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_set_px_color(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_color_t color;
@@ -180,8 +180,8 @@ static int lvgl_canvas_set_px_color(lua_State* L) {
 @return self
 @usage canvas:set_px_opa(10, 10, 128)
 */
-static int lvgl_canvas_set_px_opa(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_set_px_opa(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_opa_t opa = (lv_opa_t)luaL_checkinteger(L, 4);
@@ -198,8 +198,8 @@ static int lvgl_canvas_set_px_opa(lua_State* L) {
 @return integer 颜色值
 @usage local color = canvas:get_px_color(10, 10)
 */
-static int lvgl_canvas_get_px_color(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_get_px_color(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_color_t color = lv_canvas_get_px(canvas, x, y);
@@ -215,8 +215,8 @@ static int lvgl_canvas_get_px_color(lua_State* L) {
 @return integer 透明度值
 @usage local opa = canvas:get_px_opa(10, 10)
 */
-static int lvgl_canvas_get_px_opa(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_get_px_opa(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     lv_img_dsc_t* img = lv_canvas_get_img(canvas);
@@ -236,8 +236,8 @@ static int lvgl_canvas_get_px_opa(lua_State* L) {
 @return self
 @usage canvas:fill_bg(0xFFFFFF, 255)
 */
-static int lvgl_canvas_fill_bg(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_fill_bg(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 2);
     lv_opa_t opa = (lv_opa_t)luaL_optinteger(L, 3, LV_OPA_COVER);
@@ -257,15 +257,15 @@ static int lvgl_canvas_fill_bg(lua_State* L) {
 @return self
 @usage canvas:draw_rect(10, 10, 50, 50, style)
 */
-static int lvgl_canvas_draw_rect(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_rect(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     int32_t w = (int32_t)luaL_checkinteger(L, 4);
     int32_t h = (int32_t)luaL_checkinteger(L, 5);
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 6);
     lv_draw_rect_dsc_t dsc;
-    lvgl_style_to_rect_dsc(style, &dsc);
+    iot_lvgl_style_to_rect_dsc(style, &dsc);
     lv_canvas_draw_rect(canvas, x, y, w, h, &dsc);
     lua_pushvalue(L, 1);
     return 1;
@@ -281,14 +281,14 @@ static int lvgl_canvas_draw_rect(lua_State* L) {
 @return self
 @usage canvas:draw_circle(100, 100, 30, style)
 */
-static int lvgl_canvas_draw_circle(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_circle(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     int32_t r = (int32_t)luaL_checkinteger(L, 4);
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 5);
     lv_draw_rect_dsc_t dsc;
-    lvgl_style_to_rect_dsc(style, &dsc);
+    iot_lvgl_style_to_rect_dsc(style, &dsc);
     dsc.radius = LV_RADIUS_CIRCLE;
     lv_canvas_draw_rect(canvas, x - r, y - r, 2 * r, 2 * r, &dsc);
     lua_pushvalue(L, 1);
@@ -303,8 +303,8 @@ static int lvgl_canvas_draw_circle(lua_State* L) {
 @return self
 @usage canvas:draw_line({{0,0}, {100,100}}, style)
 */
-static int lvgl_canvas_draw_line(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_line(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     /* points参数为表: {{x1,y1}, {x2,y2}, ...} */
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
@@ -329,7 +329,7 @@ static int lvgl_canvas_draw_line(lua_State* L) {
 
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 3);
     lv_draw_line_dsc_t dsc;
-    lvgl_style_to_line_dsc(style, &dsc);
+    iot_lvgl_style_to_line_dsc(style, &dsc);
     lv_canvas_draw_line(canvas, points, point_num, &dsc);
     cm_free(points);
     lua_pushvalue(L, 1);
@@ -344,8 +344,8 @@ static int lvgl_canvas_draw_line(lua_State* L) {
 @return self
 @usage canvas:draw_polygon({{0,0}, {50,0}, {25,50}}, style)
 */
-static int lvgl_canvas_draw_polygon(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_polygon(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     /* points参数为表 */
     luaL_checktype(L, 2, LUA_TTABLE);
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
@@ -370,7 +370,7 @@ static int lvgl_canvas_draw_polygon(lua_State* L) {
 
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 3);
     lv_draw_rect_dsc_t dsc;
-    lvgl_style_to_rect_dsc(style, &dsc);
+    iot_lvgl_style_to_rect_dsc(style, &dsc);
     lv_canvas_draw_polygon(canvas, points, point_num, &dsc);
     cm_free(points);
     lua_pushvalue(L, 1);
@@ -389,8 +389,8 @@ static int lvgl_canvas_draw_polygon(lua_State* L) {
 @return self
 @usage canvas:draw_arc(100, 100, 50, 0, 90, style)
 */
-static int lvgl_canvas_draw_arc(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_arc(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t center_x = (int32_t)luaL_checkinteger(L, 2);
     int32_t center_y = (int32_t)luaL_checkinteger(L, 3);
     int32_t r = (int32_t)luaL_checkinteger(L, 4);
@@ -398,7 +398,7 @@ static int lvgl_canvas_draw_arc(lua_State* L) {
     int32_t end_angle = (int32_t)luaL_checkinteger(L, 6);
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 7);
     lv_draw_arc_dsc_t dsc;
-    lvgl_style_to_arc_dsc(style, &dsc);
+    iot_lvgl_style_to_arc_dsc(style, &dsc);
     lv_canvas_draw_arc(canvas, center_x, center_y, r, start_angle, end_angle, &dsc);
     lua_pushvalue(L, 1);
     return 1;
@@ -415,15 +415,15 @@ static int lvgl_canvas_draw_arc(lua_State* L) {
 @return self
 @usage canvas:draw_text(10, 10, 100, style, "Hello")
 */
-static int lvgl_canvas_draw_text(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_text(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     int32_t max_width = (int32_t)luaL_checkinteger(L, 4);
     const lv_style_t* style = (const lv_style_t*)luaL_checklightuserdata(L, 5);
     const char* txt = luaL_checkstring(L, 6);
     lv_draw_label_dsc_t dsc;
-    lvgl_style_to_label_dsc(style, &dsc);
+    iot_lvgl_style_to_label_dsc(style, &dsc);
     lv_canvas_draw_text(canvas, x, y, max_width, &dsc, txt);
     lua_pushvalue(L, 1);
     return 1;
@@ -439,8 +439,8 @@ static int lvgl_canvas_draw_text(lua_State* L) {
 @return self
 @usage canvas:draw_img(10, 10, img_src, img_dsc)
 */
-static int lvgl_canvas_draw_img(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_draw_img(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     const void* src = (const void*)luaL_checklightuserdata(L, 4);
@@ -461,8 +461,8 @@ static int lvgl_canvas_draw_img(lua_State* L) {
 @return self
 @usage canvas:blur_hor(10, 10, 50, 50, 5)
 */
-static int lvgl_canvas_blur_hor(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_blur_hor(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     int32_t w = (int32_t)luaL_checkinteger(L, 4);
@@ -485,8 +485,8 @@ static int lvgl_canvas_blur_hor(lua_State* L) {
 @return self
 @usage canvas:blur_ver(10, 10, 50, 50, 5)
 */
-static int lvgl_canvas_blur_ver(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_blur_ver(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
     int32_t w = (int32_t)luaL_checkinteger(L, 4);
@@ -510,8 +510,8 @@ static int lvgl_canvas_blur_ver(lua_State* L) {
 @return self
 @usage canvas:copy_buf(src_buf, 100, 100, 100, 10, 10)
 */
-static int lvgl_canvas_copy_buf(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_copy_buf(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     const void* src_buf = (const void*)luaL_checklightuserdata(L, 2);
     int32_t src_w = (int32_t)luaL_checkinteger(L, 3);
     int32_t src_h = (int32_t)luaL_checkinteger(L, 4);
@@ -537,8 +537,8 @@ static int lvgl_canvas_copy_buf(lua_State* L) {
 @return self
 @usage canvas:transform(src, 90, 128)
 */
-static int lvgl_canvas_transform(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_transform(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     const lv_img_dsc_t* src = (const lv_img_dsc_t*)luaL_checklightuserdata(L, 2);
     int32_t angle = (int32_t)luaL_checkinteger(L, 3);
     int32_t zoom = (int32_t)luaL_checkinteger(L, 4);
@@ -566,8 +566,8 @@ static int lvgl_canvas_transform(lua_State* L) {
 @return self
 @usage canvas:rotate(src, 90)
 */
-static int lvgl_canvas_rotate(lua_State* L) {
-    lv_obj_t* canvas = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_rotate(lua_State* L) {
+    lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     const lv_img_dsc_t* src = (const lv_img_dsc_t*)luaL_checklightuserdata(L, 2);
     int32_t angle = (int32_t)luaL_checkinteger(L, 3);
     int32_t x = (int32_t)luaL_optinteger(L, 4, 0);
@@ -587,13 +587,13 @@ static int lvgl_canvas_rotate(lua_State* L) {
 @return userdata 图层指针
 @usage local layer = canvas:init_layer()
 */
-static int lvgl_canvas_init_layer(lua_State* L) {
+static int iot_lvgl_canvas_init_layer(lua_State* L) {
     void* layer = cm_malloc(1);
     if (!layer) {
         luaL_error(L, "memory allocation failed");
         return 0;
     }
-    (void)lvgl_get_obj_ptr(L, 1);
+    (void)iot_lvgl_get_obj_ptr(L, 1);
     lua_pushlightuserdata(L, layer);
     return 1;
 }
@@ -605,8 +605,8 @@ static int lvgl_canvas_init_layer(lua_State* L) {
 @return self
 @usage canvas:finish_layer(layer)
 */
-static int lvgl_canvas_finish_layer(lua_State* L) {
-    (void)lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_finish_layer(lua_State* L) {
+    (void)iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checklightuserdata(L, 2);
     lua_pushvalue(L, 1);
     return 1;
@@ -619,8 +619,8 @@ static int lvgl_canvas_finish_layer(lua_State* L) {
 @return self
 @usage canvas:apply_layer(layer)
 */
-static int lvgl_canvas_apply_layer(lua_State* L) {
-    (void)lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_apply_layer(lua_State* L) {
+    (void)iot_lvgl_get_obj_ptr(L, 1);
     void* layer = luaL_checklightuserdata(L, 2);
     cm_free(layer);
     lua_pushvalue(L, 1);
@@ -635,8 +635,8 @@ static int lvgl_canvas_apply_layer(lua_State* L) {
 @return self
 @usage canvas:set_layer_bg(0xFFFFFF, 255)
 */
-static int lvgl_canvas_set_layer_bg(lua_State* L) {
-    (void)lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_canvas_set_layer_bg(lua_State* L) {
+    (void)iot_lvgl_get_obj_ptr(L, 1);
     (void)luaL_checkinteger(L, 2);
     (void)luaL_optinteger(L, 3, LV_OPA_COVER);
     lua_pushvalue(L, 1);
@@ -644,33 +644,33 @@ static int lvgl_canvas_set_layer_bg(lua_State* L) {
 }
 
 /* 注册 canvas 子模块 */
-void lvgl_register_canvas(lua_State* L) {
+void iot_lvgl_register_canvas(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_buffer", lvgl_canvas_set_buffer);
-    REG_METHOD(L, "set_px_color", lvgl_canvas_set_px_color);
-    REG_METHOD(L, "set_px_opa", lvgl_canvas_set_px_opa);
-    REG_METHOD(L, "get_px_color", lvgl_canvas_get_px_color);
-    REG_METHOD(L, "get_px_opa", lvgl_canvas_get_px_opa);
-    REG_METHOD(L, "fill_bg", lvgl_canvas_fill_bg);
-    REG_METHOD(L, "draw_rect", lvgl_canvas_draw_rect);
-    REG_METHOD(L, "draw_circle", lvgl_canvas_draw_circle);
-    REG_METHOD(L, "draw_line", lvgl_canvas_draw_line);
-    REG_METHOD(L, "draw_polygon", lvgl_canvas_draw_polygon);
-    REG_METHOD(L, "draw_arc", lvgl_canvas_draw_arc);
-    REG_METHOD(L, "draw_text", lvgl_canvas_draw_text);
-    REG_METHOD(L, "draw_img", lvgl_canvas_draw_img);
-    REG_METHOD(L, "blur_hor", lvgl_canvas_blur_hor);
-    REG_METHOD(L, "blur_ver", lvgl_canvas_blur_ver);
-    REG_METHOD(L, "copy_buf", lvgl_canvas_copy_buf);
-    REG_METHOD(L, "transform", lvgl_canvas_transform);
-    REG_METHOD(L, "rotate", lvgl_canvas_rotate);
-    REG_METHOD(L, "init_layer", lvgl_canvas_init_layer);
-    REG_METHOD(L, "finish_layer", lvgl_canvas_finish_layer);
-    REG_METHOD(L, "apply_layer", lvgl_canvas_apply_layer);
-    REG_METHOD(L, "set_layer_bg", lvgl_canvas_set_layer_bg);
+    REG_METHOD(L, "set_buffer", iot_lvgl_canvas_set_buffer);
+    REG_METHOD(L, "set_px_color", iot_lvgl_canvas_set_px_color);
+    REG_METHOD(L, "set_px_opa", iot_lvgl_canvas_set_px_opa);
+    REG_METHOD(L, "get_px_color", iot_lvgl_canvas_get_px_color);
+    REG_METHOD(L, "get_px_opa", iot_lvgl_canvas_get_px_opa);
+    REG_METHOD(L, "fill_bg", iot_lvgl_canvas_fill_bg);
+    REG_METHOD(L, "draw_rect", iot_lvgl_canvas_draw_rect);
+    REG_METHOD(L, "draw_circle", iot_lvgl_canvas_draw_circle);
+    REG_METHOD(L, "draw_line", iot_lvgl_canvas_draw_line);
+    REG_METHOD(L, "draw_polygon", iot_lvgl_canvas_draw_polygon);
+    REG_METHOD(L, "draw_arc", iot_lvgl_canvas_draw_arc);
+    REG_METHOD(L, "draw_text", iot_lvgl_canvas_draw_text);
+    REG_METHOD(L, "draw_img", iot_lvgl_canvas_draw_img);
+    REG_METHOD(L, "blur_hor", iot_lvgl_canvas_blur_hor);
+    REG_METHOD(L, "blur_ver", iot_lvgl_canvas_blur_ver);
+    REG_METHOD(L, "copy_buf", iot_lvgl_canvas_copy_buf);
+    REG_METHOD(L, "transform", iot_lvgl_canvas_transform);
+    REG_METHOD(L, "rotate", iot_lvgl_canvas_rotate);
+    REG_METHOD(L, "init_layer", iot_lvgl_canvas_init_layer);
+    REG_METHOD(L, "finish_layer", iot_lvgl_canvas_finish_layer);
+    REG_METHOD(L, "apply_layer", iot_lvgl_canvas_apply_layer);
+    REG_METHOD(L, "set_layer_bg", iot_lvgl_canvas_set_layer_bg);
 
     /* 保存组件metatable引用(用于继承) */
     canvas_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -687,5 +687,5 @@ void lvgl_register_canvas(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.canvas) */
-    REG_METHOD(L, "create", lvgl_canvas_create);
+    REG_METHOD(L, "create", iot_lvgl_canvas_create);
 }

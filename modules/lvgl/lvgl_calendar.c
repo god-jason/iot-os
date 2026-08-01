@@ -1,5 +1,5 @@
-/**
- * @file lvgl_calendar.c
+﻿/**
+ * @file iot_lvgl_calendar.c
  * @brief LVGL日历控件
  *
  * 实现LVGL日历控件的OO风格Lua绑定，包括日历创建、设置今天日期、设置显示年月、获取按下日期、获取显示年月等接口。
@@ -16,8 +16,8 @@ static int calendar_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_calendar_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* calendar = lv_calendar_create(parent);
     lua_pushlightuserdata(L, calendar);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_calendar_create_internal(lua_State* L) {
 @return userdata 带metatable的日历实例
 @usage local calendar = lvgl.calendar.create(scr)
 */
-static int lvgl_calendar_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_calendar_create_internal, calendar_metatable_ref);
+static int iot_lvgl_calendar_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_calendar_create_internal, calendar_metatable_ref);
 }
 
 /*
@@ -44,8 +44,8 @@ static int lvgl_calendar_create(lua_State* L) {
 @return self
 @usage calendar:set_today_date(2026, 6, 18)
 */
-static int lvgl_calendar_set_today_date(lua_State* L) {
-    lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_set_today_date(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t year = (uint32_t)luaL_checkinteger(L, 2);
     uint32_t month = (uint32_t)luaL_checkinteger(L, 3);
     uint32_t day = (uint32_t)luaL_checkinteger(L, 4);
@@ -62,8 +62,8 @@ static int lvgl_calendar_set_today_date(lua_State* L) {
 @return self
 @usage calendar:set_showed_date(2026, 6)
 */
-static int lvgl_calendar_set_showed_date(lua_State* L) {
-    lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_set_showed_date(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t year = (uint32_t)luaL_checkinteger(L, 2);
     uint32_t month = (uint32_t)luaL_checkinteger(L, 3);
     lv_calendar_set_showed_date(calendar, year, month);
@@ -77,8 +77,8 @@ static int lvgl_calendar_set_showed_date(lua_State* L) {
 @return table 日期表{year,month,day}或nil
 @usage local date = calendar:get_pressed_date()
 */
-static int lvgl_calendar_get_pressed_date(lua_State* L) {
-    lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_get_pressed_date(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
     lv_calendar_date_t date;
     if (lv_calendar_get_pressed_date(calendar, &date) == LV_RES_OK) {
         lua_createtable(L, 3, 0);
@@ -101,8 +101,8 @@ static int lvgl_calendar_get_pressed_date(lua_State* L) {
 @return self
 @usage calendar:set_highlighted_dates(dates)
 */
-static int lvgl_calendar_set_highlighted_dates(lua_State* L) {
-    lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_set_highlighted_dates(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
     /* TODO: 实现日期数组处理 */
     (void)calendar;
     lua_pushvalue(L, 1);
@@ -115,8 +115,8 @@ static int lvgl_calendar_set_highlighted_dates(lua_State* L) {
 @return table 日期表{year,month}
 @usage local showed = calendar:get_showed_date()
 */
-static int lvgl_calendar_get_showed_date(lua_State* L) {
-    lv_obj_t* calendar = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_calendar_get_showed_date(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
     const lv_calendar_date_t* date = lv_calendar_get_showed_date(calendar);
     if (!date) {
         lua_pushnil(L);
@@ -131,16 +131,16 @@ static int lvgl_calendar_get_showed_date(lua_State* L) {
 }
 
 /* 注册 calendar 子模块 */
-void lvgl_register_calendar(lua_State* L) {
+void iot_lvgl_register_calendar(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_today_date", lvgl_calendar_set_today_date);
-    REG_METHOD(L, "set_showed_date", lvgl_calendar_set_showed_date);
-    REG_METHOD(L, "get_pressed_date", lvgl_calendar_get_pressed_date);
-    REG_METHOD(L, "set_highlighted_dates", lvgl_calendar_set_highlighted_dates);
-    REG_METHOD(L, "get_showed_date", lvgl_calendar_get_showed_date);
+    REG_METHOD(L, "set_today_date", iot_lvgl_calendar_set_today_date);
+    REG_METHOD(L, "set_showed_date", iot_lvgl_calendar_set_showed_date);
+    REG_METHOD(L, "get_pressed_date", iot_lvgl_calendar_get_pressed_date);
+    REG_METHOD(L, "set_highlighted_dates", iot_lvgl_calendar_set_highlighted_dates);
+    REG_METHOD(L, "get_showed_date", iot_lvgl_calendar_get_showed_date);
 
     /* 保存组件metatable引用(用于继承) */
     calendar_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -157,5 +157,5 @@ void lvgl_register_calendar(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表lvgl.calendar) */
-    REG_METHOD(L, "create", lvgl_calendar_create);
+    REG_METHOD(L, "create", iot_lvgl_calendar_create);
 }

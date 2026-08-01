@@ -5,7 +5,7 @@
  * 本文件实现了外部字库的加载与管理功能，支持 BDF 文本格式和 BIN/RAW
  * 二进制格式的字体文件解析。通过引用计数机制管理字体对象的生命周期，
  * 支持基于 CM-FS（启用 ENABLE_CM_FS 宏）或标准 C 库文件系统的文件读取
- * 操作。提供统一的 font_external_load 入口函数，根据格式自动分派到对应
+ * 操作。提供统一的 iot_font_external_load 入口函数，根据格式自动分派到对应
  * 的解析器。
  *
  * @author  杰神 & TRAE & ChatGPT
@@ -67,20 +67,20 @@ static void* font_file_read(const char* path, size_t* size) {
 #endif
 }
 
-int font_external_load(const char* path, external_font_format_e format, external_font_t** font) {
+int iot_font_external_load(const char* path, iot_external_font_format_e format, iot_external_font_t** font) {
     switch (format) {
-        case FONT_FORMAT_BDF:
-            return font_external_load_bdf(path, font);
-        case FONT_FORMAT_PCF:
-            return font_external_load_pcf(path, font);
-        case FONT_FORMAT_BIN:
-            return font_external_load_bin(path, font);
+        case IOT_FONT_FORMAT_BDF:
+            return iot_font_external_load_bdf(path, font);
+        case IOT_FONT_FORMAT_PCF:
+            return iot_font_external_load_pcf(path, font);
+        case IOT_FONT_FORMAT_BIN:
+            return iot_font_external_load_bin(path, font);
         default:
             return -1;
     }
 }
 
-void font_external_unload(external_font_t* font) {
+void iot_font_external_unload(iot_external_font_t* font) {
     if (!font) return;
     
     font->ref_count--;
@@ -91,21 +91,21 @@ void font_external_unload(external_font_t* font) {
     }
 }
 
-int font_external_load_bdf(const char* path, external_font_t** font) {
+int iot_font_external_load_bdf(const char* path, iot_external_font_t** font) {
     size_t size;
     uint8_t* data = font_file_read(path, &size);
     if (!data) return -1;
     
-    *font = (external_font_t*)malloc(sizeof(external_font_t));
+    *font = (iot_external_font_t*)malloc(sizeof(iot_external_font_t));
     if (!*font) {
         free(data);
         return -1;
     }
     
-    memset(*font, 0, sizeof(external_font_t));
+    memset(*font, 0, sizeof(iot_external_font_t));
     
     (*font)->info.name = "bdf_font";
-    (*font)->info.format = FONT_FORMAT_BITMAP;
+    (*font)->info.format = IOT_FONT_FORMAT_BITMAP;
     (*font)->info.width = 8;
     (*font)->info.height = 16;
     (*font)->info.bpp = 1;
@@ -151,14 +151,14 @@ int font_external_load_bdf(const char* path, external_font_t** font) {
     return 0;
 }
 
-int font_external_load_pcf(const char* path, external_font_t** font) {
-    *font = (external_font_t*)malloc(sizeof(external_font_t));
+int iot_font_external_load_pcf(const char* path, iot_external_font_t** font) {
+    *font = (iot_external_font_t*)malloc(sizeof(iot_external_font_t));
     if (!*font) return -1;
     
-    memset(*font, 0, sizeof(external_font_t));
+    memset(*font, 0, sizeof(iot_external_font_t));
     
     (*font)->info.name = "pcf_font";
-    (*font)->info.format = FONT_FORMAT_BITMAP;
+    (*font)->info.format = IOT_FONT_FORMAT_BITMAP;
     (*font)->info.width = 8;
     (*font)->info.height = 16;
     (*font)->info.bpp = 1;
@@ -178,21 +178,21 @@ int font_external_load_pcf(const char* path, external_font_t** font) {
     return 0;
 }
 
-int font_external_load_bin(const char* path, external_font_t** font) {
+int iot_font_external_load_bin(const char* path, iot_external_font_t** font) {
     size_t size;
     uint8_t* data = font_file_read(path, &size);
     if (!data) return -1;
     
-    *font = (external_font_t*)malloc(sizeof(external_font_t));
+    *font = (iot_external_font_t*)malloc(sizeof(iot_external_font_t));
     if (!*font) {
         free(data);
         return -1;
     }
     
-    memset(*font, 0, sizeof(external_font_t));
+    memset(*font, 0, sizeof(iot_external_font_t));
     
     (*font)->info.name = "bin_font";
-    (*font)->info.format = FONT_FORMAT_BITMAP;
+    (*font)->info.format = IOT_FONT_FORMAT_BITMAP;
     (*font)->info.width = 8;
     (*font)->info.height = 16;
     (*font)->info.bpp = 1;
@@ -206,21 +206,21 @@ int font_external_load_bin(const char* path, external_font_t** font) {
     return 0;
 }
 
-int font_external_load_raw(const char* path, int width, int height, int bpp, external_font_t** font) {
+int iot_font_external_load_raw(const char* path, int width, int height, int bpp, iot_external_font_t** font) {
     size_t size;
     uint8_t* data = font_file_read(path, &size);
     if (!data) return -1;
     
-    *font = (external_font_t*)malloc(sizeof(external_font_t));
+    *font = (iot_external_font_t*)malloc(sizeof(iot_external_font_t));
     if (!*font) {
         free(data);
         return -1;
     }
     
-    memset(*font, 0, sizeof(external_font_t));
+    memset(*font, 0, sizeof(iot_external_font_t));
     
     (*font)->info.name = "raw_font";
-    (*font)->info.format = FONT_FORMAT_BITMAP;
+    (*font)->info.format = IOT_FONT_FORMAT_BITMAP;
     (*font)->info.width = width;
     (*font)->info.height = height;
     (*font)->info.bpp = bpp;
@@ -236,7 +236,7 @@ int font_external_load_raw(const char* path, int width, int height, int bpp, ext
     return 0;
 }
 
-const font_info_t* font_external_get_info(external_font_t* font) {
+const iot_font_info_t* iot_font_external_get_info(iot_external_font_t* font) {
     if (!font) return NULL;
     return &font->info;
 }

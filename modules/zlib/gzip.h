@@ -20,16 +20,16 @@ extern "C" {
 #endif
 
 /* GZIP错误码定义 */
-#define GZIP_OK              0   /**< 成功 */
-#define GZIP_ERR_MEM        -1   /**< 内存分配失败 */
-#define GZIP_ERR_FORMAT     -2   /**< GZIP格式错误 */
-#define GZIP_ERR_CRC        -3   /**< CRC校验失败 */
-#define GZIP_ERR_FILE       -4   /**< 文件操作失败 */
+#define IOT_GZIP_OK              0   /**< 成功 */
+#define IOT_GZIP_ERR_MEM        -1   /**< 内存分配失败 */
+#define IOT_GZIP_ERR_FORMAT     -2   /**< GZIP格式错误 */
+#define IOT_GZIP_ERR_CRC        -3   /**< CRC校验失败 */
+#define IOT_GZIP_ERR_FILE       -4   /**< 文件操作失败 */
 
 /* GZIP压缩级别定义 */
-#define GZIP_COMPRESS_FAST    1   /**< 快速压缩 */
-#define GZIP_COMPRESS_DEFAULT 6   /**< 默认压缩 */
-#define GZIP_COMPRESS_BEST   9   /**< 最佳压缩 */
+#define IOT_GZIP_COMPRESS_FAST    1   /**< 快速压缩 */
+#define IOT_GZIP_COMPRESS_DEFAULT 6   /**< 默认压缩 */
+#define IOT_GZIP_COMPRESS_BEST   9   /**< 最佳压缩 */
 
 /**
  * @brief 解压GZIP格式数据
@@ -41,7 +41,7 @@ extern "C" {
  *
  * 解压标准GZIP格式数据，支持带或不带文件名、注释等扩展字段。
  */
-int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len);
+int iot_gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len);
 
 /**
  * @brief 压缩数据为GZIP格式
@@ -52,12 +52,12 @@ int gzip_decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *ds
  * @param level 压缩级别（1-9）
  * @return GZIP_OK成功，其他值失败
  */
-int gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level);
+int iot_gzip_compress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t *dst_len, int level);
 
 /**
  * @brief 估算 GZIP 压缩输出缓冲区大小
  */
-size_t gzip_compress_bound(size_t src_len);
+size_t iot_gzip_compress_bound(size_t src_len);
 
 /**
  * @brief 解压GZIP文件
@@ -67,7 +67,7 @@ size_t gzip_compress_bound(size_t src_len);
  *
  * 读取整个GZIP文件到内存，解压后保存到目标文件。
  */
-int gzip_decompress_file(const char *src_path, const char *dst_path);
+int iot_gzip_decompress_file(const char *src_path, const char *dst_path);
 
 /**
  * @brief 压缩文件为GZIP格式
@@ -76,7 +76,7 @@ int gzip_decompress_file(const char *src_path, const char *dst_path);
  * @param level 压缩级别（1-9）
  * @return GZIP_OK成功，其他值失败
  */
-int gzip_compress_file(const char *src_path, const char *dst_path, int level);
+int iot_gzip_compress_file(const char *src_path, const char *dst_path, int level);
 
 #ifdef __cplusplus
 }

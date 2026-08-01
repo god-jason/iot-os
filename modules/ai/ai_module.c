@@ -37,8 +37,8 @@
 static int lua_model_load(lua_State* L)
 {
     const char* path = luaL_optstring(L, 1, NULL);
-    model_backend_t backend = (model_backend_t)luaL_optinteger(L, 2, MODEL_BACKEND_AUTO);
-    model_precision_t precision = (model_precision_t)luaL_optinteger(L, 3, MODEL_PRECISION_AUTO);
+    iot_model_backend_t backend = (iot_model_backend_t)luaL_optinteger(L, 2, IOT_MODEL_BACKEND_AUTO);
+    iot_model_precision_t precision = (iot_model_precision_t)luaL_optinteger(L, 3, IOT_MODEL_PRECISION_AUTO);
 
     if (!path) {
         lua_pushnil(L);
@@ -46,7 +46,7 @@ static int lua_model_load(lua_State* L)
         return 2;
     }
 
-    model_t* model = model_load_from_file(path, backend, precision);
+    iot_model_t* model = iot_model_load_from_file(path, backend, precision);
     if (!model) {
         lua_pushnil(L);
         lua_pushstring(L, "failed to load model");
@@ -54,7 +54,7 @@ static int lua_model_load(lua_State* L)
     }
 
     /* 将 model 指针封装为 userdata */
-    model_t** ud = (model_t**)lua_newuserdata(L, sizeof(model_t*));
+    iot_model_t** ud = (iot_model_t**)lua_newuserdata(L, sizeof(iot_model_t*));
     *ud = model;
     luaL_setmetatable(L, "model_handle");
 
@@ -67,7 +67,7 @@ static int lua_model_load(lua_State* L)
  */
 static int lua_model_predict(lua_State* L)
 {
-    model_t** ud = (model_t**)luaL_checkudata(L, 1, "model_handle");
+    iot_model_t** ud = (iot_model_t**)luaL_checkudata(L, 1, "model_handle");
     if (!ud || !*ud) {
         lua_pushnil(L);
         lua_pushstring(L, "invalid model handle");
@@ -86,24 +86,24 @@ static int lua_model_predict(lua_State* L)
         return 2;
     }
 
-    model_set_input(*ud, 0, input_data, input_len);
+    iot_model_set_input(*ud, 0, input_data, input_len);
 
-    if (model_invoke(*ud) != 0) {
+    if (iot_model_invoke(*ud) != 0) {
         lua_pushnil(L);
         lua_pushstring(L, "inference failed");
         return 2;
     }
 
     /* 获取输出 */
-    int out_count = model_get_output_count(*ud);
+    int out_count = iot_model_get_output_count(*ud);
     if (out_count <= 0) {
         lua_pushnil(L);
         lua_pushstring(L, "no output tensor");
         return 2;
     }
 
-    model_tensor_info_t info;
-    model_get_output_info(*ud, 0, &info);
+    iot_model_tensor_info_t info;
+    iot_model_get_output_info(*ud, 0, &info);
 
     uint8_t* out_buf = (uint8_t*)malloc(info.size_bytes);
     if (!out_buf) {
@@ -113,7 +113,7 @@ static int lua_model_predict(lua_State* L)
     }
 
     size_t out_size = info.size_bytes;
-    model_get_output(*ud, 0, out_buf, &out_size);
+    iot_model_get_output(*ud, 0, out_buf, &out_size);
     lua_pushlstring(L, (const char*)out_buf, out_size);
     free(out_buf);
 
@@ -123,9 +123,9 @@ static int lua_model_predict(lua_State* L)
 /**
  * model.get_input_info(model_handle, index)
  */
-static int lua_model_get_input_info(lua_State* L)
+static int lua_iot_model_get_input_info(lua_State* L)
 {
-    model_t** ud = (model_t**)luaL_checkudata(L, 1, "model_handle");
+    iot_model_t** ud = (iot_model_t**)luaL_checkudata(L, 1, "model_handle");
     int index = (int)luaL_optinteger(L, 2, 0);
 
     if (!ud || !*ud) {
@@ -133,8 +133,8 @@ static int lua_model_get_input_info(lua_State* L)
         return 1;
     }
 
-    model_tensor_info_t info;
-    if (model_get_input_info(*ud, index, &info) != 0) {
+    iot_model_tensor_info_t info;
+    if (iot_model_get_input_info(*ud, index, &info) != 0) {
         lua_pushnil(L);
         return 1;
     }
@@ -162,14 +162,14 @@ static int lua_model_get_input_info(lua_State* L)
  */
 static int lua_model_get_info(lua_State* L)
 {
-    model_t** ud = (model_t**)luaL_checkudata(L, 1, "model_handle");
+    iot_model_t** ud = (iot_model_t**)luaL_checkudata(L, 1, "model_handle");
     if (!ud || !*ud) {
         lua_pushnil(L);
         return 1;
     }
 
     char info[1024];
-    if (model_get_info_json(*ud, info, sizeof(info)) == 0) {
+    if (iot_model_get_info_json(*ud, info, sizeof(info)) == 0) {
         lua_pushstring(L, info);
     } else {
         lua_pushstring(L, "{}");
@@ -183,9 +183,9 @@ static int lua_model_get_info(lua_State* L)
  */
 static int lua_model_backend(lua_State* L)
 {
-    model_backend_t b = model_get_available_backend();
+    iot_model_backend_t b = iot_model_get_available_backend();
     lua_pushinteger(L, b);
-    lua_pushstring(L, model_backend_name(b));
+    lua_pushstring(L, iot_model_backend_name(b));
     return 2;
 }
 
@@ -195,9 +195,9 @@ static int lua_model_backend(lua_State* L)
  */
 static int lua_model_close(lua_State* L)
 {
-    model_t** ud = (model_t**)luaL_checkudata(L, 1, "model_handle");
+    iot_model_t** ud = (iot_model_t**)luaL_checkudata(L, 1, "model_handle");
     if (ud && *ud) {
-        model_free(*ud);
+        iot_model_free(*ud);
         *ud = NULL;
     }
     return 0;
@@ -206,7 +206,7 @@ static int lua_model_close(lua_State* L)
 static const luaL_Reg model_funcs[] = {
     {"load",           lua_model_load},
     {"predict",        lua_model_predict},
-    {"get_input_info", lua_model_get_input_info},
+    {"get_input_info", lua_iot_model_get_input_info},
     {"get_info",       lua_model_get_info},
     {"backend",        lua_model_backend},
     {"close",          lua_model_close},
@@ -230,7 +230,7 @@ int luaopen_model_register(lua_State* L)
  * llm 模块 Lua API
  *===========================================================*/
 
-static llm_client_t* g_llm_client = NULL;
+static iot_llm_client_t* g_llm_client = NULL;
 
 /**
  * llm.create(config_table)
@@ -240,7 +240,7 @@ static int lua_llm_create(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    llm_config_t cfg;
+    iot_llm_config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
 
     lua_getfield(L, 1, "base_url");
@@ -259,8 +259,8 @@ static int lua_llm_create(lua_State* L)
 
     lua_pop(L, 7); /* 弹出字段值 */
 
-    if (g_llm_client) llm_client_free(g_llm_client);
-    g_llm_client = llm_client_create(&cfg);
+    if (g_llm_client) iot_llm_client_free(g_llm_client);
+    g_llm_client = iot_llm_client_create(&cfg);
 
     if (g_llm_client) {
         lua_pushboolean(L, 1);
@@ -276,7 +276,7 @@ static int lua_llm_create(lua_State* L)
  * llm.chat(messages_json, [tools], [callback])
  * 同步/异步聊天
  */
-static int lua_llm_chat(lua_State* L)
+static int lua_iot_llm_chat(lua_State* L)
 {
     if (!g_llm_client) {
         lua_pushnil(L);
@@ -286,13 +286,13 @@ static int lua_llm_chat(lua_State* L)
 
     const char* messages = luaL_checkstring(L, 1);
 
-    llm_response_t response;
+    iot_llm_response_t response;
     memset(&response, 0, sizeof(response));
 
-    if (llm_chat(g_llm_client, messages, NULL, 0, &response) != 0) {
+    if (iot_llm_chat(g_llm_client, messages, NULL, 0, &response) != 0) {
         lua_pushnil(L);
         lua_pushstring(L, response.error ? response.error : "chat failed");
-        llm_response_free(&response);
+        iot_llm_response_free(&response);
         return 2;
     }
 
@@ -316,7 +316,7 @@ static int lua_llm_chat(lua_State* L)
     lua_pushinteger(L, response.completion_tokens);
     lua_setfield(L, -2, "completion_tokens");
 
-    llm_response_free(&response);
+    iot_llm_response_free(&response);
     return 1;
 }
 
@@ -324,7 +324,7 @@ static int lua_llm_chat(lua_State* L)
  * llm.ask(question)
  * 单轮问答简便接口
  */
-static int lua_llm_ask(lua_State* L)
+static int lua_iot_llm_ask(lua_State* L)
 {
     if (!g_llm_client) {
         lua_pushnil(L);
@@ -334,13 +334,13 @@ static int lua_llm_ask(lua_State* L)
 
     const char* question = luaL_checkstring(L, 1);
 
-    llm_response_t response;
+    iot_llm_response_t response;
     memset(&response, 0, sizeof(response));
 
-    if (llm_ask(g_llm_client, question, &response) != 0) {
+    if (iot_llm_ask(g_llm_client, question, &response) != 0) {
         lua_pushnil(L);
         lua_pushstring(L, response.error ? response.error : "ask failed");
-        llm_response_free(&response);
+        iot_llm_response_free(&response);
         return 2;
     }
 
@@ -352,14 +352,14 @@ static int lua_llm_ask(lua_State* L)
 
     lua_pushinteger(L, response.total_tokens);
 
-    llm_response_free(&response);
+    iot_llm_response_free(&response);
     return 2;
 }
 
 static const luaL_Reg llm_funcs[] = {
     {"create", lua_llm_create},
-    {"chat",   lua_llm_chat},
-    {"ask",    lua_llm_ask},
+    {"chat",   lua_iot_llm_chat},
+    {"ask",    lua_iot_llm_ask},
     {NULL, NULL}
 };
 
@@ -373,17 +373,17 @@ int luaopen_llm_register(lua_State* L)
  * stt 模块 Lua API
  *===========================================================*/
 
-static stt_t* g_stt = NULL;
+static iot_stt_t* g_stt = NULL;
 
-static int lua_stt_create(lua_State* L)
+static int lua_iot_stt_create(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    stt_config_t cfg;
+    iot_stt_config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
 
     lua_getfield(L, 1, "provider");
-    cfg.provider = (stt_provider_t)lua_tointeger(L, -1);
+    cfg.provider = (iot_stt_provider_t)lua_tointeger(L, -1);
     lua_getfield(L, 1, "api_key");
     strncpy(cfg.api_key, lua_tostring(L, -1) ? lua_tostring(L, -1) : "", sizeof(cfg.api_key) - 1);
     lua_getfield(L, 1, "language");
@@ -394,36 +394,36 @@ static int lua_stt_create(lua_State* L)
     cfg.enable_vad = lua_toboolean(L, -1);
     lua_pop(L, 5);
 
-    if (g_stt) stt_free(g_stt);
-    g_stt = stt_create(&cfg);
+    if (g_stt) iot_stt_free(g_stt);
+    g_stt = iot_stt_create(&cfg);
 
     lua_pushboolean(L, g_stt != NULL);
     return 1;
 }
 
-static int lua_stt_recognize_file(lua_State* L)
+static int lua_iot_stt_recognize_file(lua_State* L)
 {
     if (!g_stt) {
         lua_pushnil(L); lua_pushstring(L, "STT not created"); return 2;
     }
     const char* path = luaL_checkstring(L, 1);
-    stt_result_t result;
+    iot_stt_result_t result;
     memset(&result, 0, sizeof(result));
-    if (stt_recognize_file(g_stt, path, &result) != 0) {
+    if (iot_stt_recognize_file(g_stt, path, &result) != 0) {
         lua_pushnil(L);
         lua_pushstring(L, result.error ? result.error : "recognize failed");
-        stt_result_free(&result);
+        iot_stt_result_free(&result);
         return 2;
     }
     lua_pushstring(L, result.text ? result.text : "");
     lua_pushnumber(L, result.confidence);
-    stt_result_free(&result);
+    iot_stt_result_free(&result);
     return 2;
 }
 
 static const luaL_Reg stt_funcs[] = {
-    {"create",         lua_stt_create},
-    {"recognize_file", lua_stt_recognize_file},
+    {"create",         lua_iot_stt_create},
+    {"recognize_file", lua_iot_stt_recognize_file},
     {NULL, NULL}
 };
 
@@ -437,21 +437,21 @@ int luaopen_stt_register(lua_State* L)
  * tts 模块 Lua API
  *===========================================================*/
 
-static tts_t* g_tts = NULL;
+static iot_tts_t* g_tts = NULL;
 
-static int lua_tts_create(lua_State* L)
+static int lua_iot_tts_create(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    tts_config_t cfg;
+    iot_tts_config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
 
     lua_getfield(L, 1, "provider");
-    cfg.provider = (tts_provider_t)lua_tointeger(L, -1);
+    cfg.provider = (iot_tts_provider_t)lua_tointeger(L, -1);
     lua_getfield(L, 1, "api_key");
     strncpy(cfg.api_key, lua_tostring(L, -1) ? lua_tostring(L, -1) : "", sizeof(cfg.api_key) - 1);
     lua_getfield(L, 1, "voice");
-    cfg.voice = (tts_voice_t)luaL_optinteger(L, -1, TTS_VOICE_DEFAULT);
+    cfg.voice = (iot_tts_voice_t)luaL_optinteger(L, -1, IOT_TTS_VOICE_DEFAULT);
     lua_getfield(L, 1, "speed");
     cfg.speed = lua_isnumber(L, -1) ? (float)lua_tonumber(L, -1) : 1.0f;
     lua_getfield(L, 1, "volume");
@@ -460,20 +460,20 @@ static int lua_tts_create(lua_State* L)
     strncpy(cfg.language, lua_tostring(L, -1) ? lua_tostring(L, -1) : "zh-CN", sizeof(cfg.language) - 1);
     lua_pop(L, 6);
 
-    if (g_tts) tts_free(g_tts);
-    g_tts = tts_create(&cfg);
+    if (g_tts) iot_tts_free(g_tts);
+    g_tts = iot_tts_create(&cfg);
 
     lua_pushboolean(L, g_tts != NULL);
     return 1;
 }
 
-static int lua_tts_speak(lua_State* L)
+static int lua_iot_tts_speak(lua_State* L)
 {
     if (!g_tts) {
         lua_pushnil(L); lua_pushstring(L, "TTS not created"); return 2;
     }
     const char* text = luaL_checkstring(L, 1);
-    int ret = tts_speak(g_tts, text);
+    int ret = iot_tts_speak(g_tts, text);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
@@ -485,14 +485,14 @@ static int lua_tts_to_file(lua_State* L)
     }
     const char* text = luaL_checkstring(L, 1);
     const char* path = luaL_checkstring(L, 2);
-    int ret = tts_synthesize_to_file(g_tts, text, path);
+    int ret = iot_tts_synthesize_to_file(g_tts, text, path);
     lua_pushboolean(L, ret == 0);
     return 1;
 }
 
 static const luaL_Reg tts_funcs[] = {
-    {"create",  lua_tts_create},
-    {"speak",   lua_tts_speak},
+    {"create",  lua_iot_tts_create},
+    {"speak",   lua_iot_tts_speak},
     {"to_file", lua_tts_to_file},
     {NULL, NULL}
 };

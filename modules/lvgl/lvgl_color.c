@@ -1,5 +1,5 @@
-/**
- * @file lvgl_color.c
+﻿/**
+ * @file iot_lvgl_color.c
  * @brief LVGL颜色工具
  *
  * 实现LVGL颜色工具的Lua绑定，包括RGB颜色创建、十六进制颜色解析、颜色亮化/暗化/混合、亮度调整等接口，支持多种颜色空间转换。
@@ -21,7 +21,7 @@
 @return integer 颜色值
 @usage local color = lvgl.color.make(255, 0, 0)
 */
-static int lvgl_color_make(lua_State* L) {
+static int iot_lvgl_color_make(lua_State* L) {
     uint8_t r = (uint8_t)luaL_checkinteger(L, 1);
     uint8_t g = (uint8_t)luaL_checkinteger(L, 2);
     uint8_t b = (uint8_t)luaL_checkinteger(L, 3);
@@ -36,7 +36,7 @@ static int lvgl_color_make(lua_State* L) {
 @return integer 颜色值
 @usage local color = lvgl.color.hex(0xFF0000)
 */
-static int lvgl_color_hex(lua_State* L) {
+static int iot_lvgl_color_hex(lua_State* L) {
     uint32_t hex = (uint32_t)luaL_checkinteger(L, 1);
     lv_color_t color = lv_color_hex(hex);
     lua_pushinteger(L, color.full);
@@ -49,7 +49,7 @@ static int lvgl_color_hex(lua_State* L) {
 @return integer 颜色值
 @usage local color = lvgl.color.hex3(0xF00)
 */
-static int lvgl_color_hex3(lua_State* L) {
+static int iot_lvgl_color_hex3(lua_State* L) {
     uint32_t hex = (uint32_t)luaL_checkinteger(L, 1);
     lv_color_t color = lv_color_hex3(hex);
     lua_pushinteger(L, color.full);
@@ -63,7 +63,7 @@ static int lvgl_color_hex3(lua_State* L) {
 @return integer 调整后的颜色值
 @usage local brightened = lvgl.color.change_brightness(color, 30)
 */
-static int lvgl_color_change_brightness(lua_State* L) {
+static int iot_lvgl_color_change_brightness(lua_State* L) {
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 1);
     int bright = (int)luaL_checkinteger(L, 2);
@@ -82,7 +82,7 @@ static int lvgl_color_change_brightness(lua_State* L) {
 @return integer 变亮后的颜色值
 @usage local lighter = lvgl.color.lighten(color, 50)
 */
-static int lvgl_color_lighten(lua_State* L) {
+static int iot_lvgl_color_lighten(lua_State* L) {
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 1);
     uint8_t level = (uint8_t)luaL_checkinteger(L, 2);
@@ -98,7 +98,7 @@ static int lvgl_color_lighten(lua_State* L) {
 @return integer 变暗后的颜色值
 @usage local darker = lvgl.color.darken(color, 50)
 */
-static int lvgl_color_darken(lua_State* L) {
+static int iot_lvgl_color_darken(lua_State* L) {
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 1);
     uint8_t level = (uint8_t)luaL_checkinteger(L, 2);
@@ -113,7 +113,7 @@ static int lvgl_color_darken(lua_State* L) {
 @return integer 转换后的颜色值
 @usage local mono = lvgl.color.to_1(color)
 */
-static int lvgl_color_to_1(lua_State* L) {
+static int iot_lvgl_color_to_1(lua_State* L) {
     lv_color_t color;
     color.full = (uint32_t)luaL_checkinteger(L, 1);
     lua_pushinteger(L, lv_color_to1(color));
@@ -128,7 +128,7 @@ static int lvgl_color_to_1(lua_State* L) {
 @return integer 混合后的颜色值
 @usage local mixed = lvgl.color.mix(color1, color2, 128)
 */
-static int lvgl_color_mix(lua_State* L) {
+static int iot_lvgl_color_mix(lua_State* L) {
     lv_color_t c1;
     c1.full = (uint32_t)luaL_checkinteger(L, 1);
     lv_color_t c2;
@@ -140,13 +140,13 @@ static int lvgl_color_mix(lua_State* L) {
 }
 
 /* 注册 color 子模块 */
-void lvgl_register_color(lua_State* L) {
-    REG_METHOD(L, "make", lvgl_color_make);
-    REG_METHOD(L, "hex", lvgl_color_hex);
-    REG_METHOD(L, "hex3", lvgl_color_hex3);
-    REG_METHOD(L, "change_brightness", lvgl_color_change_brightness);
-    REG_METHOD(L, "lighten", lvgl_color_lighten);
-    REG_METHOD(L, "darken", lvgl_color_darken);
-    REG_METHOD(L, "to_1", lvgl_color_to_1);
-    REG_METHOD(L, "mix", lvgl_color_mix);
+void iot_lvgl_register_color(lua_State* L) {
+    REG_METHOD(L, "make", iot_lvgl_color_make);
+    REG_METHOD(L, "hex", iot_lvgl_color_hex);
+    REG_METHOD(L, "hex3", iot_lvgl_color_hex3);
+    REG_METHOD(L, "change_brightness", iot_lvgl_color_change_brightness);
+    REG_METHOD(L, "lighten", iot_lvgl_color_lighten);
+    REG_METHOD(L, "darken", iot_lvgl_color_darken);
+    REG_METHOD(L, "to_1", iot_lvgl_color_to_1);
+    REG_METHOD(L, "mix", iot_lvgl_color_mix);
 }

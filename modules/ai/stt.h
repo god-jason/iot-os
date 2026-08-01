@@ -40,30 +40,30 @@ extern "C" {
 
 /* STT 服务商 */
 typedef enum {
-    STT_PROVIDER_AUTO     = 0,   /* 自动选择 (优先本地, 后云端) */
-    STT_PROVIDER_OPENAI   = 1,   /* OpenAI Whisper */
-    STT_PROVIDER_BAIDU    = 2,   /* 百度语音 */
-    STT_PROVIDER_IFLYTEK  = 3,   /* 讯飞语音 */
-    STT_PROVIDER_ALIYUN   = 4,   /* 阿里云 */
-    STT_PROVIDER_TENCENT  = 5,   /* 腾讯云 */
-} stt_provider_t;
+    IOT_STT_PROVIDER_AUTO     = 0,   /* 自动选择 (优先本地, 后云端) */
+    IOT_STT_PROVIDER_OPENAI   = 1,   /* OpenAI Whisper */
+    IOT_STT_PROVIDER_BAIDU    = 2,   /* 百度语音 */
+    IOT_STT_PROVIDER_IFLYTEK  = 3,   /* 讯飞语音 */
+    IOT_STT_PROVIDER_ALIYUN   = 4,   /* 阿里云 */
+    IOT_STT_PROVIDER_TENCENT  = 5,   /* 腾讯云 */
+} iot_stt_provider_t;
 
 /* 音频编码格式 */
 typedef enum {
-    STT_AUDIO_PCM_S16LE   = 0,   /* PCM 16-bit signed little-endian */
-    STT_AUDIO_WAV         = 1,   /* WAV (PCM 16-bit) */
-    STT_AUDIO_MP3         = 2,   /* MP3 */
-    STT_AUDIO_OPUS        = 3,   /* Opus */
-} stt_audio_format_t;
+    IOT_STT_AUDIO_PCM_S16LE   = 0,   /* PCM 16-bit signed little-endian */
+    IOT_STT_AUDIO_WAV         = 1,   /* WAV (PCM 16-bit) */
+    IOT_STT_AUDIO_MP3         = 2,   /* MP3 */
+    IOT_STT_AUDIO_OPUS        = 3,   /* Opus */
+} iot_stt_audio_format_t;
 
 /* STT 配置 */
 typedef struct {
-    stt_provider_t   provider;       /* 服务商 */
+    iot_stt_provider_t   provider;       /* 服务商 */
     char             api_key[128];   /* API 密钥 */
     char             api_secret[128];/* API 密钥 (部分服务商需要) */
     char             app_id[64];     /* App ID (部分服务商需要) */
     char             language[8];    /* 语言代码: zh / en / ja / ko */
-    stt_audio_format_t audio_format; /* 音频格式 */
+    iot_stt_audio_format_t audio_format; /* 音频格式 */
     int              sample_rate;    /* 采样率: 8000 / 16000 / 24000 */
     int              channels;       /* 声道数: 1 (单声道) / 2 (立体声) */
     int              bits_per_sample;/* 位深: 16 */
@@ -73,7 +73,7 @@ typedef struct {
     char**           hotwords;       /* 热词列表 (以 NULL 结尾) */
     int              hotword_count;  /* 热词数量 */
     int              timeout_ms;     /* HTTP 超时 (ms) */
-} stt_config_t;
+} iot_stt_config_t;
 
 /* STT 结果 */
 typedef struct {
@@ -84,19 +84,19 @@ typedef struct {
     int      status_code;    /* HTTP 状态码 */
     char*    error;          /* 错误信息 (NULL 表示成功) */
     char*    raw_response;   /* 原始响应 (调试用) */
-} stt_result_t;
+} iot_stt_result_t;
 
 /* STT 句柄 (不透明) */
-typedef struct stt_ctx stt_t;
+typedef struct iot_stt_ctx iot_stt_t;
 
 /* 异步回调 */
-typedef void (*stt_callback_t)(stt_result_t* result, void* user_data);
+typedef void (*iot_stt_callback_t)(iot_stt_result_t* result, void* user_data);
 
 /* VAD 事件回调 (不说话->开始说话 / 说话中->沉默) */
-typedef void (*stt_vad_callback_t)(bool is_speech, void* user_data);
+typedef void (*iot_stt_vad_callback_t)(bool is_speech, void* user_data);
 
 /* 实时录音回调 */
-typedef int (*stt_audio_callback_t)(const uint8_t* data, size_t len,
+typedef int (*iot_stt_audio_callback_t)(const uint8_t* data, size_t len,
                                      void* user_data);
 
 /*===========================================================
@@ -108,7 +108,7 @@ typedef int (*stt_audio_callback_t)(const uint8_t* data, size_t len,
  * @param config 配置参数
  * @return STT 句柄, 失败返回 NULL
  */
-stt_t* stt_create(const stt_config_t* config);
+iot_stt_t* iot_stt_create(const iot_stt_config_t* config);
 
 /**
  * @brief 更新配置
@@ -116,20 +116,20 @@ stt_t* stt_create(const stt_config_t* config);
  * @param config 新配置
  * @return 0 成功, -1 失败
  */
-int stt_set_config(stt_t* stt, const stt_config_t* config);
+int iot_stt_set_config(iot_stt_t* stt, const iot_stt_config_t* config);
 
 /**
  * @brief 释放 STT 实例
  * @param stt STT 句柄
  */
-void stt_free(stt_t* stt);
+void iot_stt_free(iot_stt_t* stt);
 
 /**
  * @brief 获取服务商名称
  * @param provider 服务商枚举
  * @return 名称字符串
  */
-const char* stt_provider_name(stt_provider_t provider);
+const char* iot_stt_provider_name(iot_stt_provider_t provider);
 
 /*===========================================================
  * 同步识别
@@ -139,11 +139,11 @@ const char* stt_provider_name(stt_provider_t provider);
  * @brief 识别音频文件
  * @param stt STT 句柄
  * @param file_path 音频文件路径 (如 /app/record.wav)
- * @param result 输出识别结果 (调用者需 stt_result_free)
+ * @param result 输出识别结果 (调用者需 iot_stt_result_free)
  * @return 0 成功, -1 失败
  */
-int stt_recognize_file(stt_t* stt, const char* file_path,
-                        stt_result_t* result);
+int iot_stt_recognize_file(iot_stt_t* stt, const char* file_path,
+                        iot_stt_result_t* result);
 
 /**
  * @brief 识别音频缓冲区
@@ -153,8 +153,8 @@ int stt_recognize_file(stt_t* stt, const char* file_path,
  * @param result 输出识别结果
  * @return 0 成功, -1 失败
  */
-int stt_recognize_buffer(stt_t* stt, const uint8_t* audio_data,
-                          size_t audio_len, stt_result_t* result);
+int iot_stt_recognize_buffer(iot_stt_t* stt, const uint8_t* audio_data,
+                          size_t audio_len, iot_stt_result_t* result);
 
 /*===========================================================
  * 实时录音识别
@@ -171,7 +171,7 @@ int stt_recognize_buffer(stt_t* stt, const uint8_t* audio_data,
  * @param user_data 用户数据
  * @return 0 已启动, -1 失败
  */
-int stt_start_record_and_recognize(stt_t* stt, stt_callback_t callback,
+int iot_stt_start_record_and_recognize(iot_stt_t* stt, iot_stt_callback_t callback,
                                     void* user_data);
 
 /**
@@ -179,14 +179,14 @@ int stt_start_record_and_recognize(stt_t* stt, stt_callback_t callback,
  * @param stt STT 句柄
  * @return 0 成功, -1 失败
  */
-int stt_stop_recording(stt_t* stt);
+int iot_stt_stop_recording(iot_stt_t* stt);
 
 /**
  * @brief 是否正在录音
  * @param stt STT 句柄
  * @return true 录音中
  */
-bool stt_is_recording(stt_t* stt);
+bool iot_stt_is_recording(iot_stt_t* stt);
 
 /**
  * @brief 设置 VAD 事件回调
@@ -194,7 +194,7 @@ bool stt_is_recording(stt_t* stt);
  * @param vad_cb VAD 回调
  * @param user_data 用户数据
  */
-void stt_set_vad_callback(stt_t* stt, stt_vad_callback_t vad_cb,
+void iot_stt_set_vad_callback(iot_stt_t* stt, iot_stt_vad_callback_t vad_cb,
                            void* user_data);
 
 /**
@@ -203,7 +203,7 @@ void stt_set_vad_callback(stt_t* stt, stt_vad_callback_t vad_cb,
  * @param audio_cb 音频数据回调
  * @param user_data 用户数据
  */
-void stt_set_audio_callback(stt_t* stt, stt_audio_callback_t audio_cb,
+void iot_stt_set_audio_callback(iot_stt_t* stt, iot_stt_audio_callback_t audio_cb,
                              void* user_data);
 
 /*===========================================================
@@ -216,7 +216,7 @@ void stt_set_audio_callback(stt_t* stt, stt_audio_callback_t audio_cb,
  * @param wake_word 唤醒词 (如 "小杰小杰")
  * @return 0 成功, -1 失败
  */
-int stt_set_wake_word(stt_t* stt, const char* wake_word);
+int iot_stt_set_wake_word(iot_stt_t* stt, const char* wake_word);
 
 /**
  * @brief 开始连续监听 (唤醒词 + 自动识别)
@@ -225,7 +225,7 @@ int stt_set_wake_word(stt_t* stt, const char* wake_word);
  * @param user_data 用户数据
  * @return 0 已启动
  */
-int stt_start_continuous_listen(stt_t* stt, stt_callback_t callback,
+int iot_stt_start_continuous_listen(iot_stt_t* stt, iot_stt_callback_t callback,
                                  void* user_data);
 
 /**
@@ -233,7 +233,7 @@ int stt_start_continuous_listen(stt_t* stt, stt_callback_t callback,
  * @param stt STT 句柄
  * @return 0 成功
  */
-int stt_stop_continuous_listen(stt_t* stt);
+int iot_stt_stop_continuous_listen(iot_stt_t* stt);
 
 /*===========================================================
  * 辅助
@@ -243,7 +243,7 @@ int stt_stop_continuous_listen(stt_t* stt);
  * @brief 释放识别结果
  * @param result 结果指针
  */
-void stt_result_free(stt_result_t* result);
+void iot_stt_result_free(iot_stt_result_t* result);
 
 /**
  * @brief WAV 头写入 (用于将 PCM 编码为 WAV 文件)
@@ -256,7 +256,7 @@ void stt_result_free(stt_result_t* result);
  * @param wav_size 输出 WAV 大小
  * @return 0 成功
  */
-int stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
+int iot_stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
                     int sample_rate, int channels, int bits_per_sample,
                     uint8_t** wav_data, size_t* wav_size);
 
@@ -267,7 +267,7 @@ int stt_pcm_to_wav(const uint8_t* pcm_data, size_t pcm_size,
  * @param threshold 能量阈值 (默认 500)
  * @return true 检测到语音活动
  */
-bool stt_vad_detect(const int16_t* pcm_data, size_t len, int threshold);
+bool iot_stt_vad_detect(const int16_t* pcm_data, size_t len, int threshold);
 
 #ifdef __cplusplus
 }

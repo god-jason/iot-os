@@ -50,12 +50,12 @@
 #include "http_server.h"
 
 typedef struct {
-    http_client_t* client;
+    iot_http_client_t* client;
     int inited;
 } http_lua_ctx_t;
 
 typedef struct {
-    http_server_t* server;
+    iot_http_server_t* server;
     int inited;
     lua_State* L;
     int handler_ref;
@@ -88,12 +88,12 @@ static http_server_lua_ctx_t* http_get_server_ctx(lua_State* L, int idx) {
     return *ctx_ptr;
 }
 
-static http_lua_ctx_t* http_ctx_create(const http_client_options_t* options) {
+static http_lua_ctx_t* http_ctx_create(const iot_http_client_options_t* options) {
     http_lua_ctx_t* ctx = (http_lua_ctx_t*)iot_malloc(sizeof(http_lua_ctx_t));
     if (!ctx) return NULL;
     
     memset(ctx, 0, sizeof(http_lua_ctx_t));
-    ctx->client = http_client_create(options);
+    ctx->client = iot_http_client_create(options);
     if (!ctx->client) {
         iot_free(ctx);
         return NULL;
@@ -106,19 +106,19 @@ static http_lua_ctx_t* http_ctx_create(const http_client_options_t* options) {
 static void http_ctx_destroy(http_lua_ctx_t* ctx) {
     if (!ctx) return;
     if (ctx->client) {
-        http_client_destroy(ctx->client);
+        iot_http_client_destroy(ctx->client);
     }
     iot_free(ctx);
 }
 
-static http_method_t http_string_to_method(const char* method) {
-    if (!method) return HTTP_METHOD_GET;
-    if (strcmp(method, "POST") == 0) return HTTP_METHOD_POST;
-    if (strcmp(method, "PUT") == 0) return HTTP_METHOD_PUT;
-    if (strcmp(method, "DELETE") == 0) return HTTP_METHOD_DELETE;
-    if (strcmp(method, "HEAD") == 0) return HTTP_METHOD_HEAD;
-    if (strcmp(method, "OPTIONS") == 0) return HTTP_METHOD_OPTIONS;
-    return HTTP_METHOD_GET;
+static iot_http_method_t http_string_to_method(const char* method) {
+    if (!method) return IOT_HTTP_METHOD_GET;
+    if (strcmp(method, "POST") == 0) return IOT_HTTP_METHOD_POST;
+    if (strcmp(method, "PUT") == 0) return IOT_HTTP_METHOD_PUT;
+    if (strcmp(method, "DELETE") == 0) return IOT_HTTP_METHOD_DELETE;
+    if (strcmp(method, "HEAD") == 0) return IOT_HTTP_METHOD_HEAD;
+    if (strcmp(method, "OPTIONS") == 0) return IOT_HTTP_METHOD_OPTIONS;
+    return IOT_HTTP_METHOD_GET;
 }
 
 static char* http_build_headers_from_table(lua_State* L, int idx) {
@@ -152,7 +152,7 @@ static char* http_build_headers_from_table(lua_State* L, int idx) {
     return headers;
 }
 
-static int http_push_response(lua_State* L, http_response_t* response) {
+static int http_push_response(lua_State* L, iot_http_response_t* response) {
     if (!response) {
         lua_pushnil(L);
         return 1;
@@ -216,7 +216,7 @@ static int luaopen_http_request(lua_State* L) {
     const char* method = luaL_checkstring(L, 1);
     const char* url = luaL_checkstring(L, 2);
     
-    http_client_options_t options = {
+    iot_http_client_options_t options = {
         .url = url,
         .method = http_string_to_method(method),
         .timeout_ms = 30000,
@@ -287,7 +287,7 @@ static int luaopen_http_request(lua_State* L) {
         iot_free(headers_str);
     }
     
-    int ret = http_client_execute(ctx->client);
+    int ret = iot_http_client_execute(ctx->client);
     if (ret != 0) {
         http_ctx_destroy(ctx);
         lua_pushnil(L);
@@ -307,9 +307,9 @@ static int luaopen_http_request(lua_State* L) {
 static int luaopen_http_get(lua_State* L) {
     const char* url = luaL_checkstring(L, 1);
     
-    http_client_options_t options = {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_GET,
+        .method = IOT_HTTP_METHOD_GET,
         .timeout_ms = 30000,
         .enable_gzip = true,
         .auto_decompress = true,
@@ -346,7 +346,7 @@ static int luaopen_http_get(lua_State* L) {
         iot_free(headers_str);
     }
     
-    int ret = http_client_execute(ctx->client);
+    int ret = iot_http_client_execute(ctx->client);
     if (ret != 0) {
         http_ctx_destroy(ctx);
         lua_pushnil(L);
@@ -354,7 +354,7 @@ static int luaopen_http_get(lua_State* L) {
         return 2;
     }
     
-    http_response_t* response = http_client_get_response(ctx->client);
+    iot_http_response_t* response = iot_http_client_get_response(ctx->client);
     int result = http_push_response(L, response);
     
     http_ctx_destroy(ctx);
@@ -367,9 +367,9 @@ static int luaopen_http_post(lua_State* L) {
     const char* body = luaL_checkstring(L, 2);
     const char* content_type = luaL_optstring(L, 3, "application/x-www-form-urlencoded");
     
-    http_client_options_t options = {
+    iot_http_client_options_t options = {
         .url = url,
-        .method = HTTP_METHOD_POST,
+        .method = IOT_HTTP_METHOD_POST,
         .body = body,
         .body_len = strlen(body),
         .content_type = content_type,
@@ -409,7 +409,7 @@ static int luaopen_http_post(lua_State* L) {
         iot_free(headers_str);
     }
     
-    int ret = http_client_execute(ctx->client);
+    int ret = iot_http_client_execute(ctx->client);
     if (ret != 0) {
         http_ctx_destroy(ctx);
         lua_pushnil(L);
@@ -417,7 +417,7 @@ static int luaopen_http_post(lua_State* L) {
         return 2;
     }
     
-    http_response_t* response = http_client_get_response(ctx->client);
+    iot_http_response_t* response = iot_http_client_get_response(ctx->client);
     int result = http_push_response(L, response);
     
     http_ctx_destroy(ctx);
@@ -447,7 +447,7 @@ static int luaopen_http_download(lua_State* L) {
     const char* url = luaL_checkstring(L, 1);
     const char* save_path = luaL_checkstring(L, 2);
     
-    int ret = http_download(url, save_path);
+    int ret = iot_http_download(url, save_path);
     if (ret != 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "download failed");
@@ -467,7 +467,7 @@ static http_server_lua_ctx_t* http_server_ctx_create(lua_State* L) {
     if (!ctx) return NULL;
     
     memset(ctx, 0, sizeof(http_server_lua_ctx_t));
-    ctx->server = http_server_create();
+    ctx->server = iot_http_server_create();
     if (!ctx->server) {
         iot_free(ctx);
         return NULL;
@@ -482,7 +482,7 @@ static http_server_lua_ctx_t* http_server_ctx_create(lua_State* L) {
 static void http_server_ctx_destroy(http_server_lua_ctx_t* ctx) {
     if (!ctx) return;
     if (ctx->server) {
-        http_server_destroy(ctx->server);
+        iot_http_server_destroy(ctx->server);
     }
     if (ctx->L && ctx->handler_ref != LUA_NOREF) {
         luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->handler_ref);
@@ -512,9 +512,9 @@ static int luaopen_http_create_server(lua_State* L) {
     return 1;
 }
 
-static void http_server_request_callback(http_server_t* server, 
-                                         const http_server_request_t* req, 
-                                         http_server_response_t* resp,
+static void http_server_request_callback(iot_http_server_t* server, 
+                                         const iot_http_server_request_t* req, 
+                                         iot_http_server_response_t* resp,
                                          void* user_data) {
     http_server_lua_ctx_t* ctx = (http_server_lua_ctx_t*)user_data;
     if (!ctx || !ctx->L || ctx->handler_ref == LUA_NOREF) return;
@@ -576,7 +576,7 @@ static int luaopen_http_server_on(lua_State* L) {
         lua_pushvalue(L, 3);
         ctx->handler_ref = luaL_ref(L, LUA_REGISTRYINDEX);
         
-        http_server_set_request_callback(ctx->server, http_server_request_callback, ctx);
+        iot_http_server_set_request_callback(ctx->server, http_server_request_callback, ctx);
     }
     
     lua_pushboolean(L, 1);
@@ -595,7 +595,7 @@ static int luaopen_http_server_listen(lua_State* L) {
     int port = (int)lua_tointeger(L, -1);
     lua_pop(L, 1);
     
-    int ret = http_server_start(ctx->server, (uint16_t)port);
+    int ret = iot_http_server_start(ctx->server, (uint16_t)port);
     if (ret != 0) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "listen failed");
@@ -657,26 +657,26 @@ LUAMOD_API int luaopen_http_register(lua_State* L) {
     luaL_newlib(L, http_module_methods);
     
     /* 注册常量 - HTTP 方法 */
-    lua_pushinteger(L, HTTP_METHOD_GET);     lua_setfield(L, -2, "GET");
-    lua_pushinteger(L, HTTP_METHOD_POST);    lua_setfield(L, -2, "POST");
-    lua_pushinteger(L, HTTP_METHOD_PUT);     lua_setfield(L, -2, "PUT");
-    lua_pushinteger(L, HTTP_METHOD_DELETE);  lua_setfield(L, -2, "DELETE");
-    lua_pushinteger(L, HTTP_METHOD_HEAD);    lua_setfield(L, -2, "HEAD");
-    lua_pushinteger(L, HTTP_METHOD_OPTIONS); lua_setfield(L, -2, "OPTIONS");
+    lua_pushinteger(L, IOT_HTTP_METHOD_GET);     lua_setfield(L, -2, "GET");
+    lua_pushinteger(L, IOT_HTTP_METHOD_POST);    lua_setfield(L, -2, "POST");
+    lua_pushinteger(L, IOT_HTTP_METHOD_PUT);     lua_setfield(L, -2, "PUT");
+    lua_pushinteger(L, IOT_HTTP_METHOD_DELETE);  lua_setfield(L, -2, "DELETE");
+    lua_pushinteger(L, IOT_HTTP_METHOD_HEAD);    lua_setfield(L, -2, "HEAD");
+    lua_pushinteger(L, IOT_HTTP_METHOD_OPTIONS); lua_setfield(L, -2, "OPTIONS");
     
     /* 注册常量 - HTTP 状态码 */
-    lua_pushinteger(L, HTTP_STATUS_OK);              lua_setfield(L, -2, "STATUS_OK");
-    lua_pushinteger(L, HTTP_STATUS_CREATED);         lua_setfield(L, -2, "STATUS_CREATED");
-    lua_pushinteger(L, HTTP_STATUS_NO_CONTENT);      lua_setfield(L, -2, "STATUS_NO_CONTENT");
-    lua_pushinteger(L, HTTP_STATUS_REDIRECT);        lua_setfield(L, -2, "STATUS_REDIRECT");
-    lua_pushinteger(L, HTTP_STATUS_FOUND);           lua_setfield(L, -2, "STATUS_FOUND");
-    lua_pushinteger(L, HTTP_STATUS_NOT_MODIFIED);    lua_setfield(L, -2, "STATUS_NOT_MODIFIED");
-    lua_pushinteger(L, HTTP_STATUS_BAD_REQUEST);     lua_setfield(L, -2, "STATUS_BAD_REQUEST");
-    lua_pushinteger(L, HTTP_STATUS_UNAUTHORIZED);    lua_setfield(L, -2, "STATUS_UNAUTHORIZED");
-    lua_pushinteger(L, HTTP_STATUS_FORBIDDEN);       lua_setfield(L, -2, "STATUS_FORBIDDEN");
-    lua_pushinteger(L, HTTP_STATUS_NOT_FOUND);       lua_setfield(L, -2, "STATUS_NOT_FOUND");
-    lua_pushinteger(L, HTTP_STATUS_SERVER_ERROR);    lua_setfield(L, -2, "STATUS_SERVER_ERROR");
-    lua_pushinteger(L, HTTP_STATUS_SERVICE_UNAVAIL); lua_setfield(L, -2, "STATUS_SERVICE_UNAVAIL");
+    lua_pushinteger(L, IOT_HTTP_STATUS_OK);              lua_setfield(L, -2, "STATUS_OK");
+    lua_pushinteger(L, IOT_HTTP_STATUS_CREATED);         lua_setfield(L, -2, "STATUS_CREATED");
+    lua_pushinteger(L, IOT_HTTP_STATUS_NO_CONTENT);      lua_setfield(L, -2, "STATUS_NO_CONTENT");
+    lua_pushinteger(L, IOT_HTTP_STATUS_REDIRECT);        lua_setfield(L, -2, "STATUS_REDIRECT");
+    lua_pushinteger(L, IOT_HTTP_STATUS_FOUND);           lua_setfield(L, -2, "STATUS_FOUND");
+    lua_pushinteger(L, IOT_HTTP_STATUS_NOT_MODIFIED);    lua_setfield(L, -2, "STATUS_NOT_MODIFIED");
+    lua_pushinteger(L, IOT_HTTP_STATUS_BAD_REQUEST);     lua_setfield(L, -2, "STATUS_BAD_REQUEST");
+    lua_pushinteger(L, IOT_HTTP_STATUS_UNAUTHORIZED);    lua_setfield(L, -2, "STATUS_UNAUTHORIZED");
+    lua_pushinteger(L, IOT_HTTP_STATUS_FORBIDDEN);       lua_setfield(L, -2, "STATUS_FORBIDDEN");
+    lua_pushinteger(L, IOT_HTTP_STATUS_NOT_FOUND);       lua_setfield(L, -2, "STATUS_NOT_FOUND");
+    lua_pushinteger(L, IOT_HTTP_STATUS_SERVER_ERROR);    lua_setfield(L, -2, "STATUS_SERVER_ERROR");
+    lua_pushinteger(L, IOT_HTTP_STATUS_SERVICE_UNAVAIL); lua_setfield(L, -2, "STATUS_SERVICE_UNAVAIL");
     
     luaL_newmetatable(L, HTTP_CTX_METATABLE);
     lua_pushvalue(L, -1);

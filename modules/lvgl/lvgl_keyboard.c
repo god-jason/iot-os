@@ -1,5 +1,5 @@
-/**
- * @file lvgl_keyboard.c
+﻿/**
+ * @file iot_lvgl_keyboard.c
  * @brief LVGL键盘控件
  *
  * 实现LVGL键盘控件的OO风格Lua绑定，包括键盘创建、设置关联文本区、设置键盘模式（文本/数字/用户）、获取关联文本区等接口。
@@ -16,8 +16,8 @@ static int keyboard_metatable_ref = LUA_NOREF;
 
 /* ==================== 内部创建函数 ==================== */
 
-static int lvgl_keyboard_create_internal(lua_State* L) {
-    lv_obj_t* parent = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_create_internal(lua_State* L) {
+    lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* kb = lv_keyboard_create(parent);
     lua_pushlightuserdata(L, kb);
     return 1;
@@ -31,8 +31,8 @@ static int lvgl_keyboard_create_internal(lua_State* L) {
 @return userdata 带metatable的键盘实例
 @usage local kb = lvgl.keyboard.create(scr)
 */
-static int lvgl_keyboard_create(lua_State* L) {
-    return lvgl_obj_create_instance(L, lvgl_keyboard_create_internal, keyboard_metatable_ref);
+static int iot_lvgl_keyboard_create(lua_State* L) {
+    return iot_lvgl_obj_create_instance(L, iot_lvgl_keyboard_create_internal, keyboard_metatable_ref);
 }
 
 /*
@@ -42,8 +42,8 @@ static int lvgl_keyboard_create(lua_State* L) {
 @return self
 @usage kb:set_textarea(ta)
 */
-static int lvgl_keyboard_set_textarea(lua_State* L) {
-    lv_obj_t* kb = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_set_textarea(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* ta = (lv_obj_t*)luaL_checklightuserdata(L, 2);
     lv_keyboard_set_textarea(kb, ta);
     lua_pushvalue(L, 1);
@@ -57,8 +57,8 @@ static int lvgl_keyboard_set_textarea(lua_State* L) {
 @return self
 @usage kb:set_mode(lvgl.KEYBOARD_MODE_TEXT)
 */
-static int lvgl_keyboard_set_mode(lua_State* L) {
-    lv_obj_t* kb = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_set_mode(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
     lv_keyboard_mode_t mode = (lv_keyboard_mode_t)luaL_checkinteger(L, 2);
     lv_keyboard_set_mode(kb, mode);
     lua_pushvalue(L, 1);
@@ -71,8 +71,8 @@ static int lvgl_keyboard_set_mode(lua_State* L) {
 @return self
 @usage kb:set_map(map)
 */
-static int lvgl_keyboard_set_map(lua_State* L) {
-    lv_obj_t* kb = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_set_map(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -83,8 +83,8 @@ static int lvgl_keyboard_set_map(lua_State* L) {
 @return userdata 文本区域对象
 @usage local ta = kb:get_textarea()
 */
-static int lvgl_keyboard_get_textarea(lua_State* L) {
-    lv_obj_t* kb = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_get_textarea(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* ta = lv_keyboard_get_textarea(kb);
     lua_pushlightuserdata(L, ta);
     return 1;
@@ -96,24 +96,24 @@ static int lvgl_keyboard_get_textarea(lua_State* L) {
 @return integer 键盘模式
 @usage local mode = kb:get_mode()
 */
-static int lvgl_keyboard_get_mode(lua_State* L) {
-    lv_obj_t* kb = lvgl_get_obj_ptr(L, 1);
+static int iot_lvgl_keyboard_get_mode(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
     lv_keyboard_mode_t mode = lv_keyboard_get_mode(kb);
     lua_pushinteger(L, mode);
     return 1;
 }
 
 /* 注册 keyboard 子模块 */
-void lvgl_register_keyboard(lua_State* L) {
+void iot_lvgl_register_keyboard(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
     lua_newtable(L);
 
     /* 注册OO风格方法 */
-    REG_METHOD(L, "set_textarea", lvgl_keyboard_set_textarea);
-    REG_METHOD(L, "set_mode", lvgl_keyboard_set_mode);
-    REG_METHOD(L, "set_map", lvgl_keyboard_set_map);
-    REG_METHOD(L, "get_textarea", lvgl_keyboard_get_textarea);
-    REG_METHOD(L, "get_mode", lvgl_keyboard_get_mode);
+    REG_METHOD(L, "set_textarea", iot_lvgl_keyboard_set_textarea);
+    REG_METHOD(L, "set_mode", iot_lvgl_keyboard_set_mode);
+    REG_METHOD(L, "set_map", iot_lvgl_keyboard_set_map);
+    REG_METHOD(L, "get_textarea", iot_lvgl_keyboard_get_textarea);
+    REG_METHOD(L, "get_mode", iot_lvgl_keyboard_get_mode);
 
     /* 保存组件metatable引用(用于继承) */
     keyboard_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -130,5 +130,5 @@ void lvgl_register_keyboard(lua_State* L) {
     lua_pop(L, 1);
 
     /* 注册create函数到主表(lvgl.keyboard) */
-    REG_METHOD(L, "create", lvgl_keyboard_create);
+    REG_METHOD(L, "create", iot_lvgl_keyboard_create);
 }

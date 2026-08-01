@@ -30,22 +30,22 @@ extern "C" {
  * 通用返回值
  *===========================================================*/
 
-#define FILTER_OK     0
-#define FILTER_ERR   -1
+#define IOT_FILTER_OK     0
+#define IOT_FILTER_ERR   -1
 
 /*===========================================================
  * 滤波器类型枚举
  *===========================================================*/
 
 typedef enum {
-    FILTER_TYPE_EMA = 0,
-    FILTER_TYPE_MA,
-    FILTER_TYPE_MEDIAN,
-    FILTER_TYPE_KALMAN,
-    FILTER_TYPE_IIR,
-    FILTER_TYPE_LOWPASS,
-    FILTER_TYPE_COMPLEMENTARY
-} filter_type_t;
+    IOT_FILTER_TYPE_EMA = 0,
+    IOT_FILTER_TYPE_MA,
+    IOT_FILTER_TYPE_MEDIAN,
+    IOT_FILTER_TYPE_KALMAN,
+    IOT_FILTER_TYPE_IIR,
+    IOT_FILTER_TYPE_LOWPASS,
+    IOT_FILTER_TYPE_COMPLEMENTARY
+} iot_filter_type_t;
 
 /*===========================================================
  * 滤波器结构体定义
@@ -61,7 +61,7 @@ typedef struct {
     float alpha;           /**< 平滑系数 (0.0 ~ 1.0) */
     float value;           /**< 当前滤波输出 */
     bool  initialized;     /**< 是否已初始化 */
-} filter_ema_t;
+} iot_filter_ema_t;
 
 /**
  * @brief MA (滑动窗口平均) 滤波器
@@ -76,7 +76,7 @@ typedef struct {
     int    count;          /**< 已收集的样本数 (< size 时窗口未满) */
     float  sum;            /**< 当前窗口内样本总和（增量维护） */
     bool   need_free;      /**< 析构时是否需要释放 buffer */
-} filter_ma_t;
+} iot_filter_ma_t;
 
 /**
  * @brief 中值滤波器
@@ -91,7 +91,7 @@ typedef struct {
     int    index;          /**< 当前写入位置 */
     int    count;          /**< 已收集样本数 */
     bool   need_free;      /**< 析构时是否需要释放 buffer/sorted */
-} filter_median_t;
+} iot_filter_median_t;
 
 /**
  * @brief 一维卡尔曼滤波器
@@ -113,7 +113,7 @@ typedef struct {
     float p;               /**< 估计误差协方差 */
     float k;               /**< 卡尔曼增益（缓存，仅调试用） */
     bool  initialized;     /**< 是否已初始化 */
-} filter_kalman_t;
+} iot_filter_kalman_t;
 
 /**
  * @brief IIR 数字滤波器
@@ -133,7 +133,7 @@ typedef struct {
     float y[3];            /**< 输出历史 {y[n], y[n-1], y[n-2]} */
     int   order;           /**< 滤波器阶数 (1 或 2) */
     bool  initialized;     /**< 是否已初始化 */
-} filter_iir_t;
+} iot_filter_iir_t;
 
 /**
  * @brief 一阶低通滤波器（RC 低通）
@@ -147,7 +147,7 @@ typedef struct {
     float alpha;           /**< 平滑系数 */
     float value;           /**< 当前滤波输出 */
     bool  initialized;     /**< 是否已初始化 */
-} filter_lowpass_t;
+} iot_filter_lowpass_t;
 
 /**
  * @brief 互补滤波器
@@ -164,74 +164,74 @@ typedef struct {
     float alpha;           /**< 互补系数 (0.0 ~ 1.0) */
     float value;           /**< 当前滤波输出 */
     bool  initialized;     /**< 是否已初始化 */
-} filter_complementary_t;
+} iot_filter_complementary_t;
 
 /*===========================================================
  * EMA 接口
  *===========================================================*/
 
-int  filter_ema_init(filter_ema_t* f, float alpha);
-int  filter_ema_update(filter_ema_t* f, float input, float* output);
-int  filter_ema_get(const filter_ema_t* f, float* output);
-void filter_ema_reset(filter_ema_t* f);
+int  iot_filter_ema_init(iot_filter_ema_t* f, float alpha);
+int  iot_filter_ema_update(iot_filter_ema_t* f, float input, float* output);
+int  iot_filter_ema_get(const iot_filter_ema_t* f, float* output);
+void iot_filter_ema_reset(iot_filter_ema_t* f);
 
 /*===========================================================
  * MA 接口
  *===========================================================*/
 
-int  filter_ma_init(filter_ma_t* f, int window);
-int  filter_ma_update(filter_ma_t* f, float input, float* output);
-int  filter_ma_get(const filter_ma_t* f, float* output);
-void filter_ma_reset(filter_ma_t* f);
-void filter_ma_deinit(filter_ma_t* f);
+int  iot_filter_ma_init(iot_filter_ma_t* f, int window);
+int  iot_filter_ma_update(iot_filter_ma_t* f, float input, float* output);
+int  iot_filter_ma_get(const iot_filter_ma_t* f, float* output);
+void iot_filter_ma_reset(iot_filter_ma_t* f);
+void iot_filter_ma_deinit(iot_filter_ma_t* f);
 
 /*===========================================================
  * 中值滤波接口
  *===========================================================*/
 
-int  filter_median_init(filter_median_t* f, int window);
-int  filter_median_update(filter_median_t* f, float input, float* output);
-int  filter_median_get(const filter_median_t* f, float* output);
-void filter_median_reset(filter_median_t* f);
-void filter_median_deinit(filter_median_t* f);
+int  iot_filter_median_init(iot_filter_median_t* f, int window);
+int  iot_filter_median_update(iot_filter_median_t* f, float input, float* output);
+int  iot_filter_median_get(const iot_filter_median_t* f, float* output);
+void iot_filter_median_reset(iot_filter_median_t* f);
+void iot_filter_median_deinit(iot_filter_median_t* f);
 
 /*===========================================================
  * 卡尔曼滤波接口
  *===========================================================*/
 
-int  filter_kalman_init(filter_kalman_t* f, float q, float r);
-int  filter_kalman_update(filter_kalman_t* f, float measurement, float* output);
-int  filter_kalman_get(const filter_kalman_t* f, float* output);
-void filter_kalman_reset(filter_kalman_t* f);
+int  iot_filter_kalman_init(iot_filter_kalman_t* f, float q, float r);
+int  iot_filter_kalman_update(iot_filter_kalman_t* f, float measurement, float* output);
+int  iot_filter_kalman_get(const iot_filter_kalman_t* f, float* output);
+void iot_filter_kalman_reset(iot_filter_kalman_t* f);
 
 /*===========================================================
  * IIR 滤波接口
  *===========================================================*/
 
-int  filter_iir_init(filter_iir_t* f, const float* b, const float* a, int order);
-int  filter_iir_update(filter_iir_t* f, float input, float* output);
-int  filter_iir_get(const filter_iir_t* f, float* output);
-void filter_iir_reset(filter_iir_t* f);
+int  iot_filter_iir_init(iot_filter_iir_t* f, const float* b, const float* a, int order);
+int  iot_filter_iir_update(iot_filter_iir_t* f, float input, float* output);
+int  iot_filter_iir_get(const iot_filter_iir_t* f, float* output);
+void iot_filter_iir_reset(iot_filter_iir_t* f);
 
 /*===========================================================
  * 低通滤波接口
  *===========================================================*/
 
-int  filter_lowpass_init(filter_lowpass_t* f, float alpha);
-int  filter_lowpass_update(filter_lowpass_t* f, float input, float* output);
-int  filter_lowpass_get(const filter_lowpass_t* f, float* output);
-void filter_lowpass_reset(filter_lowpass_t* f);
+int  iot_filter_lowpass_init(iot_filter_lowpass_t* f, float alpha);
+int  iot_filter_lowpass_update(iot_filter_lowpass_t* f, float input, float* output);
+int  iot_filter_lowpass_get(const iot_filter_lowpass_t* f, float* output);
+void iot_filter_lowpass_reset(iot_filter_lowpass_t* f);
 
 /*===========================================================
  * 互补滤波接口
  *===========================================================*/
 
-int  filter_complementary_init(filter_complementary_t* f, float alpha);
-int  filter_complementary_update(filter_complementary_t* f,
+int  iot_filter_complementary_init(iot_filter_complementary_t* f, float alpha);
+int  iot_filter_complementary_update(iot_filter_complementary_t* f,
                                  float low_pass_input, float high_pass_delta,
                                  float* output);
-int  filter_complementary_get(const filter_complementary_t* f, float* output);
-void filter_complementary_reset(filter_complementary_t* f);
+int  iot_filter_complementary_get(const iot_filter_complementary_t* f, float* output);
+void iot_filter_complementary_reset(iot_filter_complementary_t* f);
 
 /*===========================================================
  * 通用 / 工具函数
@@ -243,7 +243,7 @@ void filter_complementary_reset(filter_complementary_t* f);
  * @param sample_rate 采样率 (Hz)
  * @return alpha 值
  */
-float filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate);
+float iot_filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate);
 
 /**
  * @brief 根据时间常数计算低通 alpha
@@ -251,14 +251,14 @@ float filter_calc_alpha_from_freq(float cutoff_hz, float sample_rate);
  * @param sample_rate 采样率 (Hz)
  * @return alpha 值
  */
-float filter_calc_alpha_from_tau(float tau, float sample_rate);
+float iot_filter_calc_alpha_from_tau(float tau, float sample_rate);
 
 /**
  * @brief 对 float 数组排序（供中值滤波器内部使用）
  * @param arr  待排序数组
  * @param len  数组长度
  */
-void filter_sort_floats(float* arr, int len);
+void iot_filter_sort_floats(float* arr, int len);
 
 #ifdef __cplusplus
 }
