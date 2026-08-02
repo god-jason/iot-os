@@ -141,12 +141,23 @@ int iot_lvgl_get_obj_metatable_ref(void) {
 int iot_lvgl_obj_create_instance(lua_State* L, lua_CFunction create_func, int metatable_ref) {
     /* 1. 调用 create_func 创建对象，push lightuserdata */
     create_func(L);
-    /* 栈: [lightud] */
+    /* 栈: [lightud 或 nil] */
+
+    /* 如果 create_func 返回 nil（如 LVGL 9 移除的控件），直接返回 nil */
+    if (lua_isnil(L, -1)) {
+        return 1;  /* nil 已在栈顶，直接返回 */
+    }
 
     /* 2. 取出指针，弹出 lightuserdata */
     lv_obj_t* obj = (lv_obj_t*)lua_touserdata(L, -1);
     lua_pop(L, 1);
     /* 栈: [] */
+
+    /* 如果指针为 NULL（创建失败），返回 nil */
+    if (obj == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
 
     /* 3. 创建 full userdata，存储 lv_obj_t* 指针 */
     lv_obj_t** ud = (lv_obj_t**)lua_newuserdata(L, sizeof(lv_obj_t*));
