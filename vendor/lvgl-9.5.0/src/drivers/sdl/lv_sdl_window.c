@@ -65,36 +65,26 @@ lv_display_t * lv_sdl_window_create(int32_t hor_res, int32_t ver_res)
         SDL_SetHintWithPriority("SDL_VIDEODRIVER", "x11", SDL_HINT_OVERRIDE);
         SDL_SetHint(SDL_HINT_VIDEO_X11_FORCE_EGL, "1");
 #endif
-        fprintf(stderr, "[sdl] SDL_Init\n"); fflush(stderr);
         SDL_Init(SDL_INIT_VIDEO);
-        fprintf(stderr, "[sdl] SDL_StartTextInput\n"); fflush(stderr);
         SDL_StartTextInput();
-        fprintf(stderr, "[sdl] lv_timer_create\n"); fflush(stderr);
         event_handler_timer = lv_timer_create(sdl_event_handler, 5, NULL);
-        fprintf(stderr, "[sdl] lv_tick_set_cb\n"); fflush(stderr);
         lv_tick_set_cb(SDL_GetTicks);
-        fprintf(stderr, "[sdl] lv_delay_set_cb\n"); fflush(stderr);
         lv_delay_set_cb(SDL_Delay);
 
         inited = true;
     }
 
-    fprintf(stderr, "[sdl] lv_malloc_zeroed\n"); fflush(stderr);
     lv_sdl_window_t * dsc = lv_malloc_zeroed(sizeof(lv_sdl_window_t));
     LV_ASSERT_MALLOC(dsc);
     if(dsc == NULL) return NULL;
 
-    fprintf(stderr, "[sdl] lv_display_create\n"); fflush(stderr);
     lv_display_t * disp = lv_display_create(hor_res, ver_res);
-    fprintf(stderr, "[sdl] lv_display_create done %p\n", (void*)disp); fflush(stderr);
     if(disp == NULL) {
         lv_free(dsc);
         return NULL;
     }
     lv_display_set_driver_data(disp, dsc);
-    fprintf(stderr, "[sdl] window_create\n"); fflush(stderr);
     lv_result_t res = window_create(disp);
-    fprintf(stderr, "[sdl] window_create done %d\n", (int)res); fflush(stderr);
     if(res != LV_RESULT_OK) {
         LV_LOG_ERROR("Failed to initialize window");
         lv_free(dsc);
@@ -294,7 +284,6 @@ static void sdl_event_handler(lv_timer_t * t)
 
 static lv_result_t window_create(lv_display_t * disp)
 {
-    fprintf(stderr, "[sdl] window_create: get_driver_data\n"); fflush(stderr);
     lv_sdl_window_t * dsc = lv_display_get_driver_data(disp);
     dsc->zoom = 1.0;
 
@@ -307,26 +296,20 @@ static lv_result_t window_create(lv_display_t * disp)
     flag |= SDL_WINDOW_FULLSCREEN;
 #endif
 
-    fprintf(stderr, "[sdl] window_create: hor=%d ver=%d\n", disp->hor_res, disp->ver_res); fflush(stderr);
     int32_t hor_res = (int32_t)((float)(disp->hor_res) * dsc->zoom);
     int32_t ver_res = (int32_t)((float)(disp->ver_res) * dsc->zoom);
-    fprintf(stderr, "[sdl] window_create: SDL_CreateWindow %dx%d\n", hor_res, ver_res); fflush(stderr);
     dsc->window = SDL_CreateWindow("LVGL Simulator",
                                    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                    hor_res, ver_res, flag);       /*last param. SDL_WINDOW_BORDERLESS to hide borders*/
-    fprintf(stderr, "[sdl] window_create: SDL_CreateWindow done %p\n", (void*)dsc->window); fflush(stderr);
     if(!dsc->window) {
         LV_LOG_ERROR("Failed to create SDL window");
         return LV_RESULT_INVALID;
     }
-    fprintf(stderr, "[sdl] window_create: init_display\n"); fflush(stderr);
     if(lv_sdl_backend_ops.init_display(disp) != LV_RESULT_OK) {
         LV_LOG_ERROR("Failed to initialize SDL backend");
         SDL_DestroyWindow(dsc->window);
         return LV_RESULT_INVALID;
     }
-    fprintf(stderr, "[sdl] window_create: init_display done\n"); fflush(stderr);
-
     /*Some platforms (e.g. Emscripten) seem to require setting the size again */
     SDL_SetWindowSize(dsc->window, hor_res, ver_res);
     return LV_RESULT_OK;

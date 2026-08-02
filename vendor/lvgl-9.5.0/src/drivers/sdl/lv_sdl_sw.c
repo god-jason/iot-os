@@ -90,13 +90,11 @@ const lv_sdl_backend_ops_t lv_sdl_backend_ops = {
 
 static lv_result_t init_display(lv_display_t * display)
 {
-    fprintf(stderr, "[sdl_sw] init_display: malloc\n"); fflush(stderr);
     lv_sdl_sw_display_data_t * ddata = lv_malloc_zeroed(sizeof(*ddata));
     if(!ddata) {
         LV_LOG_WARN("No memory for display data");
         return LV_RESULT_INVALID;
     }
-    fprintf(stderr, "[sdl_sw] init_display: SDL_CreateRenderer\n"); fflush(stderr);
     ddata->renderer = SDL_CreateRenderer(lv_sdl_window_get_window(display), -1,
                                          LV_SDL_ACCELERATED ? SDL_RENDERER_ACCELERATED : SDL_RENDERER_SOFTWARE);
     if(!ddata->renderer) {
@@ -104,19 +102,14 @@ static lv_result_t init_display(lv_display_t * display)
         lv_free(ddata);
         return LV_RESULT_INVALID;
     }
-    fprintf(stderr, "[sdl_sw] init_display: set_display_data\n"); fflush(stderr);
     lv_sdl_backend_set_display_data(display, ddata);
 
     int32_t hor_res = lv_sdl_window_get_horizontal_resolution(display);
     int32_t ver_res = lv_sdl_window_get_vertical_resolution(display);
-    fprintf(stderr, "[sdl_sw] init_display: hor=%d ver=%d\n", hor_res, ver_res); fflush(stderr);
 
-    fprintf(stderr, "[sdl_sw] init_display: resize_display\n"); fflush(stderr);
     resize_display(display);
-    fprintf(stderr, "[sdl_sw] init_display: resize_display done, fb1=%p\n", (void*)ddata->fb1); fflush(stderr);
 
     uint32_t px_size = lv_color_format_get_size(lv_display_get_color_format(display));
-    fprintf(stderr, "[sdl_sw] init_display: px_size=%u, memset fb1\n", px_size); fflush(stderr);
     lv_memset(ddata->fb1, 0xff, hor_res * ver_res * px_size);
     if(ddata->fb2) lv_memset(ddata->fb2, 0xff, hor_res * ver_res * px_size);
 
@@ -133,13 +126,11 @@ static lv_result_t init_display(lv_display_t * display)
     }
     else {
         /*LV_DISPLAY_RENDER_MODE_DIRECT or FULL */
-        fprintf(stderr, "[sdl_sw] init_display: DIRECT mode set_buffers\n"); fflush(stderr);
         uint32_t stride = lv_draw_buf_width_to_stride(display->hor_res,
                                                       lv_display_get_color_format(display));
         lv_display_set_buffers(display, ddata->fb1, ddata->fb2, stride * display->ver_res,
                                LV_SDL_RENDER_MODE);
     }
-    fprintf(stderr, "[sdl_sw] init_display: done\n"); fflush(stderr);
     return LV_RESULT_OK;
 }
 static lv_result_t resize_display(lv_display_t * display)

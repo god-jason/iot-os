@@ -203,22 +203,15 @@ static int iot_lvgl_init(lua_State* L) {
 
 #if LV_USE_SDL
     /* 使用 LVGL 9 内置 SDL 驱动创建窗口和输入设备 */
-    fprintf(stderr, "[lvgl] init: creating SDL window %dx%d\n", hor_res, ver_res);
-    fflush(stderr);
 
     lv_display_t* disp = lv_sdl_window_create(hor_res, ver_res);
-    fprintf(stderr, "[lvgl] sdl_window_create returned %p\n", (void*)disp);
-    fflush(stderr);
     if (!disp) {
         return luaL_error(L, "SDL window create failed: %dx%d", hor_res, ver_res);
     }
 
     /* 创建鼠标、鼠标滚轮和键盘输入设备 */
-    fprintf(stderr, "[lvgl] creating mouse\n"); fflush(stderr);
     lv_sdl_mouse_create();
-    fprintf(stderr, "[lvgl] creating mousewheel\n"); fflush(stderr);
     lv_sdl_mousewheel_create();
-    fprintf(stderr, "[lvgl] creating keyboard\n"); fflush(stderr);
     lv_indev_t* kb_indev = lv_sdl_keyboard_create();
 
     /* 创建默认 group 并关联键盘 indev，使 textarea 等控件可通过键盘编辑 */
@@ -228,10 +221,6 @@ static int iot_lvgl_init(lua_State* L) {
         lv_indev_set_group(kb_indev, group);
     }
 
-    fprintf(stderr, "[lvgl] SDL window created\n");
-    fflush(stderr);
-    fprintf(stderr, "[lvgl] init: returning to Lua\n");
-    fflush(stderr);
 #else
     /* 非 SDL 平台：留作扩展点 */
     (void)hor_res;
@@ -250,7 +239,6 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
      * 注意：SDL 显示驱动不再在此隐式启动，需由 lvgl.init(w, h) 显式创建，
      *       以便 Lua 层控制窗口尺寸 */
     lv_init();
-    fprintf(stderr, "[lvgl] lv_init done\n"); fflush(stderr);
 
     /* 创建主表 */
 
