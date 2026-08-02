@@ -20,6 +20,8 @@ static int msgbox_metatable_ref = LUA_NOREF;
 typedef struct {
     lv_obj_t* title;
     lv_obj_t* text;
+    /* LVGL 9: 按钮是独立对象，需记录最后点击的按钮文本以兼容旧 API */
+    char active_btn_text[64];
 } iot_lvgl_msgbox_data_t;
 
 static iot_lvgl_msgbox_data_t* iot_lvgl_msgbox_data_get(lv_obj_t* msgbox)
@@ -51,6 +53,37 @@ static int iot_lvgl_msgbox_create_internal(lua_State* L) {
     lv_obj_t* msgbox = lv_msgbox_create(parent);
     lua_pushlightuserdata(L, msgbox);
     return 1;
+}
+
+/* ==================== 内部按钮点击转发 ==================== */
+
+/* LVGL 9 按钮是独立对象，点击只发 LV_EVENT_CLICKED 给按钮自身。
+ * 此回调将点击转发为 msgbox 的 LV_EVENT_VALUE_CHANGED，并记录按钮文本，
+ * 以兼容 LVGL 8 的 msgbox 事件行为。 */
+static void iot_lvgl_msgbox_btn_click_cb(lv_event_t* e) {
+    lv_obj_t* btn = (lv_obj_t*)lv_event_get_target(e);
+    lv_obj_t* msgbox = lv_obj_get_parent(lv_obj_get_parent(btn)); /* btn -> footer -> msgbox */
+    if (!msgbox) return;
+
+    iot_lvgl_msgbox_data_t* data = iot_lvgl_msgbox_data_get(msgbox);
+    if (data) {
+        /* 从按钮下的 label 读取文本 */
+        uint32_t cnt = lv_obj_get_child_count(btn);
+        for (uint32_t i = 0; i < cnt; i++) {
+            lv_obj_t* child = lv_obj_get_child(btn, i);
+            if (lv_obj_check_type(child, &lv_label_class)) {
+                const char* txt = lv_label_get_text(child);
+                if (txt) {
+                    strncpy(data->active_btn_text, txt, sizeof(data->active_btn_text) - 1);
+                    data->active_btn_text[sizeof(data->active_btn_text) - 1] = '\0';
+                }
+                break;
+            }
+        }
+    }
+
+    /* 向 msgbox 转发 VALUE_CHANGED 事件 */
+    lv_obj_send_event(msgbox, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
 /* ==================== 消息框OO方法 ==================== */
@@ -124,7 +157,11 @@ static int iot_lvgl_msgbox_add_button(lua_State* L) {
     lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
     const char* txt = luaL_checkstring(L, 2);
     /* LVGL 9: 使用 lv_msgbox_add_footer_button 添加底部按钮 */
-    lv_msgbox_add_footer_button(msgbox, txt);
+    lv_obj_t* btn = lv_msgbox_add_footer_button(msgbox, txt);
+    /* 注册点击转发：按钮点击时向 msgbox 发送 VALUE_CHANGED 事件 */
+    if (btn) {
+        lv_obj_add_event_cb(btn, iot_lvgl_msgbox_btn_click_cb, LV_EVENT_CLICKED, NULL);
+    }
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -136,7 +173,7 @@ static int iot_lvgl_msgbox_add_button(lua_State* L) {
 @usage local btn_index = msgbox:get_active_btn()
 */
 static int iot_lvgl_msgbox_get_active_btn(lua_State* L) {
-    /* LVGL 9 移除了 lv_msgbox_get_active_btn 接口 */
+    /* LVGL 9 移除了 lv_msgbox_get_active_btn 接口，兼容返回 0 */
     (void)iot_lvgl_get_obj_ptr(L, 1);
     lua_pushinteger(L, 0);
     return 1;
@@ -149,9 +186,13 @@ static int iot_lvgl_msgbox_get_active_btn(lua_State* L) {
 @usage local btn_text = msgbox:get_active_btn_text()
 */
 static int iot_lvgl_msgbox_get_active_btn_text(lua_State* L) {
-    /* LVGL 9 移除了 lv_msgbox_get_active_btn_text 接口 */
-    (void)iot_lvgl_get_obj_ptr(L, 1);
-    lua_pushnil(L);
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    iot_lvgl_msgbox_data_t* data = iot_lvgl_msgbox_data_get(msgbox);
+    if (data && data->active_btn_text[0]) {
+        lua_pushstring(L, data->active_btn_text);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 

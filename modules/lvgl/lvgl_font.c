@@ -11,6 +11,7 @@
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
+#include <stdio.h>
 
 /* lv_freetype.h 已通过 lvgl_port.h → lvgl.h → lv_libs.h 链路包含，
  * 其声明在 LV_USE_FREETYPE=1 时可见 */
@@ -152,6 +153,13 @@ static uint16_t iot_lvgl_font_parse_style(const char* style) {
 }
 #endif /* LV_USE_FREETYPE */
 
+/* tiny_ttf 内存管理：跟踪 font → buffer 映射，卸载时释放文件数据 */
+#define IOT_VEC_FONT_MAX 8
+static struct {
+    lv_font_t* font;
+    void* data;
+} g_vec_font_map[IOT_VEC_FONT_MAX];
+
 /*
 加载矢量字体（TTF/OTF）
 @param path 字体文件路径（如 "WenQuanDengKuanWeiMiHei-1.ttf"）
@@ -201,21 +209,58 @@ static int iot_lvgl_font_load_vector(lua_State* L) {
     lua_pushlightuserdata(L, (void*)info.font);
     return 1;
 #elif LV_USE_TINY_TTF
-    /* tiny_ttf 后端：从文件加载（需要 LV_TINY_TTF_FILE_SUPPORT=1） */
-#if LV_TINY_TTF_FILE_SUPPORT
-    lv_font_t * font = lv_tiny_ttf_create_file(path, (int32_t)size);
+    /* tiny_ttf 后端：用标准 C I/O 读取文件到内存，再用 lv_tiny_ttf_create_data 创建字体
+     * （LVGL 内置 lv_fs 未启用，无法直接用 lv_tiny_ttf_create_file） */
+    FILE* fp = fopen(path, "rb");
+    if (!fp) {
+        lua_pushnil(L);
+        lua_pushfstring(L, "无法打开字体文件: %s", path);
+        return 2;
+    }
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (file_size <= 0) {
+        fclose(fp);
+        lua_pushnil(L);
+        lua_pushfstring(L, "字体文件为空或读取失败: %s", path);
+        return 2;
+    }
+    void* font_data = lv_malloc((size_t)file_size);
+    if (!font_data) {
+        fclose(fp);
+        lua_pushnil(L);
+        lua_pushfstring(L, "内存分配失败: %s (%ld bytes)", path, file_size);
+        return 2;
+    }
+    size_t read = fread(font_data, 1, (size_t)file_size, fp);
+    fclose(fp);
+    if ((long)read != file_size) {
+        lv_free(font_data);
+        lua_pushnil(L);
+        lua_pushfstring(L, "字体文件读取不完整: %s", path);
+        return 2;
+    }
+
+    lv_font_t * font = lv_tiny_ttf_create_data(font_data, (size_t)file_size, (int32_t)size);
     if (!font) {
+        lv_free(font_data);
         lua_pushnil(L);
         lua_pushfstring(L, "矢量字体加载失败: %s (size=%d)", path, size);
         return 2;
     }
+
+    /* 记录 font → buffer 映射，卸载时释放 */
+    for (int i = 0; i < IOT_VEC_FONT_MAX; i++) {
+        if (g_vec_font_map[i].font == NULL) {
+            g_vec_font_map[i].font = font;
+            g_vec_font_map[i].data = font_data;
+            break;
+        }
+    }
+
     lua_pushlightuserdata(L, (void*)font);
     return 1;
-#else
-    lua_pushnil(L);
-    lua_pushfstring(L, "tiny_ttf 未启用文件支持 (LV_TINY_TTF_FILE_SUPPORT=0)");
-    return 2;
-#endif
 #endif
 }
 
@@ -236,6 +281,15 @@ static int iot_lvgl_font_unload_vector(lua_State* L) {
         lv_ft_font_destroy(font);
 #elif LV_USE_TINY_TTF
         lv_tiny_ttf_destroy(font);
+        /* 释放对应的文件数据缓冲区 */
+        for (int i = 0; i < IOT_VEC_FONT_MAX; i++) {
+            if (g_vec_font_map[i].font == font) {
+                lv_free(g_vec_font_map[i].data);
+                g_vec_font_map[i].font = NULL;
+                g_vec_font_map[i].data = NULL;
+                break;
+            }
+        }
 #endif
         lua_pushboolean(L, 1);
     } else {

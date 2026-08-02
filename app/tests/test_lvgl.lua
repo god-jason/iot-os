@@ -206,7 +206,7 @@ return function()
 
     -- ==================== 标题栏 ====================
     local title = lv.label.create(scr)
-    title:set_text("◆ IoT-OS LVGL Widget Showcase")
+    title:set_text("测试 IoT-OS LVGL Widgets")
     title:align(lv.ALIGN_TOP_MID, 0, 8)
     title:add_style(style_title, lv.PART_MAIN)
     T.pass("lvgl.label", "title")
@@ -217,7 +217,7 @@ return function()
     if vec_font then
         T.pass("lvgl.font.load_vector", "28px")
 
-        -- 创建矢量字体样式
+        -- 创建矢量字体样式（字体存活期间持续使用，不提前卸载）
         local style_vec = lv.style.create({
             text_color = 0xFFFF,
             border_width = 0,
@@ -225,17 +225,26 @@ return function()
         })
         lv.style.set_text_font(style_vec, vec_font)
 
-        -- 中文显示标签
-        local cn_lbl = lv.label.create(scr)
-        cn_lbl:set_text("物联网操作系统 矢量字体测试")
-        cn_lbl:align(lv.ALIGN_TOP_MID, 0, 40)
-        cn_lbl:add_style(style_vec, lv.PART_MAIN)
+        -- 中文标题
+        local cn_title = lv.label.create(scr)
+        cn_title:set_text("物联网操作系统")
+        cn_title:align(lv.ALIGN_TOP_MID, 0, 38)
+        cn_title:add_style(style_vec, lv.PART_MAIN)
+
+        -- 中文副标题
+        local cn_sub = lv.label.create(scr)
+        cn_sub:set_text("矢量字体渲染测试 中文显示正常")
+        cn_sub:align(lv.ALIGN_TOP_MID, 0, 66)
+        cn_sub:add_style(style_vec, lv.PART_MAIN)
         T.pass("lvgl.font.vector", "中文显示")
 
-        -- 强制刷新使标签完成渲染，之后再卸载矢量字体
-        lv.refr_now(nil)
-        lv.font.unload_vector(vec_font)
-        T.pass("lvgl.font.unload_vector")
+        -- 将矢量字体应用到状态栏
+        lv.style.set_text_font(style_status, vec_font)
+        status:set_text("状态: 就绪 | 主题: 暗色")
+
+        -- 将矢量字体应用到主题切换按钮
+        lv.style.set_text_font(style_btn, vec_font)
+        lv.style.set_text_font(style_title, vec_font)
     else
         T.skip("lvgl.font.load_vector", "矢量字体加载失败")
     end
@@ -247,13 +256,13 @@ return function()
     theme_btn:add_style(style_btn, lv.PART_MAIN)
     theme_btn:add_style(style_btn_pressed, lv.PART_MAIN + lv.STATE_PRESSED)
     local theme_btn_lbl = lv.label.create(theme_btn)
-    theme_btn_lbl:set_text("☀ Light")
+    theme_btn_lbl:set_text("☀ 浅色")
     theme_btn_lbl:center()
     theme_btn:add_event_cb(function(e, code)
         if code == lv.EVENT_CLICKED then
             apply_theme(not is_dark)
-            theme_btn_lbl:set_text(is_dark and "☀ Light" or "🌙 Dark")
-            status:set_text("Theme: " .. (is_dark and "Dark" or "Light"))
+            theme_btn_lbl:set_text(is_dark and "☀ 浅色" or "🌙 深色")
+            status:set_text("状态: 切换 | 主题: " .. (is_dark and "暗色" or "亮色"))
         end
     end, lv.EVENT_CLICKED)
     T.pass("lvgl.theme", "toggle button")
@@ -272,8 +281,10 @@ return function()
     btn:add_style(style_btn, lv.PART_MAIN)
     btn:add_style(style_btn_pressed, lv.PART_MAIN + lv.STATE_PRESSED)
     local btn_lbl = lv.label.create(btn)
-    btn_lbl:set_text("Button")
+    btn_lbl:set_text("按钮")
     btn_lbl:center()
+    --lv.style.set_text_font(btn_lbl, vec_font)
+
     local btn_click_count = 0
     btn:add_event_cb(function(e, code)
         if code == lv.EVENT_CLICKED then
@@ -288,14 +299,16 @@ return function()
     local sw = lv.switch.create(scr)
     sw:align(lv.ALIGN_TOP_LEFT, COL1_X, col1_y + 70)
     local sw_lbl = lv.label.create(scr)
-    sw_lbl:set_text("Switch: OFF")
+    sw_lbl:set_text("开关: OFF")
     sw_lbl:align_to(sw, lv.ALIGN_OUT_RIGHT_MID, 14, 0)
     sw_lbl:add_style(style_title, lv.PART_MAIN)
+    --lv.style.set_text_font(sw, vec_font)
+
     sw:add_event_cb(function(e, code)
         if code == lv.EVENT_VALUE_CHANGED then
             local on = sw:has_state(lv.STATE_CHECKED)
-            sw_lbl:set_text(on and "Switch: ON" or "Switch: OFF")
-            status:set_text("Switch: " .. (on and "ON" or "OFF"))
+            sw_lbl:set_text(on and "开关: ON" or "开关: OFF")
+            status:set_text("开关: " .. (on and "ON" or "OFF"))
         end
     end, lv.EVENT_VALUE_CHANGED)
     T.pass("lvgl.switch")
@@ -554,32 +567,33 @@ return function()
     win_lbl:center()
     T.pass("lvgl.win")
 
-    -- ---- msgbox (消息框,用on注册按钮事件) ----
-    -- local mbox = lv.msgbox.create(nil)
-    -- mbox:set_title("提示")
-    -- mbox:set_text("消息框测试,点击按钮关闭")
-    -- mbox:add_button("确定")
-    -- mbox:add_button("取消")
-    -- -- 用on注册change事件
-    -- local mbox_cb_id = mbox:on("change", function(e, code)
-    --     if code == lv.EVENT_VALUE_CHANGED then
-    --         local btn_text = mbox:get_active_btn_text()
-    --         status:set_text("MsgBox: " .. (btn_text or "?"))
-    --         mbox:close()
-    --     end
-    -- end)
-    -- -- 测试off: 先移除再重新注册,验证off正常工作
-    -- mbox:off(mbox_cb_id)
-    -- mbox:on("change", function(e, code)
-    --     if code == lv.EVENT_VALUE_CHANGED then
-    --         local btn_text = mbox:get_active_btn_text()
-    --         status:set_text("MsgBox: " .. (btn_text or "?"))
-    --         mbox:close()
-    --     end
-    -- end)
-    -- T.pass("lvgl.on")
-    -- T.pass("lvgl.off")
-    -- T.pass("lvgl.msgbox")
+    ---- msgbox (消息框,用on注册按钮事件) ----
+    local mbox = lv.msgbox.create(nil)
+    mbox:set_title("提示")
+    mbox:set_text("消息框测试,点击按钮关闭")
+    mbox:add_button("确定")
+    mbox:add_button("取消")
+    
+    -- 用on注册change事件
+    local mbox_cb_id = mbox:on("change", function(e, code)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local btn_text = mbox:get_active_btn_text()
+            status:set_text("MsgBox: " .. (btn_text or "?"))
+            mbox:close()
+        end
+    end)
+    -- 测试off: 先移除再重新注册,验证off正常工作
+    mbox:off(mbox_cb_id)
+    mbox:on("change", function(e, code)
+        if code == lv.EVENT_VALUE_CHANGED then
+            local btn_text = mbox:get_active_btn_text()
+            status:set_text("MsgBox: " .. (btn_text or "?"))
+            mbox:close()
+        end
+    end)
+    T.pass("lvgl.on")
+    T.pass("lvgl.off")
+    T.pass("lvgl.msgbox")
 
     -- ---- tileview (平铺视图) ----
     local tv2 = lv.tileview.create(scr)
