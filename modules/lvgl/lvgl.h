@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file lvgl.h
  * @brief LVGL图形库Lua绑定主头文件
  *
@@ -60,7 +60,8 @@ void iot_lvgl_register_chart(lua_State* L);
 
 void iot_lvgl_register_table(lua_State* L);
 
-void iot_lvgl_register_meter(lua_State* L);
+/* LVGL 9 移除 lv_meter，meter 子模块暂不注册 */
+/* void iot_lvgl_register_meter(lua_State* L); */
 
 void iot_lvgl_register_list(lua_State* L);
 

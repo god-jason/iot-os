@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_fs.c
  * @brief LVGL文件系统接口
  *
@@ -230,7 +230,7 @@ static int iot_lvgl_fs_dir_close(lua_State* L) {
 static int iot_lvgl_fs_dir_read(lua_State* L) {
     lv_fs_dir_t* dir = (lv_fs_dir_t*)luaL_checklightuserdata(L, 1);
     char fn[LV_FS_MAX_FN_LENGTH];
-    lv_fs_res_t res = lv_fs_dir_read(dir, fn);
+    lv_fs_res_t res = lv_fs_dir_read(dir, fn, sizeof(fn));
     if (res != LV_FS_RES_OK || fn[0] == '\0') {
         lua_pushnil(L);
         if (res != LV_FS_RES_OK) {
@@ -290,7 +290,7 @@ static int iot_lvgl_fs_list(lua_State* L) {
     int idx = 1;
     while (1) {
         char fn[LV_FS_MAX_FN_LENGTH];
-        res = lv_fs_dir_read(dir, fn);
+        res = lv_fs_dir_read(dir, fn, sizeof(fn));
         if (res != LV_FS_RES_OK || fn[0] == '\0') break;
         lua_newtable(L);
         lua_pushstring(L, fn);

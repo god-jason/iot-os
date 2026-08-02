@@ -19,7 +19,7 @@ static int btn_metatable_ref = LUA_NOREF;
 /* 实际创建按钮的函数(被OO包装器调用) */
 static int iot_lvgl_btn_create_internal(lua_State* L) {
     lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* btn = lv_btn_create(parent);
+    lv_obj_t* btn = lv_button_create(parent);
     lua_pushlightuserdata(L, btn);
     return 1;
 }

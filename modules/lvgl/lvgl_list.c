@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_list.c
  * @brief LVGL列表控件
  *
@@ -21,7 +21,7 @@ static lv_obj_t* iot_lvgl_list_find_selected_btn(lv_obj_t* list)
 
     for (i = 0; i < cnt; i++) {
         lv_obj_t* child = lv_obj_get_child(list, i);
-        if (lv_obj_check_type(child, &lv_list_btn_class) &&
+        if (lv_obj_check_type(child, &lv_list_button_class) &&
             lv_obj_has_state(child, LV_STATE_CHECKED)) {
             return child;
         }
@@ -36,7 +36,7 @@ static void iot_lvgl_list_clear_selected(lv_obj_t* list)
 
     for (i = 0; i < cnt; i++) {
         lv_obj_t* child = lv_obj_get_child(list, i);
-        if (lv_obj_check_type(child, &lv_list_btn_class)) {
+        if (lv_obj_check_type(child, &lv_list_button_class)) {
             lv_obj_clear_state(child, LV_STATE_CHECKED);
         }
     }
@@ -90,7 +90,7 @@ static int iot_lvgl_list_add_btn(lua_State* L) {
     lv_obj_t* list = iot_lvgl_get_obj_ptr(L, 1);
     lv_obj_t* img = (lv_obj_t*)luaL_optlightuserdata(L, 2, NULL);
     const char* txt = luaL_checkstring(L, 3);
-    lv_obj_t* btn = lv_list_add_btn(list, img, txt);
+    lv_obj_t* btn = lv_list_add_button(list, img, txt);
     lua_pushlightuserdata(L, btn);
     return 1;
 }

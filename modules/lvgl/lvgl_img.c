@@ -18,7 +18,7 @@ static int img_metatable_ref = LUA_NOREF;
 
 static int iot_lvgl_img_create_internal(lua_State* L) {
     lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* img = lv_img_create(parent);
+    lv_obj_t* img = lv_image_create(parent);
     lua_pushlightuserdata(L, img);
     return 1;
 }
@@ -45,7 +45,7 @@ static int iot_lvgl_img_create(lua_State* L) {
 static int iot_lvgl_img_set_src(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     const char* src = luaL_checkstring(L, 2);
-    lv_img_set_src(img, src);
+    lv_image_set_src(img, src);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -60,7 +60,7 @@ static int iot_lvgl_img_set_src(lua_State* L) {
 static int iot_lvgl_img_set_offset_x(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     int32_t offset = (int32_t)luaL_checkinteger(L, 2);
-    lv_img_set_offset_x(img, offset);
+    lv_image_set_offset_x(img, offset);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -75,7 +75,7 @@ static int iot_lvgl_img_set_offset_x(lua_State* L) {
 static int iot_lvgl_img_set_offset_y(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     int32_t offset = (int32_t)luaL_checkinteger(L, 2);
-    lv_img_set_offset_y(img, offset);
+    lv_image_set_offset_y(img, offset);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -90,7 +90,7 @@ static int iot_lvgl_img_set_offset_y(lua_State* L) {
 static int iot_lvgl_img_set_zoom(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t zoom = (uint32_t)luaL_checkinteger(L, 2);
-    lv_img_set_zoom(img, zoom);
+    lv_image_set_scale(img, zoom);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -105,7 +105,7 @@ static int iot_lvgl_img_set_zoom(lua_State* L) {
 static int iot_lvgl_img_set_angle(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     int32_t angle = (int32_t)luaL_checkinteger(L, 2);
-    lv_img_set_angle(img, angle);
+    lv_image_set_rotation(img, angle);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -122,7 +122,7 @@ static int iot_lvgl_img_set_pivot(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     int32_t x = (int32_t)luaL_checkinteger(L, 2);
     int32_t y = (int32_t)luaL_checkinteger(L, 3);
-    lv_img_set_pivot(img, x, y);
+    lv_image_set_pivot(img, x, y);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -137,7 +137,7 @@ static int iot_lvgl_img_set_pivot(lua_State* L) {
 static int iot_lvgl_img_set_antialias(lua_State* L) {
     lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
     bool en = lua_toboolean(L, 2);
-    lv_img_set_antialias(img, en);
+    lv_image_set_antialias(img, en);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -150,9 +150,9 @@ static int iot_lvgl_img_set_antialias(lua_State* L) {
 @usage img:set_size_mode(lvgl.IMG_SIZE_MODE_REAL)
 */
 static int iot_lvgl_img_set_size_mode(lua_State* L) {
-    lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
-    lv_img_size_mode_t mode = (lv_img_size_mode_t)luaL_checkinteger(L, 2);
-    lv_img_set_size_mode(img, mode);
+    /* LVGL 9 移除了 lv_img_set_size_mode，此函数保留为空操作以保持兼容 */
+    (void)iot_lvgl_get_obj_ptr(L, 1);
+    (void)luaL_checkinteger(L, 2);
     lua_pushvalue(L, 1);
     return 1;
 }

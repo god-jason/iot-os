@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_theme.c
  * @brief LVGL主题系统
  *
@@ -10,12 +10,14 @@
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
+/* LVGL 9 中 lv_theme_t 为不透明类型，访问 color_primary/color_secondary/font_* 需私有头 */
+#include "../../vendor/lvgl-9.5.0/src/themes/lv_theme_private.h"
 
 static lv_color_t iot_lvgl_theme_parse_color(lua_State* L, int idx, lv_color_t fallback)
 {
     if (lua_gettop(L) >= idx && !lua_isnil(L, idx)) {
         lv_color_t color;
-        color.full = (uint32_t)luaL_checkinteger(L, idx);
+        color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, idx));
         return color;
     }
     return fallback;
@@ -152,7 +154,7 @@ static int iot_lvgl_theme_set_color(lua_State* L)
     lv_theme_t* theme = (lv_theme_t*)luaL_checklightuserdata(L, 1);
     int color_id = (int)luaL_checkinteger(L, 2);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 3);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 3));
 
     if (!iot_lvgl_theme_set_color_field(theme, color_id, color)) {
         return luaL_error(L, "unsupported theme color id: %d", color_id);
@@ -180,7 +182,7 @@ static int iot_lvgl_theme_get_color(lua_State* L)
         return luaL_error(L, "unsupported theme color id: %d", color_id);
     }
 
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 

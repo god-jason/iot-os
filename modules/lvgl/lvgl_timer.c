@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_timer.c
  * @brief LVGL定时器接口
  *
@@ -10,6 +10,8 @@
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
+/* LVGL 9 中 lv_timer_t 为不透明类型，访问 period/last_run/repeat_count 需私有头 */
+#include "../../vendor/lvgl-9.5.0/src/misc/lv_timer_private.h"
 
 /* ==================== 定时器操作 ==================== */
 
@@ -20,7 +22,7 @@
 */
 static int iot_lvgl_timer_delete(lua_State* L) {
     lv_timer_t* timer = (lv_timer_t*)luaL_checklightuserdata(L, 1);
-    lv_timer_del(timer);
+    lv_timer_delete(timer);
     return 0;
 }
 

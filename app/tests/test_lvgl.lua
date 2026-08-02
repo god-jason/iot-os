@@ -205,6 +205,35 @@ return function()
     title:add_style(style_title, lv.PART_MAIN)
     T.pass("lvgl.label", "title")
 
+    -- ==================== 矢量字体测试 ====================
+    -- 加载 WenQuanDengKuanWeiMiHei-1.ttf 矢量字体并显示中文
+    local vec_font = lv.font.load_vector("app/tests/WenQuanDengKuanWeiMiHei-1.ttf", 28)
+    if vec_font then
+        T.pass("lvgl.font.load_vector", "28px")
+
+        -- 创建矢量字体样式
+        local style_vec = lv.style.create({
+            text_color = 0xFFFF,
+            border_width = 0,
+            pad_all = 0,
+        })
+        lv.style.set_text_font(style_vec, vec_font)
+
+        -- 中文显示标签
+        local cn_lbl = lv.label.create(scr)
+        cn_lbl:set_text("物联网操作系统 矢量字体测试")
+        cn_lbl:align(lv.ALIGN_TOP_MID, 0, 40)
+        cn_lbl:add_style(style_vec, lv.PART_MAIN)
+        T.pass("lvgl.font.vector", "中文显示")
+
+        -- 强制刷新使标签完成渲染，之后再卸载矢量字体
+        lv.refr_now(nil)
+        lv.font.unload_vector(vec_font)
+        T.pass("lvgl.font.unload_vector")
+    else
+        T.skip("lvgl.font.load_vector", "矢量字体加载失败")
+    end
+
     -- ==================== 主题切换按钮 ====================
     local theme_btn = lv.btn.create(scr)
     theme_btn:set_size(120, 36)
@@ -395,15 +424,20 @@ return function()
     local col3_y = 70
 
     -- ---- meter ----
-    local meter = lv.meter.create(scr)
-    meter:set_size(180, 180)
-    meter:align(lv.ALIGN_TOP_LEFT, COL3_X, col3_y)
-    local scale = meter:add_scale(270, 135)
-    meter:set_scale_ticks(scale, 11, 6, 2, 0xAAAAAA)
-    meter:set_scale_major_ticks(scale, 5, 12, 5, 0xFFFFFF, 0)
-    local needle = meter:add_indicator_needle(scale, theme.accent, 4)
-    meter:set_indicator_value(needle, 50)
-    T.pass("lvgl.meter")
+    -- LVGL 9 移除了 meter 控件（由 scale 替代），此处跳过
+    if lv.meter then
+        local meter = lv.meter.create(scr)
+        meter:set_size(180, 180)
+        meter:align(lv.ALIGN_TOP_LEFT, COL3_X, col3_y)
+        local scale = meter:add_scale(270, 135)
+        meter:set_scale_ticks(scale, 11, 6, 2, 0xAAAAAA)
+        meter:set_scale_major_ticks(scale, 5, 12, 5, 0xFFFFFF, 0)
+        local needle = meter:add_indicator_needle(scale, theme.accent, 4)
+        meter:set_indicator_value(needle, 50)
+        T.pass("lvgl.meter")
+    else
+        T.skip("lvgl.meter", "LVGL 9 已移除 meter 控件")
+    end
 
     -- ---- tabview ----
     local tv = lv.tabview.create(scr)

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_spinner.c
  * @brief LVGL旋转器控件
  *
@@ -20,7 +20,11 @@ static int iot_lvgl_spinner_create_internal(lua_State* L) {
     lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t period = (uint32_t)luaL_optinteger(L, 2, 1000);
     uint32_t arc_length = (uint32_t)luaL_optinteger(L, 3, 60);
-    lv_obj_t* spinner = lv_spinner_create(parent, period, arc_length);
+    /* LVGL 9: lv_spinner_create 只接受 parent，动画参数通过 lv_spinner_set_anim_params 设置 */
+    lv_obj_t* spinner = lv_spinner_create(parent);
+    if (spinner) {
+        lv_spinner_set_anim_params(spinner, period, arc_length);
+    }
     lua_pushlightuserdata(L, spinner);
     return 1;
 }

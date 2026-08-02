@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_meter.c
  * @brief LVGL仪表盘控件
  *
@@ -94,7 +94,7 @@ static int iot_lvgl_meter_set_scale_ticks(lua_State* L) {
     uint16_t len = (uint16_t)luaL_checkinteger(L, 4);
     uint16_t width = (uint16_t)luaL_optinteger(L, 5, 2);
     lv_color_t color;
-    color.full = (uint32_t)luaL_optinteger(L, 6, 0x000000);
+    color = lv_color_from_u32((uint32_t)luaL_optinteger(L, 6, 0x000000));
     lv_meter_set_scale_ticks(meter, scale, cnt, width, len, color);
     lua_pushvalue(L, 1);
     return 1;
@@ -118,7 +118,7 @@ static int iot_lvgl_meter_set_scale_major_ticks(lua_State* L) {
     uint16_t len = (uint16_t)luaL_checkinteger(L, 4);
     uint16_t width = (uint16_t)luaL_optinteger(L, 5, 2);
     lv_color_t color;
-    color.full = (uint32_t)luaL_optinteger(L, 6, 0x000000);
+    color = lv_color_from_u32((uint32_t)luaL_optinteger(L, 6, 0x000000));
     int16_t label_gap = (int16_t)luaL_optinteger(L, 7, 0);
     lv_meter_set_scale_major_ticks(meter, scale, nth, width, len, color, label_gap);
     lua_pushvalue(L, 1);
@@ -140,7 +140,7 @@ static int iot_lvgl_meter_add_indicator_line(lua_State* L) {
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t width = (uint16_t)luaL_checkinteger(L, 3);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 4);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 4));
     int16_t r_mod = (int16_t)luaL_optinteger(L, 5, 0);
     lv_meter_indicator_t* indic = lv_meter_add_needle_line(meter, scale, width, color, r_mod);
     lua_pushlightuserdata(L, indic);
@@ -162,7 +162,7 @@ static int iot_lvgl_meter_add_indicator_arc(lua_State* L) {
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     uint16_t width = (uint16_t)luaL_checkinteger(L, 3);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 4);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 4));
     int16_t r_mod = (int16_t)luaL_optinteger(L, 5, 0);
     lv_meter_indicator_t* indic = lv_meter_add_arc(meter, scale, width, color, r_mod);
     lua_pushlightuserdata(L, indic);
@@ -182,7 +182,7 @@ static int iot_lvgl_meter_add_indicator_needle(lua_State* L) {
     lv_obj_t* meter = iot_lvgl_get_obj_ptr(L, 1);
     lv_meter_scale_t* scale = (lv_meter_scale_t*)luaL_checklightuserdata(L, 2);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 3);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 3));
     uint16_t width = (uint16_t)luaL_optinteger(L, 4, 4);
     lv_meter_indicator_t* indic = lv_meter_add_needle_line(meter, scale, width, color, 0);
     lua_pushlightuserdata(L, indic);

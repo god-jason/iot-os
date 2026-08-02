@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_color.c
  * @brief LVGL颜色工具
  *
@@ -26,7 +26,7 @@ static int iot_lvgl_color_make(lua_State* L) {
     uint8_t g = (uint8_t)luaL_checkinteger(L, 2);
     uint8_t b = (uint8_t)luaL_checkinteger(L, 3);
     lv_color_t color = lv_color_make(r, g, b);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -39,7 +39,7 @@ static int iot_lvgl_color_make(lua_State* L) {
 static int iot_lvgl_color_hex(lua_State* L) {
     uint32_t hex = (uint32_t)luaL_checkinteger(L, 1);
     lv_color_t color = lv_color_hex(hex);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -52,7 +52,7 @@ static int iot_lvgl_color_hex(lua_State* L) {
 static int iot_lvgl_color_hex3(lua_State* L) {
     uint32_t hex = (uint32_t)luaL_checkinteger(L, 1);
     lv_color_t color = lv_color_hex3(hex);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -65,13 +65,13 @@ static int iot_lvgl_color_hex3(lua_State* L) {
 */
 static int iot_lvgl_color_change_brightness(lua_State* L) {
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 1);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
     int bright = (int)luaL_checkinteger(L, 2);
     int lvl = 127 + bright;
     if (lvl < 0) lvl = 0;
     if (lvl > 255) lvl = 255;
     color = lv_color_change_lightness(color, (lv_opa_t)lvl);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -84,10 +84,10 @@ static int iot_lvgl_color_change_brightness(lua_State* L) {
 */
 static int iot_lvgl_color_lighten(lua_State* L) {
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 1);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
     uint8_t level = (uint8_t)luaL_checkinteger(L, 2);
     color = lv_color_lighten(color, level);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -100,10 +100,10 @@ static int iot_lvgl_color_lighten(lua_State* L) {
 */
 static int iot_lvgl_color_darken(lua_State* L) {
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 1);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
     uint8_t level = (uint8_t)luaL_checkinteger(L, 2);
     color = lv_color_darken(color, level);
-    lua_pushinteger(L, color.full);
+    lua_pushinteger(L, lv_color_to_u32(color));
     return 1;
 }
 
@@ -115,7 +115,7 @@ static int iot_lvgl_color_darken(lua_State* L) {
 */
 static int iot_lvgl_color_to_1(lua_State* L) {
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 1);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
     lua_pushinteger(L, lv_color_to1(color));
     return 1;
 }
@@ -130,12 +130,12 @@ static int iot_lvgl_color_to_1(lua_State* L) {
 */
 static int iot_lvgl_color_mix(lua_State* L) {
     lv_color_t c1;
-    c1.full = (uint32_t)luaL_checkinteger(L, 1);
+    c1 = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
     lv_color_t c2;
-    c2.full = (uint32_t)luaL_checkinteger(L, 2);
+    c2 = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     uint8_t mix = (uint8_t)luaL_checkinteger(L, 3);
     lv_color_t result = lv_color_mix(c1, c2, mix);
-    lua_pushinteger(L, result.full);
+    lua_pushinteger(L, lv_color_to_u32(result));
     return 1;
 }
 

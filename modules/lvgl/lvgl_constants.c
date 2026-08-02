@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_constants.c
  * @brief LVGL常量定义
  *
@@ -155,18 +155,18 @@ void iot_lvgl_define_constants(lua_State* L) {
     REG_CONSTANT(L, "DIR_ALL", LV_DIR_ALL);
 
     /* 定义常量 */
-    REG_CONSTANT(L, "COLOR_BLACK", lv_color_black().full);
-    REG_CONSTANT(L, "COLOR_WHITE", lv_color_white().full);
-    REG_CONSTANT(L, "COLOR_RED", lv_palette_main(LV_PALETTE_RED).full);
-    REG_CONSTANT(L, "COLOR_GREEN", lv_palette_main(LV_PALETTE_GREEN).full);
-    REG_CONSTANT(L, "COLOR_BLUE", lv_palette_main(LV_PALETTE_BLUE).full);
-    REG_CONSTANT(L, "COLOR_YELLOW", lv_palette_main(LV_PALETTE_YELLOW).full);
-    REG_CONSTANT(L, "COLOR_ORANGE", lv_palette_main(LV_PALETTE_ORANGE).full);
-    REG_CONSTANT(L, "COLOR_PURPLE", lv_palette_main(LV_PALETTE_PURPLE).full);
-    REG_CONSTANT(L, "COLOR_CYAN", lv_palette_main(LV_PALETTE_CYAN).full);
-    REG_CONSTANT(L, "COLOR_GRAY", lv_palette_main(LV_PALETTE_GREY).full);
-    REG_CONSTANT(L, "COLOR_LIGHT_GRAY", lv_palette_lighten(LV_PALETTE_GREY, 2).full);
-    REG_CONSTANT(L, "COLOR_DARK_GRAY", lv_palette_darken(LV_PALETTE_GREY, 2).full);
+    REG_CONSTANT(L, "COLOR_BLACK", lv_color_to_u32(lv_color_black()));
+    REG_CONSTANT(L, "COLOR_WHITE", lv_color_to_u32(lv_color_white()));
+    REG_CONSTANT(L, "COLOR_RED", lv_color_to_u32(lv_palette_main(LV_PALETTE_RED)));
+    REG_CONSTANT(L, "COLOR_GREEN", lv_color_to_u32(lv_palette_main(LV_PALETTE_GREEN)));
+    REG_CONSTANT(L, "COLOR_BLUE", lv_color_to_u32(lv_palette_main(LV_PALETTE_BLUE)));
+    REG_CONSTANT(L, "COLOR_YELLOW", lv_color_to_u32(lv_palette_main(LV_PALETTE_YELLOW)));
+    REG_CONSTANT(L, "COLOR_ORANGE", lv_color_to_u32(lv_palette_main(LV_PALETTE_ORANGE)));
+    REG_CONSTANT(L, "COLOR_PURPLE", lv_color_to_u32(lv_palette_main(LV_PALETTE_PURPLE)));
+    REG_CONSTANT(L, "COLOR_CYAN", lv_color_to_u32(lv_palette_main(LV_PALETTE_CYAN)));
+    REG_CONSTANT(L, "COLOR_GRAY", lv_color_to_u32(lv_palette_main(LV_PALETTE_GREY)));
+    REG_CONSTANT(L, "COLOR_LIGHT_GRAY", lv_color_to_u32(lv_palette_lighten(LV_PALETTE_GREY, 2)));
+    REG_CONSTANT(L, "COLOR_DARK_GRAY", lv_color_to_u32(lv_palette_darken(LV_PALETTE_GREY, 2)));
 
     /* 定义常量 */
     REG_CONSTANT(L, "SIZE_CONTENT", LV_SIZE_CONTENT);

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_textarea.c
  * @brief LVGL文本区域控件
  *
@@ -236,7 +236,7 @@ static int iot_lvgl_textarea_add_text(lua_State* L) {
 */
 static int iot_lvgl_textarea_del_char(lua_State* L) {
     lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
-    lv_textarea_del_char(ta);
+    lv_textarea_delete_char(ta);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -249,7 +249,7 @@ static int iot_lvgl_textarea_del_char(lua_State* L) {
 */
 static int iot_lvgl_textarea_del_char_forward(lua_State* L) {
     lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
-    lv_textarea_del_char_forward(ta);
+    lv_textarea_delete_char_forward(ta);
     lua_pushvalue(L, 1);
     return 1;
 }

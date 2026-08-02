@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_menu.c
  * @brief LVGL菜单控件
  *
@@ -157,15 +157,9 @@ static int iot_lvgl_menu_set_title(lua_State* L) {
     const char* title = luaL_checkstring(L, 2);
     lv_obj_t* page = lv_menu_get_cur_main_page(menu);
     if (page) {
-        lv_menu_page_t* menu_page = (lv_menu_page_t*)page;
-        if (menu_page->title) {
-            lv_mem_free(menu_page->title);
-        }
-        menu_page->title = lv_mem_alloc(strlen(title) + 1);
-        if (menu_page->title) {
-            strcpy(menu_page->title, title);
-        }
-        lv_event_send(menu, LV_EVENT_VALUE_CHANGED, NULL);
+        /* LVGL 9 提供 lv_menu_set_page_title 公共 API，无需直接访问结构体 */
+        lv_menu_set_page_title(page, title);
+        lv_obj_send_event(menu, LV_EVENT_VALUE_CHANGED, NULL);
     }
     lua_pushvalue(L, 1);
     return 1;

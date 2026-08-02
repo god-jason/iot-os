@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_group.c
  * @brief LVGL对象分组
  *
@@ -10,20 +10,6 @@
 
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
-
-static lv_obj_t* iot_lvgl_group_get_obj_by_index(lv_group_t* group, uint32_t index)
-{
-    lv_obj_t** obj_i;
-    uint32_t i = 0;
-
-    _LV_LL_READ(&group->obj_ll, obj_i) {
-        if (i == index) {
-            return *obj_i;
-        }
-        i++;
-    }
-    return NULL;
-}
 
 /* ==================== 对象组操作 ==================== */
 
@@ -61,7 +47,7 @@ static int iot_lvgl_group_remove_all_objs(lua_State* L) {
 static int iot_lvgl_group_get_obj(lua_State* L) {
     lv_group_t* group = (lv_group_t*)luaL_checklightuserdata(L, 1);
     uint32_t index = (uint32_t)luaL_checkinteger(L, 2);
-    lv_obj_t* obj = iot_lvgl_group_get_obj_by_index(group, index);
+    lv_obj_t* obj = lv_group_get_obj_by_index(group, index);
     if (obj) {
         lua_pushlightuserdata(L, obj);
     } else {

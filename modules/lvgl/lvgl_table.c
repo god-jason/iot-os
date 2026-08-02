@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_table.c
  * @brief LVGL表格控件
  *
@@ -146,8 +146,8 @@ static int iot_lvgl_table_get_cell_value(lua_State* L) {
 */
 static int iot_lvgl_table_get_selected_row(lua_State* L) {
     lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
-    uint16_t row = LV_TABLE_CELL_NONE;
-    uint16_t col = LV_TABLE_CELL_NONE;
+    uint32_t row = LV_TABLE_CELL_NONE;
+    uint32_t col = LV_TABLE_CELL_NONE;
     lv_table_get_selected_cell(table, &row, &col);
     lua_pushinteger(L, row);
     return 1;
@@ -161,8 +161,8 @@ static int iot_lvgl_table_get_selected_row(lua_State* L) {
 */
 static int iot_lvgl_table_get_selected_col(lua_State* L) {
     lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
-    uint16_t row = LV_TABLE_CELL_NONE;
-    uint16_t col = LV_TABLE_CELL_NONE;
+    uint32_t row = LV_TABLE_CELL_NONE;
+    uint32_t col = LV_TABLE_CELL_NONE;
     lv_table_get_selected_cell(table, &row, &col);
     lua_pushinteger(L, col);
     return 1;
@@ -182,7 +182,7 @@ static int iot_lvgl_table_add_cell_ctrl(lua_State* L) {
     uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
     uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
     uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
-    lv_table_add_cell_ctrl(table, row, col, ctrl);
+    lv_table_set_cell_ctrl(table, row, col, ctrl);
     lua_pushvalue(L, 1);
     return 1;
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file lvgl.c
  * @brief LVGL图形库主入口模块实现
  *
@@ -13,15 +13,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef LV_USE_SDL_DRV
-#include "lv_sdl_drv.h"
+#if LV_USE_SDL
+#include "drivers/sdl/lv_sdl_window.h"
+#include "drivers/sdl/lv_sdl_mouse.h"
+#include "drivers/sdl/lv_sdl_mousewheel.h"
+#include "drivers/sdl/lv_sdl_keyboard.h"
 #endif
 
 
 
 static int iot_lvgl_scr_act(lua_State* L) {
 
-    lv_obj_t* scr = lv_scr_act();
+    lv_obj_t* scr = lv_screen_active();
 
     lua_pushlightuserdata(L, scr);
 
@@ -35,7 +38,7 @@ static int iot_lvgl_scr_load(lua_State* L) {
 
     lv_obj_t* scr = iot_lvgl_get_obj_ptr(L, 1);
 
-    lv_scr_load(scr);
+    lv_screen_load(scr);
 
     return 0;
 
@@ -56,46 +59,28 @@ static int iot_lvgl_tick_inc(lua_State* L) {
 
 
 static int iot_lvgl_task_handler(lua_State* L) {
-
-#ifdef LV_USE_SDL_DRV
-    /* 桌面平台：先处理 SDL 事件，窗口关闭则退出 */
-    if (iot_lv_sdl_drv_is_inited()) {
-        if (!iot_lv_sdl_drv_loop()) {
-            iot_lv_sdl_drv_deinit();
-            exit(0);
-        }
-    }
-#endif
-
-    lv_task_handler();
-
+    /* LVGL 9 内置 SDL 驱动在 lv_timer_handler 中自动处理 SDL 事件，
+     * 窗口关闭时通过 LV_SDL_DIRECT_EXIT 自动 exit(0) */
+    lv_timer_handler();
     return 0;
-
 }
 
 
 
 static int iot_lvgl_flush_ready(lua_State* L) {
-
-    lv_disp_t* disp = lv_disp_get_default();
-
-    if (disp && disp->driver) {
-
-        lv_disp_flush_ready(disp->driver);
-
+    lv_display_t* disp = lv_display_get_default();
+    if (disp) {
+        lv_display_flush_ready(disp);
     }
-
     (void)L;
-
     return 0;
-
 }
 
 
 
 static int iot_lvgl_refr_now(lua_State* L) {
 
-    lv_refr_now((lv_disp_t*)luaL_optlightuserdata(L, 1, NULL));
+    lv_refr_now((lv_display_t*)luaL_optlightuserdata(L, 1, NULL));
 
     return 0;
 
@@ -153,7 +138,7 @@ static int iot_lvgl_tick_get(lua_State* L) {
 
 static int iot_lvgl_disp_get_default(lua_State* L) {
 
-    lua_pushlightuserdata(L, lv_disp_get_default());
+    lua_pushlightuserdata(L, lv_display_get_default());
 
     return 1;
 
@@ -163,9 +148,9 @@ static int iot_lvgl_disp_get_default(lua_State* L) {
 
 static int iot_lvgl_disp_get_scr_act(lua_State* L) {
 
-    lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
 
-    lua_pushlightuserdata(L, lv_disp_get_scr_act(disp));
+    lua_pushlightuserdata(L, lv_display_get_screen_active(disp));
 
     return 1;
 
@@ -177,7 +162,7 @@ static int iot_lvgl_disp_load_scr(lua_State* L) {
 
     lv_obj_t* scr = iot_lvgl_get_obj_ptr(L, 1);
 
-    lv_disp_load_scr(scr);
+    lv_screen_load(scr);
 
     return 0;
 
@@ -187,7 +172,7 @@ static int iot_lvgl_disp_load_scr(lua_State* L) {
 
 static int iot_lvgl_indev_get_default(lua_State* L) {
 
-    lua_pushlightuserdata(L, iot_lv_indev_get_default());
+    lua_pushlightuserdata(L, lv_indev_get_next(NULL));
 
     return 1;
 
@@ -216,22 +201,32 @@ static int iot_lvgl_init(lua_State* L) {
     /* lv_init 已在 luaopen_lvgl 中完成，此处幂等保证 */
     lv_init();
 
-#ifdef LV_USE_SDL_DRV
-    if (!iot_lv_sdl_drv_is_inited()) {
-        fprintf(stderr, "[lvgl] init: creating SDL window %dx%d\n", hor_res, ver_res);
-        fflush(stderr);
-        if (!iot_lv_sdl_drv_init(hor_res, ver_res)) {
-            return luaL_error(L, "SDL driver init failed: %dx%d", hor_res, ver_res);
-        }
-        fprintf(stderr, "[lvgl] SDL window created\n");
-        fflush(stderr);
-    } else {
-        /* 已初始化，幂等返回成功 */
-        fprintf(stderr, "[lvgl] init: already initialized, skip\n");
-        fflush(stderr);
+#if LV_USE_SDL
+    /* 使用 LVGL 9 内置 SDL 驱动创建窗口和输入设备 */
+    fprintf(stderr, "[lvgl] init: creating SDL window %dx%d\n", hor_res, ver_res);
+    fflush(stderr);
+
+    lv_display_t* disp = lv_sdl_window_create(hor_res, ver_res);
+    fprintf(stderr, "[lvgl] sdl_window_create returned %p\n", (void*)disp);
+    fflush(stderr);
+    if (!disp) {
+        return luaL_error(L, "SDL window create failed: %dx%d", hor_res, ver_res);
     }
+
+    /* 创建鼠标、鼠标滚轮和键盘输入设备 */
+    fprintf(stderr, "[lvgl] creating mouse\n"); fflush(stderr);
+    lv_sdl_mouse_create();
+    fprintf(stderr, "[lvgl] creating mousewheel\n"); fflush(stderr);
+    lv_sdl_mousewheel_create();
+    fprintf(stderr, "[lvgl] creating keyboard\n"); fflush(stderr);
+    lv_sdl_keyboard_create();
+
+    fprintf(stderr, "[lvgl] SDL window created\n");
+    fflush(stderr);
+    fprintf(stderr, "[lvgl] init: returning to Lua\n");
+    fflush(stderr);
 #else
-    /* 非 SDL 平台：留作扩展点，目前无操作 */
+    /* 非 SDL 平台：留作扩展点 */
     (void)hor_res;
     (void)ver_res;
 #endif
@@ -472,11 +467,12 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
 
 
-    lua_newtable(L);  /* meter 子表 */
+    /* LVGL 9 移除 lv_meter，由 lv_scale 替代，meter 子模块暂不注册 */
+    /* lua_newtable(L); */  /* meter 子表 */
 
-    iot_lvgl_register_meter(L);
+    /* iot_lvgl_register_meter(L); */
 
-    lua_setfield(L, -2, "meter");
+    /* lua_setfield(L, -2, "meter"); */
 
 
 

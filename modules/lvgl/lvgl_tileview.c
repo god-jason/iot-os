@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_tileview.c
  * @brief LVGL平铺视图控件
  *
@@ -81,14 +81,11 @@ static int iot_lvgl_tileview_set_tile(lua_State* L) {
 */
 static int iot_lvgl_tileview_set_tile_drag_dir(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* tile = (lv_obj_t*)luaL_checklightuserdata(L, 2);
+    (void)(lv_obj_t*)luaL_checklightuserdata(L, 2);
     lv_dir_t dir = (lv_dir_t)luaL_checkinteger(L, 3);
-    if (lv_obj_check_type(tile, &lv_tileview_tile_class)) {
-        ((lv_tileview_tile_t*)tile)->dir = dir;
-        if (lv_tileview_get_tile_act(tv) == tile) {
-            lv_obj_set_scroll_dir(tv, dir);
-        }
-    }
+    /* LVGL 9 中 lv_tileview_tile_t 为不透明类型，无法直接修改 dir 成员。
+     * 通过设置 tileview 的滚动方向来实现类似效果。 */
+    lv_obj_set_scroll_dir(tv, dir);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -101,7 +98,7 @@ static int iot_lvgl_tileview_set_tile_drag_dir(lua_State* L) {
 */
 static int iot_lvgl_tileview_get_tile_act(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* tile = lv_tileview_get_tile_act(tv);
+    lv_obj_t* tile = lv_tileview_get_tile_active(tv);
     lua_pushlightuserdata(L, tile);
     return 1;
 }

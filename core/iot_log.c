@@ -136,7 +136,7 @@ void iot_log_printf(iot_log_level_t level, const char* fmt, ...) {
     
     /* 一次性输出 */
     iot_puts(s_log_buffer);
-    //fflush(stdout);
+    fflush(stdout);
 }
 
 /**
@@ -277,7 +277,7 @@ static void iot_log_output(lua_State* L, int level) {
     
     /* 一次性输出 */
     iot_puts(s_log_buffer);
-    //fflush(stdout);
+    fflush(stdout);
 }
 
 /**

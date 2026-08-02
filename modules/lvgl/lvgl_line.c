@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_line.c
  * @brief LVGL线条控件
  *
@@ -49,12 +49,12 @@ static int iot_lvgl_line_set_points(lua_State* L) {
     uint32_t point_num = (uint32_t)luaL_len(L, 2);
 
     /* 释放旧的点数组(LVGL的lv_line_set_points只保存指针不复制,需自行管理) */
-    lv_point_t* old_points = (lv_point_t*)lv_obj_get_user_data(line);
+    lv_point_precise_t* old_points = (lv_point_precise_t*)lv_obj_get_user_data(line);
     if (old_points) {
         cm_free(old_points);
     }
 
-    lv_point_t* points = (lv_point_t*)cm_malloc(sizeof(lv_point_t) * point_num);
+    lv_point_precise_t* points = (lv_point_precise_t*)cm_malloc(sizeof(lv_point_precise_t) * point_num);
     if (!points) {
         luaL_error(L, "memory allocation failed");
         return 1;
@@ -64,9 +64,9 @@ static int iot_lvgl_line_set_points(lua_State* L) {
         lua_geti(L, 2, i + 1);
         if (lua_istable(L, -1)) {
             lua_geti(L, -1, 1);
-            points[i].x = (int32_t)luaL_checkinteger(L, -1);
+            points[i].x = (lv_value_precise_t)luaL_checkinteger(L, -1);
             lua_geti(L, -2, 2);
-            points[i].y = (int32_t)luaL_checkinteger(L, -1);
+            points[i].y = (lv_value_precise_t)luaL_checkinteger(L, -1);
             lua_pop(L, 2);
         }
         lua_pop(L, 1);

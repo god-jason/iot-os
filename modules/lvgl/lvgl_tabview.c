@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_tabview.c
  * @brief LVGL选项卡控件
  *
@@ -20,7 +20,12 @@ static int iot_lvgl_tabview_create_internal(lua_State* L) {
     lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
     lv_dir_t tab_pos = (lv_dir_t)luaL_optinteger(L, 2, LV_DIR_TOP);
     lv_coord_t tab_size = (lv_coord_t)luaL_optinteger(L, 3, 50);
-    lv_obj_t* tv = lv_tabview_create(parent, tab_pos, tab_size);
+    /* LVGL 9: lv_tabview_create 只接受 parent，位置和尺寸通过专用函数设置 */
+    lv_obj_t* tv = lv_tabview_create(parent);
+    if (tv) {
+        lv_tabview_set_tab_bar_position(tv, tab_pos);
+        lv_tabview_set_tab_bar_size(tv, tab_size);
+    }
     lua_pushlightuserdata(L, tv);
     return 1;
 }
@@ -60,9 +65,10 @@ static int iot_lvgl_tabview_add_tab(lua_State* L) {
 @usage tv:set_tab_bar_position(lvgl.TABVIEW_TAB_POS_TOP)
 */
 static int iot_lvgl_tabview_set_tab_bar_position(lua_State* L) {
-    (void)iot_lvgl_get_obj_ptr(L, 1);
-    (void)luaL_checkinteger(L, 2);
-    /* tab bar position is fixed at create time in LVGL 8 */
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
+    lv_dir_t pos = (lv_dir_t)luaL_checkinteger(L, 2);
+    /* LVGL 9 提供 lv_tabview_set_tab_bar_position 接口 */
+    lv_tabview_set_tab_bar_position(tv, pos);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -77,15 +83,8 @@ static int iot_lvgl_tabview_set_tab_bar_position(lua_State* L) {
 static int iot_lvgl_tabview_set_tab_bar_width(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     lv_coord_t size = (lv_coord_t)luaL_checkinteger(L, 2);
-    lv_tabview_t* tabview = (lv_tabview_t*)tv;
-    lv_obj_t* btns = lv_tabview_get_tab_btns(tv);
-    if (btns) {
-        if (tabview->tab_pos & LV_DIR_VER) {
-            lv_obj_set_height(btns, size);
-        } else {
-            lv_obj_set_width(btns, size);
-        }
-    }
+    /* LVGL 9 提供 lv_tabview_set_tab_bar_size 接口 */
+    lv_tabview_set_tab_bar_size(tv, size);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -118,7 +117,7 @@ static int iot_lvgl_tabview_set_active(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
     uint32_t idx = (uint32_t)luaL_checkinteger(L, 2);
     lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
-    lv_tabview_set_act(tv, idx, anim);
+    lv_tabview_set_active(tv, idx, anim);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -131,7 +130,7 @@ static int iot_lvgl_tabview_set_active(lua_State* L) {
 */
 static int iot_lvgl_tabview_get_active(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
-    uint16_t active = lv_tabview_get_tab_act(tv);
+    uint32_t active = lv_tabview_get_tab_active(tv);
     lua_pushinteger(L, active);
     return 1;
 }
@@ -144,8 +143,8 @@ static int iot_lvgl_tabview_get_active(lua_State* L) {
 */
 static int iot_lvgl_tabview_get_tab_count(lua_State* L) {
     lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
-    lv_tabview_t* tabview = (lv_tabview_t*)tv;
-    lua_pushinteger(L, tabview->tab_cnt);
+    /* LVGL 9 提供 lv_tabview_get_tab_count 公共接口 */
+    lua_pushinteger(L, lv_tabview_get_tab_count(tv));
     return 1;
 }
 

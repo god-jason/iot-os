@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_led.c
  * @brief LVGL LED控件
  *
@@ -86,7 +86,7 @@ static int iot_lvgl_led_set_brightness(lua_State* L) {
 static int iot_lvgl_led_set_color(lua_State* L) {
     lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     lv_led_set_color(led, color);
     lua_pushvalue(L, 1);
     return 1;

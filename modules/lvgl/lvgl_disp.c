@@ -1,8 +1,9 @@
-﻿/**
+/**
  * @file iot_lvgl_disp.c
  * @brief LVGL显示设备接口
  *
  * 实现LVGL显示设备的Lua绑定，包括获取水平/垂直分辨率、获取物理分辨率、设置/获取显示旋转、设置背景颜色/背景图片等接口。
+ * 适配 LVGL 9.5.0 API：lv_disp_* 系列函数替换为 lv_display_* 系列。
  *
  * @author  杰神 & TRAE & ChatGPT
  * @date    2026.06.10
@@ -14,53 +15,71 @@
 /* ==================== 显示器操作 ==================== */
 
 static int iot_lvgl_disp_get_hor_res(lua_State* L) {
-    lv_coord_t res = lv_disp_get_hor_res(NULL);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_coord_t res = lv_display_get_horizontal_resolution(disp);
     lua_pushinteger(L, res);
     return 1;
 }
 
 static int iot_lvgl_disp_get_ver_res(lua_State* L) {
-    lv_coord_t res = lv_disp_get_ver_res(NULL);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_coord_t res = lv_display_get_vertical_resolution(disp);
     lua_pushinteger(L, res);
     return 1;
 }
 
 static int iot_lvgl_disp_get_physical_hor_res(lua_State* L) {
-    lv_coord_t res = lv_disp_get_physical_hor_res(NULL);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_coord_t res = lv_display_get_physical_horizontal_resolution(disp);
     lua_pushinteger(L, res);
     return 1;
 }
 
 static int iot_lvgl_disp_get_physical_ver_res(lua_State* L) {
-    lv_coord_t res = lv_disp_get_physical_ver_res(NULL);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_coord_t res = lv_display_get_physical_vertical_resolution(disp);
     lua_pushinteger(L, res);
     return 1;
 }
 
 static int iot_lvgl_disp_set_rotation(lua_State* L) {
-    lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
-    lv_disp_rot_t rotation = (lv_disp_rot_t)luaL_checkinteger(L, 2);
-    lv_disp_set_rotation(disp, rotation);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_display_rotation_t rotation = (lv_display_rotation_t)luaL_checkinteger(L, 2);
+    lv_display_set_rotation(disp, rotation);
     return 0;
 }
 
 static int iot_lvgl_disp_get_rotation(lua_State* L) {
-    lv_disp_t* disp = (lv_disp_t*)luaL_optlightuserdata(L, 1, NULL);
-    lv_disp_rot_t rotation = lv_disp_get_rotation(disp);
+    lv_display_t* disp = (lv_display_t*)luaL_optlightuserdata(L, 1, NULL);
+    if (!disp) disp = lv_display_get_default();
+    lv_display_rotation_t rotation = lv_display_get_rotation(disp);
     lua_pushinteger(L, rotation);
     return 1;
 }
 
 static int iot_lvgl_disp_set_bg_color(lua_State* L) {
-    lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 1);
-    lv_disp_set_bg_color(NULL, color);
+    /* LVGL 9 移除了 lv_disp_set_bg_color，通过活动屏幕的样式设置背景色 */
+    lv_color_t color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 1));
+    lv_obj_t* scr = lv_screen_active();
+    if (scr) {
+        lv_obj_set_style_bg_color(scr, color, 0);
+        lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    }
     return 0;
 }
 
 static int iot_lvgl_disp_set_bg_image(lua_State* L) {
-    lv_obj_t* img = (lv_obj_t*)luaL_optlightuserdata(L, 1, NULL);
-    lv_disp_set_bg_image(NULL, img);
+    /* LVGL 9 移除了 lv_disp_set_bg_image，通过活动屏幕的样式设置背景图 */
+    lv_obj_t* scr = lv_screen_active();
+    if (scr) {
+        const char* path = luaL_optstring(L, 1, NULL);
+        lv_obj_set_style_bg_img_src(scr, path, 0);
+    }
     return 0;
 }
 

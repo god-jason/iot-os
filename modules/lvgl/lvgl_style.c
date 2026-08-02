@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_style.c
  * @brief LVGL样式系统（OO风格）
  *
@@ -128,7 +128,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "bg_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_bg_color(style, color);
     }
     lua_pop(L, 1);
@@ -142,7 +142,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "bg_grad_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_bg_grad_color(style, color);
     }
     lua_pop(L, 1);
@@ -162,7 +162,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "border_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_border_color(style, color);
     }
     lua_pop(L, 1);
@@ -182,7 +182,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "text_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_text_color(style, color);
     }
     lua_pop(L, 1);
@@ -208,7 +208,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "shadow_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_shadow_color(style, color);
     }
     lua_pop(L, 1);
@@ -246,7 +246,7 @@ static lv_style_t* iot_lvgl_style_create_from_table_internal(lua_State* L, int i
     lua_getfield(L, idx, "outline_color");
     if (lua_isinteger(L, -1)) {
         lv_color_t color;
-        color.full = (uint32_t)lua_tointeger(L, -1);
+        color = lv_color_from_u32((uint32_t)lua_tointeger(L, -1));
         lv_style_set_outline_color(style, color);
     }
     lua_pop(L, 1);
@@ -446,7 +446,7 @@ static int iot_lvgl_style_set_pad_all(lua_State* L) {
 static int iot_lvgl_style_set_bg_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_bg_color(style, color);
     }
@@ -465,7 +465,7 @@ static int iot_lvgl_style_set_bg_opa(lua_State* L) {
 static int iot_lvgl_style_set_bg_grad_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_bg_grad_color(style, color);
     }
@@ -504,7 +504,7 @@ static int iot_lvgl_style_set_border_width(lua_State* L) {
 static int iot_lvgl_style_set_border_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_border_color(style, color);
     }
@@ -545,7 +545,7 @@ static int iot_lvgl_style_set_radius(lua_State* L) {
 static int iot_lvgl_style_set_text_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_text_color(style, color);
     }
@@ -584,7 +584,7 @@ static int iot_lvgl_style_set_text_align(lua_State* L) {
 static int iot_lvgl_style_set_img_recolor(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_img_recolor(style, color);
     }
@@ -614,7 +614,7 @@ static int iot_lvgl_style_set_shadow_width(lua_State* L) {
 static int iot_lvgl_style_set_shadow_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_shadow_color(style, color);
     }
@@ -671,7 +671,7 @@ static int iot_lvgl_style_set_outline_width(lua_State* L) {
 static int iot_lvgl_style_set_outline_color(lua_State* L) {
     lv_style_t* style = (lv_style_t*)luaL_checklightuserdata(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     if (style) {
         lv_style_set_outline_color(style, color);
     }

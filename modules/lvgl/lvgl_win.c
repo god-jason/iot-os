@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_win.c
  * @brief LVGL窗口控件
  *
@@ -37,8 +37,9 @@ static lv_obj_t* iot_lvgl_win_find_title(lv_obj_t* win)
 
 static int iot_lvgl_win_create_internal(lua_State* L) {
     lv_obj_t* parent = iot_lvgl_get_obj_ptr(L, 1);
-    lv_coord_t header_height = (lv_coord_t)luaL_optinteger(L, 2, 40);
-    lv_obj_t* win = lv_win_create(parent, header_height);
+    /* LVGL 9: lv_win_create 只接受 parent，header 高度通过样式设置 */
+    (void)luaL_optinteger(L, 2, 40);
+    lv_obj_t* win = lv_win_create(parent);
     lua_pushlightuserdata(L, win);
     return 1;
 }
@@ -93,7 +94,7 @@ static int iot_lvgl_win_add_btn(lua_State* L) {
         }
     }
     lv_coord_t btn_w = (lv_coord_t)luaL_optinteger(L, 3, 40);
-    lv_obj_t* btn = lv_win_add_btn(win, icon, btn_w);
+    lv_obj_t* btn = lv_win_add_button(win, icon, btn_w);
     lua_pushlightuserdata(L, btn);
     return 1;
 }

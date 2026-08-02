@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_chart.c
  * @brief LVGL图表控件
  *
@@ -119,25 +119,31 @@ static int iot_lvgl_chart_set_update_mode(lua_State* L) {
 /*
 设置轴刻度
 @param self 图表实例或指针
-@param axis 轴类型
+@param axis 轴类型（LVGL 9 不再按轴区分刻度，此参数仅用于兼容）
 @param major_len 主刻度长度
 @param minor_len 次刻度长度
-@param major_cnt 主刻度数量
-@param minor_cnt 次刻度数量
-@param label_en 是否显示标签
+@param major_cnt 主刻度数量（LVGL 9 不再支持直接设置，仅用于兼容）
+@param minor_cnt 次刻度数量（LVGL 9 不再支持直接设置，仅用于兼容）
+@param label_en 是否显示标签（LVGL 9 通过样式控制，此处仅用于兼容）
 @return self
 @usage chart:set_axis_tick(lvgl.CHART_AXIS_PRIMARY_Y, 10, 5, 3, 2, true)
+
+注：LVGL 9 移除了 lv_chart_set_axis_tick，刻度长度改由 LV_PART_ITEMS 的
+    style length 控制，这里将 major_len 应用为主刻度长度。
 */
 static int iot_lvgl_chart_set_axis_tick(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
-    lv_chart_axis_t axis = (lv_chart_axis_t)luaL_checkinteger(L, 2);
+    (void)luaL_checkinteger(L, 2); /* axis: LVGL 9 不再按轴区分，仅兼容 */
     int32_t major_len = (int32_t)luaL_checkinteger(L, 3);
-    int32_t minor_len = (int32_t)luaL_checkinteger(L, 4);
-    int32_t major_cnt = (int32_t)luaL_checkinteger(L, 5);
-    int32_t minor_cnt = (int32_t)luaL_checkinteger(L, 6);
-    bool label_en = lua_toboolean(L, 7);
-    int32_t draw_size = (int32_t)luaL_optinteger(L, 8, 20);
-    lv_chart_set_axis_tick(chart, axis, major_len, minor_len, major_cnt, minor_cnt, label_en, draw_size);
+    int32_t minor_len = (int32_t)luaL_optinteger(L, 4, 0);
+    (void)luaL_optinteger(L, 5, 0); /* major_cnt: 兼容参数 */
+    (void)luaL_optinteger(L, 6, 0); /* minor_cnt: 兼容参数 */
+    (void)lua_toboolean(L, 7);      /* label_en: 兼容参数 */
+    (void)luaL_optinteger(L, 8, 20);/* draw_size: 兼容参数 */
+
+    /* LVGL 9: 通过 LV_PART_ITEMS 的 style length 设置刻度长度 */
+    lv_obj_set_style_length(chart, major_len, LV_PART_MAIN);
+    lv_obj_set_style_length(chart, minor_len, LV_PART_ITEMS);
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -152,7 +158,7 @@ static int iot_lvgl_chart_set_axis_tick(lua_State* L) {
 static int iot_lvgl_chart_add_series(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 2);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 2));
     lv_chart_axis_t axis = (lv_chart_axis_t)luaL_optinteger(L, 3, LV_CHART_AXIS_PRIMARY_Y);
     lv_chart_series_t* series = lv_chart_add_series(chart, color, axis);
     lua_pushlightuserdata(L, series);
@@ -171,7 +177,7 @@ static int iot_lvgl_chart_set_series_color(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
     lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
     lv_color_t color;
-    color.full = (uint32_t)luaL_checkinteger(L, 3);
+    color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 3));
     lv_chart_set_series_color(chart, series, color);
     lua_pushvalue(L, 1);
     return 1;

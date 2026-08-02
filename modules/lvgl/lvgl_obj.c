@@ -458,9 +458,9 @@ static const char* iot_lvgl_obj_type_name(lv_obj_t* obj)
 #define iot_lvgl_IF_TYPE(cls, name) \
     if (lv_obj_check_type(obj, &cls)) return name;
 
-    iot_lvgl_IF_TYPE(lv_btn_class, "btn")
+    iot_lvgl_IF_TYPE(lv_button_class, "btn")
     iot_lvgl_IF_TYPE(lv_label_class, "label")
-    iot_lvgl_IF_TYPE(lv_img_class, "img")
+    iot_lvgl_IF_TYPE(lv_image_class, "img")
     iot_lvgl_IF_TYPE(lv_line_class, "line")
     iot_lvgl_IF_TYPE(lv_arc_class, "arc")
     iot_lvgl_IF_TYPE(lv_bar_class, "bar")
@@ -471,7 +471,8 @@ static const char* iot_lvgl_obj_type_name(lv_obj_t* obj)
     iot_lvgl_IF_TYPE(lv_textarea_class, "textarea")
     iot_lvgl_IF_TYPE(lv_chart_class, "chart")
     iot_lvgl_IF_TYPE(lv_table_class, "table")
-    iot_lvgl_IF_TYPE(lv_meter_class, "meter")
+    /* LVGL 9 移除 lv_meter，由 lv_scale 替代 */
+    iot_lvgl_IF_TYPE(lv_scale_class, "scale")
     iot_lvgl_IF_TYPE(lv_checkbox_class, "checkbox")
     iot_lvgl_IF_TYPE(lv_canvas_class, "canvas")
     iot_lvgl_IF_TYPE(lv_list_class, "list")
@@ -597,10 +598,18 @@ int iot_lvgl_obj_set_event_cb(lua_State* L) {
         return 0;
     }
 
-    void* old_ud = lv_obj_get_event_user_data(obj, iot_lvgl_event_handler);
-    if (old_ud) {
-        lv_obj_remove_event_cb_with_user_data(obj, iot_lvgl_event_handler, old_ud);
-        iot_callback_free(old_ud);
+    /* LVGL 9 移除了 lv_obj_get_event_user_data，改为遍历事件描述符查找旧回调 */
+    uint32_t cnt = lv_obj_get_event_count(obj);
+    for (uint32_t i = 0; i < cnt; i++) {
+        lv_event_dsc_t* dsc = lv_obj_get_event_dsc(obj, i);
+        if (dsc && lv_event_dsc_get_cb(dsc) == iot_lvgl_event_handler) {
+            void* old_ud = lv_event_dsc_get_user_data(dsc);
+            lv_obj_remove_event(obj, i);
+            if (old_ud) {
+                iot_callback_free(old_ud);
+            }
+            break;
+        }
     }
 
     void* ud = iot_callback_save(L, 2);
