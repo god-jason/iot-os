@@ -102,7 +102,11 @@ static int iot_lvgl_group_set_default(lua_State* L) {
 
 static int iot_lvgl_group_get_default(lua_State* L) {
     lv_group_t* group = lv_group_get_default();
-    lua_pushlightuserdata(L, group);
+    if (group) {
+        lua_pushlightuserdata(L, group);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 

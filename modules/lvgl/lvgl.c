@@ -219,7 +219,14 @@ static int iot_lvgl_init(lua_State* L) {
     fprintf(stderr, "[lvgl] creating mousewheel\n"); fflush(stderr);
     lv_sdl_mousewheel_create();
     fprintf(stderr, "[lvgl] creating keyboard\n"); fflush(stderr);
-    lv_sdl_keyboard_create();
+    lv_indev_t* kb_indev = lv_sdl_keyboard_create();
+
+    /* 创建默认 group 并关联键盘 indev，使 textarea 等控件可通过键盘编辑 */
+    if (kb_indev) {
+        lv_group_t* group = lv_group_create();
+        lv_group_set_default(group);
+        lv_indev_set_group(kb_indev, group);
+    }
 
     fprintf(stderr, "[lvgl] SDL window created\n");
     fflush(stderr);
