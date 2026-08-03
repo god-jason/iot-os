@@ -26,16 +26,19 @@ return function()
     lv.init(1280, 720)
     T.pass("lvgl.init", "1280x720")
 
+    -- 周期调用 task_handler 驱动 SDL 事件 + LVGL 渲染
+    -- 提前注册，确保测试返回后 iot.run() 能持续驱动
+    iot.setInterval(function()
+        lv.task_handler()
+    end, 10)
+
+    -- 获取活动屏幕
     local scr = lv.scr_act()
     if not scr then
         T.fail("lvgl.scr_act", "no active screen")
         return
     end
     T.pass("lvgl.scr_act")
-
-    iot.setInterval(function ()
-        lv.task_handler()
-    end, 10)
 
     local function pump()
         for i = 1, 5 do
@@ -2890,7 +2893,7 @@ return function()
     ------------------------------------------------------------
     --  最终刷新
     ------------------------------------------------------------
-    -- lv.refr_now(nil) skipped (may crash)
+     lv.refr_now(nil) -- skipped (may crash)
     T.pass("lvgl.refr_now", "skipped")
 
     -- iot.setInterval / lv.task_handler skipped (may conflict with OS)

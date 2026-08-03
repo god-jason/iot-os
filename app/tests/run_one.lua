@@ -11,6 +11,7 @@ return function(name)
         mqtt = { path = "app/tests/test_mqtt.lua", sync = false, need_net = true },
         uart = { path = "app/tests/test_uart.lua", sync = false, need_net = false },
         lvgl = { path = "app/tests/test_lvgl.lua", sync = true, need_net = false },
+        lvgl2 = { path = "app/tests/test_lvgl2.lua", sync = true, need_net = false },
     }
 
     local entry = tests[name]
