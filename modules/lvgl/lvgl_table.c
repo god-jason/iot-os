@@ -321,6 +321,75 @@ static int iot_lvgl_table_has_cell_ctrl(lua_State* L) {
     return 1;
 }
 
+/*
+格式化设置单元格文本
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param fmt 格式化字符串
+@param ... 格式化参数
+@return self
+@usage table:set_cell_value_fmt(0, 0, "%d + %d = %d", 1, 2, 3)
+*/
+static int iot_lvgl_table_set_cell_value_fmt(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    const char* fmt = luaL_checkstring(L, 4);
+    int n = lua_gettop(L) - 4;
+
+    /* 调用 Lua string.format 处理格式化 */
+    lua_getglobal(L, "string");
+    lua_getfield(L, -1, "format");
+    lua_remove(L, -2);
+    lua_pushstring(L, fmt);
+    for (int i = 0; i < n; i++) {
+        lua_pushvalue(L, 5 + i);
+    }
+    lua_call(L, n + 1, 1);
+    const char* txt = lua_tostring(L, -1);
+    lv_table_set_cell_value(table, row, col, txt);
+    lua_pop(L, 1);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置单元格用户数据
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param user_data 用户数据指针
+@return self
+@usage table:set_cell_user_data(0, 0, some_data)
+*/
+static int iot_lvgl_table_set_cell_user_data(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    void* user_data = luaL_checklightuserdata(L, 4);
+    lv_table_set_cell_user_data(table, row, col, user_data);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取单元格用户数据
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@return lightuserdata 用户数据指针
+@usage local data = table:get_cell_user_data(0, 0)
+*/
+static int iot_lvgl_table_get_cell_user_data(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    void* user_data = lv_table_get_cell_user_data(table, row, col);
+    lua_pushlightuserdata(L, user_data);
+    return 1;
+}
+
 /* 注册 table 子模块 */
 void iot_lvgl_register_table(lua_State* L) {
     lua_newtable(L);
@@ -342,6 +411,9 @@ void iot_lvgl_register_table(lua_State* L) {
     REG_METHOD(L, "get_col_count", iot_lvgl_table_get_col_count);
     REG_METHOD(L, "get_col_width", iot_lvgl_table_get_col_width);
     REG_METHOD(L, "has_cell_ctrl", iot_lvgl_table_has_cell_ctrl);
+    REG_METHOD(L, "set_cell_value_fmt", iot_lvgl_table_set_cell_value_fmt);
+    REG_METHOD(L, "set_cell_user_data", iot_lvgl_table_set_cell_user_data);
+    REG_METHOD(L, "get_cell_user_data", iot_lvgl_table_get_cell_user_data);
 
     table_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

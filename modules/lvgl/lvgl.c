@@ -631,6 +631,22 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
 
 
+    lua_newtable(L);  /* 3dtexture 子表 */
+
+    iot_lvgl_register_3dtexture(L);
+
+    lua_setfield(L, -2, "3dtexture");
+
+
+
+    lua_newtable(L);  /* lottie 子表 */
+
+    iot_lvgl_register_lottie(L);
+
+    lua_setfield(L, -2, "lottie");
+
+
+
     /* 定义常量 */
 
     iot_lvgl_define_constants(L);

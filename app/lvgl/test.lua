@@ -254,7 +254,8 @@ return function()
         spin:set_value(50)
         spin:set_width(120)
         spin:align(lv.ALIGN_TOP_LEFT, 10, 700)
-        T.pass("lvgl.spinbox", "create/set_range/set_value")
+        local dir = spin:get_digit_step_direction(0)
+        T.pass("lvgl.spinbox", "create/set_range/set_value/get_digit_step_direction")
     end
 
     -- ---- keyboard ----
@@ -312,6 +313,9 @@ return function()
         local w = tbl:get_col_width(0)
         local has = tbl:has_cell_ctrl(0, 0, lv.TABLE_CELL_CTRL_MERGE_RIGHT)
         tbl:clear_cell_ctrl(0, 0, lv.TABLE_CELL_CTRL_MERGE_RIGHT)
+        tbl:set_cell_value_fmt(0, 1, "Value: %d", 42)
+        tbl:set_cell_user_data(0, 0, tbl)
+        local ud = tbl:get_cell_user_data(0, 0)
         T.pass("lvgl.table", "create/set_row_cnt/set_cell_value/set_col_width")
     end
 
@@ -328,7 +332,11 @@ return function()
         local lbl2 = lv.label.create(tab2)
         lbl2:set_text("Tab 2 Content")
         lbl2:center()
-        T.pass("lvgl.tabview", "create/add_tab")
+        tv:set_tab_text(0, "Tab One")
+        local btn = tv:get_tab_button(0)
+        local bar = tv:get_tab_bar()
+        local pos = tv:get_tab_bar_position()
+        T.pass("lvgl.tabview", "create/add_tab/set_tab_text/get_tab_button")
     end
 
     -- ---- tileview ----
@@ -352,10 +360,11 @@ return function()
         local btn = win:add_btn(nil, 24)
         win:set_btn_title(btn, "X")
         local content = win:get_content()
+        local header = win:get_header()
         local lbl = lv.label.create(content)
         lbl:set_text("Window Content")
         lbl:center()
-        T.pass("lvgl.win", "create/set_title/add_btn/get_content")
+        T.pass("lvgl.win", "create/set_title/add_btn/get_content/get_header")
     end
 
     -- ---- list ----
@@ -382,7 +391,9 @@ return function()
         local lbl = lv.label.create(cont)
         lbl:set_text("Menu Item")
         lv.menu.set_page(menu, page)
-        T.pass("lvgl.menu", "create/page_create/cont_create/set_page")
+        local main_hdr = menu:get_main_header()
+        local main_back = menu:get_main_header_back_button()
+        T.pass("lvgl.menu", "create/page_create/cont_create/set_page/get_main_header")
     end
 
     -- ---- msgbox ----
@@ -393,8 +404,12 @@ return function()
         mbox:add_button("OK")
         mbox:add_button("Cancel")
         mbox:set_size(250, 100)
+        local title = mbox:get_title()
+        local header = mbox:get_header()
+        local footer = mbox:get_footer()
+        local content = mbox:get_content()
         mbox:close()
-        T.pass("lvgl.msgbox", "create/set_title/set_text/add_button")
+        T.pass("lvgl.msgbox", "create/set_title/set_text/add_button/get_title/get_header")
     end
 
     -- ---- calendar ----
@@ -403,7 +418,8 @@ return function()
         cal:set_size(200, 180)
         cal:align(lv.ALIGN_TOP_LEFT, 500, 350)
         local dt = cal:get_showed_date()
-        T.pass("lvgl.calendar", "create/get_showed_date")
+        local bm = cal:get_btnmatrix()
+        T.pass("lvgl.calendar", "create/get_showed_date/get_btnmatrix")
     end
 
     -- ---- canvas ----
@@ -504,7 +520,31 @@ return function()
         al:set_size(100, 100)
         al:align(lv.ALIGN_TOP_LEFT, 720, 530)
         local text = al:get_text()
-        T.pass("lvgl.arclabel", "create/set_text/get_text")
+        al:set_angle_start(0)
+        al:set_angle_size(180)
+        al:set_offset(0)
+        al:set_dir(0)
+        al:set_radius(50)
+        al:set_center_offset_x(0)
+        al:set_center_offset_y(0)
+        al:set_text_vertical_align(0)
+        al:set_text_horizontal_align(0)
+        al:set_overflow(0)
+        al:set_end_overlap(false)
+        al:set_recolor(false)
+        local start = al:get_angle_start()
+        local size = al:get_angle_size()
+        local dir = al:get_dir()
+        local radius = al:get_radius()
+        local cx = al:get_center_offset_x()
+        local cy = al:get_center_offset_y()
+        local va = al:get_text_vertical_align()
+        local ha = al:get_text_horizontal_align()
+        local of = al:get_overflow()
+        local eo = al:get_end_overlap()
+        local tangle = al:get_text_angle()
+        local rec = al:get_recolor()
+        T.pass("lvgl.arclabel", "create/set_text/get_text/all_angles")
     end
 
     -- ---- gif (仅测试创建，需要gif文件才能显示) ----
@@ -525,6 +565,31 @@ return function()
         local kb = ime:get_kb()
         local panel = ime:get_cand_panel()
         T.pass("lvgl.ime_pinyin", "create/set_mode/get_kb/get_cand_panel")
+    end
+
+    -- ---- 3dtexture (条件编译，可能不可用) ----
+    do
+        local tex3d = lv["3dtexture"] and lv["3dtexture"].create(scr)
+        if tex3d then
+            tex3d:set_size(60, 60)
+            tex3d:align(lv.ALIGN_TOP_LEFT, 800, 650)
+            tex3d:set_flip(false, false)
+            T.pass("lvgl.3dtexture", "create/set_size/set_flip")
+        else
+            T.skip("lvgl.3dtexture", "LV_USE_3DTEXTURE not enabled")
+        end
+    end
+
+    -- ---- lottie (条件编译，可能不可用) ----
+    do
+        local lottie = lv.lottie and lv.lottie.create(scr)
+        if lottie then
+            lottie:set_size(60, 60)
+            lottie:align(lv.ALIGN_TOP_LEFT, 880, 650)
+            T.pass("lvgl.lottie", "create/set_size")
+        else
+            T.skip("lvgl.lottie", "LV_USE_LOTTIE not enabled")
+        end
     end
 
     -- ==================== 基础功能测试 ====================

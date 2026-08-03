@@ -125,6 +125,10 @@ void iot_lvgl_register_scale(lua_State* L);
 
 void iot_lvgl_register_span(lua_State* L);
 
+void iot_lvgl_register_3dtexture(lua_State* L);
+
+void iot_lvgl_register_lottie(lua_State* L);
+
 /* 常量定义函数 */
 
 void iot_lvgl_define_constants(lua_State* L);

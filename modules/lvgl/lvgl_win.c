@@ -131,6 +131,19 @@ static int iot_lvgl_win_get_content(lua_State* L) {
 }
 
 /*
+获取窗口标题栏
+@param self 窗口实例或指针
+@return userdata 标题栏对象
+@usage local header = win:get_header()
+*/
+static int iot_lvgl_win_get_header(lua_State* L) {
+    lv_obj_t* win = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* header = lv_win_get_header(win);
+    lua_pushlightuserdata(L, header);
+    return 1;
+}
+
+/*
 设置标题栏高度
 @param self 窗口实例或指针
 @param height 高度值
@@ -190,6 +203,7 @@ void iot_lvgl_register_win(lua_State* L) {
     REG_METHOD(L, "add_btn", iot_lvgl_win_add_btn);
     REG_METHOD(L, "set_btn_title", iot_lvgl_win_set_btn_title);
     REG_METHOD(L, "get_content", iot_lvgl_win_get_content);
+    REG_METHOD(L, "get_header", iot_lvgl_win_get_header);
     REG_METHOD(L, "set_title_height", iot_lvgl_win_set_title_height);
     REG_METHOD(L, "set_flags", iot_lvgl_win_set_flags);
     REG_METHOD(L, "clear_flags", iot_lvgl_win_clear_flags);

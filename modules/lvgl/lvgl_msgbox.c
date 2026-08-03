@@ -249,6 +249,96 @@ static int iot_lvgl_msgbox_add_text_fmt(lua_State* L) {
     return 1;
 }
 
+/*
+添加标题栏按钮
+@param self 消息框实例或指针
+@param icon 图标(string或lightuserdata)
+@return userdata 按钮对象
+@usage local btn = msgbox:add_header_button("X")
+@usage local btn = msgbox:add_header_button(icon_obj)
+*/
+static int iot_lvgl_msgbox_add_header_button(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    const void* icon = NULL;
+    if (lua_isstring(L, 2)) {
+        icon = lua_tostring(L, 2);
+    } else if (!lua_isnoneornil(L, 2)) {
+        icon = lua_touserdata(L, 2);
+    }
+    lv_obj_t* btn = lv_msgbox_add_header_button(msgbox, icon);
+    lua_pushlightuserdata(L, btn);
+    return 1;
+}
+
+/*
+添加关闭按钮
+@param self 消息框实例或指针
+@return userdata 关闭按钮对象
+@usage local btn = msgbox:add_close_button()
+*/
+static int iot_lvgl_msgbox_add_close_button(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* btn = lv_msgbox_add_close_button(msgbox);
+    lua_pushlightuserdata(L, btn);
+    return 1;
+}
+
+/*
+获取标题栏
+@param self 消息框实例或指针
+@return userdata 标题栏对象
+@usage local header = msgbox:get_header()
+*/
+static int iot_lvgl_msgbox_get_header(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* header = lv_msgbox_get_header(msgbox);
+    lua_pushlightuserdata(L, header);
+    return 1;
+}
+
+/*
+获取底部栏
+@param self 消息框实例或指针
+@return userdata 底部栏对象
+@usage local footer = msgbox:get_footer()
+*/
+static int iot_lvgl_msgbox_get_footer(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* footer = lv_msgbox_get_footer(msgbox);
+    lua_pushlightuserdata(L, footer);
+    return 1;
+}
+
+/*
+获取内容区域
+@param self 消息框实例或指针
+@return userdata 内容区域对象
+@usage local content = msgbox:get_content()
+*/
+static int iot_lvgl_msgbox_get_content(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* content = lv_msgbox_get_content(msgbox);
+    lua_pushlightuserdata(L, content);
+    return 1;
+}
+
+/*
+获取标题文本
+@param self 消息框实例或指针
+@return string 标题文本
+@usage local title = msgbox:get_title()
+*/
+static int iot_lvgl_msgbox_get_title(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* title = lv_msgbox_get_title(msgbox);
+    if (title) {
+        lua_pushstring(L, lv_label_get_text(title));
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 /* 注册 msgbox 子模块 */
 void iot_lvgl_register_msgbox(lua_State* L) {
     lua_newtable(L);
@@ -256,7 +346,13 @@ void iot_lvgl_register_msgbox(lua_State* L) {
     REG_METHOD(L, "set_title", iot_lvgl_msgbox_set_title);
     REG_METHOD(L, "set_text", iot_lvgl_msgbox_set_text);
     REG_METHOD(L, "add_button", iot_lvgl_msgbox_add_button);
+    REG_METHOD(L, "add_header_button", iot_lvgl_msgbox_add_header_button);
+    REG_METHOD(L, "add_close_button", iot_lvgl_msgbox_add_close_button);
     REG_METHOD(L, "add_text_fmt", iot_lvgl_msgbox_add_text_fmt);
+    REG_METHOD(L, "get_header", iot_lvgl_msgbox_get_header);
+    REG_METHOD(L, "get_footer", iot_lvgl_msgbox_get_footer);
+    REG_METHOD(L, "get_content", iot_lvgl_msgbox_get_content);
+    REG_METHOD(L, "get_title", iot_lvgl_msgbox_get_title);
     REG_METHOD(L, "get_active_btn", iot_lvgl_msgbox_get_active_btn);
     REG_METHOD(L, "get_active_btn_text", iot_lvgl_msgbox_get_active_btn_text);
     REG_METHOD(L, "close", iot_lvgl_msgbox_close);

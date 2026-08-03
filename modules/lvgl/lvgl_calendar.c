@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_calendar.c
  * @brief LVGL日历控件
  *
@@ -110,6 +110,19 @@ static int iot_lvgl_calendar_set_highlighted_dates(lua_State* L) {
 }
 
 /*
+获取日历内部的按钮矩阵
+@param self 日历实例或指针
+@return userdata 按钮矩阵对象指针
+@usage local btnm = calendar:get_btnmatrix()
+*/
+static int iot_lvgl_calendar_get_btnmatrix(lua_State* L) {
+    lv_obj_t* calendar = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* btnm = lv_calendar_get_btnmatrix(calendar);
+    lua_pushlightuserdata(L, btnm);
+    return 1;
+}
+
+/*
 获取当前显示的日期
 @param self 日历实例或指针
 @return table 日期表{year,month}
@@ -141,6 +154,7 @@ void iot_lvgl_register_calendar(lua_State* L) {
     REG_METHOD(L, "get_pressed_date", iot_lvgl_calendar_get_pressed_date);
     REG_METHOD(L, "set_highlighted_dates", iot_lvgl_calendar_set_highlighted_dates);
     REG_METHOD(L, "get_showed_date", iot_lvgl_calendar_get_showed_date);
+    REG_METHOD(L, "get_btnmatrix", iot_lvgl_calendar_get_btnmatrix);
 
     /* 保存组件metatable引用(用于继承) */
     calendar_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

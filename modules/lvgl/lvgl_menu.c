@@ -178,6 +178,110 @@ static int iot_lvgl_menu_clear(lua_State* L) {
     return 1;
 }
 
+/*
+获取当前主页面
+@param self 菜单实例或指针
+@return userdata 当前主页面对象
+@usage local page = menu:get_cur_main_page()
+*/
+static int iot_lvgl_menu_get_cur_main_page(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* page = lv_menu_get_cur_main_page(menu);
+    lua_pushlightuserdata(L, page);
+    return 1;
+}
+
+/*
+获取当前侧边栏页面
+@param self 菜单实例或指针
+@return userdata 当前侧边栏页面对象
+@usage local page = menu:get_cur_sidebar_page()
+*/
+static int iot_lvgl_menu_get_cur_sidebar_page(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* page = lv_menu_get_cur_sidebar_page(menu);
+    lua_pushlightuserdata(L, page);
+    return 1;
+}
+
+/*
+获取主标题栏
+@param self 菜单实例或指针
+@return userdata 主标题栏对象
+@usage local header = menu:get_main_header()
+*/
+static int iot_lvgl_menu_get_main_header(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* header = lv_menu_get_main_header(menu);
+    lua_pushlightuserdata(L, header);
+    return 1;
+}
+
+/*
+获取主标题栏返回按钮
+@param self 菜单实例或指针
+@return userdata 主标题栏返回按钮对象
+@usage local btn = menu:get_main_header_back_button()
+*/
+static int iot_lvgl_menu_get_main_header_back_button(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* btn = lv_menu_get_main_header_back_button(menu);
+    lua_pushlightuserdata(L, btn);
+    return 1;
+}
+
+/*
+获取侧边栏标题栏
+@param self 菜单实例或指针
+@return userdata 侧边栏标题栏对象
+@usage local header = menu:get_sidebar_header()
+*/
+static int iot_lvgl_menu_get_sidebar_header(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* header = lv_menu_get_sidebar_header(menu);
+    lua_pushlightuserdata(L, header);
+    return 1;
+}
+
+/*
+获取侧边栏标题栏返回按钮
+@param self 菜单实例或指针
+@return userdata 侧边栏标题栏返回按钮对象
+@usage local btn = menu:get_sidebar_header_back_button()
+*/
+static int iot_lvgl_menu_get_sidebar_header_back_button(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* btn = lv_menu_get_sidebar_header_back_button(menu);
+    lua_pushlightuserdata(L, btn);
+    return 1;
+}
+
+/*
+获取模式标题栏
+@param self 菜单实例或指针
+@return integer 模式标题栏枚举值
+@usage local mode = menu:get_mode_header()
+*/
+static int iot_lvgl_menu_get_mode_header(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_menu_mode_header_t mode = lv_menu_get_mode_header(menu);
+    lua_pushinteger(L, (int)mode);
+    return 1;
+}
+
+/*
+获取模式根返回按钮
+@param self 菜单实例或指针
+@return integer 模式根返回按钮枚举值
+@usage local mode = menu:get_mode_root_back_button()
+*/
+static int iot_lvgl_menu_get_mode_root_back_button(lua_State* L) {
+    lv_obj_t* menu = iot_lvgl_get_obj_ptr(L, 1);
+    lv_menu_mode_root_back_button_t mode = lv_menu_get_mode_root_back_button(menu);
+    lua_pushinteger(L, (int)mode);
+    return 1;
+}
+
 /* 注册 menu 子模块 */
 void iot_lvgl_register_menu(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
@@ -189,6 +293,14 @@ void iot_lvgl_register_menu(lua_State* L) {
     REG_METHOD(L, "set_page", iot_lvgl_menu_set_page);
     REG_METHOD(L, "set_item_page", iot_lvgl_menu_set_item_page);
     REG_METHOD(L, "get_cur_page", iot_lvgl_menu_get_cur_page);
+    REG_METHOD(L, "get_cur_main_page", iot_lvgl_menu_get_cur_main_page);
+    REG_METHOD(L, "get_cur_sidebar_page", iot_lvgl_menu_get_cur_sidebar_page);
+    REG_METHOD(L, "get_main_header", iot_lvgl_menu_get_main_header);
+    REG_METHOD(L, "get_main_header_back_button", iot_lvgl_menu_get_main_header_back_button);
+    REG_METHOD(L, "get_sidebar_header", iot_lvgl_menu_get_sidebar_header);
+    REG_METHOD(L, "get_sidebar_header_back_button", iot_lvgl_menu_get_sidebar_header_back_button);
+    REG_METHOD(L, "get_mode_header", iot_lvgl_menu_get_mode_header);
+    REG_METHOD(L, "get_mode_root_back_button", iot_lvgl_menu_get_mode_root_back_button);
     REG_METHOD(L, "set_width", iot_lvgl_menu_set_width);
     REG_METHOD(L, "set_title", iot_lvgl_menu_set_title);
     REG_METHOD(L, "clear", iot_lvgl_menu_clear);

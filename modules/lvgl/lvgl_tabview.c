@@ -148,6 +148,64 @@ static int iot_lvgl_tabview_get_tab_count(lua_State* L) {
     return 1;
 }
 
+/*
+修改标签页名称
+@param self 标签视图实例或指针
+@param idx 标签索引
+@param new_name 新名称
+@return self
+@usage tv:set_tab_text(0, "新名称")
+*/
+static int iot_lvgl_tabview_set_tab_text(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t idx = (uint32_t)luaL_checkinteger(L, 2);
+    const char* new_name = luaL_checkstring(L, 3);
+    lv_tabview_set_tab_text(tv, idx, new_name);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取指定索引的标签按钮
+@param self 标签视图实例或指针
+@param idx 标签索引
+@return userdata 标签按钮对象
+@usage local btn = tv:get_tab_button(0)
+*/
+static int iot_lvgl_tabview_get_tab_button(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t idx = (int32_t)luaL_checkinteger(L, 2);
+    lv_obj_t* btn = lv_tabview_get_tab_button(tv, idx);
+    lua_pushlightuserdata(L, btn);
+    return 1;
+}
+
+/*
+获取标签栏
+@param self 标签视图实例或指针
+@return userdata 标签栏对象
+@usage local bar = tv:get_tab_bar()
+*/
+static int iot_lvgl_tabview_get_tab_bar(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* bar = lv_tabview_get_tab_bar(tv);
+    lua_pushlightuserdata(L, bar);
+    return 1;
+}
+
+/*
+获取标签栏位置
+@param self 标签视图实例或指针
+@return integer 标签栏位置(LV_DIR_TOP/BOTTOM/LEFT/RIGHT)
+@usage local pos = tv:get_tab_bar_position()
+*/
+static int iot_lvgl_tabview_get_tab_bar_position(lua_State* L) {
+    lv_obj_t* tv = iot_lvgl_get_obj_ptr(L, 1);
+    lv_dir_t pos = lv_tabview_get_tab_bar_position(tv);
+    lua_pushinteger(L, pos);
+    return 1;
+}
+
 /* 注册 tabview 子模块 */
 void iot_lvgl_register_tabview(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
@@ -161,6 +219,10 @@ void iot_lvgl_register_tabview(lua_State* L) {
     REG_METHOD(L, "set_active", iot_lvgl_tabview_set_active);
     REG_METHOD(L, "get_active", iot_lvgl_tabview_get_active);
     REG_METHOD(L, "get_tab_count", iot_lvgl_tabview_get_tab_count);
+    REG_METHOD(L, "set_tab_text", iot_lvgl_tabview_set_tab_text);
+    REG_METHOD(L, "get_tab_button", iot_lvgl_tabview_get_tab_button);
+    REG_METHOD(L, "get_tab_bar", iot_lvgl_tabview_get_tab_bar);
+    REG_METHOD(L, "get_tab_bar_position", iot_lvgl_tabview_get_tab_bar_position);
 
     /* 保存组件metatable引用(用于继承) */
     tabview_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

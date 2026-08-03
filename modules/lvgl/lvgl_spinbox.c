@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_spinbox.c
  * @brief LVGL数值框控件
  *
@@ -93,7 +93,22 @@ static int iot_lvgl_spinbox_decrement(lua_State* L) {
     return 1;
 }
 
-/* æ³¨å spinbox å­æ¨¡块*/
+/*
+获取指定数字位的步进方向
+@param self 数值框实例或指针
+@param digit 数字位
+@return integer 步进方向(LV_DIR_RIGHT或LV_DIR_LEFT)
+@usage local dir = spinbox:get_digit_step_direction(0)
+*/
+static int iot_lvgl_spinbox_get_digit_step_direction(lua_State* L) {
+    lv_obj_t* spinbox = iot_lvgl_get_obj_ptr(L, 1);
+    (void)luaL_checkinteger(L, 2);
+    lv_dir_t dir = lv_spinbox_get_digit_step_direction(spinbox);
+    lua_pushinteger(L, (int32_t)dir);
+    return 1;
+}
+
+/* æ³¨å spinbox å­æ¨¡块*/
 void iot_lvgl_register_spinbox(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
     lua_newtable(L);
@@ -107,6 +122,7 @@ void iot_lvgl_register_spinbox(lua_State* L) {
     REG_METHOD(L, "set_scroll_speed", iot_lvgl_spinbox_set_scroll_speed);
     REG_METHOD(L, "increment", iot_lvgl_spinbox_increment);
     REG_METHOD(L, "decrement", iot_lvgl_spinbox_decrement);
+    REG_METHOD(L, "get_digit_step_direction", iot_lvgl_spinbox_get_digit_step_direction);
 
     /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */
     spinbox_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
