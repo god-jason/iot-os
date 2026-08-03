@@ -44,7 +44,10 @@ static int iot_lvgl_keyboard_create(lua_State* L) {
 */
 static int iot_lvgl_keyboard_set_textarea(lua_State* L) {
     lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
-    lv_obj_t* ta = (lv_obj_t*)luaL_checklightuserdata(L, 2);
+    lv_obj_t* ta = NULL;
+    if (!lua_isnoneornil(L, 2)) {
+        ta = (lv_obj_t*)iot_lvgl_get_obj_ptr(L, 2);
+    }
     lv_keyboard_set_textarea(kb, ta);
     lua_pushvalue(L, 1);
     return 1;

@@ -48,7 +48,14 @@ static int iot_lvgl_anim_delete(lua_State* L) {
 */
 static int iot_lvgl_anim_set_var(lua_State* L) {
     lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
-    void* var = (void*)luaL_checklightuserdata(L, 2);
+    void* var = NULL;
+    if (lua_isuserdata(L, 2)) {
+        if (lua_islightuserdata(L, 2)) {
+            var = (void*)lua_touserdata(L, 2);
+        } else {
+            var = (void*)iot_lvgl_get_obj_ptr(L, 2);
+        }
+    }
     lv_anim_set_var(anim, var);
     return 0;
 }
@@ -162,7 +169,14 @@ static int iot_lvgl_anim_start(lua_State* L) {
 @usage lvgl.anim.del(some_object)
 */
 static int iot_lvgl_anim_del(lua_State* L) {
-    void* var = (void*)luaL_checklightuserdata(L, 1);
+    void* var = NULL;
+    if (lua_isuserdata(L, 1)) {
+        if (lua_islightuserdata(L, 1)) {
+            var = (void*)lua_touserdata(L, 1);
+        } else {
+            var = (void*)iot_lvgl_get_obj_ptr(L, 1);
+        }
+    }
     lv_anim_del(var, NULL);
     return 0;
 }

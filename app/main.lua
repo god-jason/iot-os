@@ -15,10 +15,10 @@ if f then
 end
 
 -- 避免测试超时退出程序
--- iot.setTimeout(function ()
---     print("timeout!")
---     os.exit(0)
--- end, 15000)
+iot.setTimeout(function ()
+    print("force exit")
+    os.exit(0)
+end, 10000)
 
 local ok, err = pcall(function()
     if target and target ~= "" then

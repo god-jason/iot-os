@@ -51,7 +51,10 @@ static int iot_lvgl_canvas_set_buffer(lua_State* L) {
     lv_obj_t* canvas = iot_lvgl_get_obj_ptr(L, 1);
     int32_t w = (int32_t)luaL_checkinteger(L, 2);
     int32_t h = (int32_t)luaL_checkinteger(L, 3);
-    void* buf = luaL_checklightuserdata(L, 4);
+    void* buf = NULL;
+    if (!lua_isnoneornil(L, 4)) {
+        buf = (void*)luaL_checklightuserdata(L, 4);
+    }
     /* LVGL 9: 使用 lv_color_format_t 替代 lv_img_cf_t */
     lv_color_format_t cf = (lv_color_format_t)luaL_optinteger(L, 5, LV_COLOR_FORMAT_RGB888);
     lv_canvas_set_buffer(canvas, buf, w, h, cf);

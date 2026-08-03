@@ -136,7 +136,10 @@ static int iot_lvgl_indev_get_gesture_dir(lua_State* L) {
 */
 static int iot_lvgl_indev_set_cursor(lua_State* L) {
     lv_indev_t* indev = (lv_indev_t*)luaL_checklightuserdata(L, 1);
-    lv_obj_t* cursor_obj = iot_lvgl_get_obj_ptr(L, 2);
+    lv_obj_t* cursor_obj = NULL;
+    if (!lua_isnoneornil(L, 2)) {
+        cursor_obj = iot_lvgl_get_obj_ptr(L, 2);
+    }
     lv_indev_set_cursor(indev, cursor_obj);
     return 0;
 }

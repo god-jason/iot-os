@@ -175,7 +175,7 @@ static int iot_lvgl_chart_add_series(lua_State* L) {
 */
 static int iot_lvgl_chart_set_series_color(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
-    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    lv_chart_series_t* series = (lv_chart_series_t*)iot_lvgl_get_obj_ptr(L, 2);
     lv_color_t color;
     color = lv_color_from_u32((uint32_t)luaL_checkinteger(L, 3));
     lv_chart_set_series_color(chart, series, color);
@@ -193,7 +193,10 @@ static int iot_lvgl_chart_set_series_color(lua_State* L) {
 */
 static int iot_lvgl_chart_set_all_value(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
-    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    lv_chart_series_t* series = NULL;
+    if (!lua_isnoneornil(L, 2)) {
+        series = (lv_chart_series_t*)iot_lvgl_get_obj_ptr(L, 2);
+    }
     int32_t value = (int32_t)luaL_checkinteger(L, 3);
     lv_chart_set_all_value(chart, series, value);
     lua_pushvalue(L, 1);
@@ -211,7 +214,7 @@ static int iot_lvgl_chart_set_all_value(lua_State* L) {
 */
 static int iot_lvgl_chart_set_value_by_id(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
-    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    lv_chart_series_t* series = (lv_chart_series_t*)iot_lvgl_get_obj_ptr(L, 2);
     uint16_t id = (uint16_t)luaL_checkinteger(L, 3);
     int32_t value = (int32_t)luaL_checkinteger(L, 4);
     lv_chart_set_value_by_id(chart, series, id, value);
@@ -313,7 +316,7 @@ static int iot_lvgl_chart_hide_series(lua_State* L) {
 */
 static int iot_lvgl_chart_set_next_value(lua_State* L) {
     lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
-    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    lv_chart_series_t* series = (lv_chart_series_t*)iot_lvgl_get_obj_ptr(L, 2);
     int32_t value = (int32_t)luaL_checkinteger(L, 3);
     lv_chart_set_next_value(chart, series, value);
     lua_pushvalue(L, 1);
