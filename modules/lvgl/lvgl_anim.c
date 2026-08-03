@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_anim.c
  * @brief LVGL动画系统
  *
@@ -176,6 +176,82 @@ static int iot_lvgl_anim_del_all(lua_State* L) {
     return 0;
 }
 
+/*
+设置动画重复延迟
+@param anim 动画指针
+@param delay_ms 重复延迟时间(毫秒)
+@usage lvgl.anim.set_repeat_delay(anim, 500)
+*/
+static int iot_lvgl_anim_set_repeat_delay(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    uint32_t delay = (uint32_t)luaL_checkinteger(L, 2);
+    lv_anim_set_repeat_delay(anim, delay);
+    return 0;
+}
+
+/*
+设置动画回放延迟
+@param anim 动画指针
+@param delay_ms 回放延迟时间(毫秒)
+@usage lvgl.anim.set_playback_delay(anim, 300)
+*/
+static int iot_lvgl_anim_set_playback_delay(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    uint32_t delay = (uint32_t)luaL_checkinteger(L, 2);
+    lv_anim_set_playback_delay(anim, delay);
+    return 0;
+}
+
+/*
+设置动画反向播放
+@param anim 动画指针
+@param reverse_bool 是否反向播放(true/false)
+@usage lvgl.anim.set_reverse(anim, true)
+*/
+static int iot_lvgl_anim_set_reverse(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    int reverse = lua_toboolean(L, 2);
+    lv_anim_set_reverse_duration(anim, reverse ? anim->duration : 0);
+    return 0;
+}
+
+/*
+设置是否立即应用起始值
+@param anim 动画指针
+@param early_apply_bool 是否立即应用(true/false)
+@usage lvgl.anim.set_early_apply(anim, true)
+*/
+static int iot_lvgl_anim_set_early_apply(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    int early_apply = lua_toboolean(L, 2);
+    lv_anim_set_early_apply(anim, early_apply ? true : false);
+    return 0;
+}
+
+/*
+获取动画当前值
+@param anim 动画指针
+@return integer 当前值
+@usage local val = lvgl.anim.get_value(anim)
+*/
+static int iot_lvgl_anim_get_value(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    lua_pushinteger(L, anim->current_value);
+    return 1;
+}
+
+/*
+检查动画是否正在运行
+@param anim 动画指针
+@return boolean 是否正在运行
+@usage local running = lvgl.anim.is_running(anim)
+*/
+static int iot_lvgl_anim_is_running(lua_State* L) {
+    lv_anim_t* anim = (lv_anim_t*)luaL_checklightuserdata(L, 1);
+    lua_pushboolean(L, anim->act_time >= 0);
+    return 1;
+}
+
 /* 注册 anim 子模块 */
 void iot_lvgl_register_anim(lua_State* L) {
     REG_METHOD(L, "init", iot_lvgl_anim_init);
@@ -190,4 +266,10 @@ void iot_lvgl_register_anim(lua_State* L) {
     REG_METHOD(L, "start", iot_lvgl_anim_start);
     REG_METHOD(L, "del", iot_lvgl_anim_del);
     REG_METHOD(L, "del_all", iot_lvgl_anim_del_all);
+    REG_METHOD(L, "set_repeat_delay", iot_lvgl_anim_set_repeat_delay);
+    REG_METHOD(L, "set_playback_delay", iot_lvgl_anim_set_playback_delay);
+    REG_METHOD(L, "set_reverse", iot_lvgl_anim_set_reverse);
+    REG_METHOD(L, "set_early_apply", iot_lvgl_anim_set_early_apply);
+    REG_METHOD(L, "get_value", iot_lvgl_anim_get_value);
+    REG_METHOD(L, "is_running", iot_lvgl_anim_is_running);
 }

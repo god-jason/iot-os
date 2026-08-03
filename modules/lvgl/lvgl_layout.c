@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_layout.c
  * @brief LVGL布局系统
  *
@@ -11,7 +11,7 @@
 #include "lvgl_port.h"
 #include "lvgl_obj.h"
 
-/* ==================== Flex?? ==================== */
+/* ==================== Flex布局 ==================== */
 
 static int iot_lvgl_layout_flex_init(lua_State* L) {
     lv_flex_init();
@@ -41,7 +41,7 @@ static int iot_lvgl_layout_flex_set_grow(lua_State* L) {
     return 0;
 }
 
-/* ==================== Grid?? ==================== */
+/* ==================== Grid布局 ==================== */
 
 static int iot_lvgl_layout_grid_init(lua_State* L) {
     lv_grid_init();
@@ -49,9 +49,60 @@ static int iot_lvgl_layout_grid_init(lua_State* L) {
 }
 
 static int iot_lvgl_layout_grid_set_template(lua_State* L) {
-    /* 通用布局 */
-    luaL_error(L, "grid template not fully supported yet");
-    return 0;
+    lv_obj_t* obj = iot_lvgl_get_obj_ptr(L, 1);
+    if (!obj) {
+        luaL_error(L, "invalid object");
+        return 0;
+    }
+
+    int32_t* col_dsc = NULL;
+    int32_t* row_dsc = NULL;
+
+    /* 处理列描述符表 */
+    if (!lua_isnil(L, 2)) {
+        luaL_checktype(L, 2, LUA_TTABLE);
+        int col_count = (int)lua_rawlen(L, 2);
+        col_dsc = (int32_t*)cm_malloc((col_count + 1) * sizeof(int32_t));
+        if (!col_dsc) {
+            luaL_error(L, "memory allocation failed");
+            return 0;
+        }
+        for (int i = 0; i < col_count; i++) {
+            lua_rawgeti(L, 2, i + 1);
+            col_dsc[i] = (int32_t)luaL_checkinteger(L, -1);
+            lua_pop(L, 1);
+        }
+        col_dsc[col_count] = LV_GRID_TEMPLATE_LAST;
+    }
+
+    /* 处理行描述符表 */
+    if (!lua_isnil(L, 3)) {
+        luaL_checktype(L, 3, LUA_TTABLE);
+        int row_count = (int)lua_rawlen(L, 3);
+        row_dsc = (int32_t*)cm_malloc((row_count + 1) * sizeof(int32_t));
+        if (!row_dsc) {
+            if (col_dsc) cm_free(col_dsc);
+            luaL_error(L, "memory allocation failed");
+            return 0;
+        }
+        for (int i = 0; i < row_count; i++) {
+            lua_rawgeti(L, 3, i + 1);
+            row_dsc[i] = (int32_t)luaL_checkinteger(L, -1);
+            lua_pop(L, 1);
+        }
+        row_dsc[row_count] = LV_GRID_TEMPLATE_LAST;
+    }
+
+    /* 设置网格描述符数组 */
+    lv_obj_set_grid_dsc_array(obj, col_dsc, row_dsc);
+
+    /* 释放临时数组 */
+    if (col_dsc) cm_free(col_dsc);
+    if (row_dsc) cm_free(row_dsc);
+
+    /* 返回对象本身，支持链式调用 */
+    lua_pushvalue(L, 1);
+    return 1;
 }
 
 static int iot_lvgl_layout_grid_set_cell(lua_State* L) {
@@ -107,13 +158,13 @@ static int iot_lvgl_layout_have_size_dependency(lua_State* L) {
 
 /* 注册 layout 子模块 */
 void iot_lvgl_register_layout(lua_State* L) {
-    /* Flex?? */
+    /* Flex布局 */
     REG_METHOD(L, "flex_init", iot_lvgl_layout_flex_init);
     REG_METHOD(L, "flex_set_flow", iot_lvgl_layout_flex_set_flow);
     REG_METHOD(L, "flex_set_align", iot_lvgl_layout_flex_set_align);
     REG_METHOD(L, "flex_set_grow", iot_lvgl_layout_flex_set_grow);
 
-    /* Grid?? */
+    /* Grid布局 */
     REG_METHOD(L, "grid_init", iot_lvgl_layout_grid_init);
     REG_METHOD(L, "grid_set_template", iot_lvgl_layout_grid_set_template);
     REG_METHOD(L, "grid_set_cell", iot_lvgl_layout_grid_set_cell);

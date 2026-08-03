@@ -262,6 +262,9 @@ static int iot_lvgl_theme_get_font(lua_State* L)
     return 1;
 }
 
+/* 主题尺寸存储数组，最大支持16个自定义尺寸 */
+static lv_coord_t theme_sizes[16] = {0};
+
 /*
 设置主题尺寸
 @param theme 主题指针
@@ -272,8 +275,14 @@ static int iot_lvgl_theme_get_font(lua_State* L)
 static int iot_lvgl_theme_set_size(lua_State* L)
 {
     (void)luaL_checklightuserdata(L, 1);
-    (void)luaL_checkinteger(L, 2);
-    (void)luaL_checkinteger(L, 3);
+    int size_id = (int)luaL_checkinteger(L, 2);
+    lv_coord_t value = (lv_coord_t)luaL_checkinteger(L, 3);
+
+    if (size_id < 0 || size_id >= 16) {
+        return luaL_error(L, "theme size id out of range: %d", size_id);
+    }
+
+    theme_sizes[size_id] = value;
     lua_pushvalue(L, 1);
     return 1;
 }
@@ -288,8 +297,13 @@ static int iot_lvgl_theme_set_size(lua_State* L)
 static int iot_lvgl_theme_get_size(lua_State* L)
 {
     (void)luaL_checklightuserdata(L, 1);
-    (void)luaL_checkinteger(L, 2);
-    lua_pushinteger(L, 0);
+    int size_id = (int)luaL_checkinteger(L, 2);
+
+    if (size_id < 0 || size_id >= 16) {
+        return luaL_error(L, "theme size id out of range: %d", size_id);
+    }
+
+    lua_pushinteger(L, theme_sizes[size_id]);
     return 1;
 }
 
