@@ -96,4 +96,12 @@ void iot_lvgl_register_3dtexture(lua_State* L) {
     REG_METHOD(L, "create", iot_lvgl_3dtexture_create);
 }
 
+#else /* LV_USE_3DTEXTURE */
+
+/* 3DTexture未启用时为空操作 */
+void iot_lvgl_register_3dtexture(lua_State* L) {
+    (void)L;
+    lua_newtable(L);
+}
+
 #endif /* LV_USE_3DTEXTURE */
