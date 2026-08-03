@@ -648,7 +648,6 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
 
     /* 定义常量 */
-
     iot_lvgl_define_constants(L);
 
 
@@ -685,4 +684,3 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
     return 1;
 }
-

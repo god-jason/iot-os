@@ -159,9 +159,8 @@ void iot_lvgl_register_lottie(lua_State* L) {
 #else /* LV_USE_LOTTIE */
 
 void iot_lvgl_register_lottie(lua_State* L) {
-    /* Lottie未启用时为空操作 */
+    /* Lottie未启用时为空操作（子表已由调用方创建，无需额外操作） */
     (void)L;
-    lua_newtable(L);
 }
 
 #endif /* LV_USE_LOTTIE */
