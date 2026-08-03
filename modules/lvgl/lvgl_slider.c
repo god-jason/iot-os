@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_slider.c
  * @brief LVGL滑块控件
  *
@@ -110,6 +110,60 @@ static int iot_lvgl_slider_is_dragged(lua_State* L) {
     return 1;
 }
 
+/*
+设置滑块方向
+@param self 滑块实例或指针
+@param orientation 方向: SLIDER_ORIENTATION_AUTO(0), SLIDER_ORIENTATION_HORIZONTAL(1), SLIDER_ORIENTATION_VERTICAL(2)
+@return self
+@usage slider:set_orientation(lvgl.SLIDER_ORIENTATION_HORIZONTAL)
+*/
+static int iot_lvgl_slider_set_orientation(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
+    lv_slider_orientation_t orientation = (lv_slider_orientation_t)luaL_checkinteger(L, 2);
+    lv_slider_set_orientation(slider, orientation);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取滑块模式
+@param self 滑块实例或指针
+@return integer 模式值
+@usage local mode = slider:get_mode()
+*/
+static int iot_lvgl_slider_get_mode(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
+    lv_slider_mode_t mode = lv_slider_get_mode(slider);
+    lua_pushinteger(L, mode);
+    return 1;
+}
+
+/*
+获取滑块方向
+@param self 滑块实例或指针
+@return integer 方向值
+@usage local orientation = slider:get_orientation()
+*/
+static int iot_lvgl_slider_get_orientation(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
+    lv_slider_orientation_t orientation = lv_slider_get_orientation(slider);
+    lua_pushinteger(L, orientation);
+    return 1;
+}
+
+/*
+检查滑块是否对称模式
+@param self 滑块实例或指针
+@return boolean 是否对称
+@usage local sym = slider:is_symmetrical()
+*/
+static int iot_lvgl_slider_is_symmetrical(lua_State* L) {
+    lv_obj_t* slider = iot_lvgl_get_obj_ptr(L, 1);
+    bool sym = lv_slider_is_symmetrical(slider);
+    lua_pushboolean(L, sym);
+    return 1;
+}
+
 /* 注册 slider 子模块 */
 void iot_lvgl_register_slider(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -120,6 +174,10 @@ void iot_lvgl_register_slider(lua_State* L) {
     REG_METHOD(L, "get_value", iot_lvgl_slider_get_value);
     REG_METHOD(L, "set_range", iot_lvgl_slider_set_range);
     REG_METHOD(L, "set_mode", iot_lvgl_slider_set_mode);
+    REG_METHOD(L, "set_orientation", iot_lvgl_slider_set_orientation);
+    REG_METHOD(L, "get_mode", iot_lvgl_slider_get_mode);
+    REG_METHOD(L, "get_orientation", iot_lvgl_slider_get_orientation);
+    REG_METHOD(L, "is_symmetrical", iot_lvgl_slider_is_symmetrical);
     REG_METHOD(L, "is_dragged", iot_lvgl_slider_is_dragged);
 
     /* 保存组件metatable引用(用于继承) */

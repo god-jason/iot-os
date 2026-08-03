@@ -215,6 +215,40 @@ static int iot_lvgl_msgbox_close(lua_State* L) {
     return 1;
 }
 
+/*
+格式化添加文本
+@param self 消息框实例或指针
+@param fmt 格式化字符串
+@param ... 格式化参数(可选)
+@return self
+@usage msgbox:add_text_fmt("错误码: %d", err_code)
+*/
+static int iot_lvgl_msgbox_add_text_fmt(lua_State* L) {
+    lv_obj_t* msgbox = iot_lvgl_get_obj_ptr(L, 1);
+    int n = lua_gettop(L);
+    const char* text;
+
+    if (n <= 2) {
+        /* 无格式化参数，直接使用格式字符串 */
+        text = luaL_checkstring(L, 2);
+        lv_msgbox_add_text(msgbox, text);
+    } else {
+        /* 使用 Lua 的 string.format 进行格式化 */
+        lua_getglobal(L, "string");
+        lua_getfield(L, -1, "format");
+        lua_pushvalue(L, 2); /* format string */
+        for (int i = 3; i <= n; i++) {
+            lua_pushvalue(L, i);
+        }
+        lua_call(L, n - 1, 1);
+        text = lua_tostring(L, -1);
+        lv_msgbox_add_text(msgbox, text);
+        lua_pop(L, 2); /* pop result and string table */
+    }
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
 /* 注册 msgbox 子模块 */
 void iot_lvgl_register_msgbox(lua_State* L) {
     lua_newtable(L);
@@ -222,6 +256,7 @@ void iot_lvgl_register_msgbox(lua_State* L) {
     REG_METHOD(L, "set_title", iot_lvgl_msgbox_set_title);
     REG_METHOD(L, "set_text", iot_lvgl_msgbox_set_text);
     REG_METHOD(L, "add_button", iot_lvgl_msgbox_add_button);
+    REG_METHOD(L, "add_text_fmt", iot_lvgl_msgbox_add_text_fmt);
     REG_METHOD(L, "get_active_btn", iot_lvgl_msgbox_get_active_btn);
     REG_METHOD(L, "get_active_btn_text", iot_lvgl_msgbox_get_active_btn_text);
     REG_METHOD(L, "close", iot_lvgl_msgbox_close);

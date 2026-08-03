@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_roller.c
  * @brief LVGL滚轮控件
  *
@@ -106,6 +106,56 @@ static int iot_lvgl_roller_get_selected_str(lua_State* L) {
     return 1;
 }
 
+/*
+通过字符串设置选中项
+@param self 滚轮实例或指针
+@param sel_opt 选中项字符串
+@param anim 是否动画(可选)
+@return boolean 是否设置成功
+@usage local ok = roller:set_selected_str("B", 0)
+*/
+static int iot_lvgl_roller_set_selected_str(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
+    const char* sel_opt = luaL_checkstring(L, 2);
+    lv_anim_enable_t anim = (lv_anim_enable_t)luaL_optinteger(L, 3, LV_ANIM_OFF);
+    bool result = lv_roller_set_selected_str(roller, sel_opt, anim);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+/*
+获取选项数量
+@param self 滚轮实例或指针
+@return integer 选项数量
+@usage local count = roller:get_option_count()
+*/
+static int iot_lvgl_roller_get_option_count(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t count = lv_roller_get_option_count(roller);
+    lua_pushinteger(L, count);
+    return 1;
+}
+
+/*
+获取指定选项的字符串
+@param self 滚轮实例或指针
+@param option 选项索引
+@return string 选项字符串，失败返回nil
+@usage local str = roller:get_option_str(0)
+*/
+static int iot_lvgl_roller_get_option_str(lua_State* L) {
+    lv_obj_t* roller = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t option = (uint32_t)luaL_checkinteger(L, 2);
+    char buf[256];
+    lv_result_t res = lv_roller_get_option_str(roller, option, buf, sizeof(buf));
+    if (res == LV_RESULT_OK) {
+        lua_pushstring(L, buf);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 /* 注册 roller 子模块 */
 void iot_lvgl_register_roller(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -116,7 +166,10 @@ void iot_lvgl_register_roller(lua_State* L) {
     REG_METHOD(L, "set_selected", iot_lvgl_roller_set_selected);
     REG_METHOD(L, "set_visible_row_count", iot_lvgl_roller_set_visible_row_count);
     REG_METHOD(L, "get_selected", iot_lvgl_roller_get_selected);
+    REG_METHOD(L, "set_selected_str", iot_lvgl_roller_set_selected_str);
     REG_METHOD(L, "get_selected_str", iot_lvgl_roller_get_selected_str);
+    REG_METHOD(L, "get_option_count", iot_lvgl_roller_get_option_count);
+    REG_METHOD(L, "get_option_str", iot_lvgl_roller_get_option_str);
 
     /* 保存组件metatable引用(用于继承) */
     roller_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

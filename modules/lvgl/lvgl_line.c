@@ -143,6 +143,42 @@ static int iot_lvgl_line_get_y_invert(lua_State* L) {
     return 1;
 }
 
+/*
+获取线条点数组
+@param self 线条实例或指针
+@return table 点数组({{x1,y1},{x2,y2},...})
+@usage local points = line:get_points()
+*/
+static int iot_lvgl_line_get_points(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
+    const lv_point_precise_t* points = lv_line_get_points(line);
+    uint32_t point_num = lv_line_get_point_count(line);
+
+    lua_newtable(L);
+    for (uint32_t i = 0; i < point_num; i++) {
+        lua_newtable(L);
+        lua_pushinteger(L, (int32_t)points[i].x);
+        lua_rawseti(L, -2, 1);
+        lua_pushinteger(L, (int32_t)points[i].y);
+        lua_rawseti(L, -2, 2);
+        lua_rawseti(L, -3, i + 1);
+    }
+    return 1;
+}
+
+/*
+获取线条点数
+@param self 线条实例或指针
+@return integer 点数
+@usage local count = line:get_point_count()
+*/
+static int iot_lvgl_line_get_point_count(lua_State* L) {
+    lv_obj_t* line = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t count = lv_line_get_point_count(line);
+    lua_pushinteger(L, count);
+    return 1;
+}
+
 /* 注册 line 子模块 */
 void iot_lvgl_register_line(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -153,6 +189,8 @@ void iot_lvgl_register_line(lua_State* L) {
     REG_METHOD(L, "set_style", iot_lvgl_line_set_style);
     REG_METHOD(L, "set_auto_size", iot_lvgl_line_set_auto_size);
     REG_METHOD(L, "set_y_invert", iot_lvgl_line_set_y_invert);
+    REG_METHOD(L, "get_points", iot_lvgl_line_get_points);
+    REG_METHOD(L, "get_point_count", iot_lvgl_line_get_point_count);
     REG_METHOD(L, "get_y_invert", iot_lvgl_line_get_y_invert);
 
     /* 保存组件metatable引用(用于继承) */

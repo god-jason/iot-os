@@ -109,7 +109,21 @@ void iot_lvgl_register_layout(lua_State* L);
 
 void iot_lvgl_register_group(lua_State* L);
 
+void iot_lvgl_register_buttonmatrix(lua_State* L);
 
+void iot_lvgl_register_imagebutton(lua_State* L);
+
+void iot_lvgl_register_animimage(lua_State* L);
+
+void iot_lvgl_register_arclabel(lua_State* L);
+
+void iot_lvgl_register_gif(lua_State* L);
+
+void iot_lvgl_register_ime_pinyin(lua_State* L);
+
+void iot_lvgl_register_scale(lua_State* L);
+
+void iot_lvgl_register_span(lua_State* L);
 
 /* 常量定义函数 */
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_keyboard.c
  * @brief LVGL键盘控件
  *
@@ -103,6 +103,62 @@ static int iot_lvgl_keyboard_get_mode(lua_State* L) {
     return 1;
 }
 
+/*
+设置弹出提示
+@param self 键盘实例或指针
+@param en 是否启用
+@return self
+@usage kb:set_popovers(true)
+*/
+static int iot_lvgl_keyboard_set_popovers(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
+    bool en = lua_toboolean(L, 2);
+    lv_keyboard_set_popovers(kb, en);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取弹出提示状态
+@param self 键盘实例或指针
+@return boolean 是否启用弹出提示
+@usage local popovers = kb:get_popovers()
+*/
+static int iot_lvgl_keyboard_get_popovers(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
+    bool en = lv_keyboard_get_popovers(kb);
+    lua_pushboolean(L, en);
+    return 1;
+}
+
+/*
+获取选中的按钮索引
+@param self 键盘实例或指针
+@return integer 按钮索引
+@usage local btn = kb:get_selected_button()
+*/
+static int iot_lvgl_keyboard_get_selected_button(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t btn = lv_keyboard_get_selected_button(kb);
+    lua_pushinteger(L, btn);
+    return 1;
+}
+
+/*
+获取按钮文本
+@param self 键盘实例或指针
+@param btn_id 按钮索引
+@return string 按钮文本
+@usage local txt = kb:get_button_text(0)
+*/
+static int iot_lvgl_keyboard_get_button_text(lua_State* L) {
+    lv_obj_t* kb = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t btn_id = (uint32_t)luaL_checkinteger(L, 2);
+    const char* txt = lv_keyboard_get_button_text(kb, btn_id);
+    lua_pushstring(L, txt ? txt : "");
+    return 1;
+}
+
 /* 注册 keyboard 子模块 */
 void iot_lvgl_register_keyboard(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -114,6 +170,10 @@ void iot_lvgl_register_keyboard(lua_State* L) {
     REG_METHOD(L, "set_map", iot_lvgl_keyboard_set_map);
     REG_METHOD(L, "get_textarea", iot_lvgl_keyboard_get_textarea);
     REG_METHOD(L, "get_mode", iot_lvgl_keyboard_get_mode);
+    REG_METHOD(L, "set_popovers", iot_lvgl_keyboard_set_popovers);
+    REG_METHOD(L, "get_popovers", iot_lvgl_keyboard_get_popovers);
+    REG_METHOD(L, "get_selected_button", iot_lvgl_keyboard_get_selected_button);
+    REG_METHOD(L, "get_button_text", iot_lvgl_keyboard_get_button_text);
 
     /* 保存组件metatable引用(用于继承) */
     keyboard_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

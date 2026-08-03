@@ -50,6 +50,7 @@ target("lvgl")
 
     -- widgets
     add_files("src/widgets/animimage/*.c")
+    add_files("src/widgets/arclabel/*.c")
     add_files("src/widgets/arc/*.c")
     add_files("src/widgets/bar/*.c")
     add_files("src/widgets/button/*.c")
@@ -59,8 +60,10 @@ target("lvgl")
     add_files("src/widgets/chart/*.c")
     add_files("src/widgets/checkbox/*.c")
     add_files("src/widgets/dropdown/*.c")
+    add_files("src/widgets/gif/*.c")
     add_files("src/widgets/image/*.c")
     add_files("src/widgets/imagebutton/*.c")
+    add_files("src/widgets/ime/*.c")
     add_files("src/widgets/keyboard/*.c")
     add_files("src/widgets/label/*.c")
     add_files("src/widgets/led/*.c")
@@ -86,6 +89,8 @@ target("lvgl")
     add_files("src/libs/bin_decoder/*.c")
     -- tiny_ttf 内置矢量字体（无需外部依赖）
     add_files("src/libs/tiny_ttf/*.c")
+    -- GIF 解码器
+    add_files("src/libs/gif/*.c")
 
     -- SDL 驱动 (桌面平台)
     if is_plat("windows", "linux", "macosx") then

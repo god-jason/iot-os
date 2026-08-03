@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_dropdown.c
  * @brief LVGL下拉菜单控件
  *
@@ -195,6 +195,101 @@ static int iot_lvgl_dropdown_get_text(lua_State* L) {
     return 1;
 }
 
+/*
+设置符号图标
+@param self 下拉菜单实例或指针
+@param symbol 符号图标(如LV_SYMBOL_DOWN)或NULL
+@return self
+@usage dd:set_symbol(lvgl.SYMBOL_DOWN)
+*/
+static int iot_lvgl_dropdown_set_symbol(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    const char* symbol = lua_tostring(L, 2);
+    lv_dropdown_set_symbol(dd, symbol);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取选项字符串
+@param self 下拉菜单实例或指针
+@return string 选项字符串(用\n分隔)
+@usage local options = dd:get_options()
+*/
+static int iot_lvgl_dropdown_get_options(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    const char* options = lv_dropdown_get_options(dd);
+    lua_pushstring(L, options ? options : "");
+    return 1;
+}
+
+/*
+获取选项数量
+@param self 下拉菜单实例或指针
+@return integer 选项数量
+@usage local cnt = dd:get_option_count()
+*/
+static int iot_lvgl_dropdown_get_option_count(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t cnt = lv_dropdown_get_option_count(dd);
+    lua_pushinteger(L, cnt);
+    return 1;
+}
+
+/*
+获取选项索引
+@param self 下拉菜单实例或指针
+@param option 选项文本
+@return integer 选项索引(-1表示未找到)
+@usage local idx = dd:get_option_index("Apple")
+*/
+static int iot_lvgl_dropdown_get_option_index(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    const char* option = luaL_checkstring(L, 2);
+    int32_t idx = lv_dropdown_get_option_index(dd, option);
+    lua_pushinteger(L, idx);
+    return 1;
+}
+
+/*
+打开下拉列表
+@param self 下拉菜单实例或指针
+@return self
+@usage dd:open()
+*/
+static int iot_lvgl_dropdown_open(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    lv_dropdown_open(dd);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+关闭下拉列表
+@param self 下拉菜单实例或指针
+@return self
+@usage dd:close()
+*/
+static int iot_lvgl_dropdown_close(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    lv_dropdown_close(dd);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+检查下拉列表是否打开
+@param self 下拉菜单实例或指针
+@return boolean 是否打开
+@usage local is_open = dd:is_open()
+*/
+static int iot_lvgl_dropdown_is_open(lua_State* L) {
+    lv_obj_t* dd = iot_lvgl_get_obj_ptr(L, 1);
+    bool is_open = lv_dropdown_is_open(dd);
+    lua_pushboolean(L, is_open);
+    return 1;
+}
+
 /* 注册 dropdown 子模块 */
 void iot_lvgl_register_dropdown(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -212,6 +307,13 @@ void iot_lvgl_register_dropdown(lua_State* L) {
     REG_METHOD(L, "get_selected", iot_lvgl_dropdown_get_selected);
     REG_METHOD(L, "get_selected_str", iot_lvgl_dropdown_get_selected_str);
     REG_METHOD(L, "get_text", iot_lvgl_dropdown_get_text);
+    REG_METHOD(L, "set_symbol", iot_lvgl_dropdown_set_symbol);
+    REG_METHOD(L, "get_options", iot_lvgl_dropdown_get_options);
+    REG_METHOD(L, "get_option_count", iot_lvgl_dropdown_get_option_count);
+    REG_METHOD(L, "get_option_index", iot_lvgl_dropdown_get_option_index);
+    REG_METHOD(L, "open", iot_lvgl_dropdown_open);
+    REG_METHOD(L, "close", iot_lvgl_dropdown_close);
+    REG_METHOD(L, "is_open", iot_lvgl_dropdown_is_open);
 
     /* 保存组件metatable引用(用于继承) */
     dropdown_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

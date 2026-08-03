@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_bar.c
  * @brief LVGL进度条控件
  *
@@ -153,6 +153,60 @@ static int iot_lvgl_bar_get_max_value(lua_State* L) {
     return 1;
 }
 
+/*
+设置进度条方向
+@param self 进度条实例或指针
+@param orientation 方向: BAR_ORIENTATION_AUTO(0), BAR_ORIENTATION_HORIZONTAL(1), BAR_ORIENTATION_VERTICAL(2)
+@return self
+@usage bar:set_orientation(lvgl.BAR_ORIENTATION_VERTICAL)
+*/
+static int iot_lvgl_bar_set_orientation(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
+    lv_bar_orientation_t orientation = (lv_bar_orientation_t)luaL_checkinteger(L, 2);
+    lv_bar_set_orientation(bar, orientation);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取进度条模式
+@param self 进度条实例或指针
+@return integer 模式值
+@usage local mode = bar:get_mode()
+*/
+static int iot_lvgl_bar_get_mode(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
+    lv_bar_mode_t mode = lv_bar_get_mode(bar);
+    lua_pushinteger(L, mode);
+    return 1;
+}
+
+/*
+获取进度条方向
+@param self 进度条实例或指针
+@return integer 方向值
+@usage local orientation = bar:get_orientation()
+*/
+static int iot_lvgl_bar_get_orientation(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
+    lv_bar_orientation_t orientation = lv_bar_get_orientation(bar);
+    lua_pushinteger(L, orientation);
+    return 1;
+}
+
+/*
+检查进度条是否对称模式
+@param self 进度条实例或指针
+@return boolean 是否对称
+@usage local sym = bar:is_symmetrical()
+*/
+static int iot_lvgl_bar_is_symmetrical(lua_State* L) {
+    lv_obj_t* bar = iot_lvgl_get_obj_ptr(L, 1);
+    bool sym = lv_bar_is_symmetrical(bar);
+    lua_pushboolean(L, sym);
+    return 1;
+}
+
 /* 注册 bar 子模块 */
 void iot_lvgl_register_bar(lua_State* L) {
     lua_newtable(L);
@@ -161,10 +215,14 @@ void iot_lvgl_register_bar(lua_State* L) {
     REG_METHOD(L, "get_value", iot_lvgl_bar_get_value);
     REG_METHOD(L, "set_range", iot_lvgl_bar_set_range);
     REG_METHOD(L, "set_mode", iot_lvgl_bar_set_mode);
+    REG_METHOD(L, "set_orientation", iot_lvgl_bar_set_orientation);
     REG_METHOD(L, "set_start_value", iot_lvgl_bar_set_start_value);
     REG_METHOD(L, "get_start_value", iot_lvgl_bar_get_start_value);
     REG_METHOD(L, "get_min_value", iot_lvgl_bar_get_min_value);
     REG_METHOD(L, "get_max_value", iot_lvgl_bar_get_max_value);
+    REG_METHOD(L, "get_mode", iot_lvgl_bar_get_mode);
+    REG_METHOD(L, "get_orientation", iot_lvgl_bar_get_orientation);
+    REG_METHOD(L, "is_symmetrical", iot_lvgl_bar_is_symmetrical);
 
     bar_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

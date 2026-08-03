@@ -232,6 +232,111 @@ static int iot_lvgl_chart_refresh(lua_State* L) {
     return 1;
 }
 
+/*
+获取图表类型
+@param self 图表实例或指针
+@return 图表类型(lvgl.CHART_TYPE_LINE等)
+@usage local type = chart:get_type()
+*/
+static int iot_lvgl_chart_get_type(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_type_t type = lv_chart_get_type(chart);
+    lua_pushinteger(L, (int)type);
+    return 1;
+}
+
+/*
+获取数据点数量
+@param self 图表实例或指针
+@return 点数量
+@usage local cnt = chart:get_point_count()
+*/
+static int iot_lvgl_chart_get_point_count(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t cnt = lv_chart_get_point_count(chart);
+    lua_pushinteger(L, (int)cnt);
+    return 1;
+}
+
+/*
+获取更新模式
+@param self 图表实例或指针
+@return 更新模式
+@usage local mode = chart:get_update_mode()
+*/
+static int iot_lvgl_chart_get_update_mode(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_update_mode_t mode = lv_chart_get_update_mode(chart);
+    lua_pushinteger(L, (int)mode);
+    return 1;
+}
+
+/*
+移除数据系列
+@param self 图表实例或指针
+@param series 系列指针
+@return self
+@usage chart:remove_series(series)
+*/
+static int iot_lvgl_chart_remove_series(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    lv_chart_remove_series(chart, series);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+隐藏/显示数据系列
+@param self 图表实例或指针
+@param series 系列指针
+@param hide true隐藏/false显示
+@return self
+@usage chart:hide_series(series, true)
+*/
+static int iot_lvgl_chart_hide_series(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    bool hide = lua_toboolean(L, 3);
+    lv_chart_hide_series(chart, series, hide);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置下一个值
+@param self 图表实例或指针
+@param series 系列指针
+@param value 值
+@return self
+@usage chart:set_next_value(series, 50)
+*/
+static int iot_lvgl_chart_set_next_value(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    int32_t value = (int32_t)luaL_checkinteger(L, 3);
+    lv_chart_set_next_value(chart, series, value);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置外部Y数组
+@param self 图表实例或指针
+@param series 系列指针
+@param array 外部Y数组指针(lightuserdata)
+@return self
+@usage chart:set_series_ext_y_array(series, array_ptr)
+*/
+static int iot_lvgl_chart_set_series_ext_y_array(lua_State* L) {
+    lv_obj_t* chart = iot_lvgl_get_obj_ptr(L, 1);
+    lv_chart_series_t* series = (lv_chart_series_t*)luaL_checklightuserdata(L, 2);
+    int32_t* array = (int32_t*)luaL_checklightuserdata(L, 3);
+    lv_chart_set_series_ext_y_array(chart, series, array);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
 /* 注册 chart 子模块 */
 void iot_lvgl_register_chart(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
@@ -249,6 +354,13 @@ void iot_lvgl_register_chart(lua_State* L) {
     REG_METHOD(L, "set_all_value", iot_lvgl_chart_set_all_value);
     REG_METHOD(L, "set_value_by_id", iot_lvgl_chart_set_value_by_id);
     REG_METHOD(L, "refresh", iot_lvgl_chart_refresh);
+    REG_METHOD(L, "get_type", iot_lvgl_chart_get_type);
+    REG_METHOD(L, "get_point_count", iot_lvgl_chart_get_point_count);
+    REG_METHOD(L, "get_update_mode", iot_lvgl_chart_get_update_mode);
+    REG_METHOD(L, "remove_series", iot_lvgl_chart_remove_series);
+    REG_METHOD(L, "hide_series", iot_lvgl_chart_hide_series);
+    REG_METHOD(L, "set_next_value", iot_lvgl_chart_set_next_value);
+    REG_METHOD(L, "set_series_ext_y_array", iot_lvgl_chart_set_series_ext_y_array);
 
     /* 保存组件metatable引用(用于继承) */
     chart_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

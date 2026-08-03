@@ -206,6 +206,121 @@ static int iot_lvgl_table_remove_cell_ctrl(lua_State* L) {
     return 1;
 }
 
+/*
+设置单元格控制位
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param ctrl 控制属性标志
+@return self
+@usage table:set_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_MERGE_RIGHT)
+*/
+static int iot_lvgl_table_set_cell_ctrl(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
+    lv_table_set_cell_ctrl(table, row, col, (lv_table_cell_ctrl_t)ctrl);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+清除单元格控制位
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param ctrl 控制属性标志
+@return self
+@usage table:clear_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_MERGE_RIGHT)
+*/
+static int iot_lvgl_table_clear_cell_ctrl(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
+    lv_table_clear_cell_ctrl(table, row, col, (lv_table_cell_ctrl_t)ctrl);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置选中的单元格
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@return self
+@usage table:set_selected_cell(0, 0)
+*/
+static int iot_lvgl_table_set_selected_cell(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    lv_table_set_selected_cell(table, row, col);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取行数
+@param self 表格实例或指针
+@return integer 行数
+@usage local rows = table:get_row_count()
+*/
+static int iot_lvgl_table_get_row_count(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t cnt = lv_table_get_row_count(table);
+    lua_pushinteger(L, cnt);
+    return 1;
+}
+
+/*
+获取列数
+@param self 表格实例或指针
+@return integer 列数
+@usage local cols = table:get_col_count()
+*/
+static int iot_lvgl_table_get_col_count(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t cnt = lv_table_get_column_count(table);
+    lua_pushinteger(L, cnt);
+    return 1;
+}
+
+/*
+获取列宽
+@param self 表格实例或指针
+@param col 列索引(从0开始)
+@return integer 列宽
+@usage local w = table:get_col_width(0)
+*/
+static int iot_lvgl_table_get_col_width(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t col = (uint32_t)luaL_checkinteger(L, 2);
+    int32_t w = lv_table_get_column_width(table, col);
+    lua_pushinteger(L, w);
+    return 1;
+}
+
+/*
+检查是否有控制位
+@param self 表格实例或指针
+@param row 行索引(从0开始)
+@param col 列索引(从0开始)
+@param ctrl 控制属性标志
+@return boolean 是否全部控制位已设置
+@usage local has = table:has_cell_ctrl(0, 0, lvgl.TABLE_CELL_CTRL_MERGE_RIGHT)
+*/
+static int iot_lvgl_table_has_cell_ctrl(lua_State* L) {
+    lv_obj_t* table = iot_lvgl_get_obj_ptr(L, 1);
+    uint16_t row = (uint16_t)luaL_checkinteger(L, 2);
+    uint16_t col = (uint16_t)luaL_checkinteger(L, 3);
+    uint32_t ctrl = (uint32_t)luaL_checkinteger(L, 4);
+    bool has = lv_table_has_cell_ctrl(table, row, col, (lv_table_cell_ctrl_t)ctrl);
+    lua_pushboolean(L, has);
+    return 1;
+}
+
 /* 注册 table 子模块 */
 void iot_lvgl_register_table(lua_State* L) {
     lua_newtable(L);
@@ -220,6 +335,13 @@ void iot_lvgl_register_table(lua_State* L) {
     REG_METHOD(L, "get_selected_col", iot_lvgl_table_get_selected_col);
     REG_METHOD(L, "add_cell_ctrl", iot_lvgl_table_add_cell_ctrl);
     REG_METHOD(L, "remove_cell_ctrl", iot_lvgl_table_remove_cell_ctrl);
+    REG_METHOD(L, "set_cell_ctrl", iot_lvgl_table_set_cell_ctrl);
+    REG_METHOD(L, "clear_cell_ctrl", iot_lvgl_table_clear_cell_ctrl);
+    REG_METHOD(L, "set_selected_cell", iot_lvgl_table_set_selected_cell);
+    REG_METHOD(L, "get_row_count", iot_lvgl_table_get_row_count);
+    REG_METHOD(L, "get_col_count", iot_lvgl_table_get_col_count);
+    REG_METHOD(L, "get_col_width", iot_lvgl_table_get_col_width);
+    REG_METHOD(L, "has_cell_ctrl", iot_lvgl_table_has_cell_ctrl);
 
     table_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

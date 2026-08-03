@@ -280,6 +280,97 @@ static int iot_lvgl_textarea_get_cursor_pos(lua_State* L) {
     return 1;
 }
 
+/*
+获取占位符文本
+@param self 文本区域实例或指针
+@return string 占位符文本
+@usage local placeholder = ta:get_placeholder_text()
+*/
+static int iot_lvgl_textarea_get_placeholder_text(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    const char* txt = lv_textarea_get_placeholder_text(ta);
+    lua_pushstring(L, txt ? txt : "");
+    return 1;
+}
+
+/*
+获取标签对象
+@param self 文本区域实例或指针
+@return userdata 标签对象
+@usage local label = ta:get_label()
+*/
+static int iot_lvgl_textarea_get_label(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_obj_t* label = lv_textarea_get_label(ta);
+    lua_pushlightuserdata(L, label);
+    return 1;
+}
+
+/*
+光标右移
+@param self 文本区域实例或指针
+@return self
+@usage ta:cursor_right()
+*/
+static int iot_lvgl_textarea_cursor_right(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_textarea_cursor_right(ta);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+光标左移
+@param self 文本区域实例或指针
+@return self
+@usage ta:cursor_left()
+*/
+static int iot_lvgl_textarea_cursor_left(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_textarea_cursor_left(ta);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+光标下移
+@param self 文本区域实例或指针
+@return self
+@usage ta:cursor_down()
+*/
+static int iot_lvgl_textarea_cursor_down(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_textarea_cursor_down(ta);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+光标上移
+@param self 文本区域实例或指针
+@return self
+@usage ta:cursor_up()
+*/
+static int iot_lvgl_textarea_cursor_up(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_textarea_cursor_up(ta);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+清除选择
+@param self 文本区域实例或指针
+@return self
+@usage ta:clear_selection()
+*/
+static int iot_lvgl_textarea_clear_selection(lua_State* L) {
+    lv_obj_t* ta = iot_lvgl_get_obj_ptr(L, 1);
+    lv_textarea_clear_selection(ta);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
 /* 注册 textarea 子模块 */
 void iot_lvgl_register_textarea(lua_State* L) {
     /* 创建组件方法表用于metatable继承) */
@@ -303,6 +394,13 @@ void iot_lvgl_register_textarea(lua_State* L) {
     REG_METHOD(L, "del_char_forward", iot_lvgl_textarea_del_char_forward);
     REG_METHOD(L, "clear", iot_lvgl_textarea_clear);
     REG_METHOD(L, "get_cursor_pos", iot_lvgl_textarea_get_cursor_pos);
+    REG_METHOD(L, "get_placeholder_text", iot_lvgl_textarea_get_placeholder_text);
+    REG_METHOD(L, "get_label", iot_lvgl_textarea_get_label);
+    REG_METHOD(L, "cursor_right", iot_lvgl_textarea_cursor_right);
+    REG_METHOD(L, "cursor_left", iot_lvgl_textarea_cursor_left);
+    REG_METHOD(L, "cursor_down", iot_lvgl_textarea_cursor_down);
+    REG_METHOD(L, "cursor_up", iot_lvgl_textarea_cursor_up);
+    REG_METHOD(L, "clear_selection", iot_lvgl_textarea_clear_selection);
 
     /* 保存组件metatable引用(用于继承) */
     textarea_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);

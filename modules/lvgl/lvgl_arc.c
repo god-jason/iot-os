@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_arc.c
  * @brief LVGL弧形控件
  *
@@ -143,6 +143,131 @@ static int iot_lvgl_arc_get_angle_end(lua_State* L) {
     return 1;
 }
 
+/*
+设置弧的旋转角度
+@param self 弧实例或指针
+@param rotation 旋转角度
+@return self
+@usage arc:set_rotation(90)
+*/
+static int iot_lvgl_arc_set_rotation(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t rotation = (int32_t)luaL_checkinteger(L, 2);
+    lv_arc_set_rotation(arc, rotation);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置弧的模式
+@param self 弧实例或指针
+@param mode 模式: ARC_MODE_NORMAL(0), ARC_MODE_SYMMETRICAL(1), ARC_MODE_REVERSE(2)
+@return self
+@usage arc:set_mode(lvgl.ARC_MODE_NORMAL)
+*/
+static int iot_lvgl_arc_set_mode(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    lv_arc_mode_t mode = (lv_arc_mode_t)luaL_checkinteger(L, 2);
+    lv_arc_set_mode(arc, mode);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置弧的变化率
+@param self 弧实例或指针
+@param rate 变化率
+@return self
+@usage arc:set_change_rate(10)
+*/
+static int iot_lvgl_arc_set_change_rate(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    uint32_t rate = (uint32_t)luaL_checkinteger(L, 2);
+    lv_arc_set_change_rate(arc, rate);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+设置弧的旋钮偏移
+@param self 弧实例或指针
+@param offset 偏移角度
+@return self
+@usage arc:set_knob_offset(30)
+*/
+static int iot_lvgl_arc_set_knob_offset(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t offset = (int32_t)luaL_checkinteger(L, 2);
+    lv_arc_set_knob_offset(arc, offset);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取背景起始角度
+@param self 弧实例或指针
+@return integer 背景起始角度
+@usage local angle = arc:get_bg_angle_start()
+*/
+static int iot_lvgl_arc_get_bg_angle_start(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    lv_value_precise_t angle = lv_arc_get_bg_angle_start(arc);
+    lua_pushinteger(L, (int32_t)angle);
+    return 1;
+}
+
+/*
+获取背景结束角度
+@param self 弧实例或指针
+@return integer 背景结束角度
+@usage local angle = arc:get_bg_angle_end()
+*/
+static int iot_lvgl_arc_get_bg_angle_end(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    lv_value_precise_t angle = lv_arc_get_bg_angle_end(arc);
+    lua_pushinteger(L, (int32_t)angle);
+    return 1;
+}
+
+/*
+获取弧的旋转角度
+@param self 弧实例或指针
+@return integer 旋转角度
+@usage local rotation = arc:get_rotation()
+*/
+static int iot_lvgl_arc_get_rotation(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t rotation = lv_arc_get_rotation(arc);
+    lua_pushinteger(L, rotation);
+    return 1;
+}
+
+/*
+获取弧的模式
+@param self 弧实例或指针
+@return integer 模式值
+@usage local mode = arc:get_mode()
+*/
+static int iot_lvgl_arc_get_mode(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    lv_arc_mode_t mode = lv_arc_get_mode(arc);
+    lua_pushinteger(L, mode);
+    return 1;
+}
+
+/*
+获取弧的旋钮偏移
+@param self 弧实例或指针
+@return integer 旋钮偏移角度
+@usage local offset = arc:get_knob_offset()
+*/
+static int iot_lvgl_arc_get_knob_offset(lua_State* L) {
+    lv_obj_t* arc = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t offset = lv_arc_get_knob_offset(arc);
+    lua_pushinteger(L, offset);
+    return 1;
+}
+
 /* 注册 arc 子模块 */
 void iot_lvgl_register_arc(lua_State* L) {
     lua_newtable(L);
@@ -152,8 +277,17 @@ void iot_lvgl_register_arc(lua_State* L) {
     REG_METHOD(L, "set_range", iot_lvgl_arc_set_range);
     REG_METHOD(L, "set_bg_angles", iot_lvgl_arc_set_bg_angles);
     REG_METHOD(L, "set_angles", iot_lvgl_arc_set_angles);
+    REG_METHOD(L, "set_rotation", iot_lvgl_arc_set_rotation);
+    REG_METHOD(L, "set_mode", iot_lvgl_arc_set_mode);
+    REG_METHOD(L, "set_change_rate", iot_lvgl_arc_set_change_rate);
+    REG_METHOD(L, "set_knob_offset", iot_lvgl_arc_set_knob_offset);
     REG_METHOD(L, "get_angle_start", iot_lvgl_arc_get_angle_start);
     REG_METHOD(L, "get_angle_end", iot_lvgl_arc_get_angle_end);
+    REG_METHOD(L, "get_bg_angle_start", iot_lvgl_arc_get_bg_angle_start);
+    REG_METHOD(L, "get_bg_angle_end", iot_lvgl_arc_get_bg_angle_end);
+    REG_METHOD(L, "get_rotation", iot_lvgl_arc_get_rotation);
+    REG_METHOD(L, "get_mode", iot_lvgl_arc_get_mode);
+    REG_METHOD(L, "get_knob_offset", iot_lvgl_arc_get_knob_offset);
 
     arc_metatable_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

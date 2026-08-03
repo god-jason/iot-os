@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file iot_lvgl_img.c
  * @brief LVGL图片控件
  *
@@ -157,6 +157,47 @@ static int iot_lvgl_img_set_size_mode(lua_State* L) {
     return 1;
 }
 
+/*
+设置图片旋转角度(同set_angle)
+@param self 图片实例或指针
+@param angle 角度值(0-3600,实际为角度x10)
+@return self
+@usage img:set_rotation(900)  -- 90度
+*/
+static int iot_lvgl_img_set_rotation(lua_State* L) {
+    lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t angle = (int32_t)luaL_checkinteger(L, 2);
+    lv_image_set_rotation(img, angle);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
+/*
+获取图片旋转角度
+@param self 图片实例或指针
+@return integer 旋转角度
+@usage local angle = img:get_rotation()
+*/
+static int iot_lvgl_img_get_rotation(lua_State* L) {
+    lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
+    int32_t angle = lv_image_get_rotation(img);
+    lua_pushinteger(L, angle);
+    return 1;
+}
+
+/*
+获取图片抗锯齿状态
+@param self 图片实例或指针
+@return boolean 是否启用抗锯齿
+@usage local antialias = img:get_antialias()
+*/
+static int iot_lvgl_img_get_antialias(lua_State* L) {
+    lv_obj_t* img = iot_lvgl_get_obj_ptr(L, 1);
+    bool antialias = lv_image_get_antialias(img);
+    lua_pushboolean(L, antialias);
+    return 1;
+}
+
 /* 注册 img 子模块 */
 void iot_lvgl_register_img(lua_State* L) {
     /* 创建组件方法表(用于metatable继承) */
@@ -168,6 +209,9 @@ void iot_lvgl_register_img(lua_State* L) {
     REG_METHOD(L, "set_offset_y", iot_lvgl_img_set_offset_y);
     REG_METHOD(L, "set_zoom", iot_lvgl_img_set_zoom);
     REG_METHOD(L, "set_angle", iot_lvgl_img_set_angle);
+    REG_METHOD(L, "set_rotation", iot_lvgl_img_set_rotation);
+    REG_METHOD(L, "get_rotation", iot_lvgl_img_get_rotation);
+    REG_METHOD(L, "get_antialias", iot_lvgl_img_get_antialias);
     REG_METHOD(L, "set_pivot", iot_lvgl_img_set_pivot);
     REG_METHOD(L, "set_antialias", iot_lvgl_img_set_antialias);
     REG_METHOD(L, "set_size_mode", iot_lvgl_img_set_size_mode);

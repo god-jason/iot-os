@@ -105,6 +105,19 @@ static int iot_lvgl_led_get_brightness(lua_State* L) {
     return 1;
 }
 
+/*
+切换LED状态
+@param self LEDå®ä¾ææé?
+@return self
+@usage led:toggle()
+*/
+static int iot_lvgl_led_toggle(lua_State* L) {
+    lv_obj_t* led = iot_lvgl_get_obj_ptr(L, 1);
+    lv_led_toggle(led);
+    lua_pushvalue(L, 1);
+    return 1;
+}
+
 /* æ³¨å led å­æ¨¡块*/
 void iot_lvgl_register_led(lua_State* L) {
     /* åå»ºç»ä»¶æ¹æ³è¡?ç¨äºmetatableç»§æ¿) */
@@ -115,6 +128,7 @@ void iot_lvgl_register_led(lua_State* L) {
     REG_METHOD(L, "off", iot_lvgl_led_off);
     REG_METHOD(L, "set_brightness", iot_lvgl_led_set_brightness);
     REG_METHOD(L, "set_color", iot_lvgl_led_set_color);
+    REG_METHOD(L, "toggle", iot_lvgl_led_toggle);
     REG_METHOD(L, "get_brightness", iot_lvgl_led_get_brightness);
 
     /* ä¿å­ç»ä»¶metatableå¼ç¨(ç¨äºç»§æ¿) */

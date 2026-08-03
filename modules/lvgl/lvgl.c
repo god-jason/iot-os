@@ -567,6 +567,70 @@ LUAMOD_API int luaopen_lvgl(lua_State* L) {
 
 
 
+    lua_newtable(L);  /* buttonmatrix 子表 */
+
+    iot_lvgl_register_buttonmatrix(L);
+
+    lua_setfield(L, -2, "buttonmatrix");
+
+
+
+    lua_newtable(L);  /* imagebutton 子表 */
+
+    iot_lvgl_register_imagebutton(L);
+
+    lua_setfield(L, -2, "imagebutton");
+
+
+
+    lua_newtable(L);  /* animimage 子表 */
+
+    iot_lvgl_register_animimage(L);
+
+    lua_setfield(L, -2, "animimage");
+
+
+
+    lua_newtable(L);  /* arclabel 子表 */
+
+    iot_lvgl_register_arclabel(L);
+
+    lua_setfield(L, -2, "arclabel");
+
+
+
+    lua_newtable(L);  /* gif 子表 */
+
+    iot_lvgl_register_gif(L);
+
+    lua_setfield(L, -2, "gif");
+
+
+
+    lua_newtable(L);  /* ime_pinyin 子表 */
+
+    iot_lvgl_register_ime_pinyin(L);
+
+    lua_setfield(L, -2, "ime_pinyin");
+
+
+
+    lua_newtable(L);  /* scale 子表 */
+
+    iot_lvgl_register_scale(L);
+
+    lua_setfield(L, -2, "scale");
+
+
+
+    lua_newtable(L);  /* span 子表 */
+
+    iot_lvgl_register_span(L);
+
+    lua_setfield(L, -2, "span");
+
+
+
     /* 定义常量 */
 
     iot_lvgl_define_constants(L);
